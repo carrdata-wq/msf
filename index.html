@@ -7,7 +7,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MFS">
-<title>Master Financial System</title>
+<title>MFS — Master Financial System</title>
+<link rel="manifest" href="data:application/json;charset=utf-8,{&quot;name&quot;:&quot;Master Financial System&quot;,&quot;short_name&quot;:&quot;MFS&quot;,&quot;description&quot;:&quot;Professional Accounting &amp; Financial Tracking&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230000cc&quot;,&quot;theme_color&quot;:&quot;%230000cc&quot;,&quot;orientation&quot;:&quot;any&quot;}">
+<meta name="theme-color" content="#0000cc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MFS">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
 <style>
@@ -195,14 +200,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openModule('accounting')">
-      <div class="menu-num">1</div><div class="menu-icon">$</div>
+      <div class="menu-num">1</div><div class="menu-icon">💰</div>
       <div class="menu-label"><div class="ml">Accounting</div><div class="ms">Payee · Desc · Pcode · Amount</div></div>
-      <div class="menu-arrow">›</div>
+      <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
-    <div class="menu-item" onclick="openModule('reports')">
+    <div class="menu-item" onclick="showSubMenu('accounting')">
       <div class="menu-num">2</div><div class="menu-icon">📊</div>
-      <div class="menu-label"><div class="ml">Reports</div><div class="ms">By Pcode · By Desc · By Payee · By Year</div></div>
-      <div class="menu-arrow" style="color:var(--green)">›</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">More Accounting Tasks</div><div class="ms">Reports · Restaurant · Grocery · Bank · Portfolio</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
     <div class="menu-item" onclick="openModule('fuel')">
       <div class="menu-num">3</div><div class="menu-icon">⛽</div>
@@ -219,36 +224,120 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml">Inventory</div><div class="ms">Box · Oz · Units · Qty × Cost</div></div>
       <div class="menu-arrow">›</div>
     </div>
-    <div class="menu-item" onclick="openModule('portfolio')">
-      <div class="menu-num">6</div><div class="menu-icon">📈</div>
-      <div class="menu-label"><div class="ml">Portfolio</div><div class="ms">Stocks · ETFs · Bonds · P&L</div></div>
-      <div class="menu-arrow">›</div>
-    </div>
     <div class="menu-item" onclick="openModule('workers')">
-      <div class="menu-num">7</div><div class="menu-icon">👷</div>
+      <div class="menu-num">6</div><div class="menu-icon">👷</div>
       <div class="menu-label"><div class="ml">Worker Hours</div><div class="ms">Time logs · Pay · Job/Property</div></div>
       <div class="menu-arrow">›</div>
     </div>
-    <div class="menu-item" onclick="openModule('grocery')">
-      <div class="menu-num">8</div><div class="menu-icon">🛒</div>
-      <div class="menu-label"><div class="ml">Grocery Tracker</div><div class="ms">Item · Price · Oz · Cal · Sugar · Tax</div></div>
-      <div class="menu-arrow">›</div>
+    <div class="menu-item" onclick="toast('Phone Client Database — coming soon',true)">
+      <div class="menu-num">7</div><div class="menu-icon">📱</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">Phone Clients</div><div class="ms">Client Database · Contacts · Jobs</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
-    <div class="menu-item" onclick="openModule('restaurant')">
-      <div class="menu-num">9</div><div class="menu-icon">🍽️</div>
-      <div class="menu-label"><div class="ml">Restaurant Tracker</div><div class="ms">Item · Cost · Cal · Oz · Tax · Store</div></div>
-      <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="openModule('scanner')">
-      <div class="menu-num">10</div><div class="menu-icon">📷</div>
-      <div class="menu-label"><div class="ml">Scan Receipt</div><div class="ms">Photo → auto-import to any module</div></div>
-      <div class="menu-arrow" style="color:var(--yellow)">›</div>
+    <div class="menu-item" onclick="showSubMenu('sysutil')">
+      <div class="menu-num">8</div><div class="menu-icon">⚙️</div>
+      <div class="menu-label"><div class="ml" style="color:#ff88ff;">System Utilities</div><div class="ms">MFS Update · File Manager · Drive</div></div>
+      <div class="menu-arrow" style="color:#ff88ff;">›</div>
     </div>
   </div>
   <div class="main-footer">
     <button class="foot-btn" onclick="doBackup()">⬇ Backup</button>
     <button class="foot-btn" onclick="doExportCSV()" style="color:#00ff88;border-color:#00ff88;">📄 CSV</button>
     <button class="foot-btn" onclick="exportMasters()" style="color:#ffaa00;border-color:#ffaa00;">⬇ Masters</button>
+    <button class="foot-btn" onclick="window.close()" style="color:#ff6666;border-color:#ff6666;">✕ EXIT</button>
+  </div>
+</div>
+
+<!-- ████████████████████ SYSTEM UTILITIES SUBMENU ████████████████████ -->
+<div id="screen-sysutil-sub" class="screen" style="background:#1a1aff;font-family:Courier New,monospace;">
+  <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+    <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+    <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
+  </div>
+  <div class="main-box" style="margin-top:10px;">
+    <div class="menu-item" onclick="showMfsUpdate()">
+      <div class="menu-num">1</div><div class="menu-icon">🔄</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;">MFS Update</div><div class="ms">Push new code to GitHub · Go live</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
+    <div class="menu-item" onclick="showFileManager()">
+      <div class="menu-num">2</div><div class="menu-icon">📁</div>
+      <div class="menu-label"><div class="ml" style="color:#ffff00;">File Manager</div><div class="ms">View · Email · Copy · Delete saved files</div></div>
+      <div class="menu-arrow" style="color:#ffff00;">›</div>
+    </div>
+    <div class="menu-item" onclick="toast('Drive lookup — coming soon',true)">
+      <div class="menu-num">3</div><div class="menu-icon">💾</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">Drive Lookup</div><div class="ms">Browse · Find · Open saved files</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- MFS UPDATE OVERLAY -->
+<div id="mfsupdate-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;">
+    <div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 MFS UPDATE</div>
+    <div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Your live URL:<br><span style="color:#ffff00;">https://carrdata-wq.github.io/msf</span></div>
+    <div style="color:#ccccff;font-size:11px;margin-bottom:8px;">To update GitHub with new code:</div>
+    <div style="background:#000033;border:1px solid #333388;border-radius:4px;padding:10px;font-size:10px;color:#00ffff;margin-bottom:12px;line-height:1.8;">
+      1. Get new mfs1.html from Claude<br>
+      2. Save to Downloads folder<br>
+      3. Run <span style="color:#ffff00;">upload_mfs.ps1</span> on ThinkPad<br>
+      4. Wait 2 mins → live on all devices
+    </div>
+    <div style="color:#ccccff;font-size:11px;margin-bottom:12px;">GitHub repo:<br><span style="color:#ffff00;">github.com/carrdata-wq/msf</span></div>
+    <button onclick="document.getElementById('mfsupdate-overlay').style.display='none'" style="width:100%;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>
+  </div>
+</div>
+
+<!-- FILE MANAGER OVERLAY -->
+<div id="filemgr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;align-items:flex-end;justify-content:center;padding:10px;">
+  <div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:14px;width:100%;max-width:420px;font-family:Courier New,monospace;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="color:#ffff00;font-weight:700;font-size:14px;">📁 FILE MANAGER</span>
+      <button onclick="document.getElementById('filemgr-overlay').style.display='none'" style="background:none;border:none;color:#ccccff;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div id="filemgr-content"></div>
+  </div>
+</div>
+
+<!-- ████████████████████ MORE ACCOUNTING TASKS SUBMENU ████████████████████ -->
+<div id="screen-accounting-sub" class="screen" style="background:#1a1aff;font-family:Courier New,monospace;">
+  <div style="background:#0000cc;border-bottom:2px solid #00ffff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+    <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+    <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">📊 More Accounting Tasks</span>
+  </div>
+  <div class="main-box" style="margin-top:10px;">
+    <div class="menu-item" onclick="openModule('reports')">
+      <div class="menu-num">1</div><div class="menu-icon">📊</div>
+      <div class="menu-label"><div class="ml">Reports</div><div class="ms">By Pcode · By Desc · By Payee · By Year</div></div>
+      <div class="menu-arrow" style="color:var(--green)">›</div>
+    </div>
+    <div class="menu-item" onclick="openModule('restaurant')">
+      <div class="menu-num">2</div><div class="menu-icon">🍽️</div>
+      <div class="menu-label"><div class="ml">Restaurant Tracker</div><div class="ms">Item · Cost · Cal · Oz · Tax → Accounting</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    </div>
+    <div class="menu-item" onclick="openModule('grocery')">
+      <div class="menu-num">3</div><div class="menu-icon">🛒</div>
+      <div class="menu-label"><div class="ml">Grocery Tracker</div><div class="ms">Item · Price · Oz · Cal · Sugar → Accounting</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    </div>
+    <div class="menu-item" onclick="openModule('scanner')">
+      <div class="menu-num">4</div><div class="menu-icon">📷</div>
+      <div class="menu-label"><div class="ml">Scan Receipt</div><div class="ms">Photo → auto-import → Accounting</div></div>
+      <div class="menu-arrow" style="color:#ffff00;">›</div>
+    </div>
+    <div class="menu-item" onclick="doBankImport()">
+      <div class="menu-num">5</div><div class="menu-icon">🏦</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;">Bank Import</div><div class="ms">Byline CSV → auto-load ledger</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
+    <div class="menu-item" onclick="openModule('portfolio')">
+      <div class="menu-num">6</div><div class="menu-icon">📈</div>
+      <div class="menu-label"><div class="ml">Portfolio</div><div class="ms">Stocks · ETFs · Bonds · P&L</div></div>
+      <div class="menu-arrow">›</div>
+    </div>
   </div>
 </div>
 
@@ -1120,17 +1209,19 @@ function toast(msg,ok=true) {
 //  NAVIGATION
 // ═══════════════════════════════════════════════
 function showScreen(id) {
-  // hide all screens instantly
   document.querySelectorAll('.screen').forEach(s=>{
     s.classList.remove('active');
     s.style.display='none';
   });
   const el=document.getElementById('screen-'+id);
   if(!el){console.warn('screen not found: '+id);return;}
-  el.style.display='block';
+  el.style.display=(id==='main')?'flex':'block';
   el.classList.add('active');
   el.scrollTop=0;
   window.scrollTo(0,0);
+}
+function showSubMenu(name){
+  showScreen(name+'-sub');
 }
 function goMain() { showScreen('main'); }
 function openModule(mod) {
@@ -2724,6 +2815,102 @@ function doBackupClip(){
   },300);
 }
 
+function showMfsUpdate(){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 MFS UPDATE TO GITHUB</div>'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:8px;">Enter your GitHub token:</div>'
+    +'<input id="gh-token" type="password" placeholder="ghp_..." style="width:100%;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:8px;border-radius:4px;outline:none;margin-bottom:10px;box-sizing:border-box;">'
+    +'<div id="update-status" style="color:#ffff00;font-size:12px;margin-bottom:12px;min-height:20px;"></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="doGitHubUpdate(this)" style="flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">🚀 PUSH UPDATE NOW</button>'
+    +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove()" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function doGitHubUpdate(btn){
+  var token=document.getElementById('gh-token').value.trim();
+  if(!token){toast('Enter your GitHub token first',false);return;}
+  btn.disabled=true;
+  btn.textContent='⏳ UPLOADING...';
+  document.getElementById('update-status').textContent='Getting current file...';
+  try{
+    var repo='carrdata-wq/msf';
+    var url='https://api.github.com/repos/'+repo+'/contents/index.html';
+    var headers={'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'};
+    var res=await fetch(url,{headers:headers});
+    var data=await res.json();
+    var sha=data.sha;
+    document.getElementById('update-status').textContent='Encoding file...';
+    var html=document.documentElement.outerHTML;
+    var encoded=btoa(unescape(encodeURIComponent(html)));
+    document.getElementById('update-status').textContent='Pushing to GitHub...';
+    var body=JSON.stringify({message:'Update MFS '+new Date().toLocaleDateString(),content:encoded,sha:sha,branch:'main'});
+    var putRes=await fetch(url,{method:'PUT',headers:headers,body:body});
+    if(putRes.ok){
+      document.getElementById('update-status').innerHTML='<span style="color:#00ff88;">✅ MFS UPDATED! Live in 2 mins.</span>';
+      btn.textContent='✅ DONE!';
+      btn.style.background='#006600';
+    } else {
+      var err=await putRes.json();
+      document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ ERROR: '+err.message+'</span>';
+      btn.disabled=false;btn.textContent='🚀 PUSH UPDATE NOW';
+    }
+  }catch(e){
+    document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ '+e.message+'</span>';
+    btn.disabled=false;btn.textContent='🚀 PUSH UPDATE NOW';
+  }
+}
+
+function showFileManager(){
+  var mxLog=[];
+  try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
+  var masters={
+    mx_pcodes:JSON.parse(localStorage.getItem('mx_pcodes')||'[]'),
+    mx_descs:JSON.parse(localStorage.getItem('mx_descs')||'[]'),
+    mx_custom:JSON.parse(localStorage.getItem('mx_custom')||'[]')
+  };
+  var t=new Date();
+  var mm=('0'+(t.getMonth()+1)).slice(-2);
+  var dd=('0'+t.getDate()).slice(-2);
+  var yy=(''+t.getFullYear()).slice(-2);
+  var files=[
+    {name:'mfs-backup-'+today()+'.json', desc:'FULL BACKUP — '+mxLog.length+' entries', color:'#00ffff', fn:'doBackup'},
+    {name:'mf'+mm+dd+yy+'.csv', desc:'FoxBase CSV — '+mxLog.length+' entries', color:'#00ff88', fn:'doExportCSV'},
+    {name:'mfs-masters-'+today()+'.json', desc:'MASTERS — pcodes/payees/descs', color:'#ffaa00', fn:'exportMasters'}
+  ];
+  var html='';
+  files.forEach(function(f){
+    html+='<div style="background:#000044;border:1px solid #333388;border-radius:4px;padding:10px;margin-bottom:8px;">'
+      +'<div style="color:'+f.color+';font-weight:700;font-size:12px;">'+f.name+'</div>'
+      +'<div style="color:#ccccff;font-size:10px;margin:4px 0;">'+f.desc+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:6px;">'
+      +'<button onclick="'+f.fn+'()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:8px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">⬇ SAVE</button>'
+      +'<button onclick="copyFileData(\''+f.fn+'\')" style="flex:1;background:#000033;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:8px;border:1px solid #00ffff;border-radius:4px;cursor:pointer;">📋 COPY</button>'
+      +'</div></div>';
+  });
+  document.getElementById('filemgr-content').innerHTML=html;
+  document.getElementById('filemgr-overlay').style.display='flex';
+}
+
+function copyFileData(fn){
+  var mxLog=[];
+  try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
+  var txt=JSON.stringify(mxLog,null,2);
+  var ta=document.createElement('textarea');
+  ta.value=txt;
+  ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');toast('Copied — paste into Gmail ✓',true);}
+  catch(e){toast('Long-press → Select All → Copy',false);}
+  document.body.removeChild(ta);
+}
+
+function doBankImport(){
+  toast('Bank Import — upload your Byline CSV file to load',true);
+}
 function doBackup() {
   var mxLog=[];
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
@@ -3018,7 +3205,8 @@ function rptAllFilter(sortBy, pick){
     +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:11px;">'
     +'<tr style="background:#0000cc;">'
     +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">DATE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">'+label+'</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">PAYEE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">DESC</th>'
     +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">PCO</th>'
     +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;text-align:right;">AMT</th>'
     +'</tr>';
@@ -3026,16 +3214,16 @@ function rptAllFilter(sortBy, pick){
     var e=rows[i];
     var ac=e.amt>=0?'#00ffff':'#ff6666';
     var bg=i%2===0?'background:#00008a':'background:#000077';
-    var col1=sortBy==='payee'?trunc(e.payee,14):sortBy==='pcode'?(e.pcode||'').slice(0,3):trunc(e.desc,14);
     html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
       +'<td style="padding:5px 3px;color:#ccccff;white-space:nowrap;font-size:10px;">'+fmtDate(e.date)+'</td>'
-      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px;">'+col1+'</td>'
-      +'<td style="padding:5px 3px;color:#00ffff;font-size:10px;text-align:center;">'+((e.pcode||'').slice(0,3))+'</td>'
+      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px;">'+trunc(e.payee||'',14)+'</td>'
+      +'<td style="padding:5px 3px;color:#ffffff;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px;">'+trunc(e.desc||'',14)+'</td>'
+      +'<td style="padding:5px 3px;color:#00ffff;font-size:10px;text-align:center;white-space:nowrap;">'+((e.pcode||'').slice(0,3))+'</td>'
       +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:10px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'</tr>';
   }
   html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
-    +'<td colspan="3" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:10px;">TOTAL ('+rows.length+')</td>'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:10px;">TOTAL ('+rows.length+')</td>'
     +'<td style="padding:6px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:11px;color:'+tc+';">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
     +'</tr></table>';
   document.getElementById('rpt-all-table').innerHTML=html;
@@ -3060,11 +3248,12 @@ function rptShow(type){
            :type==='date' ?(e.date ||'?')
            :type==='amt'  ?(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)
            :(e.payee||'?');
-    if(!map[key])map[key]={total:0,count:0};
+    if(!map[key])map[key]={total:0,count:0,rows:[]};
     map[key].total+=e.amt;
     map[key].count++;
+    map[key].rows.push(e);
   }
-  _rptArr=Object.keys(map).map(function(k){return{key:k,total:map[k].total,count:map[k].count};});
+  _rptArr=Object.keys(map).map(function(k){return{key:k,total:map[k].total,count:map[k].count,rows:map[k].rows};});
   _rptArr.sort(function(a,b){return a.total-b.total;});
   rptRender();
 }
@@ -3082,27 +3271,50 @@ function rptRender(){
   if(_rptPage>=totalPages)_rptPage=0;
   var start=_rptPage*_pageSize;
   var pageArr=arr.slice(start,start+_pageSize);
-  var html='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:12px;">'
+  var html='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:11px;">'
     +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:10px;">'+label+'</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:center;border:1px solid #6666ff;font-size:10px;">#</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border:1px solid #6666ff;font-size:10px;">TOTAL</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:10px;">'+label+'</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:10px;">'+(type==='pcode'?'PAYEE':'DESC')+'</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:10px;">'+(type==='pcode'?'DESC':'PCO')+'</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:10px;">#</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:10px;">AMT</th>'
     +'</tr>';
   for(var j=0;j<pageArr.length;j++){
     var r=pageArr[j];
     var col=r.total>=0?'#00ffff':'#ff6666';
     var bg=j%2===0?'background:#00008a':'background:#000077';
+    var mainKey=trunc(r.key,20);
+    var col2,col3;
+    if(type==='pcode'){
+      // pcode summary — show count of unique payees
+      var uniquePayees=[];
+      if(r.rows)r.rows.forEach(function(e){if(uniquePayees.indexOf(e.payee)<0)uniquePayees.push(e.payee);});
+      col2=uniquePayees.length+' payees';
+      col3=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',15):'—';
+    } else if(type==='desc'){
+      col2=r.rows&&r.rows[0]?trunc(r.rows[0].payee||'',20):'—';
+      col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
+    } else if(type==='amt'){
+      mainKey=r.rows&&r.rows[0]?trunc(r.rows[0].payee||'',20):'—';
+      col2=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',15):'—';
+      col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
+    } else {
+      col2=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',20):'—';
+      col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
+    }
     html+='<tr onclick="rptDrill(\''+type+'\',\''+r.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+bg+';border-bottom:1px solid #333388;cursor:pointer;">'
-      +'<td style="padding:7px 4px;color:#ffff00;font-weight:700;word-break:break-word;">'+r.key+' <span style="color:#6666ff;font-size:10px;">›</span></td>'
-      +'<td style="padding:7px 4px;color:#ccccff;text-align:center;">'+r.count+'</td>'
-      +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+col+';">'+(r.total>=0?'+':'-')+'$'+Math.abs(r.total).toFixed(2)+'</td>'
+      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:10px;">›</span></td>'
+      +'<td style="padding:5px 3px;color:#ffffff;font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
+      +'<td style="padding:5px 3px;color:#00ffff;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
+      +'<td style="padding:5px 3px;color:#ccccff;text-align:center;font-size:11px;">'+r.count+'</td>'
+      +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:11px;color:'+col+';">'+(r.total>=0?'+':'-')+'$'+Math.abs(r.total).toFixed(2)+'</td>'
       +'</tr>';
   }
   var gc=grand>=0?'#00ffff':'#ff6666';
   html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
-    +'<td style="padding:7px 4px;color:#ffff00;font-weight:700;">TOTAL</td>'
-    +'<td style="padding:7px 4px;color:#ccccff;text-align:center;">'+LOG.length+'</td>'
-    +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+gc+';">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
+    +'<td colspan="3" style="padding:7px 4px;color:#ffff00;font-weight:700;font-size:11px;">TOTAL</td>'
+    +'<td style="padding:7px 4px;color:#ccccff;text-align:center;font-size:11px;">'+LOG.length+'</td>'
+    +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+gc+';font-size:11px;">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
     +'</tr></table>';
   // pagination
   if(totalPages>1){
@@ -3115,6 +3327,8 @@ function rptRender(){
   document.getElementById('rpt-content').innerHTML=html;
 }
 function rptPage(p){_rptPage=p;rptRender();document.getElementById('screen-reports').scrollTop=0;}
+
+var MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
 function rptDrill(type,key){
   loadLog();
@@ -3129,34 +3343,92 @@ function rptDrill(type,key){
          :(e.payee||'?');
     return k===key;
   });
+  // build month breakdown
+  var monMap={};
+  rows.forEach(function(e){
+    var m=(e.date||'').slice(0,7);
+    if(!monMap[m])monMap[m]={total:0,count:0,rows:[]};
+    monMap[m].total+=e.amt;
+    monMap[m].count++;
+    monMap[m].rows.push(e);
+  });
+  var monKeys=Object.keys(monMap).sort();
   var total=rows.reduce(function(s,e){return s+e.amt;},0);
   var tc=total>=0?'#00ffff':'#ff6666';
+
   var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+key+'</span>'
     +'<button onclick="rptShow(\''+type+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:11px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
     +'</div>';
-  // paginate drill rows 25 at a time
-  var drillPage=0;
-  var drillPages=Math.ceil(rows.length/_pageSize);
-  var pageRows=rows.slice(0,_pageSize);
-  for(var i=0;i<pageRows.length;i++){
-    var e=pageRows[i];
+
+  // month breakdown rows — tap to expand
+  monKeys.forEach(function(m){
+    var mon=monMap[m];
+    var mc=mon.total>=0?'#00ffff':'#ff6666';
+    var yr=m.slice(0,4);
+    var mo=parseInt(m.slice(5,7),10)-1;
+    var monLabel=MONTHS[mo]+' '+yr;
+    html+='<div style="background:#000055;border:1px solid #3333aa;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+key+'\',\''+m+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+      +'<span style="color:#ffff00;font-weight:700;font-size:12px;font-family:Courier New,monospace;">'+monLabel+'</span>'
+      +'<span style="color:'+mc+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(mon.total>=0?'+':'-')+'$'+Math.abs(mon.total).toFixed(2)+'</span>'
+      +'</div>'
+      +'<div style="color:#ccccff;font-size:10px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
+      +'</div>';
+  });
+
+  // grand total
+  html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:11px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
+    +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
+    +'</div>';
+
+  document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptDrillMonth(type,key,mon){
+  loadLog();
+  var rows=LOG.filter(function(e){
+    var k=type==='pcode'?(e.pcode||'?').slice(0,3)
+         :type==='desc' ?(e.desc ||'?')
+         :type==='yr'   ?(e.date ||'?').slice(0,4)
+         :type==='mon'  ?(e.date ||'?').slice(0,7)
+         :type==='type' ?(e.amt>=0?'+ INCOME':'- EXPENSE')
+         :(e.payee||'?');
+    return k===key && (e.date||'').slice(0,7)===mon;
+  });
+  var total=rows.reduce(function(s,e){return s+e.amt;},0);
+  var tc=total>=0?'#00ffff':'#ff6666';
+  var yr=mon.slice(0,4);
+  var mo=parseInt(mon.slice(5,7),10)-1;
+  var monLabel=MONTHS[mo]+' '+yr;
+
+  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+key+' — '+monLabel+'</span>'
+    +'<button onclick="rptDrill(\''+type+'\',\''+key+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:11px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'</div>';
+
+  rows.forEach(function(e){
     var ac=e.amt>=0?'#00ffff':'#ff6666';
     html+='<div style="background:#0000cc;border:1px solid #5555ee;border-radius:4px;padding:8px;margin-bottom:5px;">'
       +'<div style="display:flex;justify-content:space-between;">'
-      +'<span style="color:#ffff00;font-weight:700;font-size:12px;font-family:Courier New,monospace;">'+trunc(e.payee,18)+'</span>'
+      +'<span style="color:#ffff00;font-weight:700;font-size:12px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
       +'<span style="color:'+ac+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</span>'
       +'</div>'
-      +'<div style="color:#ccccff;font-size:10px;font-family:Courier New,monospace;margin-top:3px;">'+fmtDate(e.date)+'  PCO:'+(e.pcode||'—').slice(0,3)+'  '+trunc(e.desc,16)+'</div>'
+      +'<div style="display:flex;justify-content:space-between;margin-top:3px;">'
+      +'<span style="color:#ccccff;font-size:10px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
+      +'<span style="color:#00ffff;font-size:10px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
+      +'</div>'
+      +'<div style="color:#ffffff;font-size:10px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
       +'</div>';
-  }
+  });
+
   html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:4px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:11px;">TOTAL ('+rows.length+')</span>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:11px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
     +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
-  if(drillPages>1){
-    html+='<div style="color:#ccccff;font-size:10px;font-family:Courier New,monospace;text-align:center;margin-top:6px;">Showing 1-'+Math.min(_pageSize,rows.length)+' of '+rows.length+' — use BY '+type.toUpperCase()+' report for full view</div>';
-  }
+
   document.getElementById('rpt-content').innerHTML=html;
   document.getElementById('screen-reports').scrollTop=0;
 }
