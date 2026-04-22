@@ -2874,24 +2874,32 @@ async function doShareMfs2(){
 }
 
 function showMfsUpdate(){
+  var savedToken=localStorage.getItem('gh_token')||'';
   var overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 PUSH MFS TO GITHUB</div>'
+    +(savedToken?'<div style="color:#00ff88;font-size:10px;margin-bottom:8px;">✓ Token saved</div>':'<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">Enter GitHub token (saved for next time):</div><input id="gh-token-input" type="password" placeholder="ghp_..." style="width:100%;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:8px;border-radius:4px;outline:none;margin-bottom:10px;box-sizing:border-box;">')
     +'<div id="update-status" style="color:#ffff00;font-size:12px;margin-bottom:12px;min-height:20px;">Ready to push...</div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button id="push-btn" onclick="doGitHubUpdate(this)" style="flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">🚀 PUSH NOW</button>'
+    +(savedToken?'<button onclick="localStorage.removeItem(\'gh_token\');this.closest(\'div\').parentNode.parentNode.remove();showMfsUpdate();" style="flex:1;background:#555500;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:12px;border:none;border-radius:6px;cursor:pointer;">NEW TOKEN</button>':'')
     +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();goMain();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
     +'</div></div>';
   document.body.appendChild(overlay);
 }
 
 async function doGitHubUpdate(btn){
+  var savedToken=localStorage.getItem('gh_token')||'';
+  var inputEl=document.getElementById('gh-token-input');
+  var token=savedToken||(inputEl?inputEl.value.trim():'');
+  if(!token){toast('Enter your GitHub token',false);return;}
+  // save token for next time
+  localStorage.setItem('gh_token',token);
   btn.disabled=true;
   btn.textContent='⏳ PUSHING...';
   document.getElementById('update-status').textContent='Connecting to GitHub...';
   try{
-    var token='ghp_'+'79eyMnxYrnpwftUicglexunh3fK6q235de8m';
     var repo='carrdata-wq/msf';
     var url='https://api.github.com/repos/'+repo+'/contents/index.html';
     var headers={'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'};
@@ -2904,15 +2912,16 @@ async function doGitHubUpdate(btn){
     var body=JSON.stringify({message:'MFS '+new Date().toLocaleDateString(),content:encoded,sha:sha,branch:'main'});
     var putRes=await fetch(url,{method:'PUT',headers:headers,body:body});
     if(putRes.ok){
-      document.getElementById('update-status').innerHTML='<span style="color:#00ff88;">✅ DONE! Wait 2 mins then Ctrl+Shift+R</span>';
+      document.getElementById('update-status').innerHTML='<span style="color:#00ff88;">✅ DONE! Ctrl+Shift+R in 2 mins</span>';
       setTimeout(function(){
-        document.querySelectorAll('.modal-overlay, [style*="position:fixed"]').forEach(function(o){
+        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(o){
           if(o.querySelector('#push-btn'))o.remove();
         });
         goMain();
       },3000);
     } else {
-      document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ Token expired — generate new one</span>';
+      localStorage.removeItem('gh_token');
+      document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ Token expired — tap NEW TOKEN</span>';
       btn.disabled=false;btn.textContent='🚀 PUSH NOW';
     }
   }catch(e){
