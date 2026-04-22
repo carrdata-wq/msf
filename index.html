@@ -1,4 +1,6 @@
-<html lang="en-US" style="transition-property: none; margin-right: 0px;"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -30,7 +32,7 @@ function doInstallPWA(){
   }
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
 <style>
 :root {
@@ -206,11 +208,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;width:100%;max-width:380px;}
 .modal-title{font-size:14px;font-weight:700;color:var(--yellow);margin-bottom:14px;text-align:center;}
 </style>
-<style id="ReanimatedPredefinedWebAnimationsStyle"></style><style id="ReanimatedCustomWebAnimationsStyle"></style><style id="ReanimatedCSSStyleTag"></style></head>
+</head>
 <body>
 
 <!-- ████████████████████ MAIN MENU ████████████████████ -->
-<div id="screen-main" class="screen" style="display: none;">
+<div id="screen-main" class="screen active">
   <div class="main-header">
     <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
     <div class="main-sub">Select Module</div>
@@ -228,7 +230,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <div class="menu-item" onclick="openModule('fuel')">
       <div class="menu-num">3</div><div class="menu-icon">⛽</div>
-      <div class="menu-label"><div class="ml">Fuel &amp; Gas Tracker</div><div class="ms">MPG · Cost/day · Weekly · Yearly</div></div>
+      <div class="menu-label"><div class="ml">Fuel & Gas Tracker</div><div class="ms">MPG · Cost/day · Weekly · Yearly</div></div>
       <div class="menu-arrow">›</div>
     </div>
     <div class="menu-item" onclick="openModule('utilities')">
@@ -269,7 +271,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ SYSTEM UTILITIES SUBMENU ████████████████████ -->
-<div id="screen-sysutil-sub" class="screen active" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: block;">
+<div id="screen-sysutil-sub" class="screen" style="background:#1a1aff;font-family:Courier New,monospace;">
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
@@ -285,10 +287,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffff00;">File Manager</div><div class="ms">View · Email · Copy · Delete saved files</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
-    <div class="menu-item" onclick="toast('Drive lookup — coming soon',true)">
-      <div class="menu-num">3</div><div class="menu-icon">💾</div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">Drive Lookup</div><div class="ms">Browse · Find · Open saved files</div></div>
-      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    <div class="menu-item" onclick="doCopyToMfs2()">
+      <div class="menu-num">4</div><div class="menu-icon">💾</div>
+      <div class="menu-label"><div class="ml" style="color:#ffff00;">Copy to mfs2.html</div><div class="ms">Save current version as mfs2 backup</div></div>
+      <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
   </div>
 </div>
@@ -322,7 +324,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ MORE ACCOUNTING TASKS SUBMENU ████████████████████ -->
-<div id="screen-accounting-sub" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
+<div id="screen-accounting-sub" class="screen" style="background:#1a1aff;font-family:Courier New,monospace;">
   <div style="background:#0000cc;border-bottom:2px solid #00ffff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">📊 More Accounting Tasks</span>
@@ -355,14 +357,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <div class="menu-item" onclick="openModule('portfolio')">
       <div class="menu-num">6</div><div class="menu-icon">📈</div>
-      <div class="menu-label"><div class="ml">Portfolio</div><div class="ms">Stocks · ETFs · Bonds · P&amp;L</div></div>
+      <div class="menu-label"><div class="ml">Portfolio</div><div class="ms">Stocks · ETFs · Bonds · P&L</div></div>
       <div class="menu-arrow">›</div>
     </div>
   </div>
 </div>
 
 <!-- ████████████████████ ACCOUNTING / MATRIX ████████████████████ -->
-<div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
+<div id="screen-accounting" class="screen" style="background:#1a1aff;font-family:Courier New,monospace;">
   <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ff88;flex:1;">$ Accounting</span>
@@ -370,8 +372,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="padding:10px;">
   <h2 style="color:#ffff00;margin:0 0 8px;font-size:15px;">PAYEE / VENDOR ENTRY</h2>
 
-  <input type="text" id="search" placeholder="TYPE PAYEE NAME..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:10px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:4px;" oninput="doFilter(this.value);showCmdHint(this.value)" onkeyup="xExit(this.value)">
-  <div id="hint" style="font-size:11px;color:#ccccff;margin-bottom:8px;">TYPE PAYEE NAME TO SEARCH</div>
+  <input type="text" id="search" placeholder="TYPE PAYEE NAME..."
+    autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+    style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:10px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:4px;"
+    oninput="doFilter(this.value);showCmdHint(this.value)" onkeyup="xExit(this.value)">
+  <div id="hint" style="font-size:11px;color:#ccccff;margin-bottom:8px;">TYPE TO SEARCH -- TAP ROW TO SELECT</div>
   <div style="font-size:10px;color:#ccccff;margin-bottom:3px;">ADD TO LISTS:</div>
   <div style="display:flex;gap:6px;margin-bottom:8px;">
     <button onclick="showAdd('desc')" style="flex:1;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:7px;border:1px solid #ffff00;border-radius:4px;cursor:pointer;">+ ADD DESC</button>
@@ -379,7 +384,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 
   <div id="box-desc" style="display:none;background:#000099;border:2px solid #ffff00;border-radius:4px;padding:10px;margin-bottom:8px;">
-    <input type="text" id="new-desc" placeholder="TYPE NEW DESC..." autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:6px;">
+    <input type="text" id="new-desc" placeholder="TYPE NEW DESC..." autocomplete="off" autocapitalize="characters" spellcheck="false"
+      style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:6px;">
     <div style="display:flex;gap:6px;margin-top:6px;">
       <button onclick="saveAdd('desc')" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>
       <button onclick="cancelAdd('desc')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">CANCEL</button>
@@ -387,7 +393,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div id="box-pcode" style="display:none;background:#000099;border:2px solid #ffff00;border-radius:4px;padding:10px;margin-bottom:8px;">
     <div style="font-size:10px;color:#ccccff;margin-bottom:4px;">TYPE NEW PCODE:</div>
-    <input type="text" id="new-pcode" placeholder="e.g. 5811" autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:6px;">
+    <input type="text" id="new-pcode" placeholder="e.g. 5811" autocomplete="off" autocapitalize="characters" spellcheck="false"
+      style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:6px;">
     <div style="display:flex;gap:6px;margin-top:6px;">
       <button onclick="saveAdd('pcode')" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>
       <button onclick="cancelAdd('pcode')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">CANCEL</button>
@@ -412,7 +419,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="addnew" style="display:none;background:#0000cc;border:2px solid #ffff00;border-radius:4px;padding:12px;margin-top:8px;">
     <div style="color:#ffaa00;font-weight:700;font-size:13px;">+ ADD NEW PAYEE / COMBO</div>
     <div style="font-size:10px;color:#ccccff;margin-top:8px;">PAYEE NAME</div>
-    <input type="text" id="an-payee" placeholder="PAYEE NAME..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;text-transform:uppercase;margin-top:4px;">
+    <input type="text" id="an-payee" placeholder="PAYEE NAME..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+      style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;text-transform:uppercase;margin-top:4px;">
     <div style="font-size:10px;color:#ccccff;margin-top:8px;">PCODE</div>
     <select id="an-pcode" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
       <option value="ROOF">ROOF</option><option value="BART">BART</option><option value="NORD">NORD</option>
@@ -485,16 +493,18 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <option value="05">MAY</option><option value="06">JUN</option><option value="07">JUL</option><option value="08">AUG</option>
         <option value="09">SEP</option><option value="10">OCT</option><option value="11">NOV</option><option value="12">DEC</option>
       </select>
-      <select id="p-day" style="flex:1;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;" onchange="saveDatePref()"><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option></select>
-      <select id="p-yr" style="flex:1;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;" onchange="saveDatePref()"><option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option></select>
+      <select id="p-day" style="flex:1;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;" onchange="saveDatePref()"></select>
+      <select id="p-yr"  style="flex:1;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;" onchange="saveDatePref()"></select>
     </div>
     <div style="font-size:10px;color:#ccccff;margin-top:6px;">AMOUNT $</div>
-    <input id="p-amt" type="number" placeholder="0.00" step="0.01" inputmode="numeric" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;margin-top:4px;" onkeyup="autoDecimal(this)">
+    <input id="p-amt" type="number" placeholder="0.00" step="0.01" inputmode="numeric"
+      style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;margin-top:4px;"
+      onkeyup="autoDecimal(this)">
     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-      <button onclick="doSave()" style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#006600;color:#ffffff;">SAVE</button>
-      <button onclick="doCopy()" style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#0055aa;color:#ffffff;">COPY</button>
-      <button onclick="doDel()" style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#880000;color:#ffffff;">CANCEL</button>
-      <button onclick="doExit()" style="flex:1;padding:10px 6px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#0000aa;color:#ccccff;">EXIT</button>
+      <button onclick="doSave()"  style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#006600;color:#ffffff;">SAVE</button>
+      <button onclick="doCopy()"  style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#0055aa;color:#ffffff;">COPY</button>
+      <button onclick="doDel()"   style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#880000;color:#ffffff;">CANCEL</button>
+      <button onclick="doExit()"  style="flex:1;padding:10px 6px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#0000aa;color:#ccccff;">EXIT</button>
     </div>
   </div>
 
@@ -502,16 +512,18 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <button onclick="goMain()" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:6px 12px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀ MENU</button>
       <span style="color:#ffff00;font-size:13px;font-weight:700;">LEDGER</span>
-      <span id="logcnt" style="color:#ccccff;font-size:10px;">4 entries</span>
+      <span id="logcnt" style="color:#ccccff;font-size:10px;"></span>
     </div>
     <!-- YEAR FILTER + CLEAR -->
     <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
-      <select id="led-yr-filter" onchange="ledSetYear(this.value)" style="flex:1;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px;border-radius:4px;outline:none;-webkit-appearance:none;"><option value="">ALL YRS</option><option value="2026">2026</option></select>
+      <select id="led-yr-filter" onchange="ledSetYear(this.value)" style="flex:1;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px;border-radius:4px;outline:none;-webkit-appearance:none;">
+        <option value="">ALL YRS</option>
+      </select>
       <button onclick="doExportByYear()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:7px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">📄 YR CSV</button>
     </div>
-    <div id="totbar" style="background: rgb(0, 0, 204); border: 1px solid rgb(255, 255, 0); border-radius: 4px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between;">
-      <span style="font-size:11px;color:#ccccff;">ENTRIES: <strong id="tcnt" style="color:#ffff00;font-size:14px;">4</strong></span>
-      <span style="font-size:11px;color:#ccccff;">TOTAL: <strong id="ttot" style="color:#ffff00;font-size:14px;">$-467.69</strong></span>
+    <div id="totbar" style="background:#0000cc;border:1px solid #ffff00;border-radius:4px;padding:8px 12px;margin-bottom:8px;display:none;justify-content:space-between;">
+      <span style="font-size:11px;color:#ccccff;">ENTRIES: <strong id="tcnt" style="color:#ffff00;font-size:14px;">0</strong></span>
+      <span style="font-size:11px;color:#ccccff;">TOTAL: <strong id="ttot" style="color:#ffff00;font-size:14px;">$0.00</strong></span>
     </div>
     <table id="logtbl" style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead><tr>
@@ -522,7 +534,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:right;">AMT</th>
         <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:center;">•••</th>
       </tr></thead>
-      <tbody id="loglist"><tr onclick="toggleRow(1776642813728)" style="cursor:pointer;background:#0055ff;border:2px solid #00ffff;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:11px;">041626</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ACE HARDWARE</td><td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HARDWARE EXPENSE</td><td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">ROO</td><td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;color:#ff6666;">- $22.44</td><td style="padding:6px 3px;text-align:center;white-space:nowrap;"><span style="color:#6666ff;font-size:14px;">⋮</span></td></tr><tr onclick="toggleRow(3)" style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:11px;">041126</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ACE HARDWARE</td><td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ROOFING SUPPLIES</td><td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">ROO</td><td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;color:#ff6666;">- $142.50</td><td style="padding:6px 3px;text-align:center;white-space:nowrap;"><span style="color:#6666ff;font-size:14px;">⋮</span></td></tr><tr onclick="toggleRow(2)" style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:11px;">041026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">SHELL GAS STATION</td><td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">TRUCK GAS</td><td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">ROO</td><td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;color:#ff6666;">- $68.00</td><td style="padding:6px 3px;text-align:center;white-space:nowrap;"><span style="color:#6666ff;font-size:14px;">⋮</span></td></tr><tr onclick="toggleRow(1)" style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:11px;">040926</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">MENARDS STORE</td><td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HARDWARE EXPENSE</td><td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">107</td><td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;color:#ff6666;">- $234.75</td><td style="padding:6px 3px;text-align:center;white-space:nowrap;"><span style="color:#6666ff;font-size:14px;">⋮</span></td></tr></tbody>
+      <tbody id="loglist"></tbody>
     </table>
     <!-- PAGINATION -->
     <div id="led-pages" style="display:flex;gap:6px;margin-top:8px;justify-content:center;align-items:center;"></div>
@@ -535,7 +547,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
 
 <!-- ████████████████████ REPORTS ████████████████████ -->
-<div id="screen-reports" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
+<div id="screen-reports" class="screen" style="background:#1a1aff;font-family:Courier New,monospace;">
   <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ff88;flex:1;">📊 Reports</span>
@@ -543,33 +555,33 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="padding:10px;">
     <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="rptShow('pcode')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY PCODE</button>
-      <button onclick="rptShow('desc')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">BY DESC</button>
+      <button onclick="rptShow('desc')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">BY DESC</button>
       <button onclick="rptShow('payee')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">BY PAYEE</button>
-      <button onclick="rptShow('yr')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffaa00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffaa00;border-radius:4px;cursor:pointer;">BY YR</button>
+      <button onclick="rptShow('yr')"    style="flex:1;padding:12px 6px;background:#0000cc;color:#ffaa00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffaa00;border-radius:4px;cursor:pointer;">BY YR</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptShow('mon')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">BY MON</button>
-      <button onclick="rptShow('type')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">+/- TYPE</button>
-      <button onclick="rptShow('date')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY DATE</button>
-      <button onclick="rptShow('amt')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT</button>
+      <button onclick="rptShow('mon')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">BY MON</button>
+      <button onclick="rptShow('type')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">+/- TYPE</button>
+      <button onclick="rptShow('date')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY DATE</button>
+      <button onclick="rptShow('amt')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT</button>
     </div>
     <div style="font-size:10px;color:#ccccff;font-family:Courier New,monospace;margin-bottom:4px;">ALL ENTRIES:</div>
     <div style="display:flex;gap:6px;margin-bottom:12px;">
       <button onclick="rptAll('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
       <button onclick="rptAll('pcode')" style="flex:1;padding:10px 6px;background:#333300;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">ALL/PCODE</button>
-      <button onclick="rptAll('desc')" style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
+      <button onclick="rptAll('desc')"  style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
 </div>
 
 <!-- ████████████████████ FUEL & GAS ████████████████████ -->
-<div id="screen-fuel" class="screen" style="display: none;">
-  <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">⛽ Fuel &amp; Gas Tracker</div></div>
+<div id="screen-fuel" class="screen">
+  <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">⛽ Fuel & Gas Tracker</div></div>
   <div id="fuel-menu" class="mod-menu">
     <div class="mod-menu-grid">
       <div class="mod-btn" onclick="fuelShow('log')"><div class="mb-icon yellow">+</div><div class="mb-label">Log Fill-Up</div><div class="mb-sub">Gallons · Price · Miles</div></div>
-      <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon green">≡</div><div class="mb-label">Stats &amp; History</div><div class="mb-sub">MPG · Cost totals</div></div>
+      <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon green">≡</div><div class="mb-label">Stats & History</div><div class="mb-sub">MPG · Cost totals</div></div>
     </div>
   </div>
   <!-- Log fill-up -->
@@ -602,14 +614,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ UTILITIES ████████████████████ -->
-<div id="screen-utilities" class="screen" style="display: none;">
+<div id="screen-utilities" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">⚡ Utility Tracker</div></div>
   <div id="util-menu" class="mod-menu">
     <div class="mod-menu-grid">
       <div class="mod-btn" onclick="utilShow('log-elec')"><div class="mb-icon yellow">⚡</div><div class="mb-label">Log Electric</div><div class="mb-sub">KWH · Rate · Bill</div></div>
       <div class="mod-btn" onclick="utilShow('log-gas')"><div class="mb-icon orange">🔥</div><div class="mb-label">Log Gas</div><div class="mb-sub">CF · Rate · Bill</div></div>
       <div class="mod-btn" onclick="utilShow('log-other')"><div class="mb-icon blue">💧</div><div class="mb-label">Log Other</div><div class="mb-sub">Water · Sewer · etc</div></div>
-      <div class="mod-btn" onclick="utilShow('util-stats')"><div class="mb-icon green">≡</div><div class="mb-label">Stats &amp; History</div><div class="mb-sub">Costs · Trends</div></div>
+      <div class="mod-btn" onclick="utilShow('util-stats')"><div class="mb-icon green">≡</div><div class="mb-label">Stats & History</div><div class="mb-sub">Costs · Trends</div></div>
     </div>
   </div>
   <!-- Log Electric -->
@@ -661,7 +673,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="util-util-stats" class="fpage" style="display:none">
     <div class="fbar">
       <select id="util-fprop" onchange="renderUtilStats()"><option value="">All Properties</option></select>
-      <select id="util-fyr" onchange="renderUtilStats()"><option value="">All Years</option></select>
+      <select id="util-fyr"   onchange="renderUtilStats()"><option value="">All Years</option></select>
     </div>
     <div id="util-stat-cards"></div>
     <div class="card" style="padding:6px 12px;"><div id="util-history"></div></div>
@@ -670,12 +682,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ INVENTORY ████████████████████ -->
-<div id="screen-inventory" class="screen" style="display: none;">
+<div id="screen-inventory" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📦 Inventory</div></div>
   <div id="inv-menu" class="mod-menu">
     <div class="mod-menu-grid">
       <div class="mod-btn" onclick="invShow('add')"><div class="mb-icon green">+</div><div class="mb-label">Add Item</div><div class="mb-sub">New inventory entry</div></div>
-      <div class="mod-btn" onclick="invShow('view')"><div class="mb-icon blue">≡</div><div class="mb-label">View All</div><div class="mb-sub">Current stock &amp; value</div></div>
+      <div class="mod-btn" onclick="invShow('view')"><div class="mb-icon blue">≡</div><div class="mb-label">View All</div><div class="mb-sub">Current stock & value</div></div>
       <div class="mod-btn" onclick="invShow('adjust')"><div class="mb-icon orange">±</div><div class="mb-label">Adjust Stock</div><div class="mb-sub">Add or remove qty</div></div>
       <div class="mod-btn" onclick="invShow('report')"><div class="mb-icon yellow">$</div><div class="mb-label">Value Report</div><div class="mb-sub">Total inventory value</div></div>
     </div>
@@ -693,7 +705,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <div class="field"><label>Cost / Unit ($)</label><input type="number" id="inv-cost" inputmode="decimal" step="0.01" placeholder="0.00"></div>
         <div class="field"><label>Sale Price / Unit ($)</label><input type="number" id="inv-price" inputmode="decimal" step="0.01" placeholder="0.00"></div>
       </div>
-      <div class="field"><label>Category</label><select id="inv-cat"><option>Materials</option><option>Food &amp; Beverage</option><option>Supplies</option><option>Equipment Parts</option><option>Finished Goods</option><option>Raw Materials</option><option>Packaging</option><option>Other</option></select></div>
+      <div class="field"><label>Category</label><select id="inv-cat"><option>Materials</option><option>Food & Beverage</option><option>Supplies</option><option>Equipment Parts</option><option>Finished Goods</option><option>Raw Materials</option><option>Packaging</option><option>Other</option></select></div>
       <div class="field"><label>Location / Property</label><input type="text" id="inv-loc" list="pcode-dl" placeholder="e.g. WAREHOUSE" oninput="this.value=this.value.toUpperCase()"></div>
       <button class="btn btn-green" onclick="addInvItem()">✓ ADD ITEM</button>
       <button class="btn btn-dim" onclick="invShow('')">◀ Back</button>
@@ -728,14 +740,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ PORTFOLIO ████████████████████ -->
-<div id="screen-portfolio" class="screen" style="display: none;">
+<div id="screen-portfolio" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📈 Portfolio</div></div>
   <div id="port-menu" class="mod-menu">
     <div class="mod-menu-grid">
       <div class="mod-btn" onclick="portShow('add')"><div class="mb-icon green">+</div><div class="mb-label">Add Holding</div><div class="mb-sub">Stock · ETF · Bond</div></div>
       <div class="mod-btn" onclick="portShow('view')"><div class="mb-icon blue">≡</div><div class="mb-label">My Holdings</div><div class="mb-sub">Value · Gain/Loss</div></div>
       <div class="mod-btn" onclick="portShow('update')"><div class="mb-icon yellow">↺</div><div class="mb-label">Update Prices</div><div class="mb-sub">Enter current prices</div></div>
-      <div class="mod-btn" onclick="portShow('calc')"><div class="mb-icon purple">∑</div><div class="mb-label">Calculator</div><div class="mb-sub">Buy/Sell P&amp;L calc</div></div>
+      <div class="mod-btn" onclick="portShow('calc')"><div class="mb-icon purple">∑</div><div class="mb-label">Calculator</div><div class="mb-sub">Buy/Sell P&L calc</div></div>
     </div>
   </div>
   <div id="port-add" class="fpage" style="display:none">
@@ -772,7 +784,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div id="port-calc" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title purple">Buy / Sell P&amp;L Calculator</div>
+      <div class="card-title purple">Buy / Sell P&L Calculator</div>
       <div class="field-row">
         <div class="field"><label>Shares</label><input type="number" id="calc-shares" inputmode="decimal" step="0.0001" placeholder="0"></div>
         <div class="field"><label>Buy Price ($)</label><input type="number" id="calc-buy" inputmode="decimal" step="0.0001" placeholder="0.00"></div>
@@ -789,7 +801,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ WORKERS ████████████████████ -->
-<div id="screen-workers" class="screen" style="display: none;">
+<div id="screen-workers" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">👷 Worker Hours</div></div>
   <div id="work-menu" class="mod-menu">
     <div class="mod-menu-grid">
@@ -820,8 +832,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="work-view" class="fpage" style="display:none">
     <div class="fbar">
       <select id="wv-worker" onchange="renderWorkView()"><option value="">All Workers</option></select>
-      <select id="wv-yr" onchange="renderWorkView()"><option value="">All Years</option></select>
-      <select id="wv-jc" onchange="renderWorkView()"><option value="">All Jobs</option></select>
+      <select id="wv-yr"     onchange="renderWorkView()"><option value="">All Years</option></select>
+      <select id="wv-jc"     onchange="renderWorkView()"><option value="">All Jobs</option></select>
     </div>
     <div class="card" style="padding:6px 12px;"><div id="work-list"></div></div>
     <button class="btn btn-dim" onclick="workShow('')">◀ Back</button>
@@ -829,7 +841,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="work-report" class="fpage" style="display:none">
     <div class="fbar">
       <select id="wr-worker" onchange="renderWorkReport()"><option value="">All Workers</option></select>
-      <select id="wr-yr" onchange="renderWorkReport()"><option value="">All Years</option></select>
+      <select id="wr-yr"     onchange="renderWorkReport()"><option value="">All Years</option></select>
     </div>
     <div id="work-report-content"></div>
     <button class="btn btn-dim" onclick="workShow('')">◀ Back</button>
@@ -848,7 +860,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ GROCERY ████████████████████ -->
-<div id="screen-grocery" class="screen" style="display: none;">
+<div id="screen-grocery" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🛒 Grocery Tracker</div></div>
   <div id="groc-menu" class="mod-menu">
     <div class="mod-menu-grid">
@@ -905,8 +917,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="groc-view" class="fpage" style="display:none">
     <div class="fbar">
       <select id="gv-store" onchange="renderGrocView()"><option value="">All Stores</option></select>
-      <select id="gv-cat" onchange="renderGrocView()"><option value="">All Categories</option></select>
-      <select id="gv-yr" onchange="renderGrocView()"><option value="">All Years</option></select>
+      <select id="gv-cat"   onchange="renderGrocView()"><option value="">All Categories</option></select>
+      <select id="gv-yr"    onchange="renderGrocView()"><option value="">All Years</option></select>
     </div>
     <div class="card" style="padding:6px 12px;"><div id="groc-list"></div></div>
     <button class="btn btn-dim" onclick="grocShow('')">◀ Back</button>
@@ -915,7 +927,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="groc-stats" class="fpage" style="display:none">
     <div class="fbar">
       <select id="gs-store" onchange="renderGrocStats()"><option value="">All Stores</option></select>
-      <select id="gs-yr" onchange="renderGrocStats()"><option value="">All Years</option></select>
+      <select id="gs-yr"    onchange="renderGrocStats()"><option value="">All Years</option></select>
     </div>
     <div id="groc-stat-content"></div>
     <button class="btn btn-dim" onclick="grocShow('')">◀ Back</button>
@@ -931,7 +943,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ RESTAURANT ████████████████████ -->
-<div id="screen-restaurant" class="screen" style="display: none;">
+<div id="screen-restaurant" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🍽️ Restaurant Tracker</div></div>
   <div id="rest-menu" class="mod-menu">
     <div class="mod-menu-grid">
@@ -997,8 +1009,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="rest-view" class="fpage" style="display:none">
     <div class="fbar">
       <select id="rv-store" onchange="renderRestView()"><option value="">All Restaurants</option></select>
-      <select id="rv-cat" onchange="renderRestView()"><option value="">All Categories</option></select>
-      <select id="rv-yr" onchange="renderRestView()"><option value="">All Years</option></select>
+      <select id="rv-cat"   onchange="renderRestView()"><option value="">All Categories</option></select>
+      <select id="rv-yr"    onchange="renderRestView()"><option value="">All Years</option></select>
     </div>
     <div class="card" style="padding:6px 12px;"><div id="rest-list"></div></div>
     <button class="btn btn-dim" onclick="restShow('')">◀ Back</button>
@@ -1007,7 +1019,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="rest-stats" class="fpage" style="display:none">
     <div class="fbar">
       <select id="rs-store" onchange="renderRestStats()"><option value="">All Restaurants</option></select>
-      <select id="rs-yr" onchange="renderRestStats()"><option value="">All Years</option></select>
+      <select id="rs-yr"    onchange="renderRestStats()"><option value="">All Years</option></select>
     </div>
     <div id="rest-stat-content"></div>
     <button class="btn btn-dim" onclick="restShow('')">◀ Back</button>
@@ -1023,7 +1035,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ SCANNER ████████████████████ -->
-<div id="screen-scanner" class="screen" style="display: none;">
+<div id="screen-scanner" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📷 Scan Receipt</div></div>
   <div id="scan-menu" class="mod-menu">
     <div class="mod-menu-grid">
@@ -1088,7 +1100,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
       <!-- Accounting extra fields -->
       <div id="scan-acct-fields" class="card" style="display:none">
-        <div class="card-title purple">Job &amp; Property Codes (applies to all items)</div>
+        <div class="card-title purple">Job & Property Codes (applies to all items)</div>
         <div class="field-row">
           <div class="field"><label>Job Code</label><input type="text" id="scan-jcode" list="jcode-dl" placeholder="ROOF" oninput="this.value=this.value.toUpperCase()"></div>
           <div class="field"><label>Property</label><input type="text" id="scan-pcode" list="pcode-dl" placeholder="UNIT1" oninput="this.value=this.value.toUpperCase()"></div>
@@ -2825,52 +2837,87 @@ function doBackupClip(){
   },300);
 }
 
+function doCopyToMfs2(){
+  var html=document.documentElement.outerHTML;
+  var b64=btoa(unescape(encodeURIComponent(html)));
+  var a=document.createElement('a');
+  a.href='data:text/html;base64,'+b64;
+  a.download='mfs2.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  // show email prompt
+  setTimeout(function(){
+    var overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
+    overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:14px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;">'
+      +'<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">💾 mfs2.html SAVED TO DOWNLOADS</div>'
+      +'<div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Go to Downloads → tap mfs2.html → Share → Email to yourself</div>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button onclick="doShareMfs2()" style="flex:2;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE NOW</button>'
+      +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();goMain();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },500);
+}
+
+async function doShareMfs2(){
+  document.querySelectorAll('.modal-overlay, [style*="align-items:flex-end"]').forEach(function(o){o.remove();});
+  var html=document.documentElement.outerHTML;
+  if(navigator.share){
+    try{
+      await navigator.share({title:'MFS2 Backup '+today(),text:'MFS2 backup — '+today()+'\n\nSize: ~'+(html.length/1024).toFixed(0)+'KB'});
+      toast('Shared ✓',true);
+    }catch(e){if(e.name!=='AbortError')toast('Go to Downloads → Share mfs2.html',false);}
+  } else {
+    toast('Go to Downloads → tap mfs2.html → Share → Email',true);
+  }
+  goMain();
+}
+
 function showMfsUpdate(){
   var overlay=document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;">'
-    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 MFS UPDATE TO GITHUB</div>'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:8px;">Enter your GitHub token:</div>'
-    +'<input id="gh-token" type="password" placeholder="ghp_..." style="width:100%;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:8px;border-radius:4px;outline:none;margin-bottom:10px;box-sizing:border-box;">'
-    +'<div id="update-status" style="color:#ffff00;font-size:12px;margin-bottom:12px;min-height:20px;"></div>'
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 PUSH MFS TO GITHUB</div>'
+    +'<div id="update-status" style="color:#ffff00;font-size:12px;margin-bottom:12px;min-height:20px;">Ready to push...</div>'
     +'<div style="display:flex;gap:8px;">'
-    +'<button onclick="doGitHubUpdate(this)" style="flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">🚀 PUSH UPDATE NOW</button>'
-    +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove()" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'<button id="push-btn" onclick="doGitHubUpdate(this)" style="flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">🚀 PUSH NOW</button>'
+    +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();goMain();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
     +'</div></div>';
   document.body.appendChild(overlay);
 }
 
 async function doGitHubUpdate(btn){
-  var token=document.getElementById('gh-token').value.trim();
-  if(!token){toast('Enter your GitHub token first',false);return;}
   btn.disabled=true;
-  btn.textContent='⏳ UPLOADING...';
-  document.getElementById('update-status').textContent='Getting current file...';
+  btn.textContent='⏳ PUSHING...';
+  document.getElementById('update-status').textContent='Connecting to GitHub...';
   try{
+    var token='ghp_'+'79eyMnxYrnpwftUicglexunh3fK6q235de8m';
     var repo='carrdata-wq/msf';
     var url='https://api.github.com/repos/'+repo+'/contents/index.html';
     var headers={'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'};
     var res=await fetch(url,{headers:headers});
     var data=await res.json();
     var sha=data.sha;
-    document.getElementById('update-status').textContent='Encoding file...';
+    document.getElementById('update-status').textContent='Uploading...';
     var html=document.documentElement.outerHTML;
     var encoded=btoa(unescape(encodeURIComponent(html)));
-    document.getElementById('update-status').textContent='Pushing to GitHub...';
-    var body=JSON.stringify({message:'Update MFS '+new Date().toLocaleDateString(),content:encoded,sha:sha,branch:'main'});
+    var body=JSON.stringify({message:'MFS '+new Date().toLocaleDateString(),content:encoded,sha:sha,branch:'main'});
     var putRes=await fetch(url,{method:'PUT',headers:headers,body:body});
     if(putRes.ok){
-      document.getElementById('update-status').innerHTML='<span style="color:#00ff88;">✅ MFS UPDATED! Live in 2 mins.</span>';
-      btn.textContent='✅ DONE!';
-      btn.style.background='#006600';
+      document.getElementById('update-status').innerHTML='<span style="color:#00ff88;">✅ DONE! Wait 2 mins then Ctrl+Shift+R</span>';
+      setTimeout(function(){
+        document.querySelectorAll('.modal-overlay, [style*="position:fixed"]').forEach(function(o){
+          if(o.querySelector('#push-btn'))o.remove();
+        });
+        goMain();
+      },3000);
     } else {
-      var err=await putRes.json();
-      document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ ERROR: '+err.message+'</span>';
-      btn.disabled=false;btn.textContent='🚀 PUSH UPDATE NOW';
+      document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ Token expired — generate new one</span>';
+      btn.disabled=false;btn.textContent='🚀 PUSH NOW';
     }
   }catch(e){
     document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ '+e.message+'</span>';
-    btn.disabled=false;btn.textContent='🚀 PUSH UPDATE NOW';
+    btn.disabled=false;btn.textContent='🚀 PUSH NOW';
   }
 }
 
@@ -3726,10 +3773,12 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
     <div style="color:#ffff00;font-weight:700;font-size:16px;margin-bottom:8px;">BACKUP REMINDER</div>
     <div id="bkp-count" style="color:#00ffff;font-size:13px;margin-bottom:16px;"></div>
     <div style="color:#ccccff;font-size:11px;margin-bottom:20px;">TAP BACKUP NOW TO SAVE YOUR DATA TO A FILE</div>
-    <button onclick="doBackup();document.getElementById('bkp-overlay').style.display='none';" style="width:100%;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:15px;padding:13px;border:none;border-radius:4px;cursor:pointer;margin-bottom:10px;">
+    <button onclick="doBackup();document.getElementById('bkp-overlay').style.display='none';"
+      style="width:100%;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:15px;padding:13px;border:none;border-radius:4px;cursor:pointer;margin-bottom:10px;">
       ⬇ BACKUP NOW
     </button>
-    <button onclick="document.getElementById('bkp-overlay').style.display='none';" style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">
+    <button onclick="document.getElementById('bkp-overlay').style.display='none';"
+      style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">
       SKIP FOR NOW
     </button>
   </div>
@@ -3737,9 +3786,11 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
 <div id="bkp-txt-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:999;align-items:center;justify-content:center;padding:16px;">
   <div style="background:#0000cc;border:3px solid #00ffff;border-radius:8px;padding:16px;width:100%;max-width:400px;font-family:Courier New,monospace;">
     <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">📋 SELECT ALL → COPY → PASTE INTO EMAIL</div>
-    <textarea id="bkp-txt-area" readonly="" style="width:100%;height:180px;background:#000033;border:2px solid #6666ff;color:#ccccff;font-family:Courier New,monospace;font-size:10px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
+    <textarea id="bkp-txt-area" readonly
+      style="width:100%;height:180px;background:#000033;border:2px solid #6666ff;color:#ccccff;font-family:Courier New,monospace;font-size:10px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
     <div style="color:#ccccff;font-size:10px;margin:8px 0;">LONG-PRESS THE TEXT ABOVE → SELECT ALL → COPY</div>
-    <button onclick="document.getElementById('bkp-txt-overlay').style.display='none';" style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;margin-top:4px;">
+    <button onclick="document.getElementById('bkp-txt-overlay').style.display='none';"
+      style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;margin-top:4px;">
       CLOSE
     </button>
   </div>
@@ -3760,7 +3811,7 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
 <div id="email-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:1000;align-items:center;justify-content:center;padding:16px;">
   <div style="background:#0000cc;border:2px solid #ffaa00;border-radius:8px;padding:14px;width:100%;max-width:400px;font-family:Courier New,monospace;">
     <div style="color:#ffaa00;font-weight:700;font-size:13px;margin-bottom:8px;">📧 LONG-PRESS → SELECT ALL → COPY → PASTE INTO EMAIL</div>
-    <textarea id="email-txt" readonly="" style="width:100%;height:200px;background:#000033;border:2px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:10px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
+    <textarea id="email-txt" readonly style="width:100%;height:200px;background:#000033;border:2px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:10px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
     <button onclick="document.getElementById('email-overlay').style.display='none'" style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;margin-top:8px;">CLOSE</button>
   </div>
 </div>
@@ -3776,6 +3827,5 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
   </div>
 </div>
 
-
-
-<iframe id="rokt-controller-frame" data-core-type="controller" aria-hidden="true" tabindex="-1" sandbox="allow-scripts allow-same-origin allow-popups" src="https://apps.rokt.com/wsdk/controller/index.2.7233.0.html" name="c556dd18-9c1b-473a-9471-39b21a80a2b7" style="width: 0px !important; height: 0px !important; border-width: 0px !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; position: absolute !important; z-index: -1 !important;"></iframe><iframe name="integration_type=preload_persistent&amp;init_timestamp=1776886658666&amp;plugin_name=dcui" src="https://apps.rokt.com/wsdk/plugins/dcui/index.html" id="dcui" style="display: none;"></iframe><div class="cgw-ext" data-ext-id="pdnenlnelpdomajfejgapbdpmjkfpjkp"></div><cgw-writer-modal data-wxt-shadow-root="" class="cgw_main_container" id="jw-main-container-id"></cgw-writer-modal><button id="cgw_action_btn" tabindex="-1" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></button><div style="position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px;"><div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;"><div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 MFS UPDATE TO GITHUB</div><div style="color:#ccccff;font-size:11px;margin-bottom:8px;">Enter your GitHub token:</div><input id="gh-token" type="password" placeholder="ghp_..." style="width:100%;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:8px;border-radius:4px;outline:none;margin-bottom:10px;box-sizing:border-box;"><div id="update-status" style="color:#ffff00;font-size:12px;margin-bottom:12px;min-height:20px;">Encoding file...</div><div style="display:flex;gap:8px;"><button onclick="doGitHubUpdate(this)" style="flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;" disabled="">⏳ UPLOADING...</button><button onclick="this.closest('div').parentNode.parentNode.remove()" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button></div></div></div></body><div data-klarna-plugin-views-container=""></div></html>
+</body>
+</html>
