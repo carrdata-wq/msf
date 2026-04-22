@@ -295,23 +295,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- MFS UPDATE OVERLAY -->
-<div id="mfsupdate-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;">
-    <div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 MFS UPDATE</div>
-    <div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Your live URL:<br><span style="color:#ffff00;">https://carrdata-wq.github.io/msf</span></div>
-    <div style="color:#ccccff;font-size:11px;margin-bottom:8px;">To update GitHub with new code:</div>
-    <div style="background:#000033;border:1px solid #333388;border-radius:4px;padding:10px;font-size:10px;color:#00ffff;margin-bottom:12px;line-height:1.8;">
-      1. Get new mfs1.html from Claude<br>
-      2. Save to Downloads folder<br>
-      3. Run <span style="color:#ffff00;">upload_mfs.ps1</span> on ThinkPad<br>
-      4. Wait 2 mins → live on all devices
-    </div>
-    <div style="color:#ccccff;font-size:11px;margin-bottom:12px;">GitHub repo:<br><span style="color:#ffff00;">github.com/carrdata-wq/msf</span></div>
-    <button onclick="document.getElementById('mfsupdate-overlay').style.display='none'" style="width:100%;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>
-  </div>
-</div>
-
 <!-- FILE MANAGER OVERLAY -->
 <div id="filemgr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;align-items:flex-end;justify-content:center;padding:10px;">
   <div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:14px;width:100%;max-width:420px;font-family:Courier New,monospace;">
@@ -566,10 +549,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptShow('amt')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT</button>
     </div>
     <div style="font-size:10px;color:#ccccff;font-family:Courier New,monospace;margin-bottom:4px;">ALL ENTRIES:</div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;">
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="rptAll('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
       <button onclick="rptAll('pcode')" style="flex:1;padding:10px 6px;background:#333300;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">ALL/PCODE</button>
       <button onclick="rptAll('desc')"  style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
@@ -3298,6 +3284,168 @@ function rptAllFilter(sortBy, pick){
 var _rptPage=0;
 var _rptArr=[];
 var _rptType='';
+
+function rptYearCompare(){
+  loadLog();
+  if(!LOG.length){document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';return;}
+
+  // get all years
+  var yrs=new Set();
+  LOG.forEach(function(e){if(e.date)yrs.add(e.date.slice(0,4));});
+  var yrArr=[...yrs].sort().reverse().slice(0,3); // last 3 years
+
+  // build year data
+  var yrData={};
+  yrArr.forEach(function(y){
+    yrData[y]={inc:0,exp:0,entries:0};
+  });
+  LOG.forEach(function(e){
+    var y=(e.date||'').slice(0,4);
+    if(yrData[y]){
+      yrData[y].entries++;
+      if(e.amt>=0)yrData[y].inc+=e.amt;
+      else yrData[y].exp+=e.amt;
+    }
+  });
+
+  var html='<div style="font-family:Courier New,monospace;">';
+
+  // header
+  html+='<div style="background:#0000aa;border:2px solid #ff88ff;border-radius:6px;padding:10px;margin-bottom:10px;text-align:center;">'
+    +'<div style="color:#ff88ff;font-weight:700;font-size:13px;">📊 YEAR COMPARISON — IRS BALANCE SHEET</div>'
+    +'<div style="color:#ccccff;font-size:10px;">Last '+yrArr.length+' years</div>'
+    +'</div>';
+
+  // comparison table
+  html+='<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ff88ff;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:10px;">SECTION</th>';
+  yrArr.forEach(function(y){
+    html+='<th style="color:#ffff00;padding:6px 4px;text-align:right;border:1px solid #6666ff;font-size:10px;">'+y+'</th>';
+  });
+  html+='</tr>';
+
+  // SECTION A — INCOME
+  html+='<tr style="background:#003300;">'
+    +'<td style="padding:8px 4px;color:#00ff88;font-weight:700;font-size:11px;border:1px solid #6666ff;">A. INCOME</td>';
+  yrArr.forEach(function(y){
+    var incCnt=LOG.filter(function(e){return(e.date||'').slice(0,4)===y&&e.amt>=0;}).length;
+    html+='<td style="padding:8px 4px;color:#00ff88;font-weight:700;text-align:right;border:1px solid #6666ff;">+$'+yrData[y].inc.toFixed(2)+'<br><span style="color:#ccccff;font-size:9px;">'+incCnt+' items</span></td>';
+  });
+  html+='</tr>';
+
+  // SECTION B — EXPENSES
+  html+='<tr style="background:#330000;">'
+    +'<td style="padding:8px 4px;color:#ff6666;font-weight:700;font-size:11px;border:1px solid #6666ff;">B. EXPENSES</td>';
+  yrArr.forEach(function(y){
+    var expCnt=LOG.filter(function(e){return(e.date||'').slice(0,4)===y&&e.amt<0;}).length;
+    html+='<td style="padding:8px 4px;color:#ff6666;font-weight:700;text-align:right;border:1px solid #6666ff;">-$'+Math.abs(yrData[y].exp).toFixed(2)+'<br><span style="color:#ccccff;font-size:9px;">'+expCnt+' items</span></td>';
+  });
+  html+='</tr>';
+
+  // SECTION C — P/L
+  html+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
+    +'<td style="padding:8px 4px;color:#ffff00;font-weight:700;font-size:11px;border:1px solid #ffff00;">C. NET P/L</td>';
+  yrArr.forEach(function(y){
+    var pl=yrData[y].inc+yrData[y].exp;
+    var pc=pl>=0?'#00ffff':'#ff6666';
+    var pct=yrData[y].inc>0?((pl/yrData[y].inc)*100).toFixed(1):'0.0';
+    html+='<td style="padding:8px 4px;font-weight:700;text-align:right;border:1px solid #ffff00;color:'+pc+';">'+(pl>=0?'+':'-')+'$'+Math.abs(pl).toFixed(2)+'<br><span style="font-size:9px;">'+pct+'%</span></td>';
+  });
+  html+='</tr>';
+
+  // ENTRIES COUNT
+  html+='<tr style="background:#000044;">'
+    +'<td style="padding:6px 4px;color:#ccccff;font-size:10px;border:1px solid #6666ff;">ENTRIES</td>';
+  yrArr.forEach(function(y){
+    var pl=yrData[y].inc+yrData[y].exp;
+    var expPct=yrData[y].inc>0?((Math.abs(yrData[y].exp)/yrData[y].inc)*100).toFixed(0):'0';
+    html+='<td style="padding:6px 4px;color:#ccccff;text-align:right;font-size:10px;border:1px solid #6666ff;">'+yrData[y].entries+'<br><span style="font-size:9px;color:#ffaa00;">'+expPct+'% exp</span></td>';
+  });
+  html+='</tr>';
+
+  html+='</table>';
+
+  // year over year change
+  if(yrArr.length>=2){
+    html+='<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-top:10px;">'
+      +'<div style="color:#ff88ff;font-weight:700;font-size:11px;margin-bottom:6px;">YEAR OVER YEAR CHANGE</div>';
+    for(var i=0;i<yrArr.length-1;i++){
+      var y1=yrArr[i];var y2=yrArr[i+1];
+      var pl1=yrData[y1].inc+yrData[y1].exp;
+      var pl2=yrData[y2].inc+yrData[y2].exp;
+      var diff=pl1-pl2;
+      var pct=pl2!==0?((diff/Math.abs(pl2))*100).toFixed(1):'—';
+      var dc=diff>=0?'#00ff88':'#ff6666';
+      html+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #333388;">'
+        +'<span style="color:#ccccff;font-size:11px;">'+y2+' → '+y1+'</span>'
+        +'<span style="color:'+dc+';font-weight:700;font-size:11px;">'+(diff>=0?'+':'-')+'$'+Math.abs(diff).toFixed(2)+' ('+pct+'%)</span>'
+        +'</div>';
+    }
+    html+='</div>';
+  }
+
+  // DESC BREAKDOWN BY YEAR
+  html+='<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-top:10px;">'
+    +'<div style="color:#ff88ff;font-weight:700;font-size:11px;margin-bottom:8px;">DESC BREAKDOWN BY YEAR</div>';
+
+  // get all descs
+  var descMap={};
+  LOG.forEach(function(e){
+    var y=(e.date||'').slice(0,4);
+    if(!yrArr.includes(y))return;
+    var d=e.desc||'?';
+    if(!descMap[d])descMap[d]={};
+    if(!descMap[d][y])descMap[d][y]=0;
+    descMap[d][y]+=e.amt;
+  });
+
+  // sort by total abs value
+  var descArr=Object.keys(descMap).map(function(d){
+    var tot=0;
+    Object.values(descMap[d]).forEach(function(v){tot+=Math.abs(v);});
+    return{desc:d,total:tot};
+  });
+  descArr.sort(function(a,b){return b.total-a.total;});
+
+  // table header
+  html+='<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:1px solid #6666ff;font-size:9px;">DESC</th>';
+  yrArr.forEach(function(y){
+    html+='<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #6666ff;font-size:9px;">'+y+'</th>';
+  });
+  html+='<th style="color:#ff88ff;padding:4px 3px;text-align:right;border:1px solid #6666ff;font-size:9px;">CHG%</th>';
+  html+='</tr>';
+
+  descArr.forEach(function(item,idx){
+    var bg=idx%2===0?'background:#00008a':'background:#000077';
+    html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
+      +'<td style="padding:4px 3px;color:#ffff00;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(item.desc,14)+'</td>';
+    yrArr.forEach(function(y){
+      var v=descMap[item.desc][y]||0;
+      var vc=v>=0?'#00ffff':'#ff6666';
+      html+='<td style="padding:4px 3px;text-align:right;font-size:10px;color:'+vc+';font-weight:700;">'+(v!==0?(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(0):'—')+'</td>';
+    });
+    // pct change newest vs oldest available year
+    var vals=yrArr.map(function(y){return descMap[item.desc][y]||0;}).filter(function(v){return v!==0;});
+    var pctHtml='—';
+    if(vals.length>=2){
+      var newest=vals[0];var oldest=vals[vals.length-1];
+      var pct=oldest!==0?((newest-oldest)/Math.abs(oldest)*100).toFixed(0):'—';
+      var pc=parseFloat(pct)>=0?'#00ff88':'#ff6666';
+      pctHtml='<span style="color:'+pc+';font-weight:700;">'+(parseFloat(pct)>=0?'+':'')+pct+'%</span>';
+    }
+    html+='<td style="padding:4px 3px;text-align:right;font-size:10px;">'+pctHtml+'</td>';
+    html+='</tr>';
+  });
+
+  html+='</table></div>';
+
+  html+='</div>';
+  document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
+}
 
 function rptShow(type){
   loadLog();
