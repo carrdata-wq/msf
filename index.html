@@ -7,12 +7,31 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MFS">
-<title>MFS — Master Financial System</title>
-<link rel="manifest" href="data:application/json;charset=utf-8,{&quot;name&quot;:&quot;Master Financial System&quot;,&quot;short_name&quot;:&quot;MFS&quot;,&quot;description&quot;:&quot;Professional Accounting &amp; Financial Tracking&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230000cc&quot;,&quot;theme_color&quot;:&quot;%230000cc&quot;,&quot;orientation&quot;:&quot;any&quot;}">
 <meta name="theme-color" content="#0000cc">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MFS">
+<title>MFS — Master Financial System</title>
+<link rel="manifest" href="data:application/json;charset=utf-8,{&quot;name&quot;:&quot;Master Financial System&quot;,&quot;short_name&quot;:&quot;MFS&quot;,&quot;description&quot;:&quot;Professional Accounting &amp; Financial Tracking&quot;,&quot;start_url&quot;:&quot;https://carrdata-wq.github.io/msf/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230000cc&quot;,&quot;theme_color&quot;:&quot;%230000cc&quot;,&quot;orientation&quot;:&quot;any&quot;}">
+<script>
+var deferredPrompt;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferredPrompt=e;
+  var btn=document.getElementById('pwa-install-btn');
+  if(btn)btn.style.display='inline-block';
+});
+function doInstallPWA(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(r){
+      if(r.outcome==='accepted')toast('MFS installed on home screen ✓',true);
+      deferredPrompt=null;
+      var btn=document.getElementById('pwa-install-btn');
+      if(btn)btn.style.display='none';
+    });
+  } else {
+    toast('Tap 3 dots → Add to Home Screen',true);
+  }
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
 <style>
@@ -245,6 +264,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <button class="foot-btn" onclick="doExportCSV()" style="color:#00ff88;border-color:#00ff88;">📄 CSV</button>
     <button class="foot-btn" onclick="exportMasters()" style="color:#ffaa00;border-color:#ffaa00;">⬇ Masters</button>
     <button class="foot-btn" onclick="window.close()" style="color:#ff6666;border-color:#ff6666;">✕ EXIT</button>
+  </div>
+  <div style="padding:6px 10px;">
+    <button id="pwa-install-btn" onclick="doInstallPWA()" style="display:none;width:100%;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:none;border-radius:6px;cursor:pointer;">📱 INSTALL MFS ON HOME SCREEN</button>
   </div>
 </div>
 
