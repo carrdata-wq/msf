@@ -2956,7 +2956,175 @@ function copyFileData(fn){
 }
 
 function doBankImport(){
-  toast('Bank Import — upload your Byline CSV file to load',true);
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">🏦 BYLINE BANK CSV IMPORT</div>'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Select your Byline AccountHistory.csv file:</div>'
+    +'<input type="file" id="bank-csv-input" accept=".csv" style="width:100%;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:8px;border-radius:4px;margin-bottom:10px;box-sizing:border-box;">'
+    +'<div id="bank-status" style="color:#ffff00;font-size:11px;margin-bottom:10px;min-height:16px;"></div>'
+    +'<div id="bank-preview" style="max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="bank-import-btn" onclick="doBankImportConfirm()" style="display:none;flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">✅ IMPORT ALL</button>'
+    +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();goMain();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('bank-csv-input').addEventListener('change',function(e){
+    doBankCSVPreview(e.target.files[0]);
+  });
+}
+
+var _bankRows=[];
+
+function doBankCSVPreview(file){
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.split('\n');
+    _bankRows=[];
+    var skipped=0;
+    for(var i=1;i<lines.length;i++){
+      var line=lines[i].trim();
+      if(!line)continue;
+      // parse CSV row
+      var cols=[];
+      var inq=false;var cur='';
+      for(var c=0;c<line.length;c++){
+        if(line[c]==='"'){inq=!inq;}
+        else if(line[c]===','&&!inq){cols.push(cur.trim());cur='';}
+        else cur+=line[c];
+      }
+      cols.push(cur.trim());
+      var dateStr=cols[1]||'';
+      var desc=cols[3]||'';
+      var debit=parseFloat(cols[4])||0;
+      var credit=parseFloat(cols[5])||0;
+      var status=cols[6]||'';
+      if(!dateStr||!desc)continue;
+      // skip pending
+      if(status.toLowerCase()==='pending'){skipped++;continue;}
+      // parse date MM/DD/YYYY to YYYY-MM-DD
+      var dp=dateStr.split('/');
+      if(dp.length!==3)continue;
+      var isoDate=dp[2]+'-'+('0'+dp[0]).slice(-2)+'-'+('0'+dp[1]).slice(-2);
+      // determine amount — debit=expense, credit=income
+      var amt=credit>0?credit:-debit;
+      if(amt===0)continue;
+      // auto-match payee/pcode/desc
+      var match=bankAutoMatch(desc);
+      _bankRows.push({
+        date:isoDate,
+        rawDesc:desc,
+        payee:match.payee,
+        pcode:match.pcode,
+        desc:match.desc,
+        amt:amt
+      });
+    }
+    // show preview
+    var html='<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
+    html+='<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+      +'<tr style="background:#0000aa;">'
+      +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">DATE</th>'
+      +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PAYEE</th>'
+      +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PCO</th>'
+      +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;text-align:right;">AMT</th>'
+      +'</tr>';
+    var preview=_bankRows.slice(0,10);
+    preview.forEach(function(r){
+      var ac=r.amt>=0?'#00ffff':'#ff6666';
+      html+='<tr style="background:#00008a;">'
+        +'<td style="padding:3px;color:#ccccff;border:1px solid #333388;font-size:9px;">'+r.date.slice(5)+'</td>'
+        +'<td style="padding:3px;color:#ffff00;border:1px solid #333388;font-size:9px;">'+trunc(r.payee,14)+'</td>'
+        +'<td style="padding:3px;color:#00ffff;border:1px solid #333388;font-size:9px;">'+r.pcode+'</td>'
+        +'<td style="padding:3px;text-align:right;border:1px solid #333388;font-size:9px;color:'+ac+';">'+(r.amt>=0?'+':'-')+'$'+Math.abs(r.amt).toFixed(2)+'</td>'
+        +'</tr>';
+    });
+    if(_bankRows.length>10)html+='<tr><td colspan="4" style="color:#ccccff;padding:3px;font-size:9px;text-align:center;">...and '+(_bankRows.length-10)+' more</td></tr>';
+    html+='</table>';
+    document.getElementById('bank-preview').innerHTML=html;
+    document.getElementById('bank-status').innerHTML='<span style="color:#00ff88;">✓ Ready to import '+_bankRows.length+' entries</span>';
+    document.getElementById('bank-import-btn').style.display='block';
+  };
+  reader.readAsText(file);
+}
+
+function bankAutoMatch(desc){
+  var d=desc.toUpperCase();
+  // payee auto-match rules
+  var rules=[
+    {k:'MCDONALD',payee:'MCDONALDS',pcode:'ROOF',desc:'JOB FOOD COST'},
+    {k:'THORNTON',payee:'THORNTONS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'SHELL',payee:'SHELL GAS STATION',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'EAGLE GAS',payee:'EAGLE GAS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'BP#',payee:'BP GAS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'SPEEDWAY',payee:'SPEEDWAY',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'CASEY',payee:'CASEYS GAS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'PILOT',payee:'PILOT GAS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'SHEETZ',payee:'SHEETZ GAS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'EXXON',payee:'EXXON GAS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'7-ELEVEN',payee:'7-ELEVEN',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:"MARIANO'S FUEL",payee:'MARIANOS GAS',pcode:'ROOF',desc:'TRUCK GAS'},
+    {k:'FAIRPLAY',payee:'FAIRPLAY FOODS',pcode:'10629',desc:'FOOD GROCERY'},
+    {k:'ALDI',payee:'ALDI GROCERY',pcode:'10629',desc:'FOOD GROCERY'},
+    {k:'ORIGINAL PANCAKE',payee:'ORIGINAL PANCAKE HOUSE',pcode:'ROOF',desc:'JOB FOOD COST'},
+    {k:'DAS DUTCHMAN',payee:'DAS ESSESSENHAUS',pcode:'ROOF',desc:'JOB FOOD COST'},
+    {k:'MENARDS',payee:'MENARDS STORE',pcode:'10735',desc:'HARDWARE EXPENSE'},
+    {k:'RAY\'S ROOFING',payee:'RAYS ROOFING SUPPLY',pcode:'ROOF',desc:'ROOFING SUPPLIES'},
+    {k:'ABC SUPPLY',payee:'ABC SUPPLY',pcode:'ROOF',desc:'ROOFING SUPPLIES'},
+    {k:'FEDEX',payee:'FEDEX',pcode:'ROOF',desc:'OFFICE SUPPLIES'},
+    {k:'AMAZON',payee:'AMAZON',pcode:'ROOF',desc:'HARDWARE EXPENSE'},
+    {k:'EBAY',payee:'EBAY',pcode:'ROOF',desc:'HARDWARE EXPENSE'},
+    {k:'SCHWAB',payee:'SCHWAB BROKERAGE',pcode:'TRADE',desc:'TRADE INVESTMENT'},
+    {k:'ZELLE',payee:extractZelleName(desc),pcode:'ROOF',desc:'SUBCONTRACTOR COST'},
+    {k:'TRISTATE DISPOSA',payee:'TRISTATE DISPOSAL',pcode:'10735',desc:'TRASH EXPENSE'},
+    {k:'COMED',payee:'COMED',pcode:'10629',desc:'ELECTRIC CF'},
+    {k:'COMMONWEALTH',payee:'PEOPLES GAS',pcode:'10629',desc:'GAS CF'},
+    {k:'CRICKET WIRELESS',payee:'CRICKET WIRELESS',pcode:'ROOF',desc:'PHONE EXPENSE'},
+    {k:'BEVERLY AREA',payee:'BEVERLY AREA PLANNING',pcode:'ROOF',desc:'ADVERTISING EXPENSE'},
+    {k:'BEVERLY REVIEW',payee:'THE BEVERLY REVIEW',pcode:'ROOF',desc:'ADVERTISING EXPENSE'},
+    {k:'CLAUDE.AI',payee:'CLAUDE AI',pcode:'ROOF',desc:'OFFICE SUPPLIES'},
+    {k:'DEPOSIT',payee:'DEPOSIT',pcode:'ROOF',desc:'INCOME'},
+    {k:'A2A PAYMENT CREDIT',payee:extractZelleName(desc),pcode:'ROOF',desc:'INCOME'},
+  ];
+  for(var i=0;i<rules.length;i++){
+    if(d.indexOf(rules[i].k.toUpperCase())>=0){
+      var payee=rules[i].payee;
+      if(typeof payee==='function')payee=payee();
+      return{payee:payee,pcode:rules[i].pcode,desc:rules[i].desc};
+    }
+  }
+  // default — clean up description
+  var cleanDesc=desc.replace(/POS PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/MERCHANT PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/XXXXXXXXXXXX\w+\s+SEQ\s+#\s+\w+/,'').trim();
+  cleanDesc=cleanDesc.slice(0,30).toUpperCase();
+  return{payee:cleanDesc||'UNKNOWN',pcode:'ROOF',desc:'EXPENSE'};
+}
+
+function extractZelleName(desc){
+  var m=desc.match(/ZELLE\s+([A-Z\s]+?)(?:\s+BYLINE|\s+$)/i);
+  if(m)return m[1].trim().toUpperCase();
+  return 'ZELLE TRANSFER';
+}
+
+function doBankImportConfirm(){
+  if(!_bankRows.length)return;
+  loadLog();
+  var added=0;
+  _bankRows.forEach(function(r){
+    LOG.unshift({
+      id:Date.now()+Math.random(),
+      payee:r.payee,
+      pcode:r.pcode,
+      desc:r.desc,
+      date:r.date,
+      amt:r.amt
+    });
+    added++;
+  });
+  saveLog();
+  document.querySelectorAll('div[style*="position:fixed"]').forEach(function(o){o.remove();});
+  toast(added+' entries imported from Byline Bank ✓',true);
+  goMain();
 }
 function doBackup() {
   var mxLog=[];
