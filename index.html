@@ -4100,8 +4100,10 @@ function doSave(){
   amt=isIncome?Math.abs(amt):-Math.abs(amt);
   var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt};
   if(_editId!==null){
-    var oldPayee=entry.payee;
-    for(var i=0;i<LOG.length;i++){if(LOG[i].id===_editId){LOG[i]=entry;break;}}
+    // get original payee BEFORE overwriting
+    var origPayee='';
+    for(var i=0;i<LOG.length;i++){if(LOG[i].id===_editId){origPayee=LOG[i].payee;LOG[i]=entry;break;}}
+    entry.id=_editId; // keep same id
     _editId=null;
     saveLog();saveDatePref();
     try{localStorage.setItem('mx_last_pcode',pcode);localStorage.setItem('mx_last_desc',desc);}catch(e){}
@@ -4111,10 +4113,10 @@ function doSave(){
     document.getElementById('p-amt').value='';
     document.getElementById('search').value='';
     renderLog();
-    // count matching payee entries
-    var matchCount=LOG.filter(function(r){return r.payee===oldPayee&&r.id!==entry.id;}).length;
+    // find other entries with same payee that have different pcode/desc
+    var matchCount=LOG.filter(function(r){return r.payee===payee&&(r.pcode!==pcode||r.desc!==desc);}).length;
     if(matchCount>0){
-      showGlobalReplace(oldPayee,pcode,desc,matchCount);
+      showGlobalReplace(payee,pcode,desc,matchCount);
     } else {
       document.getElementById('hint').textContent='SAVED ✔ — TYPE NEXT PAYEE';
     }
