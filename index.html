@@ -4232,8 +4232,12 @@ function renderLog(){
 }
 function ledPage(p){_ledPage=p;renderLog();}
 function toggleRow(id){_openId=(_openId===id)?null:id;renderLog();}
+var _grPayee='';var _grPcode='';var _grDesc='';
+
 function showGlobalReplace(payee,pcode,desc,cnt){
+  _grPayee=payee;_grPcode=pcode;_grDesc=desc;
   var overlay=document.createElement('div');
+  overlay.id='gr-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 GLOBAL REPLACE</div>'
@@ -4241,27 +4245,26 @@ function showGlobalReplace(payee,pcode,desc,cnt){
     +'<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:6px;">'+payee+'</div>'
     +'<div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Apply <span style="color:#00ff88;">'+pcode+' / '+desc+'</span> to ALL?</div>'
     +'<div style="display:flex;gap:10px;">'
-    +'<button onclick="doGlobalReplace(\''+payee.replace(/'/g,"\\'")+"','"+pcode.replace(/'/g,"\\'")+"','"+desc.replace(/'/g,"\\'")+'\',this)" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
-    +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
+    +'<button onclick="doGlobalReplace()" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
+    +'<button onclick="document.getElementById(\'gr-overlay\').remove();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
     +'</div></div>';
   document.body.appendChild(overlay);
 }
 
-function doGlobalReplace(payee,pcode,desc,btn){
+function doGlobalReplace(){
   loadLog();
   var cnt=0;
   for(var i=0;i<LOG.length;i++){
-    if(LOG[i].payee===payee){
-      LOG[i].pcode=pcode;
-      LOG[i].desc=desc;
+    if(LOG[i].payee===_grPayee){
+      LOG[i].pcode=_grPcode;
+      LOG[i].desc=_grDesc;
       cnt++;
     }
   }
   saveLog();renderLog();
-  document.querySelectorAll('div[style*="position:fixed"]').forEach(function(o){
-    if(o.querySelector('button'))o.remove();
-  });
-  toast(cnt+' entries updated for '+payee+' ✓',true);
+  var o=document.getElementById('gr-overlay');
+  if(o)o.remove();
+  toast(cnt+' entries updated for '+_grPayee+' ✓',true);
 }
 
 function editLog(id){
