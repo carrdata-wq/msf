@@ -516,6 +516,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:center;">PCO</th>
         <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:right;">AMT</th>
         <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:center;">•••</th>
+        <th style="background:#0000cc;color:#ff88ff;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:right;">#</th>
       </tr></thead>
       <tbody id="loglist"></tbody>
     </table>
@@ -2103,26 +2104,126 @@ function renderGrocStats() {
   const fy=document.getElementById('gs-yr').value;
   const items=(d.groc.items||[]).filter(i=>(!fs||i.store===fs)&&(!fy||i.date.startsWith(fy)));
   if(!items.length){document.getElementById('groc-stat-content').innerHTML='<div class="card" style="color:var(--dim);font-size:12px;">No data.</div>';return;}
+  
   const total=items.reduce((s,i)=>s+i.total,0);
   const totalTax=items.reduce((s,i)=>s+(i.tax||0),0);
-  const byStore={},byCat={};
+  const totalCal=items.reduce((s,i)=>s+(i.cal||0),0);
+  const months=[...new Set(items.map(i=>i.date.slice(0,7)))].sort();
+  const monthCount=months.length||1;
+
+  // item counts
+  const itemCounts={};
   for(const i of items){
-    if(i.store){byStore[i.store]=(byStore[i.store]||0)+i.total;}
-    byCat[i.cat]=(byCat[i.cat]||0)+i.total;
+    itemCounts[i.item]=(itemCounts[i.item]||{cnt:0,total:0,cal:0});
+    itemCounts[i.item].cnt+=(i.qty||1);
+    itemCounts[i.item].total+=i.total;
+    itemCounts[i.item].cal+=(i.cal||0);
   }
-  const months=[...new Set(items.map(i=>i.date.slice(0,7)))].length||1;
-  let h=`<div class="stat-grid c3" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Total Spent</div><div class="stat-val red">${fmt(total)}</div></div>
-    <div class="stat"><div class="stat-label">Total Tax</div><div class="stat-val yellow">${fmt(totalTax)}</div></div>
-    <div class="stat"><div class="stat-label">Avg/Month</div><div class="stat-val orange">${fmt(total/months)}</div></div>
+
+  // by store
+  const byStore={};
+  for(const i of items){
+    if(!byStore[i.store])byStore[i.store]={total:0,tax:0,cnt:0};
+    byStore[i.store].total+=i.total;
+    byStore[i.store].tax+=(i.tax||0);
+    byStore[i.store].cnt++;
+  }
+
+  // month over month
+  const byMonth={};
+  for(const i of items){
+    const m=i.date.slice(0,7);
+    byMonth[m]=(byMonth[m]||0)+i.total;
+  }
+  const momKeys=Object.keys(byMonth).sort();
+
+  let h='';
+
+  // SUMMARY
+  h+=`<div style="background:#000044;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
+    <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">🛒 GROCERY SUMMARY</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
+        <div style="color:#ccccff;font-size:9px;">TOTAL SPENT</div>
+        <div style="color:#ff6666;font-weight:700;font-size:14px;">$${total.toFixed(2)}</div>
+      </div>
+      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
+        <div style="color:#ccccff;font-size:9px;">AVG/MONTH</div>
+        <div style="color:#ffaa00;font-weight:700;font-size:14px;">$${(total/monthCount).toFixed(2)}</div>
+      </div>
+      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
+        <div style="color:#ccccff;font-size:9px;">TOTAL TAX PAID</div>
+        <div style="color:#ff6666;font-weight:700;font-size:14px;">$${totalTax.toFixed(2)}</div>
+      </div>
+      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
+        <div style="color:#ccccff;font-size:9px;">TOTAL CALORIES</div>
+        <div style="color:#ffff00;font-weight:700;font-size:14px;">${totalCal.toLocaleString()}</div>
+      </div>
+    </div>
   </div>`;
-  h+=`<div class="card"><div class="card-title yellow">BY STORE</div>`;
-  for(const[s,v]of Object.entries(byStore).sort((a,b)=>b[1]-a[1]))
-    h+=`<div class="rep-row"><span class="rep-cat">${esc(s)}</span><span class="rep-amt yellow">${fmt(v)}</span></div>`;
-  h+=`</div><div class="card"><div class="card-title green">BY CATEGORY</div>`;
-  for(const[c,v]of Object.entries(byCat).sort((a,b)=>b[1]-a[1]))
-    h+=`<div class="rep-row"><span class="rep-cat">${esc(c)}</span><span class="rep-amt green">${fmt(v)}</span></div>`;
-  h+=`</div>`;
+
+  // BY STORE with tax rate
+  h+=`<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
+    <div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">BY STORE — TAX ANALYSIS</div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px;">
+    <tr style="background:#0000cc;">
+      <th style="color:#ffff00;padding:4px;text-align:left;border:1px solid #333388;">STORE</th>
+      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">SPENT</th>
+      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">TAX</th>
+      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">RATE</th>
+      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">CNT</th>
+    </tr>`;
+  Object.entries(byStore).sort((a,b)=>b[1].total-a[1].total).forEach(([s,v])=>{
+    var rate=v.total>0?((v.tax/(v.total-v.tax))*100).toFixed(1):'0.0';
+    var rc=parseFloat(rate)===0?'#00ff88':parseFloat(rate)>8?'#ff6666':'#ffaa00';
+    h+=`<tr style="background:#00008a;">
+      <td style="padding:3px 4px;color:#ffff00;border:1px solid #333388;font-size:9px;">${esc(s).slice(0,16)}</td>
+      <td style="padding:3px 4px;color:#ff6666;text-align:right;border:1px solid #333388;">$${v.total.toFixed(0)}</td>
+      <td style="padding:3px 4px;color:#ffaa00;text-align:right;border:1px solid #333388;">$${v.tax.toFixed(2)}</td>
+      <td style="padding:3px 4px;text-align:right;border:1px solid #333388;color:${rc};font-weight:700;">${rate}%</td>
+      <td style="padding:3px 4px;color:#ccccff;text-align:right;border:1px solid #333388;">${v.cnt}</td>
+    </tr>`;
+  });
+  h+=`</table></div>`;
+
+  // MONTH OVER MONTH
+  if(momKeys.length>1){
+    h+=`<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
+      <div style="color:#ff88ff;font-weight:700;font-size:12px;margin-bottom:6px;">MONTH OVER MONTH COST</div>`;
+    momKeys.forEach((m,idx)=>{
+      var v=byMonth[m];
+      var prev=idx>0?byMonth[momKeys[idx-1]]:null;
+      var chg=prev?((v-prev)/prev*100).toFixed(1):null;
+      var cc=chg?parseFloat(chg)>=0?'#ff6666':'#00ff88':'#ccccff';
+      h+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #333388;">
+        <span style="color:#ccccff;font-size:11px;">${m}</span>
+        <span style="color:#ffaa00;font-weight:700;font-size:11px;">$${v.toFixed(2)}</span>
+        ${chg?`<span style="color:${cc};font-size:10px;">${parseFloat(chg)>=0?'+':''}${chg}%</span>`:'<span></span>'}
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+
+  // TOP ITEMS BY COUNT
+  h+=`<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
+    <div style="color:#00ff88;font-weight:700;font-size:12px;margin-bottom:6px;">TOP ITEMS — COUNT · COST · CAL</div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px;">
+    <tr style="background:#0000cc;">
+      <th style="color:#ffff00;padding:4px;text-align:left;border:1px solid #333388;">ITEM</th>
+      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">CNT</th>
+      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">TOTAL</th>
+      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">CAL</th>
+    </tr>`;
+  Object.entries(itemCounts).sort((a,b)=>b[1].cnt-a[1].cnt).slice(0,15).forEach(([name,v])=>{
+    h+=`<tr style="background:#00008a;">
+      <td style="padding:3px 4px;color:#ffff00;border:1px solid #333388;font-size:9px;">${esc(name).slice(0,18)}</td>
+      <td style="padding:3px 4px;color:#00ffff;text-align:right;border:1px solid #333388;font-weight:700;">${v.cnt}</td>
+      <td style="padding:3px 4px;color:#ff6666;text-align:right;border:1px solid #333388;">$${v.total.toFixed(2)}</td>
+      <td style="padding:3px 4px;color:#ffaa00;text-align:right;border:1px solid #333388;">${v.cal>0?v.cal:'—'}</td>
+    </tr>`;
+  });
+  h+=`</table></div>`;
+
   document.getElementById('groc-stat-content').innerHTML=h;
 }
 function buildGrocNutrFilters() {
@@ -2328,6 +2429,32 @@ function resetScanSteps() {
 }
 
 // ── STEP 1: Photo taken ──
+function estimateCalories(name){
+  var n=name.toUpperCase();
+  var calMap=[
+    {k:'MILK',cal:150},{k:'BREAD',cal:80},{k:'EGGS',cal:70},
+    {k:'BUTTER',cal:200},{k:'CHEESE',cal:110},{k:'YOGURT',cal:100},
+    {k:'CHICKEN',cal:165},{k:'BEEF',cal:250},{k:'PORK',cal:200},
+    {k:'FISH',cal:130},{k:'SALMON',cal:180},{k:'TUNA',cal:100},
+    {k:'RICE',cal:200},{k:'PASTA',cal:180},{k:'POTATO',cal:130},
+    {k:'APPLE',cal:80},{k:'BANANA',cal:90},{k:'ORANGE',cal:60},
+    {k:'LETTUCE',cal:15},{k:'TOMATO',cal:25},{k:'ONION',cal:40},
+    {k:'CARROT',cal:35},{k:'BROCCOLI',cal:30},{k:'SPINACH',cal:20},
+    {k:'SOUP',cal:150},{k:'CEREAL',cal:120},{k:'OATMEAL',cal:150},
+    {k:'JUICE',cal:120},{k:'SODA',cal:140},{k:'WATER',cal:0},
+    {k:'COFFEE',cal:5},{k:'TEA',cal:2},{k:'BEER',cal:150},
+    {k:'CHIPS',cal:150},{k:'COOKIE',cal:80},{k:'CAKE',cal:350},
+    {k:'ICE CREAM',cal:200},{k:'PIZZA',cal:285},{k:'BURGER',cal:350},
+    {k:'HOT DOG',cal:180},{k:'BACON',cal:130},{k:'SAUSAGE',cal:200},
+    {k:'MAYO',cal:90},{k:'KETCHUP',cal:20},{k:'MUSTARD',cal:10},
+    {k:'OIL',cal:120},{k:'SUGAR',cal:50},{k:'FLOUR',cal:100},
+  ];
+  for(var i=0;i<calMap.length;i++){
+    if(n.indexOf(calMap[i].k)>=0)return calMap[i].cal;
+  }
+  return 0; // unknown
+}
+
 function handleReceiptPhoto(event) {
   const file = event.target.files[0];
   if(!file) return;
@@ -2551,10 +2678,40 @@ function saveAllScanned() {
 
   } else if(route==='grocery') {
     if(!d.groc) d.groc={items:[],stores:[]};
+    var taxRate=p.tax>0&&p.total>0?((p.tax/(p.total-p.tax))*100).toFixed(2):0;
     for(const item of selected) {
-      d.groc.items.push({id:nextId(d.groc.items),store,date,item:item.name,brand:'',cat:'Other',size:'',qty:1,price:item.price,tax:0,total:item.price,cal:0,servings:0,sugar:0,protein:0,carbs:0,fat:0,sodium:0,notes:'via scan'});
+      var cal=estimateCalories(item.name);
+      d.groc.items.push({
+        id:nextId(d.groc.items),
+        store,date,
+        item:item.name,
+        brand:'',cat:'Other',
+        size:'',qty:1,
+        price:item.price,
+        tax:p.tax>0?(item.price*parseFloat(taxRate)/100):0,
+        total:item.price,
+        cal:cal,
+        servings:1,sugar:0,protein:0,carbs:0,fat:0,sodium:0,
+        notes:'via scan · tax '+taxRate+'%'
+      });
     }
     if(store&&!(d.groc.stores||[]).includes(store)){d.groc.stores.push(store);d.groc.stores.sort();}
+    // AUTO-POST TOTAL TO mx_log ACCOUNTING
+    var receiptTotal=p.total||selected.reduce(function(s,i){return s+i.price;},0)+(p.tax||0);
+    loadLog();
+    LOG.unshift({
+      id:Date.now(),
+      payee:store.toUpperCase()||'GROCERY STORE',
+      pcode:'10629',
+      desc:'FOOD GROCERY',
+      date:date,
+      amt:-receiptTotal
+    });
+    saveLog();
+    // show tax rate info
+    if(p.tax>0){
+      toast('Posted $'+receiptTotal.toFixed(2)+' to accounting · Tax rate: '+taxRate+'%',true);
+    }
 
   } else if(route==='restaurant') {
     if(!d.rest) d.rest={items:[],stores:[]};
@@ -4030,18 +4187,19 @@ function renderLog(){
   for(var i=0;i<pageRows.length;i++){
     var e=pageRows[i];var isOpen=(_openId===e.id);
     var rs=(i===0&&_ledPage===0)?'background:#0055ff;border:2px solid #00ffff;':'background:#00008a;border-bottom:1px solid #5555ee;';
-    html+='<tr onclick="toggleRow('+e.id+')" style="cursor:pointer;'+rs+'">'
+    html+='<tr style="cursor:pointer;'+rs+'">'
       +'<td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:11px;">'+fmtDate(e.date)+'</td>'
-      +'<td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,18)+'</td>'
-      +'<td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,16)+'</td>'
-      +'<td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,3)+'</td>'
+      +'<td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,10)+'</td>'
+      +'<td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,8)+'</td>'
+      +'<td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
       +'<td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
-      +'<td style="padding:6px 3px;text-align:center;white-space:nowrap;">'
-      +(isOpen?'<button style="padding:6px 10px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.stopPropagation();delLog('+e.id+')">DEL</button> '
-              +'<button style="padding:6px 10px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.stopPropagation();copyLog('+e.id+')">CPY</button> '
-              +'<button style="padding:6px 10px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.stopPropagation();editLog('+e.id+')">EDT</button>'
-        :'<span style="color:#6666ff;font-size:14px;">&#8942;</span>')
-      +'</td></tr>';
+      +'<td style="padding:3px 2px;text-align:center;white-space:nowrap;">'
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="delLog('+e.id+')">DEL</button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="copyLog('+e.id+')">CPY</button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="editLog('+e.id+')">EDT</button>'
+      +'</td>'
+      +'<td style="padding:6px 3px;color:#ff88ff;font-size:10px;text-align:right;white-space:nowrap;font-weight:700;">'+(start+i+1)+'</td>'
+      +'</tr>';
   }
   tbody.innerHTML=html;
   // pagination controls
