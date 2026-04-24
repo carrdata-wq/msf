@@ -276,6 +276,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
   </div>
+  <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
     <div class="menu-item" onclick="showMfsUpdate()">
       <div class="menu-num">1</div><div class="menu-icon">🔄</div>
@@ -292,6 +293,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffff00;">Copy to mfs2.html</div><div class="ms">Save current version as mfs2 backup</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -312,6 +314,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">📊 More Accounting Tasks</span>
   </div>
+  <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
     <div class="menu-item" onclick="openModule('reports')">
       <div class="menu-num">1</div><div class="menu-icon">📊</div>
@@ -343,6 +346,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml">Portfolio</div><div class="ms">Stocks · ETFs · Bonds · P&L</div></div>
       <div class="menu-arrow">›</div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -1051,10 +1055,20 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <label class="scan-camera-btn" for="receipt-input">
         <div class="sc-icon">📷</div>
         <div class="sc-label" style="color:var(--yellow);font-weight:700;font-size:14px;">TAP TO PHOTO RECEIPT</div>
-        <div class="sc-label">Camera opens automatically · or choose from gallery</div>
+        <div class="sc-label">Camera opens automatically</div>
       </label>
       <input type="file" id="receipt-input" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptPhoto(event)">
-      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:4px;">💡 Lay receipt flat · good light · hold steady</div>
+      
+      <div style="text-align:center;margin:10px 0;color:var(--dim);font-size:12px;">— OR —</div>
+      
+      <label style="display:block;background:#003300;border:2px solid #00ff88;border-radius:8px;padding:14px;text-align:center;cursor:pointer;margin-bottom:8px;" for="receipt-browse-input">
+        <div style="font-size:24px;margin-bottom:4px;">📂</div>
+        <div style="color:#00ff88;font-weight:700;font-size:14px;font-family:Courier New,monospace;">BROWSE FILES</div>
+        <div style="color:#ccccff;font-size:11px;font-family:Courier New,monospace;">Gallery · Downloads · Gmail attachments</div>
+      </label>
+      <input type="file" id="receipt-browse-input" accept="image/*,application/pdf" style="display:none" onchange="handleReceiptPhoto(event)">
+      
+      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:4px;">💡 Forward Ray's email → save image → browse here</div>
     </div>
     <!-- Step 2: OCR Progress -->
     <div id="scan-step-progress" style="display:none">
@@ -2405,7 +2419,7 @@ function renderRestNutrition() {
 
 // Known store routing (built-in defaults)
 const BUILTIN_GROCERY  = ['ALDI','WALMART','WAL-MART','SAMS CLUB','SAM\'S CLUB','KROGER','MARIANO','JEWEL','MEIJER','TARGET','COSTCO','WHOLE FOODS','TRADER JOE','FRESH MARKET','FOOD LION','PUBLIX','HEB','SAFEWAY','ALBERTSONS','SPROUTS','WINCO','SAVE-A-LOT','SAVE A LOT','FAMILY DOLLAR','DOLLAR GENERAL','DOLLAR TREE'];
-const BUILTIN_HARDWARE = ['MENARDS','HOME DEPOT','LOWE\'S','LOWES','ACE HARDWARE','TRUE VALUE','HARBOR FREIGHT','FASTENAL','GRAINGER','84 LUMBER','SHERWIN','SHERWIN-WILLIAMS'];
+const BUILTIN_HARDWARE = ['MENARDS','HOME DEPOT','LOWE\'S','LOWES','ACE HARDWARE','TRUE VALUE','HARBOR FREIGHT','FASTENAL','GRAINGER','84 LUMBER','SHERWIN','SHERWIN-WILLIAMS','RAY\'S ROOFING','RAYS ROOFING','ABC SUPPLY','BEACON ROOFING','GAF','OWENS CORNING','GULFEAGLE','MIDWEST ROOFING'];
 const BUILTIN_RESTAURANT = ['MCDONALD','BURGER KING','SUBWAY','TACO BELL','WENDY','DOMINO','PIZZA HUT','CHIPOTLE','PANERA','STARBUCKS','DUNKIN','KFC','POPEYES','CHICK-FIL','SONIC','DAIRY QUEEN','PANDA EXPRESS','LITTLE CAESARS','PAPA JOHN'];
 
 let _scanParsed = null;
@@ -2535,6 +2549,10 @@ function parseReceiptText(raw) {
   const totm = raw.match(/(?:TOTAL|AMOUNT DUE|BALANCE DUE)\s*[:\-]?\s*\$?\s*(\d+\.\d{2})/i);
   if(totm) total = parseFloat(totm[1]);
 
+  // Tax rate
+  let taxRate = 0;
+  if(tax>0 && total>0) taxRate = ((tax/(total-tax))*100).toFixed(2);
+
   // Items — find lines with a price at the end
   const SKIP = /TOTAL|SUBTOTAL|TAX|CHANGE|CASH|CREDIT|DEBIT|CARD|BALANCE|THANK|WELCOME|STORE|PHONE|FAX|RECEIPT|TRANSACTION|CASHIER|REGISTER|SAVINGS|DISCOUNT|COUPON|MEMBER|REWARD|VISIT|SURVEY|ITEM|COUNT|QTY|PHONE|ADDRESS|^\*+$|APPROVED|AUTHORIZATION|REF\s*#/i;
   const priceRe = /^(.{2,40}?)\s{2,}\$?(\d{1,4}\.\d{2})\s*[TNEFtne]?\s*$/;
@@ -2544,16 +2562,30 @@ function parseReceiptText(raw) {
     if(SKIP.test(line)) continue;
     let m = line.match(priceRe) || line.match(priceRe2);
     if(m) {
-      const name  = m[1].replace(/^\d+\s+/,'').trim();  // remove leading qty
-      const price = parseFloat(m[2]);
+      let rawName = m[1].trim();
+      let price = parseFloat(m[2]);
       if(price<=0||price>5000) continue;
-      if(name.length<2) continue;
-      if(SKIP.test(name)) continue;
-      items.push({ name, price, selected:true });
+      if(rawName.length<2) continue;
+      if(SKIP.test(rawName)) continue;
+
+      // extract quantity from start of name e.g. "2 CHERRY ROLL" or "3 @ 1.99"
+      let qty = 1;
+      let qtyMatch = rawName.match(/^(\d+)\s+(?:@\s*[\d.]+\s+)?(.+)/);
+      if(qtyMatch) {
+        qty = parseInt(qtyMatch[1]);
+        rawName = qtyMatch[2].trim();
+      }
+
+      // clean name
+      const name = rawName.toUpperCase().replace(/[^A-Z0-9\s\-'&.]/g,'').trim();
+      const cal = estimateCalories(name);
+      const unitPrice = qty>1 ? (price/qty) : price;
+
+      items.push({ name, price, unitPrice, qty, cal, taxRate, selected:true });
     }
   }
 
-  return { storeName, date, items, tax, total };
+  return { storeName, date, items, tax, taxRate, total };
 }
 
 // ── STEP 3: Show route ──
@@ -2600,7 +2632,7 @@ function detectStoreRoute(name) {
   if(!name) return null;
   const u = name.toUpperCase();
   if(BUILTIN_GROCERY.some(s=>u.includes(s)))    return 'grocery';
-  if(BUILTIN_HARDWARE.some(s=>u.includes(s)))   return 'accounting';
+  if(BUILTIN_HARDWARE.some(s=>u.includes(s)))   return 'inventory';
   if(BUILTIN_RESTAURANT.some(s=>u.includes(s))) return 'restaurant';
   return null;
 }
@@ -2638,10 +2670,18 @@ function showScanItems() {
     return;
   }
   document.getElementById('scan-items-list').innerHTML = p.items.map((item,i)=>`
-    <div class="scan-item-row">
-      <input type="checkbox" id="sci-${i}" ${item.selected?'checked':''} onchange="_scanParsed.items[${i}].selected=this.checked">
-      <span class="scan-item-name">${esc(item.name)}</span>
-      <div class="scan-item-price"><input type="number" value="${item.price.toFixed(2)}" step="0.01" onchange="_scanParsed.items[${i}].price=parseFloat(this.value)||0"></div>
+    <div class="scan-item-row" style="flex-direction:column;align-items:flex-start;padding:8px;margin-bottom:4px;background:#000044;border-radius:4px;border:1px solid #333388;">
+      <div style="display:flex;align-items:center;width:100%;gap:8px;">
+        <input type="checkbox" id="sci-${i}" ${item.selected?'checked':''} onchange="_scanParsed.items[${i}].selected=this.checked">
+        <span class="scan-item-name" style="flex:1;color:#ffff00;font-weight:700;font-size:12px;">${esc(item.name)}</span>
+        <input type="number" value="${item.price.toFixed(2)}" step="0.01" style="width:70px;background:#000033;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:4px;border-radius:3px;text-align:right;" onchange="_scanParsed.items[${i}].price=parseFloat(this.value)||0">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px;padding-left:24px;">
+        <span style="color:#ccccff;font-size:10px;">QTY: <input type="number" value="${item.qty||1}" min="1" style="width:40px;background:#000033;border:1px solid #333388;color:#ffff00;font-family:Courier New,monospace;font-size:10px;padding:2px;border-radius:3px;" onchange="_scanParsed.items[${i}].qty=parseInt(this.value)||1"></span>
+        <span style="color:#ffaa00;font-size:10px;">CAL: ${item.cal||'?'}</span>
+        <span style="color:${parseFloat(item.taxRate||0)===0?'#00ff88':'#ff6666'};font-size:10px;">TAX: ${item.taxRate||0}%</span>
+        <span style="color:#ccccff;font-size:10px;">UNIT: $${(item.unitPrice||item.price).toFixed(2)}</span>
+      </div>
     </div>`).join('');
 }
 
@@ -2678,19 +2718,22 @@ function saveAllScanned() {
 
   } else if(route==='grocery') {
     if(!d.groc) d.groc={items:[],stores:[]};
-    var taxRate=p.tax>0&&p.total>0?((p.tax/(p.total-p.tax))*100).toFixed(2):0;
+    var taxRate=p.taxRate||(p.tax>0&&p.total>0?((p.tax/(p.total-p.tax))*100).toFixed(2):0);
     for(const item of selected) {
-      var cal=estimateCalories(item.name);
+      var itemQty=item.qty||1;
+      var itemCal=item.cal||estimateCalories(item.name);
+      var unitPrice=item.unitPrice||(item.price/itemQty);
+      var itemTax=p.tax>0?(unitPrice*parseFloat(taxRate)/100):0;
       d.groc.items.push({
         id:nextId(d.groc.items),
         store,date,
         item:item.name,
         brand:'',cat:'Other',
-        size:'',qty:1,
-        price:item.price,
-        tax:p.tax>0?(item.price*parseFloat(taxRate)/100):0,
+        size:'',qty:itemQty,
+        price:unitPrice,
+        tax:itemTax,
         total:item.price,
-        cal:cal,
+        cal:itemCal,
         servings:1,sugar:0,protein:0,carbs:0,fat:0,sodium:0,
         notes:'via scan · tax '+taxRate+'%'
       });
@@ -2709,9 +2752,8 @@ function saveAllScanned() {
     });
     saveLog();
     // show tax rate info
-    if(p.tax>0){
-      toast('Posted $'+receiptTotal.toFixed(2)+' to accounting · Tax rate: '+taxRate+'%',true);
-    }
+    var taxMsg=parseFloat(taxRate)===0?' · 0% TAX ✓':' · Tax rate: '+taxRate+'%';
+    toast('Posted $'+receiptTotal.toFixed(2)+' to accounting'+taxMsg,true);
 
   } else if(route==='restaurant') {
     if(!d.rest) d.rest={items:[],stores:[]};
@@ -2722,9 +2764,57 @@ function saveAllScanned() {
 
   } else if(route==='inventory') {
     if(!d.inv) d.inv={items:[],logs:[]};
-    for(const item of selected) {
-      d.inv.items.push({id:nextId(d.inv.items),name:item.name,sku:'',unit:'Each',qty:1,cost:item.price,price:item.price,cat:'Materials',loc:'',notes:'via scan'});
+    var invTaxRate=p.taxRate||(p.tax>0&&p.total>0?((p.tax/(p.total-p.tax))*100).toFixed(2):0);
+    // auto-detect pcode/desc by store
+    var invPcode='ROOF';
+    var invDesc='ROOFING SUPPLIES';
+    var su=(store||'').toUpperCase();
+    if(su.indexOf('MENARD')>=0){invPcode='10735';invDesc='HARDWARE EXPENSE';}
+    else if(su.indexOf('HOME DEPOT')>=0||su.indexOf('LOWES')>=0){invPcode='10735';invDesc='HARDWARE EXPENSE';}
+    else if(su.indexOf('SHERWIN')>=0){invPcode='ROOF';invDesc='PAINT SUPPLIES';}
+
+    for(const item of selected){
+      var invQty=item.qty||1;
+      var invUnit=item.unitPrice||(item.price/invQty);
+      // categorize item
+      var iname=(item.name||'').toUpperCase();
+      var invCat='Materials';
+      if(iname.match(/SHINGLE|BUNDLE|SQUARE/))invCat='Shingles';
+      else if(iname.match(/NAIL|SCREW|BOLT|FASTENER/))invCat='Fasteners';
+      else if(iname.match(/FELT|UNDERLAYMENT|ICE|BARRIER/))invCat='Underlayment';
+      else if(iname.match(/FLASHING|DRIP|EDGE|VALLEY/))invCat='Flashing';
+      else if(iname.match(/LUMBER|BOARD|PLYWOOD|OSB/))invCat='Lumber';
+      else if(iname.match(/CAULK|SEALANT|CEMENT|ADHESIVE/))invCat='Sealants';
+      else if(iname.match(/TOOL|SAW|DRILL|HAMMER|GUN/))invCat='Tools';
+      d.inv.items.push({
+        id:nextId(d.inv.items),
+        name:item.name,
+        sku:'',
+        unit:'Each',
+        qty:invQty,
+        cost:invUnit,
+        price:item.price,
+        cat:invCat,
+        loc:'',
+        store:store,
+        date:date,
+        notes:'via scan · tax '+invTaxRate+'%'
+      });
     }
+
+    // AUTO-POST TOTAL TO mx_log ACCOUNTING
+    var invTotal=p.total||selected.reduce(function(s,i){return s+i.price;},0)+(p.tax||0);
+    loadLog();
+    LOG.unshift({
+      id:Date.now(),
+      payee:store.toUpperCase()||'SUPPLY STORE',
+      pcode:invPcode,
+      desc:invDesc,
+      date:date,
+      amt:-invTotal
+    });
+    saveLog();
+    toast('Posted $'+invTotal.toFixed(2)+' to accounting · '+invPcode+'/'+invDesc,true);
   }
 
   // Save scan history
