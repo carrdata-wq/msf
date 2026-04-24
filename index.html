@@ -3476,7 +3476,7 @@ function bankAutoMatch(desc){
     }
   }
   // default — clean up description
-  var cleanDesc=desc.replace(/POS PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/MERCHANT PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/XXXXXXXXXXXX\w+\s+SEQ\s+#\s+\w+/,'').trim();
+  var cleanDesc=desc.replace(/POS PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/MERCHANT PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/XXXXXXXXXXXX\w+\s+SEQ\s+#\s+\w+/,'').replace(/[*#&<>]/g,'').trim();
   cleanDesc=cleanDesc.slice(0,30).toUpperCase();
   return{payee:cleanDesc||'UNKNOWN',pcode:'ROOF',desc:'EXPENSE'};
 }
@@ -4494,11 +4494,17 @@ function doGlobalReplace(){
 }
 
 function editLog(id){
-  var e=null;for(var i=0;i<LOG.length;i++){if(LOG[i].id===id){e=LOG[i];break;}}if(!e)return;
+  loadLog();
+  var e=null;for(var i=0;i<LOG.length;i++){if(LOG[i].id===id){e=LOG[i];break;}}if(!e){toast('Record not found — run Reindex',false);return;}
+  // sanitize payee — remove * and other special chars
+  var cleanPayee=(e.payee||'').replace(/[*#&<>]/g,'').trim();
   _editId=id;
-  document.getElementById('p-payee').textContent=e.payee;document.getElementById('h-payee').value=e.payee;
-  document.getElementById('p-pcode').value=e.pcode;document.getElementById('p-desc').value=e.desc;
-  setDate(e.date);document.getElementById('p-amt').value=e.amt;
+  document.getElementById('p-payee').textContent=cleanPayee;
+  document.getElementById('h-payee').value=cleanPayee;
+  document.getElementById('p-pcode').value=e.pcode||'ROOF';
+  document.getElementById('p-desc').value=e.desc||'EXPENSE';
+  setDate(e.date);
+  document.getElementById('p-amt').value=Math.abs(e.amt);
   document.getElementById('panel').style.display='block';
   document.getElementById('panel').scrollIntoView({behavior:'smooth'});
   setTimeout(function(){document.getElementById('p-amt').focus();},200);
