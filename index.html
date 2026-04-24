@@ -1137,7 +1137,29 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
           <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--green);" id="scan-total-display">$0.00</span>
         </div>
       </div>
+
+      <!-- MANUAL ENTRY FALLBACK -->
+      <div style="background:#000033;border:2px solid #ffaa00;border-radius:6px;padding:12px;margin-bottom:10px;font-family:Courier New,monospace;">
+        <div style="color:#ffaa00;font-weight:700;font-size:12px;margin-bottom:8px;">📝 MANUAL ENTRY — if OCR missed items</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input type="text" id="man-store" placeholder="STORE NAME" style="flex:2;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
+          <input type="date" id="man-date" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <input type="number" id="man-total" placeholder="TOTAL AMT" step="0.01" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
+          <input type="number" id="man-tax" placeholder="TAX" step="0.01" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffaa00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
+          <select id="man-route" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:11px;padding:6px;border-radius:3px;">
+            <option value="grocery">🛒 Grocery</option>
+            <option value="inventory">📦 Inventory</option>
+            <option value="accounting">$ Accounting</option>
+            <option value="restaurant">🍽️ Restaurant</option>
+          </select>
+        </div>
+        <button onclick="saveManualScan()" style="width:100%;background:#ffaa00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:none;border-radius:4px;cursor:pointer;">💾 SAVE MANUAL ENTRY</button>
+      </div>
+
       <button class="btn btn-green" onclick="saveAllScanned()">✓ SAVE ALL ITEMS</button>
+      <label class="btn btn-dim" for="receipt-input" style="display:block;text-align:center;padding:10px;cursor:pointer;">📷 RETRY PHOTO</label>
       <button class="btn btn-dim" onclick="scannerShow('scan')">✕ Start Over</button>
     </div>
   </div>
@@ -2683,6 +2705,36 @@ function showScanItems() {
         <span style="color:#ccccff;font-size:10px;">UNIT: $${(item.unitPrice||item.price).toFixed(2)}</span>
       </div>
     </div>`).join('');
+}
+
+function saveManualScan(){
+  var store=(document.getElementById('man-store').value||'').trim().toUpperCase();
+  var date=document.getElementById('man-date').value||today();
+  var total=parseFloat(document.getElementById('man-total').value)||0;
+  var tax=parseFloat(document.getElementById('man-tax').value)||0;
+  var route=document.getElementById('man-route').value;
+  if(!total){toast('Enter total amount',false);return;}
+  if(!store){toast('Enter store name',false);return;}
+
+  // auto pcode/desc by route
+  var pcode='ROOF',desc='EXPENSE';
+  if(route==='grocery'){pcode='10629';desc='FOOD GROCERY';}
+  else if(route==='inventory'){pcode='ROOF';desc='ROOFING SUPPLIES';}
+  else if(route==='restaurant'){pcode='ROOF';desc='JOB FOOD COST';}
+
+  // post to accounting
+  loadLog();
+  LOG.unshift({id:Date.now(),payee:store,pcode:pcode,desc:desc,date:date,amt:-(total)});
+  saveLog();
+
+  var taxRate=total>0&&tax>0?((tax/(total-tax))*100).toFixed(1):'0';
+  toast('✓ $'+total.toFixed(2)+' posted → '+pcode+' · tax '+taxRate+'%',true);
+
+  // clear fields
+  document.getElementById('man-store').value='';
+  document.getElementById('man-total').value='';
+  document.getElementById('man-tax').value='';
+  setTimeout(function(){scannerShow('');goMain();},1500);
 }
 
 // ── STEP 5: Save ──
