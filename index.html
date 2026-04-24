@@ -23,6 +23,44 @@ function doInstallPWA(){
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(function(r){
       if(r.outcome==='accepted')toast('MFS installed on home screen ✓',true);
+
+// ── SERVICE WORKER — offline mode ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    // inline service worker as blob — no separate sw.js file needed
+    var swCode=[
+      "var CACHE='mfs-v3';",
+      "var URLS=['https://carrdata-wq.github.io/msf/'];",
+      "self.addEventListener('install',function(e){",
+      "  e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(URLS);}));",
+      "  self.skipWaiting();",
+      "});",
+      "self.addEventListener('activate',function(e){",
+      "  e.waitUntil(caches.keys().then(function(keys){",
+      "    return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));",
+      "  }));",
+      "  self.clients.claim();",
+      "});",
+      "self.addEventListener('fetch',function(e){",
+      "  e.respondWith(caches.match(e.request).then(function(cached){",
+      "    if(cached)return cached;",
+      "    return fetch(e.request).then(function(resp){",
+      "      var clone=resp.clone();",
+      "      caches.open(CACHE).then(function(c){c.put(e.request,clone);});",
+      "      return resp;",
+      "    }).catch(function(){return cached;});",
+      "  }));",
+      "});"
+    ].join('\n');
+    var blob=new Blob([swCode],{type:'application/javascript'});
+    var swUrl=URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl,{scope:'/'}).then(function(reg){
+      console.log('MFS offline ready');
+    }).catch(function(e){
+      console.log('SW:',e);
+    });
+  });
+}
       deferredPrompt=null;
       var btn=document.getElementById('pwa-install-btn');
       if(btn)btn.style.display='none';
@@ -214,7 +252,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 <!-- ████████████████████ MAIN MENU ████████████████████ -->
 <div id="screen-main" class="screen active">
   <div class="main-header">
-    <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+      <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
+      <span id="online-status" style="font-size:9px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
+    </div>
     <div class="main-sub">Select Module</div>
   </div>
   <div class="main-box">
@@ -293,9 +334,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffff00;">Copy to mfs2.html</div><div class="ms">Save current version as mfs2 backup</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
-    <div class="menu-item" onclick="doReindex()">
-      <div class="menu-num">5</div><div class="menu-icon">🔧</div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">Reindex Database</div><div class="ms">Fix record IDs · Rebuild index · Like REINDEX</div></div>
+    <div class="menu-item" onclick="doEnableOffline()">
+      <div class="menu-num">6</div><div class="menu-icon">📡</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">Enable Offline Mode</div><div class="ms">Cache app · Works without internet</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
   </div>
@@ -1271,6 +1312,20 @@ function showScreen(id) {
 function showSubMenu(name){
   showScreen(name+'-sub');
 }
+// ── ONLINE/OFFLINE STATUS ──
+function updateOnlineStatus(){
+  var el=document.getElementById('online-status');
+  if(!el)return;
+  if(navigator.onLine){
+    el.style.background='#006600';el.style.color='#00ff88';el.textContent='●ON';
+  } else {
+    el.style.background='#660000';el.style.color='#ff6666';el.textContent='●OFF';
+  }
+}
+window.addEventListener('online',updateOnlineStatus);
+window.addEventListener('offline',updateOnlineStatus);
+window.addEventListener('load',updateOnlineStatus);
+
 function goMain() { showScreen('main'); }
 function openModule(mod) {
   showScreen(mod);
