@@ -344,8 +344,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffaa00;">Sweep Special Chars</div><div class="ms">Remove * # @ ! from all payee names</div></div>
       <div class="menu-arrow" style="color:#ffaa00;">›</div>
     </div>
-    <div class="menu-item" onclick="doEnableOffline()">
-      <div class="menu-num">6</div><div class="menu-icon">📡</div>
+    <div class="menu-item" onclick="doFixZelleNames()">
+      <div class="menu-num">7</div><div class="menu-icon">💸</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;">Fix Zelle Names</div><div class="ms">Strip ZELLE word · Show person name only</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">Enable Offline Mode</div><div class="ms">Cache app · Works without internet</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
@@ -3199,6 +3202,28 @@ function doReindex(){
   saveLog();
   renderLog();
   toast('REINDEX COMPLETE — '+fixed+' records fixed · '+LOG.length+' total ✓',true);
+  goMain();
+}
+
+function doFixZelleNames(){
+  loadLog();
+  var fixed=0;
+  for(var i=0;i<LOG.length;i++){
+    var p=LOG[i].payee||'';
+    var pu=p.toUpperCase();
+    // catch ZELLE TRANSFER, ZELLE, ZELLE BYLINE etc
+    if(pu==='ZELLE'||pu==='ZELLE TRANSFER'||pu.match(/^ZELLE\s+(TRANSFER|BYLINE|BANK)?$/)){
+      // can't fix without original desc — mark for manual edit
+      LOG[i].payee='ZELLE-UNKNOWN';
+      fixed++;
+    } else if(pu.indexOf('ZELLE ')===0){
+      // strip ZELLE from front
+      var clean=p.slice(6).replace(/BYLINE.*/i,'').replace(/\d{3,}.*/,'').trim();
+      if(clean.length>1){LOG[i].payee=clean.toUpperCase();fixed++;}
+    }
+  }
+  saveLog();renderLog();
+  toast('ZELLE FIX — '+fixed+' entries updated ✓',true);
   goMain();
 }
 
