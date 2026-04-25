@@ -4587,9 +4587,8 @@ function editLog(id){
   document.getElementById('p-payee').textContent=cleanPayee;
   document.getElementById('h-payee').value=cleanPayee;
   document.getElementById('p-pcode').value=e.pcode||'ROOF';
-  // populate desc search field
-  var descVal=e.desc||'EXPENSE';
-  document.getElementById('p-desc-search').value=descVal;
+  // clear desc field — user types fresh like FoxBase
+  document.getElementById('p-desc-search').value='';
   document.getElementById('p-desc').value=descVal;
   document.getElementById('desc-dropdown').style.display='none';
   setDate(e.date);
