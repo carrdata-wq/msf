@@ -3470,8 +3470,16 @@ function bankAutoMatch(desc){
 }
 
 function extractZelleName(desc){
-  var m=desc.match(/ZELLE\s+([A-Z\s]+?)(?:\s+BYLINE|\s+$)/i);
-  if(m)return m[1].trim().toUpperCase();
+  // strip ZELLE from front — get just the person/business name
+  var d=desc.toUpperCase();
+  // remove ZELLE word and bank info
+  d=d.replace(/ZELLE\s+/,'')
+     .replace(/BYLINE BANK.*/,'')
+     .replace(/\d{3,}.*/,'')
+     .replace(/A2A PAYMENT CREDIT/,'')
+     .replace(/A2A ACCOUNT DEBIT/,'')
+     .trim();
+  if(d.length>2)return d.slice(0,30);
   return 'ZELLE TRANSFER';
 }
 
