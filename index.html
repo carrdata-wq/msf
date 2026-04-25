@@ -4420,7 +4420,7 @@ function doExit(){
 var _openId=null;
 function fmtDate(d){if(!d)return '';var p=d.split('-');if(p.length!==3)return d;return p[1]+p[2]+p[0].slice(2);}
 function trunc(s,n){if(!s)return '';s=s.replace(/https?:\/\/\S+/gi,'').replace(/www\.\S+/gi,'').trim();return s.length>n?s.slice(0,n):s;}
-function fmtAmt(a){return (a>=0?'+$':'- $')+Math.abs(a).toFixed(0);}
+function fmtAmt(a){return (a>=0?'+$':'-$')+Math.abs(a).toFixed(2);}
 function renderLog(){
   var tbody=document.getElementById('loglist');
   // build year dropdown
