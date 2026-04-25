@@ -349,8 +349,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#00ff88;">Fix Zelle Names</div><div class="ms">Strip ZELLE word · Show person name only</div></div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">Enable Offline Mode</div><div class="ms">Cache app · Works without internet</div></div>
-      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    <div class="menu-item" onclick="doClearAllData()">
+      <div class="menu-num">8</div><div class="menu-icon">🗑</div>
+      <div class="menu-label"><div class="ml" style="color:#ff4444;">Clear All Data</div><div class="ms">Wipe ledger · Fresh start · Backup first!</div></div>
+      <div class="menu-arrow" style="color:#ff4444;">›</div>
     </div>
   </div>
   </div>
@@ -3209,6 +3211,30 @@ function doReindex(){
   goMain();
 }
 
+function doClearAllData(){
+  var overlay=document.createElement('div');
+  overlay.id='clear-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ff4444;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#ff4444;font-weight:700;font-size:15px;margin-bottom:10px;">🗑 CLEAR ALL DATA</div>'
+    +'<div style="color:#ffff00;font-size:12px;margin-bottom:6px;">⚠️ THIS WILL DELETE ALL ENTRIES!</div>'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:16px;">Did you backup first?<br>This cannot be undone.</div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button onclick="confirmClearAll()" style="flex:1;background:#ff4444;color:#ffffff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
+    +'<button onclick="document.getElementById(\'clear-overlay\').remove();goMain();" style="flex:1;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function confirmClearAll(){
+  try{localStorage.removeItem('mx_log');}catch(e){}
+  LOG=[];
+  var o=document.getElementById('clear-overlay');
+  if(o)o.remove();
+  toast('All data cleared ✓ Ready for fresh import',true);
+  setTimeout(function(){goMain();},1000);
+}
+
 function doFixZelleNames(){
   loadLog();
   var fixed=0;
@@ -3538,8 +3564,16 @@ function extractZelleName(desc){
 function doBankImportConfirm(){
   if(!_bankRows.length)return;
   loadLog();
-  var added=0;
+  // build duplicate key set from existing entries
+  var existing=new Set();
+  LOG.forEach(function(e){
+    var key=(e.date||'')+'|'+(e.amt||0)+'|'+(e.payee||'').slice(0,10);
+    existing.add(key);
+  });
+  var added=0;var skipped=0;
   _bankRows.forEach(function(r){
+    var key=(r.date||'')+'|'+(r.amt||0)+'|'+(r.payee||'').slice(0,10);
+    if(existing.has(key)){skipped++;return;}
     LOG.unshift({
       id:Date.now()+Math.random(),
       payee:r.payee,
@@ -3548,11 +3582,12 @@ function doBankImportConfirm(){
       date:r.date,
       amt:r.amt
     });
+    existing.add(key);
     added++;
   });
   saveLog();
   document.querySelectorAll('div[style*="position:fixed"]').forEach(function(o){o.remove();});
-  toast(added+' entries imported from Byline Bank ✓',true);
+  toast(added+' entries imported · '+skipped+' duplicates skipped ✓',true);
   goMain();
 }
 function doBackup() {
