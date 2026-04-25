@@ -496,26 +496,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <option>OIL</option><option>TRADE</option>
     </select>
     <div style="font-size:10px;color:#ccccff;margin-top:6px;">DESC</div>
-    <select id="p-desc" onchange="checkAddDesc(this)" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;margin-top:4px;">
-      <option>INCOME</option><option>RENT INCOME</option><option>SECURITY DEPOSIT</option><option>LATE FEE INCOME</option>
-      <option>ADVERTISING EXPENSE</option><option>BANK CHARGES</option><option>BROKER FEES EXPENSE</option>
-      <option>DECORATION EXPENSE</option><option>DEPOSIT</option><option>DONATION EXPENSE</option>
-      <option>DOOR CONTRACTOR</option><option>ELECTRIC EXPENSE</option><option>ELECTRIC REPAIRS</option>
-      <option>ELECTRICIAL EXPENSE</option><option>ENTERTAINMENT EXPENSE</option><option>FEDERAL TAXES</option>
-      <option>FOOD GROCERY</option><option>FRAMING EXPENSE</option><option>HARDWARE EXPENSE</option>
-      <option>HEATING EXPENSE</option><option>INSURANCE EXPENSE</option><option>INTEREST EXPENSE</option>
-      <option>INTEREST INCOME</option><option>JOB FOOD COST</option><option>LANDSCAPE COST</option>
-      <option>LEGAL/ACCOUNT FEES</option><option>LICENSE PERMITS EXPENSE</option><option>LOAN PYMT</option>
-      <option>MANAGEMENT FEE</option><option>MASON EXPENSE</option><option>MEDICAL EXPENSE</option>
-      <option>MEDICAL INSURANCE</option><option>MISC</option><option>MISCELLANEOUS</option>
-      <option>MISC WORK ORDER</option><option>OFFICE SUPPLIES</option><option>PETRO ENGINEERING FEES</option>
-      <option>PHONE/FAX/INTERNET</option><option>PLUMBING EXPENSE</option><option>PRODUCTION TAXES</option>
-      <option>PROPERTY TAXES</option><option>ROOF CONTRACT</option><option>ROOFING SUPPLIES</option>
-      <option>SCAVENGER COST</option><option>STORAGE FEE</option><option>SUBCONTRACTOR COST</option>
-      <option>TRAVEL/HOTEL EXPENSE</option><option>TRUCK EXPENSE</option><option>TRUCK GAS</option>
-      <option>WATER EXPENSE</option><option>WIRE TRANSFER</option>
-      <option value="__NEW__">+ ADD NEW DESC...</option>
-    </select>
+    <div style="position:relative;">
+      <input type="text" id="p-desc-search" placeholder="TYPE DESC (e.g. tr = TRUCK GAS)..." 
+        autocomplete="off" autocapitalize="characters" spellcheck="false"
+        style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-top:4px;"
+        oninput="filterDescList(this.value)" onkeydown="descKeyNav(event)">
+      <div id="desc-dropdown" style="display:none;position:absolute;left:0;right:0;background:#0000aa;border:2px solid #ffff00;border-top:none;border-radius:0 0 4px 4px;z-index:999;max-height:180px;overflow-y:auto;"></div>
+    </div>
+    <input type="hidden" id="p-desc">
     <input type="hidden" id="h-payee">
     <div style="font-size:10px;color:#ccccff;margin-top:6px;">DATE</div>
     <div style="display:flex;gap:4px;margin-top:4px;">
@@ -4301,6 +4289,8 @@ function doPick(i){
   document.getElementById('h-payee').value=r.payee;
   document.getElementById('p-pcode').value=r.pcode;
   document.getElementById('p-desc').value=r.desc;
+  document.getElementById('p-desc-search').value=r.desc;
+  document.getElementById('desc-dropdown').style.display='none';
   loadDatePref();
   document.getElementById('p-amt').value='';
   document.getElementById('search').value='';
@@ -4314,7 +4304,8 @@ function doPick(i){
 function doSave(){
   var payee=document.getElementById('h-payee').value;
   var pcode=document.getElementById('p-pcode').value;
-  var desc=document.getElementById('p-desc').value;
+  var desc=(document.getElementById('p-desc-search').value||document.getElementById('p-desc').value||'').toUpperCase().trim();
+  if(!desc)desc='EXPENSE';
   var date=getDate();
   var amt=parseFloat(document.getElementById('p-amt').value);
   if(!payee){alert('Select a row first');return;}
@@ -4493,21 +4484,93 @@ function doGlobalReplace(){
   toast(cnt+' entries updated for '+_grPayee+' ✓',true);
 }
 
+var _descList=[
+  'INCOME','RENT INCOME','SECURITY DEPOSIT','LATE FEE INCOME',
+  'ADVERTISING EXPENSE','BANK CHARGES','BROKER FEES EXPENSE',
+  'DECORATION EXPENSE','DEPOSIT','DONATION EXPENSE',
+  'DOOR CONTRACTOR','ELECTRIC EXPENSE','ELECTRIC REPAIRS',
+  'ELECTRICIAL EXPENSE','ENTERTAINMENT EXPENSE','FEDERAL TAXES',
+  'FOOD GROCERY','FRAMING EXPENSE','HARDWARE EXPENSE',
+  'HEATING EXPENSE','INSURANCE EXPENSE','INTEREST EXPENSE',
+  'INTEREST INCOME','JOB FOOD COST','LANDSCAPE COST',
+  'LEGAL/ACCOUNT FEES','LICENSE PERMITS EXPENSE','LOAN PYMT',
+  'MANAGEMENT FEE','MASON EXPENSE','MEDICAL EXPENSE',
+  'MEDICAL INSURANCE','MISC','MISCELLANEOUS',
+  'MISC WORK ORDER','OFFICE SUPPLIES','PAINT SUPPLIES',
+  'PETRO ENGINEERING FEES','PHONE EXPENSE','PHONE/FAX/INTERNET',
+  'PLUMBING EXPENSE','PRODUCTION TAXES',
+  'PROPERTY TAXES','ROOF CONTRACT','ROOFING SUPPLIES',
+  'SCAVENGER COST','STORAGE FEE','SUBCONTRACTOR COST',
+  'TRADE INVESTMENT','TRAVEL/HOTEL EXPENSE','TRUCK EXPENSE','TRUCK GAS',
+  'WATER EXPENSE','WIRE TRANSFER'
+];
+var _descIdx=0;
+
+function filterDescList(val){
+  val=(val||'').toUpperCase().trim();
+  var dd=document.getElementById('desc-dropdown');
+  if(!val){dd.style.display='none';return;}
+  // get custom descs from localStorage
+  var custom=[];
+  try{custom=JSON.parse(localStorage.getItem('mx_descs')||'[]');}catch(e){}
+  var all=_descList.concat(custom.filter(function(d){return _descList.indexOf(d)<0;}));
+  // filter by substring match
+  var matches=all.filter(function(d){return d.toUpperCase().indexOf(val)>=0;});
+  if(!matches.length){dd.style.display='none';return;}
+  _descIdx=0;
+  dd.innerHTML=matches.map(function(d,i){
+    return '<div onclick="selectDesc(\''+d.replace(/'/g,"\\'")+'\')" style="padding:8px 10px;cursor:pointer;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #333388;'+(i===0?'background:#0033aa;':'')+'">'+d+'</div>';
+  }).join('');
+  dd.style.display='block';
+}
+
+function selectDesc(val){
+  document.getElementById('p-desc-search').value=val;
+  document.getElementById('p-desc').value=val;
+  document.getElementById('desc-dropdown').style.display='none';
+  document.getElementById('p-amt').focus();
+}
+
+function descKeyNav(e){
+  var dd=document.getElementById('desc-dropdown');
+  var rows=dd.querySelectorAll('div');
+  if(!rows.length)return;
+  if(e.key==='ArrowDown'){
+    _descIdx=Math.min(_descIdx+1,rows.length-1);
+  } else if(e.key==='ArrowUp'){
+    _descIdx=Math.max(_descIdx-1,0);
+  } else if(e.key==='Enter'||e.key==='Tab'){
+    e.preventDefault();
+    selectDesc(rows[_descIdx].textContent);
+    return;
+  } else return;
+  rows.forEach(function(r,i){r.style.background=i===_descIdx?'#0033aa':'';});
+}
+
 function editLog(id){
   loadLog();
-  var e=null;for(var i=0;i<LOG.length;i++){if(LOG[i].id===id){e=LOG[i];break;}}if(!e){toast('Record not found — run Reindex',false);return;}
-  // sanitize payee — remove * and other special chars
+  var e=null;for(var i=0;i<LOG.length;i++){if(LOG[i].id===id){e=LOG[i];break;}}
+  if(!e){toast('Record not found — run Reindex',false);return;}
   var cleanPayee=(e.payee||'').replace(/[*#&<>]/g,'').trim();
   _editId=id;
   document.getElementById('p-payee').textContent=cleanPayee;
   document.getElementById('h-payee').value=cleanPayee;
   document.getElementById('p-pcode').value=e.pcode||'ROOF';
-  document.getElementById('p-desc').value=e.desc||'EXPENSE';
+  // populate desc search field
+  var descVal=e.desc||'EXPENSE';
+  document.getElementById('p-desc-search').value=descVal;
+  document.getElementById('p-desc').value=descVal;
+  document.getElementById('desc-dropdown').style.display='none';
   setDate(e.date);
-  document.getElementById('p-amt').value=Math.abs(e.amt);
+  // show 2 decimals
+  document.getElementById('p-amt').value=Math.abs(e.amt).toFixed(2);
   document.getElementById('panel').style.display='block';
   document.getElementById('panel').scrollIntoView({behavior:'smooth'});
-  setTimeout(function(){document.getElementById('p-amt').focus();},200);
+  // focus DESC field directly
+  setTimeout(function(){
+    var df=document.getElementById('p-desc-search');
+    df.focus();df.select();
+  },200);
 }
 function copyLog(id){
   var e=null;for(var i=0;i<LOG.length;i++){if(LOG[i].id===id){e=LOG[i];break;}}if(!e)return;
