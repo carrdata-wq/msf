@@ -3909,6 +3909,7 @@ function runIrsDesc(){
   var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
   var yrLabel=yr||'ALL YRS';
   var pcLabel=pc||'ALL';
+  var showPco=pc!==''; // hide PCO column when ALL selected
 
   // build desc totals
   var descMap={};
@@ -3919,65 +3920,96 @@ function runIrsDesc(){
   });
 
   var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
-  var credits=[],debits=[];
+
+  // classify each desc into sections
+  var UTIL_KEYS=['ELECTRIC','GAS','WATER','PHONE','INTERNET','FAX','HEAT','HEATING','CABLE','UTILITY','COMED','PEOPLES'];
+  var TAX_KEYS=['TAX','PERMIT','LICENSE','FEDERAL','STATE TAX','PROPERTY TAX','PRODUCTION TAX'];
+
+  var secA=[],secB=[],secC=[],secD=[];
   Object.keys(descMap).forEach(function(d){
-    if(descMap[d].amt>=0)credits.push(d);
-    else debits.push(d);
+    var v=descMap[d];
+    var du=d.toUpperCase();
+    if(v.amt>=0){
+      secA.push(d);
+    } else {
+      var isUtil=UTIL_KEYS.some(function(k){return du.indexOf(k)>=0;});
+      var isTax=TAX_KEYS.some(function(k){return du.indexOf(k)>=0;});
+      if(isUtil) secC.push(d);
+      else if(isTax) secD.push(d);
+      else secB.push(d);
+    }
   });
-  credits.sort(function(a,b){return descMap[b].amt-descMap[a].amt;});
-  debits.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+  secA.sort(function(a,b){return descMap[b].amt-descMap[a].amt;});
+  secB.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+  secC.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+  secD.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+
+  var cols=showPco?3:2;
 
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;">';
-  h+='<div style="color:#ffff00;font-size:10px;margin-bottom:2px;">'+today2+' &nbsp;&nbsp; IRSDESC.RPT &nbsp;&nbsp; '+yrLabel+' · '+pcLabel+'</div>';
+  h+='<div style="color:#ffff00;font-size:10px;margin-bottom:2px;">'+today2+' &nbsp;&nbsp; IRSDESC.RPT &nbsp;&nbsp; '+yrLabel+(pc?' · '+pcLabel:'')+'</div>';
   h+='<div style="color:#00ff88;font-weight:700;font-size:12px;margin-bottom:8px;text-align:center;border-bottom:1px solid #006600;padding-bottom:4px;">IRS DESC SUMMARY REPORT</div>';
-
   h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:11px;">';
+
+  function secHeader(label,color){
+    return '<tr style="background:'+color+';"><td colspan="'+cols+'" style="padding:4px 6px;font-weight:700;font-size:10px;color:#ffffff;">'+label+'</td></tr>';
+  }
+
+  function secRows(list,isCredit,bg1,bg2){
+    var html='';var total=0;
+    list.forEach(function(d,i){
+      var v=descMap[d];total+=v.amt;
+      var bg=i%2===0?bg1:bg2;
+      var ac=isCredit?'#00ffff':'#ff6666';
+      var sign=v.amt>=0?'+':'-';
+      html+='<tr style="'+bg+';border-bottom:1px solid #1a1a44;">'
+        +'<td style="padding:5px 4px;color:#ffff00;font-size:11px;">'+trunc(d,24)+'</td>'
+        +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:11px;color:'+ac+';">'+sign+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
+        +(showPco?'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#aaaacc;">'+v.pcode+'</td>':'')
+        +'</tr>';
+    });
+    return {html:html,total:total};
+  }
+
+  function subTotal(label,total,color){
+    var tc=total>=0?'#00ffff':'#ff6666';
+    return '<tr style="background:#000066;border-top:1px solid '+color+';">'
+      +'<td style="padding:4px 6px;color:'+color+';font-size:10px;font-style:italic;">* '+label+' Subtotal *</td>'
+      +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:'+tc+';font-size:11px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
+      +(showPco?'<td></td>':'')
+      +'</tr>';
+  }
+
+  // table header
   h+='<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
     +'<th style="color:#ffff00;padding:5px 4px;text-align:left;border:1px solid #333388;">DESCRIPTION</th>'
     +'<th style="color:#ffff00;padding:5px 4px;text-align:right;border:1px solid #333388;">AMOUNT</th>'
-    +'<th style="color:#ffff00;padding:5px 4px;text-align:center;border:1px solid #333388;">PCO</th>'
+    +(showPco?'<th style="color:#ffff00;padding:5px 4px;text-align:center;border:1px solid #333388;">PCO</th>':'')
     +'</tr>';
 
-  // SECTION A — INCOME/CREDITS
-  if(credits.length){
-    h+='<tr style="background:#002200;">'
-      +'<td colspan="3" style="padding:4px 6px;color:#00ff88;font-weight:700;font-size:10px;">A — INCOME / CREDITS</td></tr>';
-    var creditTotal=0;
-    credits.forEach(function(d,i){
-      var v=descMap[d];
-      creditTotal+=v.amt;
-      var bg=i%2===0?'background:#003300':'background:#002a00';
-      h+='<tr style="'+bg+';border-bottom:1px solid #1a3a1a;">'
-        +'<td style="padding:5px 4px;color:#ffff00;font-size:11px;">'+trunc(d,24)+'</td>'
-        +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:11px;color:#00ffff;">+$'+v.amt.toFixed(2)+'</td>'
-        +'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#00ffff;">'+v.pcode+'</td>'
-        +'</tr>';
-    });
-    h+='<tr style="background:#004400;border-top:1px solid #00ff88;">'
-      +'<td style="padding:4px 6px;color:#00ff88;font-size:10px;font-style:italic;">* Credits Subtotal *</td>'
-      +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:#00ffff;font-size:11px;">+$'+creditTotal.toFixed(2)+'</td>'
-      +'<td></td></tr>';
+  // SECTION A
+  if(secA.length){
+    h+=secHeader('A — INCOME / CREDITS','#003300');
+    var ra=secRows(secA,true,'background:#002a00','background:#003300');
+    h+=ra.html;h+=subTotal('Credits',ra.total,'#00ff88');
   }
-
-  // SECTION B — EXPENSES/DEBITS
-  if(debits.length){
-    h+='<tr style="background:#220000;">'
-      +'<td colspan="3" style="padding:4px 6px;color:#ff6666;font-weight:700;font-size:10px;">B — EXPENSES / DEBITS</td></tr>';
-    var debitTotal=0;
-    debits.forEach(function(d,i){
-      var v=descMap[d];
-      debitTotal+=v.amt;
-      var bg=i%2===0?'background:#1a0000':'background:#150000';
-      h+='<tr style="'+bg+';border-bottom:1px solid #3a1a1a;">'
-        +'<td style="padding:5px 4px;color:#ffff00;font-size:11px;">'+trunc(d,24)+'</td>'
-        +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:11px;color:#ff6666;">-$'+Math.abs(v.amt).toFixed(2)+'</td>'
-        +'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#00ffff;">'+v.pcode+'</td>'
-        +'</tr>';
-    });
-    h+='<tr style="background:#440000;border-top:1px solid #ff6666;">'
-      +'<td style="padding:4px 6px;color:#ff6666;font-size:10px;font-style:italic;">* Debits Subtotal *</td>'
-      +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:#ff6666;font-size:11px;">-$'+Math.abs(debitTotal).toFixed(2)+'</td>'
-      +'<td></td></tr>';
+  // SECTION B
+  if(secB.length){
+    h+=secHeader('B — EXPENSES','#220000');
+    var rb=secRows(secB,false,'background:#1a0000','background:#150000');
+    h+=rb.html;h+=subTotal('Expenses',rb.total,'#ff6666');
+  }
+  // SECTION C
+  if(secC.length){
+    h+=secHeader('C — UTILITIES','#001133');
+    var rc=secRows(secC,false,'background:#001122','background:#000d1a');
+    h+=rc.html;h+=subTotal('Utilities',rc.total,'#00aaff');
+  }
+  // SECTION D
+  if(secD.length){
+    h+=secHeader('D — TAXES & PERMITS','#332200');
+    var rd=secRows(secD,false,'background:#221500','background:#1a1000');
+    h+=rd.html;h+=subTotal('Taxes',rd.total,'#ffaa00');
   }
 
   // NET TOTAL
@@ -3985,8 +4017,8 @@ function runIrsDesc(){
   h+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
     +'<td style="padding:6px 4px;color:#ffff00;font-weight:700;font-size:12px;">*** NET TOTAL ***</td>'
     +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:12px;color:'+gc+';">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
-    +'<td></td></tr>'
-    +'</table></div>';
+    +(showPco?'<td></td>':'')
+    +'</tr></table></div>';
 
   document.getElementById('irs-output').innerHTML=h;
 }
@@ -4183,8 +4215,11 @@ function runMasterDesc(){
   credits.sort(function(a,b){return descMap[b].amt-descMap[a].amt;});
   debits.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
 
+  var showPco=pc!==''; // hide PCO when ALL PCODE selected
+
   // total debits for PCT calc
   var totalDebitAmt=debits.reduce(function(s,d){return s+descMap[d].amt;},0);
+  var cols=showPco?7:6;
 
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
     +'<div style="color:#ffff00;font-weight:700;font-size:11px;font-family:Courier New,monospace;margin-bottom:4px;">'
@@ -4201,12 +4236,12 @@ function runMasterDesc(){
     +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">RANK</th>'
     +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">PCT%</th>'
     +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">AVG</th>'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:center;border:1px solid #333388;font-size:9px;">PCO</th>'
+    +(showPco?'<th style="color:#ffff00;padding:4px 3px;text-align:center;border:1px solid #333388;font-size:9px;">PCO</th>':'')
     +'</tr>';
 
   function buildSection(label, list, sectionTotal, isCredit){
     var secRows='<tr style="background:#002200;">'
-      +'<td colspan="7" style="padding:4px 6px;color:#00ff88;font-weight:700;font-size:10px;border-bottom:1px solid #006600;">* B=DEBITS A=CREDITS -> '+label+'</td></tr>';
+      +'<td colspan="'+cols+'" style="padding:4px 6px;color:#00ff88;font-weight:700;font-size:10px;border-bottom:1px solid #006600;">* B=DEBITS A=CREDITS -> '+label+'</td></tr>';
     list.forEach(function(d,idx){
       var v=descMap[d];
       var pct=sectionTotal!==0?((v.amt/Math.abs(sectionTotal))*100).toFixed(2):'0.00';
@@ -4220,7 +4255,7 @@ function runMasterDesc(){
         +'<td style="padding:4px 3px;color:#ffaa00;text-align:right;font-size:10px;">'+(idx+1)+'</td>'
         +'<td style="padding:4px 3px;color:#ffaa00;text-align:right;font-size:10px;">'+Math.abs(parseFloat(pct)).toFixed(2)+'%</td>'
         +'<td style="padding:4px 3px;text-align:right;font-size:10px;color:'+ac+';">'+(parseFloat(avg)>=0?'+':'-')+'$'+Math.abs(parseFloat(avg)).toFixed(2)+'</td>'
-        +'<td style="padding:4px 3px;color:#00ffff;text-align:center;font-size:9px;">'+v.pcode+'</td>'
+        +(showPco?'<td style="padding:4px 3px;color:#00ffff;text-align:center;font-size:9px;">'+v.pcode+'</td>':'')
         +'</tr>';
     });
     // subtotal
@@ -4231,7 +4266,7 @@ function runMasterDesc(){
       +'<td style="padding:4px 3px;color:#ff88ff;font-size:10px;font-style:italic;">* Subsubtotal *</td>'
       +'<td style="padding:4px 3px;color:#ccccff;text-align:right;font-size:10px;font-weight:700;">'+stCnt+'</td>'
       +'<td style="padding:4px 3px;text-align:right;font-size:10px;font-weight:700;color:'+stc+';">'+(stAmt>=0?'+':'-')+'$'+Math.abs(stAmt).toFixed(2)+'</td>'
-      +'<td colspan="4"></td></tr>';
+      +'<td colspan="'+(cols-3)+'"></td></tr>';
     return secRows;
   }
 
@@ -4246,7 +4281,7 @@ function runMasterDesc(){
     +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:11px;">*** Total ***</td>'
     +'<td style="padding:5px 3px;color:#ffffff;text-align:right;font-weight:700;font-size:11px;">'+grandCnt+'</td>'
     +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:11px;color:'+gc+';">'+(grandAmt>=0?'+':'-')+'$'+Math.abs(grandAmt).toFixed(2)+'</td>'
-    +'<td colspan="4" style="padding:5px 3px;color:#ccccff;font-size:9px;">'+debits.length+' desc types</td></tr>'
+    +'<td colspan="'+(cols-3)+'" style="padding:5px 3px;color:#ccccff;font-size:9px;">'+debits.length+' desc types</td></tr>'
     +'</table></div>';
 
   document.getElementById('mdr-output').innerHTML=h;
