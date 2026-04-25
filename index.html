@@ -330,9 +330,19 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
     <div class="menu-item" onclick="doCopyToMfs2()">
-      <div class="menu-num">4</div><div class="menu-icon">💾</div>
+      <div class="menu-num">3</div><div class="menu-icon">💾</div>
       <div class="menu-label"><div class="ml" style="color:#ffff00;">Copy to mfs2.html</div><div class="ms">Save current version as mfs2 backup</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
+    </div>
+    <div class="menu-item" onclick="doReindex()">
+      <div class="menu-num">4</div><div class="menu-icon">🔧</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">Reindex Database</div><div class="ms">Fix record IDs · Rebuild index</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    </div>
+    <div class="menu-item" onclick="doSweepChars()">
+      <div class="menu-num">5</div><div class="menu-icon">🧹</div>
+      <div class="menu-label"><div class="ml" style="color:#ffaa00;">Sweep Special Chars</div><div class="ms">Remove * # @ ! from all payee names</div></div>
+      <div class="menu-arrow" style="color:#ffaa00;">›</div>
     </div>
     <div class="menu-item" onclick="doEnableOffline()">
       <div class="menu-num">6</div><div class="menu-icon">📡</div>
@@ -3192,6 +3202,19 @@ function doReindex(){
   goMain();
 }
 
+function doSweepChars(){
+  loadLog();
+  var fixed=0;
+  for(var i=0;i<LOG.length;i++){
+    var orig=LOG[i].payee||'';
+    var clean=orig.replace(/[*#@!^~`|\\]/g,'').replace(/\s{2,}/g,' ').trim();
+    if(clean!==orig){LOG[i].payee=clean;fixed++;}
+  }
+  saveLog();renderLog();
+  toast('SWEEP DONE — '+fixed+' payees cleaned ✓',true);
+  goMain();
+}
+
 function doCopyToMfs2(){
   var html=document.documentElement.outerHTML;
   var b64=btoa(unescape(encodeURIComponent(html)));
@@ -3674,7 +3697,7 @@ var _editId=null;
 var _shown=[];
 var _ledYr='';
 var _ledPage=0;
-var _pageSize=25;
+var _pageSize=20;
 
 function ledSetYear(yr){
   _ledYr=yr;
@@ -4435,9 +4458,9 @@ function renderLog(){
     html+='<tr style="cursor:pointer;'+rs+'">'
       +'<td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:11px;">'+fmtDate(e.date)+'</td>'
       +'<td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,14)+'</td>'
-      +'<td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,11)+'</td>'
+      +'<td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,8)+'</td>'
       +'<td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
-      +'<td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
+      +'<td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;min-width:55px;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
       +'<td style="padding:3px 2px;text-align:center;white-space:nowrap;">'
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')">DEL</button> '
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')">CPY</button> '
