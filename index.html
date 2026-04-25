@@ -4583,20 +4583,19 @@ function editLog(id){
   var e=null;for(var i=0;i<LOG.length;i++){if(LOG[i].id===id){e=LOG[i];break;}}
   if(!e){toast('Record not found — run Reindex',false);return;}
   var cleanPayee=(e.payee||'').replace(/[*#&<>]/g,'').trim();
+  var descVal=e.desc||'EXPENSE';
   _editId=id;
   document.getElementById('p-payee').textContent=cleanPayee;
   document.getElementById('h-payee').value=cleanPayee;
   document.getElementById('p-pcode').value=e.pcode||'ROOF';
-  // clear desc field — user types fresh like FoxBase
+  // clear desc so user types fresh — but keep hidden value as fallback
   document.getElementById('p-desc-search').value='';
   document.getElementById('p-desc').value=descVal;
   document.getElementById('desc-dropdown').style.display='none';
   setDate(e.date);
-  // show 2 decimals
   document.getElementById('p-amt').value=Math.abs(e.amt).toFixed(2);
   document.getElementById('panel').style.display='block';
   document.getElementById('panel').scrollIntoView({behavior:'smooth'});
-  // focus DESC field directly
   setTimeout(function(){
     var df=document.getElementById('p-desc-search');
     df.focus();df.select();
