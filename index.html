@@ -598,14 +598,18 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptShow('date')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY DATE</button>
       <button onclick="rptShow('amt')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT</button>
     </div>
-    <div style="font-size:10px;color:#ccccff;font-family:Courier New,monospace;margin-bottom:4px;">ALL ENTRIES:</div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="rptAll('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
       <button onclick="rptAll('pcode')" style="flex:1;padding:10px 6px;background:#333300;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">ALL/PCODE</button>
       <button onclick="rptAll('desc')"  style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button onclick="rptMasterDesc()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📋 MASTER DESC RPT</button>
+      <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT</button>
+      <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC</button>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
@@ -3872,6 +3876,381 @@ function rptAllFilter(sortBy, pick){
 var _rptPage=0;
 var _rptArr=[];
 var _rptType='';
+
+function rptIrsDesc(){
+  loadLog();
+  if(!LOG.length){document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';return;}
+  var yrs=[...new Set(LOG.map(function(e){return(e.date||'').slice(0,4);}))].filter(Boolean).sort().reverse();
+  var pcs=[...new Set(LOG.map(function(e){return e.pcode||'';}))].filter(Boolean).sort();
+  var yrOpts='<option value="">ALL YRS</option>'+yrs.map(function(y){return'<option value="'+y+'">'+y+'</option>';}).join('');
+  var pcOpts='<option value="">ALL PCODE</option>'+pcs.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+  var html='<div style="font-family:Courier New,monospace;">'
+    +'<div style="background:#003300;border:2px solid #00ff88;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:13px;margin-bottom:8px;">🏛 IRS DESC SUMMARY REPORT</div>'
+    +'<div style="display:flex;gap:6px;">'
+    +'<select id="irs-yr" onchange="runIrsDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
+    +'<select id="irs-pc" onchange="runIrsDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
+    +'</div></div>'
+    +'<div id="irs-output"></div></div>';
+  document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
+  runIrsDesc();
+}
+
+function runIrsDesc(){
+  loadLog();
+  var yr=document.getElementById('irs-yr').value;
+  var pc=document.getElementById('irs-pc').value;
+  var rows=LOG.filter(function(e){
+    return(!yr||(e.date||'').startsWith(yr))&&(!pc||e.pcode===pc);
+  });
+  if(!rows.length){document.getElementById('irs-output').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:10px;">NO DATA</div>';return;}
+
+  var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  var yrLabel=yr||'ALL YRS';
+  var pcLabel=pc||'ALL';
+
+  // build desc totals
+  var descMap={};
+  rows.forEach(function(e){
+    var d=e.desc||'UNKNOWN';
+    if(!descMap[d])descMap[d]={amt:0,pcode:e.pcode||''};
+    descMap[d].amt+=e.amt;
+  });
+
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+  var credits=[],debits=[];
+  Object.keys(descMap).forEach(function(d){
+    if(descMap[d].amt>=0)credits.push(d);
+    else debits.push(d);
+  });
+  credits.sort(function(a,b){return descMap[b].amt-descMap[a].amt;});
+  debits.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+
+  var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;">';
+  h+='<div style="color:#ffff00;font-size:10px;margin-bottom:2px;">'+today2+' &nbsp;&nbsp; IRSDESC.RPT &nbsp;&nbsp; '+yrLabel+' · '+pcLabel+'</div>';
+  h+='<div style="color:#00ff88;font-weight:700;font-size:12px;margin-bottom:8px;text-align:center;border-bottom:1px solid #006600;padding-bottom:4px;">IRS DESC SUMMARY REPORT</div>';
+
+  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:11px;">';
+  h+='<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
+    +'<th style="color:#ffff00;padding:5px 4px;text-align:left;border:1px solid #333388;">DESCRIPTION</th>'
+    +'<th style="color:#ffff00;padding:5px 4px;text-align:right;border:1px solid #333388;">AMOUNT</th>'
+    +'<th style="color:#ffff00;padding:5px 4px;text-align:center;border:1px solid #333388;">PCO</th>'
+    +'</tr>';
+
+  // SECTION A — INCOME/CREDITS
+  if(credits.length){
+    h+='<tr style="background:#002200;">'
+      +'<td colspan="3" style="padding:4px 6px;color:#00ff88;font-weight:700;font-size:10px;">A — INCOME / CREDITS</td></tr>';
+    var creditTotal=0;
+    credits.forEach(function(d,i){
+      var v=descMap[d];
+      creditTotal+=v.amt;
+      var bg=i%2===0?'background:#003300':'background:#002a00';
+      h+='<tr style="'+bg+';border-bottom:1px solid #1a3a1a;">'
+        +'<td style="padding:5px 4px;color:#ffff00;font-size:11px;">'+trunc(d,24)+'</td>'
+        +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:11px;color:#00ffff;">+$'+v.amt.toFixed(2)+'</td>'
+        +'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#00ffff;">'+v.pcode+'</td>'
+        +'</tr>';
+    });
+    h+='<tr style="background:#004400;border-top:1px solid #00ff88;">'
+      +'<td style="padding:4px 6px;color:#00ff88;font-size:10px;font-style:italic;">* Credits Subtotal *</td>'
+      +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:#00ffff;font-size:11px;">+$'+creditTotal.toFixed(2)+'</td>'
+      +'<td></td></tr>';
+  }
+
+  // SECTION B — EXPENSES/DEBITS
+  if(debits.length){
+    h+='<tr style="background:#220000;">'
+      +'<td colspan="3" style="padding:4px 6px;color:#ff6666;font-weight:700;font-size:10px;">B — EXPENSES / DEBITS</td></tr>';
+    var debitTotal=0;
+    debits.forEach(function(d,i){
+      var v=descMap[d];
+      debitTotal+=v.amt;
+      var bg=i%2===0?'background:#1a0000':'background:#150000';
+      h+='<tr style="'+bg+';border-bottom:1px solid #3a1a1a;">'
+        +'<td style="padding:5px 4px;color:#ffff00;font-size:11px;">'+trunc(d,24)+'</td>'
+        +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:11px;color:#ff6666;">-$'+Math.abs(v.amt).toFixed(2)+'</td>'
+        +'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#00ffff;">'+v.pcode+'</td>'
+        +'</tr>';
+    });
+    h+='<tr style="background:#440000;border-top:1px solid #ff6666;">'
+      +'<td style="padding:4px 6px;color:#ff6666;font-size:10px;font-style:italic;">* Debits Subtotal *</td>'
+      +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:#ff6666;font-size:11px;">-$'+Math.abs(debitTotal).toFixed(2)+'</td>'
+      +'<td></td></tr>';
+  }
+
+  // NET TOTAL
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+  h+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
+    +'<td style="padding:6px 4px;color:#ffff00;font-weight:700;font-size:12px;">*** NET TOTAL ***</td>'
+    +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:12px;color:'+gc+';">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'<td></td></tr>'
+    +'</table></div>';
+
+  document.getElementById('irs-output').innerHTML=h;
+}
+
+function rptAuditDesc(){
+  loadLog();
+  if(!LOG.length){document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';return;}
+  var yrs=[...new Set(LOG.map(function(e){return(e.date||'').slice(0,4);}))].filter(Boolean).sort().reverse();
+  var pcs=[...new Set(LOG.map(function(e){return e.pcode||'';}))].filter(Boolean).sort();
+  var yrOpts='<option value="">ALL YRS</option>'+yrs.map(function(y){return'<option value="'+y+'">'+y+'</option>';}).join('');
+  var pcOpts='<option value="">ALL PCODE</option>'+pcs.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+  var html='<div style="font-family:Courier New,monospace;">'
+    +'<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">🔍 CARRINGTON DESCRIPTION REPORT</div>'
+    +'<div style="display:flex;gap:6px;">'
+    +'<select id="aud-yr" onchange="runAuditDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
+    +'<select id="aud-pc" onchange="runAuditDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
+    +'</div></div>'
+    +'<div id="aud-output"></div></div>';
+  document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
+  runAuditDesc();
+}
+
+function runAuditDesc(){
+  loadLog();
+  var yr=document.getElementById('aud-yr').value;
+  var pc=document.getElementById('aud-pc').value;
+  var rows=LOG.filter(function(e){
+    return(!yr||(e.date||'').startsWith(yr))&&(!pc||e.pcode===pc);
+  });
+  if(!rows.length){document.getElementById('aud-output').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:10px;">NO DATA</div>';return;}
+
+  var yrLabel=yr?yr.slice(2):'ALL';
+  var pcLabel=pc||'ALL';
+  var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+
+  // group by DESC
+  var descGroups={};
+  rows.forEach(function(e){
+    var d=e.desc||'UNKNOWN';
+    if(!descGroups[d])descGroups[d]=[];
+    descGroups[d].push(e);
+  });
+
+  // vendor YTD map — total per vendor across ALL rows in filter
+  var vendorYTD={};
+  rows.forEach(function(e){
+    vendorYTD[e.payee]=(vendorYTD[e.payee]||0)+e.amt;
+  });
+
+  var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">';
+  h+='<div style="color:#ffff00;font-weight:700;font-size:10px;font-family:Courier New,monospace;margin-bottom:2px;">'
+    +'PAGE 1 &nbsp;&nbsp; CCDESSEE.PRG, AUDIT FOR ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
+    +'<div style="color:#ff88ff;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin-bottom:4px;text-align:center;">'
+    +'CARRINGTON DESCRIPTION REPORT</div>'
+    +'<div style="color:#ccccff;font-size:9px;font-family:Courier New,monospace;margin-bottom:6px;border-bottom:1px solid #333388;padding-bottom:4px;">'
+    +'** Audit File for Pcode, Year: '+pcLabel+' '+yrLabel+'</div>';
+
+  // header
+  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:9px;">'
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:3px;text-align:left;border:1px solid #333388;">VENDOR</th>'
+    +'<th style="color:#ffff00;padding:3px;text-align:left;border:1px solid #333388;">DESC</th>'
+    +'<th style="color:#ffff00;padding:3px;text-align:center;border:1px solid #333388;">DATE</th>'
+    +'<th style="color:#ffff00;padding:3px;text-align:right;border:1px solid #333388;">AMT</th>'
+    +'<th style="color:#ffff00;padding:3px;text-align:right;border:1px solid #333388;">%</th>'
+    +'<th style="color:#ffff00;padding:3px;text-align:right;border:1px solid #333388;">CNT</th>'
+    +'<th style="color:#ffff00;padding:3px;text-align:right;border:1px solid #333388;">AVE</th>'
+    +'<th style="color:#ffff00;padding:3px;text-align:right;border:1px solid #333388;">YTD VEN</th>'
+    +'</tr>';
+
+  var descKeys=Object.keys(descGroups).sort();
+  var pageNum=1;
+
+  descKeys.forEach(function(desc){
+    var grp=descGroups[desc].sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+    var grpTotal=grp.reduce(function(s,e){return s+e.amt;},0);
+    var grpAvg=grp.length>0?(grpTotal/grp.length):0;
+    var grpPct=grandTotal!==0?((grpTotal/Math.abs(grandTotal))*100).toFixed(2):'0.00';
+
+    // DESC group header
+    h+='<tr style="background:#002233;border-top:2px solid #333388;">'
+      +'<td colspan="8" style="padding:4px 3px;color:#00ffff;font-size:9px;font-weight:700;">'
+      +'*&nbsp;&nbsp; Pct/Amt/Aver&gt; '+pcLabel+' '+trunc(desc,20)
+      +' &nbsp;&nbsp;&nbsp; '+Math.abs(parseFloat(grpPct)).toFixed(2)
+      +' &nbsp; '+(grpTotal>=0?'+':'-')+'$'+Math.abs(grpTotal).toFixed(2)
+      +' &nbsp; '+(grpAvg>=0?'+':'-')+'$'+Math.abs(grpAvg).toFixed(2)
+      +' &nbsp; '+yrLabel+'</td></tr>';
+
+    grp.forEach(function(e,idx){
+      var ac=e.amt>=0?'#00ffff':'#ff6666';
+      var bg=idx%2===0?'background:#000044':'background:#000033';
+      // format date as MMDDYY
+      var dt=(e.date||'').replace(/-/g,'');
+      var dtFmt=dt.slice(4,6)+dt.slice(6,8)+dt.slice(2,4);
+      // vendor avg
+      var vGrp=grp.filter(function(r){return r.payee===e.payee;});
+      var vAvg=vGrp.length>0?(vGrp.reduce(function(s,r){return s+r.amt;},0)/vGrp.length):0;
+      var vc=vAvg>=0?'#00ffff':'#ff6666';
+      var ytd=vendorYTD[e.payee]||0;
+      var ytdc=ytd>=0?'#00ffff':'#ff6666';
+      var pct=grpTotal!==0?((e.amt/Math.abs(grpTotal))*100).toFixed(2):'0.00';
+
+      h+='<tr style="'+bg+';border-bottom:1px solid #1a1a55;">'
+        +'<td style="padding:3px;color:#ffff00;font-size:9px;white-space:nowrap;">'+trunc(e.payee||'',16)+'</td>'
+        +'<td style="padding:3px;color:#ccccff;font-size:9px;white-space:nowrap;">'+trunc(desc,7)+'</td>'
+        +'<td style="padding:3px;color:#aaaacc;font-size:9px;text-align:center;white-space:nowrap;">'+dtFmt+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:9px;font-weight:700;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:9px;color:#ffaa00;">'+pct+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:9px;color:#ccccff;">1</td>'
+        +'<td style="padding:3px;text-align:right;font-size:9px;color:'+vc+';">'+(vAvg>=0?'+':'-')+'$'+Math.abs(vAvg).toFixed(2)+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:9px;color:'+ytdc+';">'+(ytd>=0?'+':'-')+'$'+Math.abs(ytd).toFixed(2)+'</td>'
+        +'</tr>';
+    });
+
+    // subsubtotal
+    var stc=grpTotal>=0?'#00ffff':'#ff6666';
+    h+='<tr style="background:#000066;border-top:1px solid #6666ff;">'
+      +'<td colspan="2" style="padding:3px;color:#ff88ff;font-size:9px;font-style:italic;">* Subsubtotal *</td>'
+      +'<td></td>'
+      +'<td style="padding:3px;text-align:right;font-size:9px;font-weight:700;color:'+stc+';">'+(grpTotal>=0?'+':'-')+'$'+Math.abs(grpTotal).toFixed(2)+'</td>'
+      +'<td></td>'
+      +'<td style="padding:3px;text-align:right;font-size:9px;color:#ccccff;font-weight:700;">'+grp.length+'</td>'
+      +'<td colspan="2"></td></tr>';
+  });
+
+  // grand total
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+  h+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
+    +'<td colspan="2" style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:10px;">*** Total ***</td>'
+    +'<td></td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:'+gc+';">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'<td></td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:#ccccff;">'+rows.length+'</td>'
+    +'<td colspan="2"></td></tr>'
+    +'</table></div>';
+
+  document.getElementById('aud-output').innerHTML=h;
+}
+
+function rptMasterDesc(){
+  loadLog();
+  if(!LOG.length){document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';return;}
+
+  // get unique years for filter
+  var yrs=[...new Set(LOG.map(function(e){return(e.date||'').slice(0,4);}))].filter(Boolean).sort().reverse();
+  var yrOpts='<option value="">ALL YRS</option>'+yrs.map(function(y){return'<option value="'+y+'">'+y+'</option>';}).join('');
+  var pcodes=[...new Set(LOG.map(function(e){return e.pcode||'';}))].filter(Boolean).sort();
+  var pcOpts='<option value="">ALL PCODE</option>'+pcodes.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+
+  var html='<div style="font-family:Courier New,monospace;">'
+    +'<div style="background:#0000aa;border:2px solid #ff88ff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#ff88ff;font-weight:700;font-size:13px;margin-bottom:8px;">📋 MASTER DESCRIPTION REPORT</div>'
+    +'<div style="display:flex;gap:6px;">'
+    +'<select id="mdr-yr" onchange="runMasterDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
+    +'<select id="mdr-pc" onchange="runMasterDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
+    +'</div></div>'
+    +'<div id="mdr-output"></div>'
+    +'</div>';
+  document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
+  runMasterDesc();
+}
+
+function runMasterDesc(){
+  loadLog();
+  var yr=document.getElementById('mdr-yr').value;
+  var pc=document.getElementById('mdr-pc').value;
+  var rows=LOG.filter(function(e){
+    return(!yr||(e.date||'').startsWith(yr))&&(!pc||e.pcode===pc);
+  });
+  if(!rows.length){document.getElementById('mdr-output').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:10px;">NO DATA</div>';return;}
+
+  var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  var yrLabel=yr||'ALL YRS';
+
+  // build desc map
+  var descMap={};
+  rows.forEach(function(e){
+    var d=e.desc||'UNKNOWN';
+    if(!descMap[d])descMap[d]={cnt:0,amt:0,pcode:e.pcode||''};
+    descMap[d].cnt++;
+    descMap[d].amt+=e.amt;
+  });
+
+  // separate credits (A) and debits (B)
+  var credits=[],debits=[];
+  Object.keys(descMap).forEach(function(d){
+    if(descMap[d].amt>=0)credits.push(d);
+    else debits.push(d);
+  });
+  credits.sort(function(a,b){return descMap[b].amt-descMap[a].amt;});
+  debits.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+
+  // total debits for PCT calc
+  var totalDebitAmt=debits.reduce(function(s,d){return s+descMap[d].amt;},0);
+
+  var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:11px;font-family:Courier New,monospace;margin-bottom:4px;">'
+    +'PAGE 1 &nbsp;&nbsp;&nbsp; ACCOUNTING &nbsp;&nbsp;&nbsp; '+today2+'</div>'
+    +'<div style="color:#ff88ff;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'
+    +'Master Description Report &nbsp;&nbsp; '+yrLabel+(pc?' · '+pc:'')+'</div>';
+
+  // header row
+  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:10px;">'
+    +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:1px solid #333388;font-size:9px;">DESCRIPTION</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">HOW<br>MANY</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">AMOUNT</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">RANK</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">PCT%</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">AVG</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:center;border:1px solid #333388;font-size:9px;">PCO</th>'
+    +'</tr>';
+
+  function buildSection(label, list, sectionTotal, isCredit){
+    var secRows='<tr style="background:#002200;">'
+      +'<td colspan="7" style="padding:4px 6px;color:#00ff88;font-weight:700;font-size:10px;border-bottom:1px solid #006600;">* B=DEBITS A=CREDITS -> '+label+'</td></tr>';
+    list.forEach(function(d,idx){
+      var v=descMap[d];
+      var pct=sectionTotal!==0?((v.amt/Math.abs(sectionTotal))*100).toFixed(2):'0.00';
+      var avg=v.cnt>0?(v.amt/v.cnt).toFixed(2):'0.00';
+      var ac=v.amt>=0?'#00ffff':'#ff6666';
+      var bg=idx%2===0?'background:#000044':'background:#00003a';
+      secRows+='<tr style="'+bg+';border-bottom:1px solid #222266;">'
+        +'<td style="padding:4px 3px;color:#ffff00;font-size:10px;white-space:nowrap;">'+trunc(d,18)+'</td>'
+        +'<td style="padding:4px 3px;color:#ccccff;text-align:right;font-size:10px;">'+v.cnt+'</td>'
+        +'<td style="padding:4px 3px;text-align:right;font-size:10px;font-weight:700;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
+        +'<td style="padding:4px 3px;color:#ffaa00;text-align:right;font-size:10px;">'+(idx+1)+'</td>'
+        +'<td style="padding:4px 3px;color:#ffaa00;text-align:right;font-size:10px;">'+Math.abs(parseFloat(pct)).toFixed(2)+'%</td>'
+        +'<td style="padding:4px 3px;text-align:right;font-size:10px;color:'+ac+';">'+(parseFloat(avg)>=0?'+':'-')+'$'+Math.abs(parseFloat(avg)).toFixed(2)+'</td>'
+        +'<td style="padding:4px 3px;color:#00ffff;text-align:center;font-size:9px;">'+v.pcode+'</td>'
+        +'</tr>';
+    });
+    // subtotal
+    var stAmt=list.reduce(function(s,d){return s+descMap[d].amt;},0);
+    var stCnt=list.reduce(function(s,d){return s+descMap[d].cnt;},0);
+    var stc=stAmt>=0?'#00ffff':'#ff6666';
+    secRows+='<tr style="background:#000066;border-top:1px solid #ffff00;">'
+      +'<td style="padding:4px 3px;color:#ff88ff;font-size:10px;font-style:italic;">* Subsubtotal *</td>'
+      +'<td style="padding:4px 3px;color:#ccccff;text-align:right;font-size:10px;font-weight:700;">'+stCnt+'</td>'
+      +'<td style="padding:4px 3px;text-align:right;font-size:10px;font-weight:700;color:'+stc+';">'+(stAmt>=0?'+':'-')+'$'+Math.abs(stAmt).toFixed(2)+'</td>'
+      +'<td colspan="4"></td></tr>';
+    return secRows;
+  }
+
+  h+=buildSection('A',credits,rows.reduce(function(s,e){return s+(e.amt>=0?e.amt:0);},0),true);
+  h+=buildSection('B',debits,totalDebitAmt,false);
+
+  // grand total
+  var grandAmt=rows.reduce(function(s,e){return s+e.amt;},0);
+  var grandCnt=rows.length;
+  var gc=grandAmt>=0?'#00ffff':'#ff6666';
+  h+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
+    +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:11px;">*** Total ***</td>'
+    +'<td style="padding:5px 3px;color:#ffffff;text-align:right;font-weight:700;font-size:11px;">'+grandCnt+'</td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:11px;color:'+gc+';">'+(grandAmt>=0?'+':'-')+'$'+Math.abs(grandAmt).toFixed(2)+'</td>'
+    +'<td colspan="4" style="padding:5px 3px;color:#ccccff;font-size:9px;">'+debits.length+' desc types</td></tr>'
+    +'</table></div>';
+
+  document.getElementById('mdr-output').innerHTML=h;
+}
 
 function rptYearCompare(){
   loadLog();
