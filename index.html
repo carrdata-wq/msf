@@ -3933,10 +3933,10 @@ function extractZelleName(desc){
   return 'ZELLE TRANSFER';
 }
 
+var _dupQueue=[];var _dupAdded=0;var _dupSkipped=0;
+
 function doBankImportConfirm(){
   if(!_bankRows.length)return;
-
-  // show progress overlay
   var prog=document.createElement('div');
   prog.id='import-progress-overlay';
   prog.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -3949,59 +3949,77 @@ function doBankImportConfirm(){
     +'<div id="imp-pct" style="color:#00ffff;font-size:13px;font-weight:700;">0%</div>'
     +'</div>';
   document.body.appendChild(prog);
-
-  // process in chunks so UI updates
   loadLog();
   var existing=new Set();
   LOG.forEach(function(e){
     var key=(e.date||'')+'|'+(e.amt||0)+'|'+(e.payee||'').slice(0,10);
     existing.add(key);
   });
-
   var total=_bankRows.length;
   var added=0;var skipped=0;var idx=0;
-  var chunkSize=50;
+  _dupQueue=[];_dupAdded=0;_dupSkipped=0;
 
   function processChunk(){
-    var end=Math.min(idx+chunkSize,total);
+    var end=Math.min(idx+50,total);
     for(var i=idx;i<end;i++){
       var r=_bankRows[i];
       var key=(r.date||'')+'|'+(r.amt||0)+'|'+(r.payee||'').slice(0,10);
-      if(existing.has(key)){skipped++;continue;}
-      LOG.unshift({
-        id:Date.now()+Math.random(),
-        payee:r.payee,
-        pcode:r.pcode,
-        desc:r.desc,
-        date:r.date,
-        amt:r.amt
-      });
-      existing.add(key);
-      added++;
+      if(existing.has(key)){_dupQueue.push(r);skipped++;}
+      else{LOG.unshift({id:Date.now()+Math.random(),payee:r.payee,pcode:r.pcode,desc:r.desc,date:r.date,amt:r.amt});existing.add(key);added++;}
     }
     idx=end;
     var pct=Math.round((idx/total)*100);
-    document.getElementById('imp-bar').style.width=pct+'%';
-    document.getElementById('imp-pct').textContent=pct+'%';
-    document.getElementById('imp-msg').textContent='Processing '+idx+' of '+total+'...';
-
-    if(idx<total && _bankDone===''){
-      setTimeout(processChunk,10);
-    } else {
-      _bankDone='x';
+    var bar=document.getElementById('imp-bar');if(bar)bar.style.width=pct+'%';
+    var pctEl=document.getElementById('imp-pct');if(pctEl)pctEl.textContent=pct+'%';
+    var msg=document.getElementById('imp-msg');if(msg)msg.textContent='Processing '+idx+' of '+total+'...';
+    if(idx<total&&_bankDone===''){setTimeout(processChunk,10);}
+    else{
+      _bankDone='x';_dupAdded=added;_dupSkipped=skipped;
       saveLog();
-      // nuke all floating overlays from body
       Array.from(document.body.children).forEach(function(el){
-        if(el.style.position==='fixed'||el.style.cssText.indexOf('position:fixed')>=0){
-          el.remove();
-        }
+        if(el.style.position==='fixed'||el.style.cssText.indexOf('position:fixed')>=0){el.remove();}
       });
-      showScreen('main');
-      toast(added+' entries imported ✓',true);
+      if(_dupQueue.length>0){showDupReview(0);}
+      else{showScreen('main');toast(_dupAdded+' entries imported ✓',true);}
     }
   }
   processChunk();
 }
+
+function showDupReview(idx){
+  if(idx>=_dupQueue.length){showScreen('main');toast(_dupAdded+' new · '+_dupSkipped+' skipped ✓',true);return;}
+  var r=_dupQueue[idx];
+  var old=document.getElementById('dup-review-overlay');if(old)old.remove();
+  var overlay=document.createElement('div');
+  overlay.id='dup-review-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ffaa00;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;">'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;margin-bottom:6px;text-align:center;">⚠️ POSSIBLE DUPLICATE</div>'
+    +'<div style="color:#ccccff;font-size:10px;text-align:center;margin-bottom:10px;">'+(idx+1)+' of '+_dupQueue.length+' to review</div>'
+    +'<div style="background:#000033;border:1px solid #ffaa00;border-radius:4px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:13px;">'+r.payee+'</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:18px;">$'+Math.abs(r.amt).toFixed(2)+'</div>'
+    +'<div style="color:#aaaacc;font-size:11px;">'+r.date+' · '+r.desc+'</div>'
+    +'</div>'
+    +'<div style="color:#ffff00;font-size:11px;margin-bottom:12px;text-align:center;">Already in ledger.<br>Is this a REAL second charge?</div>'
+    +'<div style="display:flex;gap:10px;margin-bottom:8px;">'
+    +'<button onclick="dupKeepBoth('+idx+')" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:16px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y<br><span style="font-size:10px;">KEEP BOTH</span></button>'
+    +'<button onclick="dupSkipIt('+idx+')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:16px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N<br><span style="font-size:10px;">SKIP IT</span></button>'
+    +'</div>'
+    +'<button onclick="dupSkipAll()" style="width:100%;background:#333;color:#ccc;font-family:Courier New,monospace;font-size:11px;padding:8px;border:none;border-radius:4px;cursor:pointer;">SKIP ALL REMAINING</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+
+function dupKeepBoth(idx){
+  var r=_dupQueue[idx];loadLog();
+  LOG.unshift({id:Date.now()+Math.random(),payee:r.payee,pcode:r.pcode,desc:r.desc,date:r.date,amt:r.amt});
+  saveLog();_dupAdded++;_dupSkipped--;
+  var o=document.getElementById('dup-review-overlay');if(o)o.remove();
+  showDupReview(idx+1);
+}
+function dupSkipIt(idx){var o=document.getElementById('dup-review-overlay');if(o)o.remove();showDupReview(idx+1);}
+function dupSkipAll(){var o=document.getElementById('dup-review-overlay');if(o)o.remove();showScreen('main');toast(_dupAdded+' new · '+_dupSkipped+' skipped ✓',true);}
 function doBackup() {
   var mxLog=[];
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
