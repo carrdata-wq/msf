@@ -622,36 +622,63 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">⛽ Fuel & Gas Tracker</div></div>
   <div id="fuel-menu" class="mod-menu">
     <div class="mod-menu-grid">
-      <div class="mod-btn" onclick="fuelShow('log')"><div class="mb-icon yellow">+</div><div class="mb-label">Log Fill-Up</div><div class="mb-sub">Gallons · Price · Miles</div></div>
-      <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon green">≡</div><div class="mb-label">Stats & History</div><div class="mb-sub">MPG · Cost totals</div></div>
+      <div class="mod-btn" onclick="fuelShow('mileage')"><div class="mb-icon green">🚗</div><div class="mb-label">Log Mileage</div><div class="mb-sub">Odometer · Date · Log at leisure</div></div>
+      <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon blue">📊</div><div class="mb-label">Day by Day</div><div class="mb-sub">Cost/day · Per purchase</div></div>
+      <div class="mod-btn" onclick="fuelShow('chart')"><div class="mb-icon yellow">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · Cost trend</div></div>
     </div>
+    <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">⛽ Gas costs auto-pulled from Accounting · DESC=TRUCK GAS</div>
   </div>
-  <!-- Log fill-up -->
+
+  <!-- Log Gas Purchase -->
   <div id="fuel-log" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title yellow">Log Fill-Up</div>
+      <div class="card-title yellow">⛽ Log Gas Purchase</div>
       <div class="field"><label>Date</label><input type="date" id="fuel-date"></div>
-      <div class="field"><label>Vehicle / Label</label><input type="text" id="fuel-veh" list="fuel-veh-dl" placeholder="e.g. Truck, Car" autocomplete="off"></div>
+      <div class="field"><label>Station / Vendor</label><input type="text" id="fuel-veh" list="fuel-veh-dl" placeholder="e.g. THORNTONS, SHELL" autocomplete="off" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field-row">
         <div class="field"><label>Gallons</label><input type="number" id="fuel-gal" inputmode="decimal" step="0.001" placeholder="0.000"></div>
-        <div class="field"><label>Price/Gallon ($)</label><input type="number" id="fuel-ppg" inputmode="decimal" step="0.001" placeholder="0.000"></div>
+        <div class="field"><label>Price/Gal ($)</label><input type="number" id="fuel-ppg" inputmode="decimal" step="0.001" placeholder="0.000"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Odometer</label><input type="number" id="fuel-odo" inputmode="numeric" placeholder="miles"></div>
-        <div class="field"><label>Total Cost ($)</label><input type="number" id="fuel-total" inputmode="decimal" step="0.01" placeholder="auto-calc"></div>
-      </div>
+      <div class="field"><label>Total Cost ($)</label><input type="number" id="fuel-total" inputmode="decimal" step="0.01" placeholder="enter total"></div>
       <div class="field"><label>Notes</label><input type="text" id="fuel-notes" placeholder="e.g. Highway trip"></div>
-      <button class="btn btn-yellow" onclick="addFuel()">✓ SAVE FILL-UP</button>
+      <button class="btn btn-yellow" onclick="addFuel()">✓ SAVE</button>
       <button class="btn btn-dim" onclick="fuelShow('')">◀ Back</button>
     </div>
     <datalist id="fuel-veh-dl"></datalist>
   </div>
-  <!-- Stats -->
-  <div id="fuel-stats" class="fpage" style="display:none">
-    <div class="fbar"><select id="fuel-fveh" onchange="renderFuelStats()"><option value="">All Vehicles</option></select></div>
-    <div id="fuel-stat-cards"></div>
-    <div class="card" style="padding:6px 12px;"><div id="fuel-history"></div></div>
-    <button class="btn btn-dim" onclick="fuelShow('')">◀ Back</button>
+
+  <!-- Log Mileage -->
+  <div id="fuel-mileage" class="fpage" style="display:none">
+    <div class="card">
+      <div class="card-title green">🚗 Log Mileage</div>
+      <div class="field"><label>Date</label><input type="date" id="mile-date"></div>
+      <div class="field"><label>Odometer Reading</label><input type="number" id="mile-odo" inputmode="numeric" placeholder="e.g. 87542"></div>
+      <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field"><label>Notes (optional)</label><input type="text" id="mile-notes" placeholder="e.g. Monthly reading"></div>
+      <button class="btn btn-green" onclick="addMileage()">✓ SAVE MILEAGE</button>
+      <button class="btn btn-dim" onclick="fuelShow('')">◀ Back</button>
+    </div>
+    <!-- Mileage history -->
+    <div class="card" style="margin-top:8px;">
+      <div class="card-title blue">Recent Mileage Logs</div>
+      <div id="mile-history"></div>
+    </div>
+  </div>
+
+  <!-- Monthly Chart -->
+  <div id="fuel-chart" class="fpage" style="display:none">
+    <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="fuelShow('')" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#ffff00;font-weight:700;font-size:13px;flex:1;">📈 Monthly Gas Cost</span>
+    </div>
+    <div id="fuel-chart-content" style="padding:8px;"></div>
+  </div>
+    <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="fuelShow('')" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#ffff00;font-weight:700;font-size:13px;flex:1;">⛽ Gas Stats</span>
+    </div>
+    <div id="fuel-stat-cards" style="padding:8px;"></div>
+    <div id="fuel-history"></div>
   </div>
 </div>
 
@@ -1373,9 +1400,76 @@ function acctShow(sub) {
   if(sub==='masters') { renderMasters(); }
 }
 function fuelShow(sub) {
-  ['log','stats'].forEach(s=>{ document.getElementById('fuel-'+s).style.display=s===sub?'block':'none'; });
+  ['log','mileage','stats','chart'].forEach(s=>{
+    var el=document.getElementById('fuel-'+s);
+    if(el)el.style.display=s===sub?'block':'none';
+  });
   document.getElementById('fuel-menu').style.display=sub?'none':'block';
-  if(sub==='stats') { buildFuelFilters(); renderFuelStats(); }
+  if(sub==='stats'){renderFuelStats();}
+  if(sub==='chart'){renderFuelChart();}
+  if(sub==='mileage'){
+    document.getElementById('mile-date').value=today();
+    renderMileHistory();
+  }
+  if(sub==='log'){document.getElementById('fuel-date').value=today();}
+}
+
+function renderFuelChart(){
+  loadLog();
+  var gasEntries=LOG.filter(function(e){
+    var desc=(e.desc||'').toUpperCase();
+    return desc.indexOf('TRUCK GAS')>=0;
+  });
+  if(!gasEntries.length){
+    document.getElementById('fuel-chart-content').innerHTML='<div style="color:#ffff00;font-family:Courier New,monospace;padding:20px;text-align:center;">No TRUCK GAS entries found.</div>';
+    return;
+  }
+
+  // group by month
+  var byMonth={};
+  gasEntries.forEach(function(e){
+    var m=(e.date||'').slice(0,7);
+    byMonth[m]=(byMonth[m]||0)+Math.abs(e.amt);
+  });
+  var months=Object.keys(byMonth).sort();
+  var maxVal=Math.max.apply(null,Object.values(byMonth));
+  var avgVal=Object.values(byMonth).reduce(function(s,v){return s+v;},0)/months.length;
+
+  var h='<div style="font-family:Courier New,monospace;">';
+
+  // summary
+  h+='<div style="display:flex;gap:8px;margin-bottom:12px;">'
+    +'<div style="flex:1;background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">AVG/MONTH</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+avgVal.toFixed(2)+'</div></div>'
+    +'<div style="flex:1;background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">HIGHEST MONTH</div>'
+    +'<div style="color:#ff4444;font-weight:700;font-size:14px;">$'+maxVal.toFixed(2)+'</div></div>'
+    +'</div>';
+
+  // mountain/bar chart
+  h+='<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:10px;">MONTHLY GAS COST — BAR CHART</div>';
+
+  months.forEach(function(m){
+    var v=byMonth[m];
+    var barPct=Math.round((v/maxVal)*100);
+    var barColor=v>avgVal*1.3?'#cc0000':v>avgVal?'#cc6600':'#006600';
+    var mo=m.slice(5,7)+'/'+m.slice(2,4);
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
+      +'<div style="color:#000066;font-size:10px;width:40px;text-align:right;font-weight:700;">'+mo+'</div>'
+      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:18px;position:relative;">'
+      +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;transition:width 0.3s;"></div>'
+      +'<span style="position:absolute;right:4px;top:1px;font-size:10px;color:#000000;font-weight:700;">$'+v.toFixed(0)+'</span>'
+      +'</div></div>';
+  });
+
+  // avg line note
+  h+='<div style="border-top:1px solid #cccccc;margin-top:8px;padding-top:6px;font-size:10px;color:#666666;">'
+    +'🟢 = below avg &nbsp; 🟠 = above avg &nbsp; 🔴 = 30%+ above avg'
+    +'</div></div></div>';
+
+  document.getElementById('fuel-chart-content').innerHTML=h;
 }
 function utilShow(sub) {
   ['log-elec','log-gas','log-other','util-stats'].forEach(s=>{ document.getElementById('util-'+s).style.display=s===sub?'block':'none'; });
@@ -1649,23 +1743,65 @@ function renderML(elId,items,field,cc) {
 // ═══════════════════════════════════════════════
 function addFuel() {
   const d=load();
-  const date=document.getElementById('fuel-date').value;
-  const veh=document.getElementById('fuel-veh').value.trim();
+  const date=document.getElementById('fuel-date').value||today();
+  const veh=(document.getElementById('fuel-veh').value||'').trim().toUpperCase();
   const gal=parseFloat(document.getElementById('fuel-gal').value)||0;
   const ppg=parseFloat(document.getElementById('fuel-ppg').value)||0;
   let total=parseFloat(document.getElementById('fuel-total').value);
   if(isNaN(total)||!total) total=gal*ppg;
-  const odo=parseFloat(document.getElementById('fuel-odo').value)||0;
-  const notes=document.getElementById('fuel-notes').value.trim();
-  if(!date||(!gal&&!total)){toast('Date & Gallons required',false);return;}
-  d.fuel.logs.push({id:nextId(d.fuel.logs),date,veh,gal,ppg,total:parseFloat(total.toFixed(2)),odo,notes});
+  const notes=(document.getElementById('fuel-notes').value||'').trim();
+  if(!date||(!total)){toast('Date & Amount required',false);return;}
+  if(!d.fuel)d.fuel={logs:[],miles:[]};
+  if(!d.fuel.logs)d.fuel.logs=[];
+  d.fuel.logs.push({id:nextId(d.fuel.logs),date,veh,gal,ppg,total:parseFloat(total.toFixed(2)),notes});
   save(d);
+  // AUTO-POST TO ACCOUNTING
+  loadLog();
+  LOG.unshift({id:Date.now(),payee:veh||'GAS STATION',pcode:'ROOF',desc:'TRUCK GAS',date:date,amt:-Math.abs(total)});
+  saveLog();
+  document.getElementById('fuel-veh').value='';
   document.getElementById('fuel-gal').value='';
   document.getElementById('fuel-ppg').value='';
   document.getElementById('fuel-total').value='';
-  document.getElementById('fuel-odo').value='';
   document.getElementById('fuel-notes').value='';
-  toast('Fill-up saved');
+  toast('⛽ Gas saved + posted to accounting ✓',true);
+  fuelShow('');
+}
+
+function addMileage(){
+  const d=load();
+  const date=document.getElementById('mile-date').value||today();
+  const odo=parseFloat(document.getElementById('mile-odo').value)||0;
+  const veh=(document.getElementById('mile-veh').value||'TRUCK').trim().toUpperCase();
+  const notes=(document.getElementById('mile-notes').value||'').trim();
+  if(!date||!odo){toast('Date & Odometer required',false);return;}
+  if(!d.fuel)d.fuel={logs:[],miles:[]};
+  if(!d.fuel.miles)d.fuel.miles=[];
+  d.fuel.miles.push({id:nextId(d.fuel.miles),date,odo,veh,notes});
+  d.fuel.miles.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+  save(d);
+  document.getElementById('mile-odo').value='';
+  document.getElementById('mile-notes').value='';
+  renderMileHistory();
+  toast('🚗 Mileage saved ✓',true);
+}
+
+function renderMileHistory(){
+  const d=load();
+  var miles=(d.fuel&&d.fuel.miles)||[];
+  var recent=miles.slice(-10).reverse();
+  var h='';
+  if(!recent.length){document.getElementById('mile-history').innerHTML='<div style="color:var(--dim);font-size:12px;">No mileage logged yet</div>';return;}
+  recent.forEach(function(m,i){
+    var prev=miles[miles.indexOf(m)-1];
+    var driven=prev?m.odo-prev.odo:0;
+    h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-family:Courier New,monospace;font-size:11px;">'
+      +'<span style="color:var(--yellow);">'+m.date+'</span>'
+      +'<span style="color:#00ffff;">'+m.odo.toLocaleString()+' mi</span>'
+      +(driven>0?'<span style="color:#00ff88;">+'+driven.toLocaleString()+' mi</span>':'<span></span>')
+      +'</div>';
+  });
+  document.getElementById('mile-history').innerHTML=h;
 }
 function buildFuelFilters() {
   const d=load();
@@ -1675,48 +1811,98 @@ function buildFuelFilters() {
   document.getElementById('fuel-veh-dl').innerHTML=vehs.map(v=>`<option value="${esc(v)}">`).join('');
 }
 function renderFuelStats() {
+  loadLog();
   const d=load();
-  const fv=document.getElementById('fuel-fveh').value;
-  let logs=d.fuel.logs.filter(l=>!fv||l.veh===fv).sort((a,b)=>b.date.localeCompare(a.date));
-  if(!logs.length){
-    document.getElementById('fuel-stat-cards').innerHTML='<div class="card" style="color:var(--dim);font-size:12px;">No fill-ups logged yet.</div>';
-    document.getElementById('fuel-history').innerHTML='';return;
+
+  // get all gas purchases from accounting
+  var gasEntries=LOG.filter(function(e){
+    var desc=(e.desc||'').toUpperCase();
+    return desc.indexOf('TRUCK GAS')>=0||desc.indexOf('GAS')>=0&&desc.indexOf('TRUCK')>=0;
+  }).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+
+  // also get mileage logs
+  var mileLogs=((d.fuel&&d.fuel.miles)||[]).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+
+  if(!gasEntries.length){
+    document.getElementById('fuel-stat-cards').innerHTML='<div style="color:#ffff00;font-family:Courier New,monospace;padding:20px;text-align:center;">No gas entries found in accounting.<br><span style="font-size:10px;color:#ccccff;">Add TRUCK GAS entries to accounting first.</span></div>';
+    document.getElementById('fuel-history').innerHTML='';
+    return;
   }
-  const totalCost=logs.reduce((s,l)=>s+l.total,0);
-  const totalGal=logs.reduce((s,l)=>s+l.gal,0);
-  // MPG calc: for each pair of consecutive logs with odometer
-  let mpgs=[];
-  const odoLogs=logs.filter(l=>l.odo>0).sort((a,b)=>a.date.localeCompare(b.date));
-  for(let i=1;i<odoLogs.length;i++){
-    const miles=odoLogs[i].odo-odoLogs[i-1].odo;
-    if(miles>0&&odoLogs[i].gal>0) mpgs.push(miles/odoLogs[i].gal);
+
+  // calculate totals
+  var totalCost=gasEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var firstDate=new Date(gasEntries[0].date);
+  var lastDate=new Date(gasEntries[gasEntries.length-1].date);
+  var totalDays=Math.max(1,Math.round((lastDate-firstDate)/(1000*60*60*24)));
+  var avgPerDay=totalCost/totalDays;
+
+  // mileage calcs
+  var totalMiles=0;var costPerMile=0;
+  if(mileLogs.length>=2){
+    totalMiles=mileLogs[mileLogs.length-1].odo-mileLogs[0].odo;
+    if(totalMiles>0)costPerMile=totalCost/totalMiles;
   }
-  const avgMPG=mpgs.length?mpgs.reduce((s,m)=>s+m,0)/mpgs.length:0;
-  const days=logs.length>1?(new Date(logs[0].date)-new Date(logs[logs.length-1].date))/(1000*60*60*24):30;
-  const perDay=days>0?totalCost/days:totalCost;
-  document.getElementById('fuel-stat-cards').innerHTML=`
-    <div class="stat-grid c3" style="margin-bottom:10px;">
-      <div class="stat"><div class="stat-label">Total Spent</div><div class="stat-val red">${fmt(totalCost)}</div></div>
-      <div class="stat"><div class="stat-label">Total Gallons</div><div class="stat-val yellow">${fmtN(totalGal,2)}</div></div>
-      <div class="stat"><div class="stat-label">Avg MPG</div><div class="stat-val green">${avgMPG?fmtN(avgMPG,1):'—'}</div></div>
-    </div>
-    <div class="stat-grid c3" style="margin-bottom:10px;">
-      <div class="stat"><div class="stat-label">$/Day</div><div class="stat-val orange">${fmt(perDay)}</div></div>
-      <div class="stat"><div class="stat-label">$/Week</div><div class="stat-val orange">${fmt(perDay*7)}</div></div>
-      <div class="stat"><div class="stat-label">$/Year</div><div class="stat-val orange">${fmt(perDay*365)}</div></div>
-    </div>`;
-  document.getElementById('fuel-history').innerHTML=logs.map(l=>`
-    <div class="list-row">
-      <div class="lr-dot" style="background:var(--yellow)"></div>
-      <div class="lr-body">
-        <div class="lr-main">${esc(l.veh)||'Vehicle'} · ${fmtN(l.gal,3)} gal @ $${fmtN(l.ppg,3)}/gal</div>
-        <div class="lr-sub">${l.date}${l.odo?' · Odo: '+l.odo.toLocaleString():''} ${l.notes?' · '+esc(l.notes):''}</div>
-      </div>
-      <div class="lr-right">
-        <div class="lr-amt yellow">${fmt(l.total)}</div>
-        <button class="del-btn" onclick="delFuel(${l.id})">×</button>
-      </div>
-    </div>`).join('');
+
+  var h='<div style="font-family:Courier New,monospace;">';
+
+  // summary
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">TOTAL GAS COST</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+totalCost.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">AVG COST/DAY</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+avgPerDay.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:1px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">COST/WEEK</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(avgPerDay*7).toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:1px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">COST/YEAR EST</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(avgPerDay*365).toFixed(0)+'</div></div>'
+    +(totalMiles>0?'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">TOTAL MILES</div>'
+    +'<div style="color:#00ffff;font-weight:700;font-size:14px;">'+totalMiles.toLocaleString()+'</div></div>':'')
+    +(costPerMile>0?'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">COST/MILE</div>'
+    +'<div style="color:#00ffff;font-weight:700;font-size:14px;">$'+costPerMile.toFixed(3)+'</div></div>':'')
+    +'</div>';
+
+  // DAY BY DAY DIARY — newest first
+  h+='<div style="background:#000033;border:1px solid #333388;border-radius:4px;padding:8px;margin-bottom:8px;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:11px;margin-bottom:8px;">⛽ GAS PURCHASE DIARY — DAY BY DAY COST</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+    +'<tr style="background:#000080;">'
+    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:left;">DATE</th>'
+    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:left;">STATION</th>'
+    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:right;">AMT</th>'
+    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:right;">DAYS</th>'
+    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
+    +'</tr>';
+
+  // reverse for display newest first but calc days from sorted oldest first
+  var reversed=gasEntries.slice().reverse();
+  reversed.forEach(function(e,i){
+    var nextEntry=reversed[i+1]; // older entry
+    var daysBetween=1;
+    if(nextEntry){
+      daysBetween=Math.max(1,Math.round((new Date(e.date)-new Date(nextEntry.date))/(1000*60*60*24)));
+    }
+    var costPerDayEntry=Math.abs(e.amt)/daysBetween;
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var dc=costPerDayEntry>15?'#cc0000':costPerDayEntry>8?'#cc6600':'#006600';
+    var dateDisp=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2-$3-$1').slice(0,8);
+    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+      +'<td style="padding:4px 3px;color:#000066;font-size:10px;">'+dateDisp+'</td>'
+      +'<td style="padding:4px 3px;color:#000066;font-weight:700;font-size:10px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:4px 3px;text-align:right;color:#cc0000;font-weight:700;font-size:10px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:4px 3px;text-align:right;color:#333333;font-size:10px;">'+daysBetween+'</td>'
+      +'<td style="padding:4px 3px;text-align:right;font-weight:700;font-size:10px;color:'+dc+';">$'+costPerDayEntry.toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  h+='</table></div></div>';
+  document.getElementById('fuel-stat-cards').innerHTML=h;
+  document.getElementById('fuel-history').innerHTML='';
 }
 function delFuel(id) {
   if(!confirm('Delete?'))return;
@@ -3426,6 +3612,14 @@ function doBankImport(){
 
 var _bankRows=[];
 
+function cleanPayeeName(s){
+  return (s||'').replace(/[*#@!^~`|\\]/g,'').replace(/\s{2,}/g,' ').trim().toUpperCase();
+}
+function isIncomeDesc(desc){
+  var d=(desc||'').toUpperCase();
+  return d.indexOf('INCOME')>=0||d.indexOf('CREDIT INVOICE')>=0;
+}
+
 function doBankCSVPreview(file){
   if(!file)return;
   var reader=new FileReader();
@@ -3436,9 +3630,7 @@ function doBankCSVPreview(file){
     for(var i=1;i<lines.length;i++){
       var line=lines[i].trim();
       if(!line)continue;
-      // parse CSV row
-      var cols=[];
-      var inq=false;var cur='';
+      var cols=[];var inq=false;var cur='';
       for(var c=0;c<line.length;c++){
         if(line[c]==='"'){inq=!inq;}
         else if(line[c]===','&&!inq){cols.push(cur.trim());cur='';}
@@ -3446,32 +3638,25 @@ function doBankCSVPreview(file){
       }
       cols.push(cur.trim());
       var dateStr=cols[1]||'';
-      var desc=cols[3]||'';
+      var rawDesc=cols[3]||'';
       var debit=parseFloat(cols[4])||0;
       var credit=parseFloat(cols[5])||0;
       var status=cols[6]||'';
-      if(!dateStr||!desc)continue;
-      // skip pending
+      if(!dateStr||!rawDesc)continue;
       if(status.toLowerCase()==='pending'){skipped++;continue;}
-      // parse date MM/DD/YYYY to YYYY-MM-DD
       var dp=dateStr.split('/');
       if(dp.length!==3)continue;
       var isoDate=dp[2]+'-'+('0'+dp[0]).slice(-2)+'-'+('0'+dp[1]).slice(-2);
-      // determine amount — debit=expense, credit=income
-      var amt=credit>0?credit:-debit;
+      // get match
+      var match=bankAutoMatch(rawDesc);
+      // ALL amounts negative by default — credits positive, income desc positive
+      var amt=credit>0?Math.abs(credit):-Math.abs(debit);
+      if(isIncomeDesc(match.desc))amt=Math.abs(amt);
       if(amt===0)continue;
-      // auto-match payee/pcode/desc
-      var match=bankAutoMatch(desc);
-      _bankRows.push({
-        date:isoDate,
-        rawDesc:desc,
-        payee:match.payee,
-        pcode:match.pcode,
-        desc:match.desc,
-        amt:amt
-      });
+      // strip * and special chars from payee
+      var cleanPayee=cleanPayeeName(match.payee);
+      _bankRows.push({date:isoDate,rawDesc:rawDesc,payee:cleanPayee,pcode:match.pcode,desc:match.desc,amt:amt});
     }
-    // show preview
     var html='<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
     html+='<table style="width:100%;border-collapse:collapse;font-size:10px;">'
       +'<tr style="background:#0000aa;">'
@@ -3480,8 +3665,7 @@ function doBankCSVPreview(file){
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PCO</th>'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;text-align:right;">AMT</th>'
       +'</tr>';
-    var preview=_bankRows.slice(0,10);
-    preview.forEach(function(r){
+    _bankRows.slice(0,10).forEach(function(r){
       var ac=r.amt>=0?'#00ffff':'#ff6666';
       html+='<tr style="background:#00008a;">'
         +'<td style="padding:3px;color:#ccccff;border:1px solid #333388;font-size:9px;">'+r.date.slice(5)+'</td>'
@@ -4008,10 +4192,10 @@ function runIrsDesc(){
       else secB.push(d);
     }
   });
-  secA.sort(function(a,b){return descMap[b].amt-descMap[a].amt;});
-  secB.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
-  secC.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
-  secD.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+  secA.sort(function(a,b){return a.localeCompare(b);});
+  secB.sort(function(a,b){return a.localeCompare(b);});
+  secC.sort(function(a,b){return a.localeCompare(b);});
+  secD.sort(function(a,b){return a.localeCompare(b);});
 
   var cols=showPco?3:2;
 
@@ -4028,22 +4212,22 @@ function runIrsDesc(){
     var html='';var total=0;
     list.forEach(function(d,i){
       var v=descMap[d];total+=v.amt;
-      var bg=i%2===0?bg1:bg2;
-      var ac=isCredit?'#00ffff':'#ff6666';
+      var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+      var ac=isCredit?'#006600':'#cc0000';
       var sign=v.amt>=0?'+':'-';
-      html+='<tr style="'+bg+';border-bottom:1px solid #1a1a44;">'
-        +'<td style="padding:5px 4px;color:#ffff00;font-size:11px;">'+trunc(d,24)+'</td>'
+      html+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+        +'<td style="padding:5px 4px;color:#000066;font-size:11px;font-weight:700;">'+esc(d)+'</td>'
         +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:11px;color:'+ac+';">'+sign+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
-        +(showPco?'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#aaaacc;">'+v.pcode+'</td>':'')
+        +(showPco?'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#333399;">'+v.pcode+'</td>':'')
         +'</tr>';
     });
     return {html:html,total:total};
   }
 
   function subTotal(label,total,color){
-    var tc=total>=0?'#00ffff':'#ff6666';
-    return '<tr style="background:#000066;border-top:1px solid '+color+';">'
-      +'<td style="padding:4px 6px;color:'+color+';font-size:10px;font-style:italic;">* '+label+' Subtotal *</td>'
+    var tc=total>=0?'#006600':'#cc0000';
+    return '<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
+      +'<td style="padding:4px 6px;color:#000000;font-size:10px;font-style:italic;font-weight:700;">* '+label+' Subtotal *</td>'
       +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:'+tc+';font-size:11px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
       +(showPco?'<td></td>':'')
       +'</tr>';
@@ -4082,10 +4266,10 @@ function runIrsDesc(){
   }
 
   // NET TOTAL
-  var gc=grandTotal>=0?'#00ffff':'#ff6666';
-  h+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
-    +'<td style="padding:6px 4px;color:#ffff00;font-weight:700;font-size:12px;">*** NET TOTAL ***</td>'
-    +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:12px;color:'+gc+';">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+  var gc=grandTotal>=0?'#006600':'#cc0000';
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:12px;">*** NET TOTAL ***</td>'
+    +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:12px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
     +(showPco?'<td></td>':'')
     +'</tr></table></div>';
 
@@ -4171,8 +4355,8 @@ function runAuditDesc(){
     var grpPct=grandTotal!==0?((grpTotal/Math.abs(grandTotal))*100).toFixed(2):'0.00';
 
     // DESC group header
-    h+='<tr style="background:#002233;border-top:2px solid #333388;">'
-      +'<td colspan="8" style="padding:4px 3px;color:#00ffff;font-size:9px;font-weight:700;">'
+    h+='<tr style="background:#000080;border-top:2px solid #aaaacc;">'
+      +'<td colspan="8" style="padding:4px 3px;color:#ffffff;font-size:9px;font-weight:700;">'
       +'*&nbsp;&nbsp; Pct/Amt/Aver&gt; '+pcLabel+' '+trunc(desc,20)
       +' &nbsp;&nbsp;&nbsp; '+Math.abs(parseFloat(grpPct)).toFixed(2)
       +' &nbsp; '+(grpTotal>=0?'+':'-')+'$'+Math.abs(grpTotal).toFixed(2)
@@ -4180,50 +4364,48 @@ function runAuditDesc(){
       +' &nbsp; '+yrLabel+'</td></tr>';
 
     grp.forEach(function(e,idx){
-      var ac=e.amt>=0?'#00ffff':'#ff6666';
-      var bg=idx%2===0?'background:#000044':'background:#000033';
-      // format date as MMDDYY
+      var ac=e.amt>=0?'#006600':'#cc0000';
+      var bg=idx%2===0?'background:#ffffff':'background:#f0f4ff';
       var dt=(e.date||'').replace(/-/g,'');
       var dtFmt=dt.slice(4,6)+dt.slice(6,8)+dt.slice(2,4);
-      // vendor avg
       var vGrp=grp.filter(function(r){return r.payee===e.payee;});
       var vAvg=vGrp.length>0?(vGrp.reduce(function(s,r){return s+r.amt;},0)/vGrp.length):0;
-      var vc=vAvg>=0?'#00ffff':'#ff6666';
+      var vc=vAvg>=0?'#006600':'#cc0000';
       var ytd=vendorYTD[e.payee]||0;
-      var ytdc=ytd>=0?'#00ffff':'#ff6666';
+      var ytdc=ytd>=0?'#006600':'#cc0000';
       var pct=grpTotal!==0?((e.amt/Math.abs(grpTotal))*100).toFixed(2):'0.00';
 
-      h+='<tr style="'+bg+';border-bottom:1px solid #1a1a55;">'
-        +'<td style="padding:3px;color:#ffff00;font-size:9px;white-space:nowrap;">'+trunc(e.payee||'',16)+'</td>'
-        +'<td style="padding:3px;color:#ccccff;font-size:9px;white-space:nowrap;">'+trunc(desc,7)+'</td>'
-        +'<td style="padding:3px;color:#aaaacc;font-size:9px;text-align:center;white-space:nowrap;">'+dtFmt+'</td>'
+      h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+        +'<td style="padding:3px;color:#000066;font-size:9px;font-weight:700;white-space:nowrap;">'+trunc(e.payee||'',16)+'</td>'
+        +'<td style="padding:3px;color:#333333;font-size:9px;white-space:nowrap;">'+trunc(desc,7)+'</td>'
+        +'<td style="padding:3px;color:#555555;font-size:9px;text-align:center;white-space:nowrap;">'+dtFmt+'</td>'
         +'<td style="padding:3px;text-align:right;font-size:9px;font-weight:700;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
-        +'<td style="padding:3px;text-align:right;font-size:9px;color:#ffaa00;">'+pct+'</td>'
-        +'<td style="padding:3px;text-align:right;font-size:9px;color:#ccccff;">1</td>'
+        +'<td style="padding:3px;text-align:right;font-size:9px;color:#666600;">'+pct+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:9px;color:#333333;">1</td>'
         +'<td style="padding:3px;text-align:right;font-size:9px;color:'+vc+';">'+(vAvg>=0?'+':'-')+'$'+Math.abs(vAvg).toFixed(2)+'</td>'
         +'<td style="padding:3px;text-align:right;font-size:9px;color:'+ytdc+';">'+(ytd>=0?'+':'-')+'$'+Math.abs(ytd).toFixed(2)+'</td>'
         +'</tr>';
     });
 
     // subsubtotal
-    var stc=grpTotal>=0?'#00ffff':'#ff6666';
-    h+='<tr style="background:#000066;border-top:1px solid #6666ff;">'
-      +'<td colspan="2" style="padding:3px;color:#ff88ff;font-size:9px;font-style:italic;">* Subsubtotal *</td>'
+    var stc=grpTotal>=0?'#006600':'#cc0000';
+    h+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
+      +'<td colspan="2" style="padding:3px;color:#000000;font-size:9px;font-style:italic;font-weight:700;">* Subsubtotal *</td>'
       +'<td></td>'
       +'<td style="padding:3px;text-align:right;font-size:9px;font-weight:700;color:'+stc+';">'+(grpTotal>=0?'+':'-')+'$'+Math.abs(grpTotal).toFixed(2)+'</td>'
       +'<td></td>'
-      +'<td style="padding:3px;text-align:right;font-size:9px;color:#ccccff;font-weight:700;">'+grp.length+'</td>'
+      +'<td style="padding:3px;text-align:right;font-size:9px;color:#000000;font-weight:700;">'+grp.length+'</td>'
       +'<td colspan="2"></td></tr>';
   });
 
   // grand total
-  var gc=grandTotal>=0?'#00ffff':'#ff6666';
-  h+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
-    +'<td colspan="2" style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:10px;">*** Total ***</td>'
+  var gc=grandTotal>=0?'#006600':'#cc0000';
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td colspan="2" style="padding:5px 3px;color:#ffffff;font-weight:700;font-size:10px;">*** Total ***</td>'
     +'<td></td>'
-    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:'+gc+';">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
     +'<td></td>'
-    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:#ccccff;">'+rows.length+'</td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:#ffffff;">'+rows.length+'</td>'
     +'<td colspan="2"></td></tr>'
     +'</table></div>';
 
@@ -4281,8 +4463,8 @@ function runMasterDesc(){
     if(descMap[d].amt>=0)credits.push(d);
     else debits.push(d);
   });
-  credits.sort(function(a,b){return descMap[b].amt-descMap[a].amt;});
-  debits.sort(function(a,b){return descMap[a].amt-descMap[b].amt;});
+  credits.sort(function(a,b){return a.localeCompare(b);});
+  debits.sort(function(a,b){return a.localeCompare(b);});
 
   var showPco=pc!==''; // hide PCO when ALL PCODE selected
 
@@ -4309,31 +4491,30 @@ function runMasterDesc(){
     +'</tr>';
 
   function buildSection(label, list, sectionTotal, isCredit){
-    var secRows='<tr style="background:#002200;">'
-      +'<td colspan="'+cols+'" style="padding:4px 6px;color:#00ff88;font-weight:700;font-size:10px;border-bottom:1px solid #006600;">* B=DEBITS A=CREDITS -> '+label+'</td></tr>';
+    var secRows='<tr style="background:#000080;">'
+      +'<td colspan="'+cols+'" style="padding:4px 6px;color:#ffffff;font-weight:700;font-size:10px;">* B=DEBITS A=CREDITS -> '+label+'</td></tr>';
     list.forEach(function(d,idx){
       var v=descMap[d];
       var pct=sectionTotal!==0?((v.amt/Math.abs(sectionTotal))*100).toFixed(2):'0.00';
       var avg=v.cnt>0?(v.amt/v.cnt).toFixed(2):'0.00';
-      var ac=v.amt>=0?'#00ffff':'#ff6666';
-      var bg=idx%2===0?'background:#000044':'background:#00003a';
-      secRows+='<tr style="'+bg+';border-bottom:1px solid #222266;">'
-        +'<td style="padding:4px 3px;color:#ffff00;font-size:10px;white-space:nowrap;">'+trunc(d,18)+'</td>'
-        +'<td style="padding:4px 3px;color:#ccccff;text-align:right;font-size:10px;">'+v.cnt+'</td>'
+      var ac=v.amt>=0?'#006600':'#cc0000';
+      var bg=idx%2===0?'background:#ffffff':'background:#f0f4ff';
+      secRows+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+        +'<td style="padding:4px 3px;color:#000066;font-size:10px;font-weight:700;white-space:nowrap;">'+esc(d)+'</td>'
+        +'<td style="padding:4px 3px;color:#333333;text-align:right;font-size:10px;">'+v.cnt+'</td>'
         +'<td style="padding:4px 3px;text-align:right;font-size:10px;font-weight:700;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
-        +'<td style="padding:4px 3px;color:#ffaa00;text-align:right;font-size:10px;">'+(idx+1)+'</td>'
-        +'<td style="padding:4px 3px;color:#ffaa00;text-align:right;font-size:10px;">'+Math.abs(parseFloat(pct)).toFixed(2)+'%</td>'
+        +'<td style="padding:4px 3px;color:#666600;text-align:right;font-size:10px;">'+(idx+1)+'</td>'
+        +'<td style="padding:4px 3px;color:#666600;text-align:right;font-size:10px;">'+Math.abs(parseFloat(pct)).toFixed(2)+'%</td>'
         +'<td style="padding:4px 3px;text-align:right;font-size:10px;color:'+ac+';">'+(parseFloat(avg)>=0?'+':'-')+'$'+Math.abs(parseFloat(avg)).toFixed(2)+'</td>'
-        +(showPco?'<td style="padding:4px 3px;color:#00ffff;text-align:center;font-size:9px;">'+v.pcode+'</td>':'')
+        +(showPco?'<td style="padding:4px 3px;color:#333399;text-align:center;font-size:9px;">'+v.pcode+'</td>':'')
         +'</tr>';
     });
-    // subtotal
     var stAmt=list.reduce(function(s,d){return s+descMap[d].amt;},0);
     var stCnt=list.reduce(function(s,d){return s+descMap[d].cnt;},0);
-    var stc=stAmt>=0?'#00ffff':'#ff6666';
-    secRows+='<tr style="background:#000066;border-top:1px solid #ffff00;">'
-      +'<td style="padding:4px 3px;color:#ff88ff;font-size:10px;font-style:italic;">* Subsubtotal *</td>'
-      +'<td style="padding:4px 3px;color:#ccccff;text-align:right;font-size:10px;font-weight:700;">'+stCnt+'</td>'
+    var stc=stAmt>=0?'#006600':'#cc0000';
+    secRows+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
+      +'<td style="padding:4px 3px;color:#000000;font-size:10px;font-style:italic;font-weight:700;">* Subsubtotal *</td>'
+      +'<td style="padding:4px 3px;color:#000000;text-align:right;font-size:10px;font-weight:700;">'+stCnt+'</td>'
       +'<td style="padding:4px 3px;text-align:right;font-size:10px;font-weight:700;color:'+stc+';">'+(stAmt>=0?'+':'-')+'$'+Math.abs(stAmt).toFixed(2)+'</td>'
       +'<td colspan="'+(cols-3)+'"></td></tr>';
     return secRows;
@@ -4345,11 +4526,10 @@ function runMasterDesc(){
   // grand total
   var grandAmt=rows.reduce(function(s,e){return s+e.amt;},0);
   var grandCnt=rows.length;
-  var gc=grandAmt>=0?'#00ffff':'#ff6666';
-  h+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
-    +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:11px;">*** Total ***</td>'
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td style="padding:5px 3px;color:#ffffff;font-weight:700;font-size:11px;">*** Total ***</td>'
     +'<td style="padding:5px 3px;color:#ffffff;text-align:right;font-weight:700;font-size:11px;">'+grandCnt+'</td>'
-    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:11px;color:'+gc+';">'+(grandAmt>=0?'+':'-')+'$'+Math.abs(grandAmt).toFixed(2)+'</td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:11px;color:#ffff00;">'+(grandAmt>=0?'+':'-')+'$'+Math.abs(grandAmt).toFixed(2)+'</td>'
     +'<td colspan="'+(cols-3)+'" style="padding:5px 3px;color:#ccccff;font-size:9px;">'+debits.length+' desc types</td></tr>'
     +'</table></div>';
 
@@ -4849,7 +5029,7 @@ function doSave(){
   var amt=parseFloat(document.getElementById('p-amt').value);
   if(!payee){alert('Select a row first');return;}
   if(!amt||isNaN(amt)){alert('Enter amount');return;}
-  var incWords=['INCOME','SECURITY DEPOSIT','LATE FEE','REFUND','CREDIT','DEPOSIT','PROCEEDS'];
+  var incWords=['INCOME','CREDIT INVOICE'];
   var isIncome=false;for(var w=0;w<incWords.length;w++){if(desc.toUpperCase().indexOf(incWords[w])>=0){isIncome=true;break;}}
   amt=isIncome?Math.abs(amt):-Math.abs(amt);
   var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt};
@@ -4878,6 +5058,14 @@ function doSave(){
   }
   else{LOG.unshift(entry);}
   saveLog();saveDatePref();
+  // auto-feed fuel tracker when TRUCK GAS saved
+  if(desc.toUpperCase().indexOf('TRUCK GAS')>=0||desc.toUpperCase().indexOf('TRUCK EXPENSE')>=0){
+    var fd=load();
+    if(!fd.fuel)fd.fuel={logs:[],miles:[]};
+    if(!fd.fuel.logs)fd.fuel.logs=[];
+    fd.fuel.logs.push({id:Date.now(),date:date,veh:payee,gal:0,ppg:0,total:Math.abs(amt),notes:'from accounting'});
+    save(fd);
+  }
   try{localStorage.setItem('mx_last_pcode',pcode);localStorage.setItem('mx_last_desc',desc);}catch(e){}
   document.getElementById('panel').style.display='none';
   document.getElementById('p-payee').textContent='';
@@ -4904,7 +5092,7 @@ function doCopy(){
   var amt=parseFloat(document.getElementById('p-amt').value);
   if(!payee){alert('Select a row first');return;}
   if(!amt||isNaN(amt)){alert('Enter amount');return;}
-  var incWords=['INCOME','SECURITY DEPOSIT','LATE FEE','REFUND','CREDIT','DEPOSIT','PROCEEDS'];
+  var incWords=['INCOME','CREDIT INVOICE'];
   var isIncome=false;for(var w=0;w<incWords.length;w++){if(desc.toUpperCase().indexOf(incWords[w])>=0){isIncome=true;break;}}
   amt=isIncome?Math.abs(amt):-Math.abs(amt);
   var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt};
