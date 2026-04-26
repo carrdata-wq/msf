@@ -626,6 +626,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon blue">📊</div><div class="mb-label">Stats & Budget</div><div class="mb-sub">Cost/mile · 12-mo forecast</div></div>
       <div class="mod-btn" onclick="renderDayByDay()"><div class="mb-icon yellow">📋</div><div class="mb-label">Day by Day</div><div class="mb-sub">Each purchase · $/day cost</div></div>
       <div class="mod-btn" onclick="fuelShow('chart')"><div class="mb-icon yellow">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · Cost trend</div></div>
+      <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
     <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">⛽ Gas costs auto-pulled from Accounting · DESC=TRUCK GAS</div>
   </div>
@@ -934,81 +935,55 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🛒 Grocery Tracker</div></div>
   <div id="groc-menu" class="mod-menu">
     <div class="mod-menu-grid">
-      <div class="mod-btn" onclick="grocShow('log')"><div class="mb-icon green">+</div><div class="mb-label">Add Item</div><div class="mb-sub">Log grocery purchase</div></div>
-      <div class="mod-btn" onclick="grocShow('view')"><div class="mb-icon blue">≡</div><div class="mb-label">History</div><div class="mb-sub">All purchases</div></div>
-      <div class="mod-btn" onclick="grocShow('stats')"><div class="mb-icon yellow">$</div><div class="mb-label">Spending Stats</div><div class="mb-sub">By store · category</div></div>
-      <div class="mod-btn" onclick="grocShow('nutrition')"><div class="mb-icon cyan">❤</div><div class="mb-label">Nutrition Log</div><div class="mb-sub">Cal · Sugar totals</div></div>
+      <div class="mod-btn" onclick="grocShow('stats')"><div class="mb-icon green">📊</div><div class="mb-label">Stats & Cost</div><div class="mb-sub">Cost/day · Store breakdown</div></div>
+      <div class="mod-btn" onclick="renderGrocDayByDay()"><div class="mb-icon yellow">📋</div><div class="mb-label">Day by Day</div><div class="mb-sub">Each purchase · $/day</div></div>
+      <div class="mod-btn" onclick="grocShow('chart')"><div class="mb-icon blue">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · Store comparison</div></div>
+      <div class="mod-btn" onclick="grocShow('log')"><div class="mb-icon cyan">+</div><div class="mb-label">Add Item Detail</div><div class="mb-sub">Nutrition · Size · Notes</div></div>
+      <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
+    <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">🛒 Grocery costs auto-pulled from Accounting · DESC=FOOD GROCERY</div>
   </div>
-  <!-- Add grocery item -->
+
+  <!-- Stats -->
+  <div id="groc-stats" class="fpage" style="display:none">
+    <div style="background:#0000cc;border-bottom:2px solid #00ff88;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="grocShow('')" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#00ff88;font-weight:700;font-size:13px;flex:1;">🛒 Grocery Stats</span>
+    </div>
+    <div id="groc-stat-content" style="padding:8px;"></div>
+  </div>
+
+  <!-- Monthly Chart -->
+  <div id="groc-chart" class="fpage" style="display:none">
+    <div style="background:#0000cc;border-bottom:2px solid #00ff88;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="grocShow('')" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#00ff88;font-weight:700;font-size:13px;flex:1;">📈 Monthly Grocery Cost</span>
+    </div>
+    <div id="groc-chart-content" style="padding:8px;"></div>
+  </div>
+
+  <!-- Add Item Detail -->
   <div id="groc-log" class="fpage" style="display:none">
-    <div class="card">
-      <div class="card-title green">Add Grocery Item</div>
-      <div class="field"><label>Store Name</label><input type="text" id="groc-store" list="groc-store-dl" placeholder="e.g. Walmart, Aldi" autocomplete="off"></div>
+    <div style="background:#0000cc;border-bottom:2px solid #00ff88;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="grocShow('')" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#00ff88;font-weight:700;font-size:13px;flex:1;">+ Add Item Detail</span>
+    </div>
+    <div class="card" style="margin:8px;">
+      <div class="field"><label>Store Name</label><input type="text" id="groc-store" list="groc-store-dl" placeholder="e.g. FAIRPLAY, ALDI" autocomplete="off" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field"><label>Date</label><input type="date" id="groc-date"></div>
-      <div class="field"><label>Item / Food Name</label><input type="text" id="groc-item" list="groc-item-dl" placeholder="e.g. Tomato Soup" autocomplete="off"></div>
-      <div class="field"><label>Brand</label><input type="text" id="groc-brand" placeholder="e.g. Campbell's"></div>
-      <div class="field"><label>Category</label>
-        <select id="groc-cat">
-          <optgroup label="Food"><option>Canned Goods</option><option>Produce</option><option>Meat &amp; Seafood</option><option>Dairy &amp; Eggs</option><option>Bread &amp; Bakery</option><option>Frozen Foods</option><option>Snacks &amp; Chips</option><option>Cereal &amp; Breakfast</option><option>Pasta &amp; Rice</option><option>Condiments &amp; Sauces</option><option>Spices &amp; Seasonings</option><option>Soups &amp; Broths</option><option>Beans &amp; Legumes</option><option>Beverages</option><option>Juice &amp; Drinks</option><option>Coffee &amp; Tea</option></optgroup>
-          <optgroup label="Non-Food"><option>Cleaning Supplies</option><option>Paper Products</option><option>Personal Care</option><option>Baby Items</option><option>Pet Food</option><option>Health &amp; Medicine</option><option>Other</option></optgroup>
-        </select>
-      </div>
+      <div class="field"><label>Item Name</label><input type="text" id="groc-item" placeholder="e.g. MILK, BREAD" autocomplete="off" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field-row">
-        <div class="field"><label>Size / Oz / Unit</label><input type="text" id="groc-size" placeholder="e.g. 10.75 oz"></div>
-        <div class="field"><label>Qty Purchased</label><input type="number" id="groc-qty" inputmode="decimal" step="0.01" placeholder="1" value="1"></div>
+        <div class="field"><label>Price ($)</label><input type="number" id="groc-price" inputmode="decimal" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Qty</label><input type="number" id="groc-qty" inputmode="decimal" step="1" placeholder="1" value="1"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Price / Item ($)</label><input type="number" id="groc-price" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-        <div class="field"><label>Sales Tax ($)</label><input type="number" id="groc-tax" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-      </div>
-      <div class="card-title cyan" style="margin-top:4px;">Nutrition Info (per serving)</div>
       <div class="field-row">
         <div class="field"><label>Calories</label><input type="number" id="groc-cal" inputmode="numeric" placeholder="0"></div>
-        <div class="field"><label>Servings/Container</label><input type="number" id="groc-servings" inputmode="decimal" step="0.5" placeholder="0"></div>
+        <div class="field"><label>Tax ($)</label><input type="number" id="groc-tax" inputmode="decimal" step="0.01" placeholder="0.00"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Sugar (g)</label><input type="number" id="groc-sugar" inputmode="decimal" step="0.1" placeholder="0"></div>
-        <div class="field"><label>Protein (g)</label><input type="number" id="groc-protein" inputmode="decimal" step="0.1" placeholder="0"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Carbs (g)</label><input type="number" id="groc-carbs" inputmode="decimal" step="0.1" placeholder="0"></div>
-        <div class="field"><label>Fat (g)</label><input type="number" id="groc-fat" inputmode="decimal" step="0.1" placeholder="0"></div>
-      </div>
-      <div class="field"><label>Sodium (mg)</label><input type="number" id="groc-sodium" inputmode="numeric" placeholder="0"></div>
-      <div class="field"><label>Notes</label><input type="text" id="groc-notes" placeholder="e.g. on sale, store brand"></div>
-      <button class="btn btn-green" onclick="addGrocItem()">✓ SAVE ITEM</button>
-      <button class="btn btn-dim" onclick="grocShow('')">◀ Back</button>
+      <div class="field"><label>Notes</label><input type="text" id="groc-notes" placeholder="e.g. on sale"></div>
+      <button class="btn btn-green" onclick="addGrocItem()">✓ SAVE</button>
     </div>
     <datalist id="groc-store-dl"></datalist>
-    <datalist id="groc-item-dl"></datalist>
-  </div>
-  <!-- History -->
-  <div id="groc-view" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="gv-store" onchange="renderGrocView()"><option value="">All Stores</option></select>
-      <select id="gv-cat"   onchange="renderGrocView()"><option value="">All Categories</option></select>
-      <select id="gv-yr"    onchange="renderGrocView()"><option value="">All Years</option></select>
-    </div>
-    <div class="card" style="padding:6px 12px;"><div id="groc-list"></div></div>
-    <button class="btn btn-dim" onclick="grocShow('')">◀ Back</button>
-  </div>
-  <!-- Spending Stats -->
-  <div id="groc-stats" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="gs-store" onchange="renderGrocStats()"><option value="">All Stores</option></select>
-      <select id="gs-yr"    onchange="renderGrocStats()"><option value="">All Years</option></select>
-    </div>
-    <div id="groc-stat-content"></div>
-    <button class="btn btn-dim" onclick="grocShow('')">◀ Back</button>
-  </div>
-  <!-- Nutrition Log -->
-  <div id="groc-nutrition" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="gn-yr" onchange="renderGrocNutrition()"><option value="">All Time</option></select>
-    </div>
-    <div id="groc-nutrition-content"></div>
-    <button class="btn btn-dim" onclick="grocShow('')">◀ Back</button>
   </div>
 </div>
 
@@ -1017,90 +992,51 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🍽️ Restaurant Tracker</div></div>
   <div id="rest-menu" class="mod-menu">
     <div class="mod-menu-grid">
-      <div class="mod-btn" onclick="restShow('log')"><div class="mb-icon orange">+</div><div class="mb-label">Add Order</div><div class="mb-sub">Log restaurant item</div></div>
-      <div class="mod-btn" onclick="restShow('view')"><div class="mb-icon blue">≡</div><div class="mb-label">History</div><div class="mb-sub">All orders</div></div>
-      <div class="mod-btn" onclick="restShow('stats')"><div class="mb-icon yellow">$</div><div class="mb-label">Spending Stats</div><div class="mb-sub">By restaurant</div></div>
-      <div class="mod-btn" onclick="restShow('nutrition')"><div class="mb-icon cyan">❤</div><div class="mb-label">Nutrition Log</div><div class="mb-sub">Cal · Sugar totals</div></div>
+      <div class="mod-btn" onclick="restShow('stats')"><div class="mb-icon orange">📊</div><div class="mb-label">Stats & Cost</div><div class="mb-sub">Cost/day · Per visit avg</div></div>
+      <div class="mod-btn" onclick="renderRestDayByDay()"><div class="mb-icon yellow">📋</div><div class="mb-label">Day by Day</div><div class="mb-sub">Each visit · $/day</div></div>
+      <div class="mod-btn" onclick="restShow('chart')"><div class="mb-icon blue">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · By restaurant</div></div>
+      <div class="mod-btn" onclick="restShow('log')"><div class="mb-icon cyan">+</div><div class="mb-label">Add Visit Detail</div><div class="mb-sub">Items · Notes · Rating</div></div>
+      <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
+    <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">🍽️ Restaurant costs auto-pulled from Accounting · DESC=JOB FOOD COST</div>
   </div>
-  <!-- Add restaurant item -->
+
+  <!-- Stats -->
+  <div id="rest-stats" class="fpage" style="display:none">
+    <div style="background:#0000cc;border-bottom:2px solid #ffaa00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="restShow('')" style="background:#ffaa00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#ffaa00;font-weight:700;font-size:13px;flex:1;">🍽️ Restaurant Stats</span>
+    </div>
+    <div id="rest-stat-content" style="padding:8px;"></div>
+  </div>
+
+  <!-- Monthly Chart -->
+  <div id="rest-chart" class="fpage" style="display:none">
+    <div style="background:#0000cc;border-bottom:2px solid #ffaa00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="restShow('')" style="background:#ffaa00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#ffaa00;font-weight:700;font-size:13px;flex:1;">📈 Monthly Restaurant Cost</span>
+    </div>
+    <div id="rest-chart-content" style="padding:8px;"></div>
+  </div>
+
+  <!-- Add Visit Detail -->
   <div id="rest-log" class="fpage" style="display:none">
-    <div class="card">
-      <div class="card-title orange">Add Restaurant Order</div>
-      <div class="field"><label>Restaurant Name</label><input type="text" id="rest-store" list="rest-store-dl" placeholder="e.g. McDonald's, Local Diner" autocomplete="off"></div>
+    <div style="background:#0000cc;border-bottom:2px solid #ffaa00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+      <button onclick="restShow('')" style="background:#ffaa00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <span style="color:#ffaa00;font-weight:700;font-size:13px;flex:1;">+ Add Visit Detail</span>
+    </div>
+    <div class="card" style="margin:8px;">
+      <div class="field"><label>Restaurant</label><input type="text" id="rest-store" list="rest-store-dl" placeholder="e.g. MCDONALDS" autocomplete="off" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field"><label>Date</label><input type="date" id="rest-date"></div>
-      <div class="field"><label>Item / Dish</label><input type="text" id="rest-item" list="rest-item-dl" placeholder="e.g. Big Mac, Chicken Sandwich" autocomplete="off"></div>
-      <div class="field"><label>Category</label>
-        <select id="rest-cat">
-          <option>Burger</option><option>Sandwich</option><option>Pizza</option>
-          <option>Pasta</option><option>Salad</option><option>Soup</option>
-          <option>Breakfast</option><option>Tacos / Mexican</option>
-          <option>Asian / Chinese</option><option>Sushi</option>
-          <option>Steak / Grill</option><option>Seafood</option>
-          <option>Appetizer</option><option>Side Dish</option>
-          <option>Dessert</option><option>Drinks / Beverage</option>
-          <option>Kids Meal</option><option>Combo / Meal Deal</option>
-          <option>Other</option>
-        </select>
-      </div>
+      <div class="field"><label>Items Ordered</label><input type="text" id="rest-item" placeholder="e.g. BIG MAC FRIES" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field-row">
-        <div class="field"><label>Size / Oz</label><input type="text" id="rest-size" placeholder="e.g. 12 oz, Large"></div>
-        <div class="field"><label>Qty</label><input type="number" id="rest-qty" inputmode="decimal" step="1" placeholder="1" value="1"></div>
+        <div class="field"><label>Total ($)</label><input type="number" id="rest-price" inputmode="decimal" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label># People</label><input type="number" id="rest-qty" inputmode="numeric" placeholder="1" value="1"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Item Price ($)</label><input type="number" id="rest-price" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-        <div class="field"><label>Sales Tax ($)</label><input type="number" id="rest-tax" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Tip ($)</label><input type="number" id="rest-tip" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-        <div class="field"><label>Dine In / Takeout</label><select id="rest-type"><option>Dine In</option><option>Takeout</option><option>Delivery</option><option>Drive-Thru</option></select></div>
-      </div>
-      <div class="card-title cyan" style="margin-top:4px;">Nutrition Info</div>
-      <div class="field-row">
-        <div class="field"><label>Calories</label><input type="number" id="rest-cal" inputmode="numeric" placeholder="0"></div>
-        <div class="field"><label>Size / Oz (nutrition)</label><input type="number" id="rest-oz" inputmode="decimal" step="0.1" placeholder="0.0"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Sugar (g)</label><input type="number" id="rest-sugar" inputmode="decimal" step="0.1" placeholder="0"></div>
-        <div class="field"><label>Protein (g)</label><input type="number" id="rest-protein" inputmode="decimal" step="0.1" placeholder="0"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Carbs (g)</label><input type="number" id="rest-carbs" inputmode="decimal" step="0.1" placeholder="0"></div>
-        <div class="field"><label>Fat (g)</label><input type="number" id="rest-fat" inputmode="decimal" step="0.1" placeholder="0"></div>
-      </div>
-      <div class="field"><label>Notes</label><input type="text" id="rest-notes" placeholder="e.g. no pickles, extra sauce"></div>
-      <button class="btn btn-orange" onclick="addRestItem()">✓ SAVE ORDER</button>
-      <button class="btn btn-dim" onclick="restShow('')">◀ Back</button>
+      <div class="field"><label>Notes</label><input type="text" id="rest-notes" placeholder="e.g. lunch meeting"></div>
+      <button class="btn btn-orange" onclick="addRestItem()">✓ SAVE</button>
     </div>
     <datalist id="rest-store-dl"></datalist>
-    <datalist id="rest-item-dl"></datalist>
-  </div>
-  <!-- History -->
-  <div id="rest-view" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="rv-store" onchange="renderRestView()"><option value="">All Restaurants</option></select>
-      <select id="rv-cat"   onchange="renderRestView()"><option value="">All Categories</option></select>
-      <select id="rv-yr"    onchange="renderRestView()"><option value="">All Years</option></select>
-    </div>
-    <div class="card" style="padding:6px 12px;"><div id="rest-list"></div></div>
-    <button class="btn btn-dim" onclick="restShow('')">◀ Back</button>
-  </div>
-  <!-- Spending Stats -->
-  <div id="rest-stats" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="rs-store" onchange="renderRestStats()"><option value="">All Restaurants</option></select>
-      <select id="rs-yr"    onchange="renderRestStats()"><option value="">All Years</option></select>
-    </div>
-    <div id="rest-stat-content"></div>
-    <button class="btn btn-dim" onclick="restShow('')">◀ Back</button>
-  </div>
-  <!-- Nutrition -->
-  <div id="rest-nutrition" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="rn-yr" onchange="renderRestNutrition()"><option value="">All Time</option></select>
-    </div>
-    <div id="rest-nutrition-content"></div>
-    <button class="btn btn-dim" onclick="restShow('')">◀ Back</button>
   </div>
 </div>
 
@@ -1460,6 +1396,77 @@ function renderDayByDay(){
   document.body.appendChild(overlay);
 }
 
+function renderCombinedCosts(){
+  loadLog();
+  var gasE=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;});
+  var grocE=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('FOOD GROCERY')>=0;});
+  var restE=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('JOB FOOD COST')>=0;});
+
+  var tGas=gasE.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var tGroc=grocE.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var tRest=restE.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var tAll=tGas+tGroc+tRest;
+
+  var allDates=gasE.concat(grocE).concat(restE).map(function(e){return e.date||'';}).filter(Boolean).sort();
+  var days=allDates.length>=2?Math.max(1,Math.round((new Date(allDates[allDates.length-1])-new Date(allDates[0]))/(1000*60*60*24))):365;
+  var cpd=tAll/days;
+
+  var old=document.getElementById('combined-overlay');if(old)old.remove();
+  var overlay=document.createElement('div');
+  overlay.id='combined-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#1a1aff;z-index:9000;overflow-y:auto;';
+  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
+    +'<button onclick="document.getElementById(\'combined-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">💰 Combined Daily Costs</span>'
+    +'</div>'
+    +'<div style="padding:12px;font-family:Courier New,monospace;">'
+    // 3 category cards
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
+    +'<div style="background:#000044;border:2px solid #ff6666;border-radius:6px;padding:10px;text-align:center;">'
+    +'<div style="color:#ff6666;font-weight:700;font-size:11px;">⛽ GAS</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tGas/days).toFixed(2)+'</div>'
+    +'<div style="color:#ccccff;font-size:9px;">per day</div>'
+    +'<div style="color:#ff6666;font-size:10px;margin-top:4px;">$'+tGas.toFixed(0)+' total</div></div>'
+    +'<div style="background:#000044;border:2px solid #00ff88;border-radius:6px;padding:10px;text-align:center;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:11px;">🛒 GROCERY</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tGroc/days).toFixed(2)+'</div>'
+    +'<div style="color:#ccccff;font-size:9px;">per day</div>'
+    +'<div style="color:#00ff88;font-size:10px;margin-top:4px;">$'+tGroc.toFixed(0)+' total</div></div>'
+    +'<div style="background:#000044;border:2px solid #ffaa00;border-radius:6px;padding:10px;text-align:center;">'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:11px;">🍽️ FOOD</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tRest/days).toFixed(2)+'</div>'
+    +'<div style="color:#ccccff;font-size:9px;">per day</div>'
+    +'<div style="color:#ffaa00;font-size:10px;margin-top:4px;">$'+tRest.toFixed(0)+' total</div></div>'
+    +'</div>'
+    // big combined total
+    +'<div style="background:#000022;border:3px solid #ffff00;border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:6px;">COMBINED AVERAGE DAILY COST</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:28px;">$'+cpd.toFixed(2)+'</div>'
+    +'<div style="color:#00ff88;font-size:12px;margin-top:8px;">'
+    +'$'+(cpd*7).toFixed(2)+' / week &nbsp;·&nbsp; '
+    +'$'+(cpd*30).toFixed(0)+' / month &nbsp;·&nbsp; '
+    +'$'+(cpd*365).toFixed(0)+' / year'
+    +'</div></div>'
+    // PCT breakdown bar
+    +'<div style="background:#ffffff;border-radius:6px;padding:12px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:8px;">SPENDING BREAKDOWN</div>';
+
+  [{label:'⛽ Gas',val:tGas,color:'#cc0000'},{label:'🛒 Grocery',val:tGroc,color:'#006600'},{label:'🍽️ Restaurant',val:tRest,color:'#cc6600'}].forEach(function(row){
+    var pct=tAll>0?((row.val/tAll)*100).toFixed(1):0;
+    var bar=tAll>0?Math.round((row.val/tAll)*100):0;
+    h+='<div style="margin-bottom:8px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">'
+      +'<span style="color:#000066;font-weight:700;">'+row.label+'</span>'
+      +'<span style="color:'+row.color+';font-weight:700;">$'+row.val.toFixed(2)+' ('+pct+'%)</span></div>'
+      +'<div style="background:#eeeeee;border-radius:3px;height:14px;">'
+      +'<div style="background:'+row.color+';height:100%;border-radius:3px;width:'+bar+'%;"></div>'
+      +'</div></div>';
+  });
+  h+='</div></div>';
+  overlay.innerHTML=h;
+  document.body.appendChild(overlay);
+}
+
 function renderFuelChart(){
   loadLog();
   var gasEntries=LOG.filter(function(e){
@@ -1601,20 +1608,221 @@ function workShow(sub) {
   if(sub==='workers') { renderWorkerList(); }
 }
 function grocShow(sub) {
-  ['log','view','stats','nutrition'].forEach(s=>{ document.getElementById('groc-'+s).style.display=s===sub?'block':'none'; });
-  document.getElementById('groc-menu').style.display=sub?'none':'block';
-  if(sub==='log')       { document.getElementById('groc-date').value=today(); buildGrocDL(); }
-  if(sub==='view')      { buildGrocFilters(); renderGrocView(); }
-  if(sub==='stats')     { buildGrocStatsFilters(); renderGrocStats(); }
-  if(sub==='nutrition') { buildGrocNutrFilters(); renderGrocNutrition(); }
+  ['log','stats','chart'].forEach(function(s){
+    var el=document.getElementById('groc-'+s);
+    if(el)el.style.display='none';
+  });
+  var menu=document.getElementById('groc-menu');
+  if(!sub){
+    if(menu)menu.style.display='block';
+  } else {
+    if(menu)menu.style.display='none';
+    var pg=document.getElementById('groc-'+sub);
+    if(pg)pg.style.display='block';
+    if(sub==='stats')renderGrocStats();
+    if(sub==='chart')renderGrocChart();
+    if(sub==='log')document.getElementById('groc-date').value=today();
+  }
 }
+
 function restShow(sub) {
-  ['log','view','stats','nutrition'].forEach(s=>{ document.getElementById('rest-'+s).style.display=s===sub?'block':'none'; });
-  document.getElementById('rest-menu').style.display=sub?'none':'block';
-  if(sub==='log')       { document.getElementById('rest-date').value=today(); buildRestDL(); }
-  if(sub==='view')      { buildRestFilters(); renderRestView(); }
-  if(sub==='stats')     { buildRestStatsFilters(); renderRestStats(); }
-  if(sub==='nutrition') { buildRestNutrFilters(); renderRestNutrition(); }
+  ['log','stats','chart'].forEach(function(s){
+    var el=document.getElementById('rest-'+s);
+    if(el)el.style.display='none';
+  });
+  var menu=document.getElementById('rest-menu');
+  if(!sub){
+    if(menu)menu.style.display='block';
+  } else {
+    if(menu)menu.style.display='none';
+    var pg=document.getElementById('rest-'+sub);
+    if(pg)pg.style.display='block';
+    if(sub==='stats')renderRestStats();
+    if(sub==='chart')renderRestChart();
+    if(sub==='log')document.getElementById('rest-date').value=today();
+  }
+}
+
+function getGrocEntries(){
+  loadLog();
+  return LOG.filter(function(e){
+    var d=(e.desc||'').toUpperCase();
+    return d.indexOf('FOOD GROCERY')>=0||d.indexOf('GROCERY')>=0;
+  }).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+}
+
+function getRestEntries(){
+  loadLog();
+  return LOG.filter(function(e){
+    var d=(e.desc||'').toUpperCase();
+    return d.indexOf('JOB FOOD COST')>=0||d.indexOf('FOOD COST')>=0||d.indexOf('ENTERTAINMENT')>=0;
+  }).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+}
+
+function renderTrackerStats(entries,contentId,color,label){
+  if(!entries.length){
+    document.getElementById(contentId).innerHTML='<div style="color:#ffff00;font-family:Courier New,monospace;padding:20px;text-align:center;">No '+label+' entries found in accounting.</div>';
+    return;
+  }
+  var total=entries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var firstDate=new Date(entries[0].date);
+  var days=Math.max(1,Math.round((new Date()-firstDate)/(1000*60*60*24)));
+  var perDay=total/days;
+
+  // by vendor
+  var byVendor={};
+  entries.forEach(function(e){
+    var p=e.payee||'UNKNOWN';
+    byVendor[p]=(byVendor[p]||0)+Math.abs(e.amt);
+  });
+  var vendors=Object.keys(byVendor).sort(function(a,b){return byVendor[b]-byVendor[a];}).slice(0,8);
+
+  var h='<div style="font-family:Courier New,monospace;">';
+
+  // summary cards
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">TOTAL SPENT</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+total.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">COST/DAY AVG</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+perDay.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">COST/WEEK</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(perDay*7).toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">COST/MONTH</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(perDay*30).toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">TOTAL VISITS</div>'
+    +'<div style="color:'+color+';font-weight:700;font-size:14px;">'+entries.length+'</div></div>'
+    +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">AVG PER VISIT</div>'
+    +'<div style="color:'+color+';font-weight:700;font-size:14px;">$'+(total/entries.length).toFixed(2)+'</div></div>'
+    +'</div>';
+
+  // top vendors
+  h+='<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:10px;margin-bottom:8px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:8px;">TOP STORES / VENDORS</div>';
+  vendors.forEach(function(v,i){
+    var amt=byVendor[v];
+    var pct=Math.round((amt/total)*100);
+    var bar=Math.round((amt/byVendor[vendors[0]])*100);
+    h+='<div style="margin-bottom:6px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;">'
+      +'<span style="color:#000066;font-weight:700;">'+trunc(v,18)+'</span>'
+      +'<span style="color:#cc0000;font-weight:700;">$'+amt.toFixed(2)+' ('+pct+'%)</span></div>'
+      +'<div style="background:#eeeeee;border-radius:3px;height:12px;">'
+      +'<div style="background:'+color+';height:100%;border-radius:3px;width:'+bar+'%;"></div>'
+      +'</div></div>';
+  });
+  h+='</div></div>';
+  document.getElementById(contentId).innerHTML=h;
+}
+
+function renderGrocStats(){
+  renderTrackerStats(getGrocEntries(),'groc-stat-content','#00ff88','FOOD GROCERY');
+}
+
+function renderRestStats(){
+  renderTrackerStats(getRestEntries(),'rest-stat-content','#ffaa00','JOB FOOD COST');
+}
+
+function renderTrackerChart(entries,contentId,color,label){
+  if(!entries.length){
+    document.getElementById(contentId).innerHTML='<div style="color:#ffff00;font-family:Courier New,monospace;padding:20px;text-align:center;">No entries found.</div>';
+    return;
+  }
+  var byMonth={};
+  entries.forEach(function(e){
+    var m=(e.date||'').slice(0,7);
+    byMonth[m]=(byMonth[m]||0)+Math.abs(e.amt);
+  });
+  var months=Object.keys(byMonth).sort();
+  var maxVal=Math.max.apply(null,Object.values(byMonth));
+  var avgVal=Object.values(byMonth).reduce(function(s,v){return s+v;},0)/months.length;
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    +'<div style="display:flex;gap:8px;margin-bottom:10px;">'
+    +'<div style="flex:1;background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">AVG/MONTH</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+avgVal.toFixed(2)+'</div></div>'
+    +'<div style="flex:1;background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:9px;">HIGHEST MONTH</div>'
+    +'<div style="color:#ff4444;font-weight:700;font-size:14px;">$'+maxVal.toFixed(2)+'</div></div>'
+    +'</div>'
+    +'<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:10px;">'+label+' — MONTHLY COST</div>';
+
+  months.forEach(function(m){
+    var v=byMonth[m];
+    var barPct=Math.round((v/maxVal)*100);
+    var barColor=v>avgVal*1.3?'#cc0000':v>avgVal?'#cc6600':color;
+    var mo=m.slice(5,7)+'/'+m.slice(2,4);
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+      +'<div style="color:#000066;font-size:10px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
+      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
+      +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
+      +'<span style="position:absolute;right:3px;top:1px;font-size:9px;color:#000;font-weight:700;">$'+v.toFixed(0)+'</span>'
+      +'</div></div>';
+  });
+  h+='<div style="border-top:1px solid #ccc;margin-top:8px;padding-top:6px;font-size:10px;color:#666;">'
+    +'🟢=below avg &nbsp; 🟠=above avg &nbsp; 🔴=high</div></div></div>';
+  document.getElementById(contentId).innerHTML=h;
+}
+
+function renderGrocChart(){
+  renderTrackerChart(getGrocEntries(),'groc-chart-content','#006600','🛒 GROCERY');
+}
+function renderRestChart(){
+  renderTrackerChart(getRestEntries(),'rest-chart-content','#cc6600','🍽️ RESTAURANT');
+}
+
+function renderGrocDayByDay(){
+  var entries=getGrocEntries().slice(-60).reverse();
+  renderDayByDayOverlay(entries,'🛒 Grocery Day by Day');
+}
+function renderRestDayByDay(){
+  var entries=getRestEntries().slice(-60).reverse();
+  renderDayByDayOverlay(entries,'🍽️ Restaurant Day by Day');
+}
+
+function renderDayByDayOverlay(entries,title){
+  var old=document.getElementById('dbd-overlay');
+  if(old)old.remove();
+  var overlay=document.createElement('div');
+  overlay.id='dbd-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#1a1aff;z-index:9000;overflow-y:auto;';
+  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
+    +'<button onclick="document.getElementById(\'dbd-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+title+' — '+entries.length+' shown</span>'
+    +'</div><div style="padding:8px;font-family:Courier New,monospace;">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+    +'<tr style="background:#000080;">'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">DATE</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">VENDOR</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">AMT</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">DAYS</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">$/DAY</th>'
+    +'</tr>';
+  entries.forEach(function(e,i){
+    var next=entries[i+1];
+    var days=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
+    var cpd=Math.abs(e.amt)/days;
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1').slice(0,8);
+    h+='<tr style="'+bg+';border-bottom:1px solid #ccc;">'
+      +'<td style="padding:4px;color:#000066;font-size:10px;">'+dt+'</td>'
+      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:10px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#333;">'+days+'</td>'
+      +'<td style="padding:4px;text-align:right;font-weight:700;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
+      +'</tr>';
+  });
+  h+='</table></div>';
+  overlay.innerHTML=h;
+  document.body.appendChild(overlay);
 }
 
 // ═══════════════════════════════════════════════
@@ -1976,7 +2184,45 @@ function renderFuelStats() {
   loadLog();
   const d=load();
 
-  // get all gas purchases from accounting
+  // COMBINED COST SUMMARY — Gas + Grocery + Restaurant
+  var gasEntries=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;});
+  var grocEntries=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('FOOD GROCERY')>=0;});
+  var restEntries=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('JOB FOOD COST')>=0;});
+
+  var totalGas=gasEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var totalGroc=grocEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var totalRest=restEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var totalAll=totalGas+totalGroc+totalRest;
+
+  // get date range across all three
+  var allDates=gasEntries.concat(grocEntries).concat(restEntries).map(function(e){return e.date||'';}).filter(Boolean).sort();
+  var totalDays=allDates.length>=2?Math.max(1,Math.round((new Date(allDates[allDates.length-1])-new Date(allDates[0]))/(1000*60*60*24))):365;
+  var combinedPerDay=totalAll/totalDays;
+
+  var el=document.getElementById('fuel-stat-cards');
+  var combined='<div style="background:#ffffff;border:3px solid #000066;border-radius:8px;padding:12px;margin-bottom:12px;font-family:Courier New,monospace;">'
+    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:8px;text-align:center;">💰 COMBINED DAILY COST ANALYSIS</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">'
+    +'<div style="background:#fff0f0;border:1px solid #cc0000;border-radius:4px;padding:6px;text-align:center;">'
+    +'<div style="color:#cc0000;font-size:9px;font-weight:700;">⛽ GAS</div>'
+    +'<div style="color:#cc0000;font-weight:700;font-size:12px;">$'+(totalGas/totalDays).toFixed(2)+'/day</div>'
+    +'<div style="color:#666;font-size:9px;">$'+totalGas.toFixed(0)+' total</div></div>'
+    +'<div style="background:#f0fff0;border:1px solid #006600;border-radius:4px;padding:6px;text-align:center;">'
+    +'<div style="color:#006600;font-size:9px;font-weight:700;">🛒 GROCERY</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:12px;">$'+(totalGroc/totalDays).toFixed(2)+'/day</div>'
+    +'<div style="color:#666;font-size:9px;">$'+totalGroc.toFixed(0)+' total</div></div>'
+    +'<div style="background:#fff8e0;border:1px solid #cc6600;border-radius:4px;padding:6px;text-align:center;">'
+    +'<div style="color:#cc6600;font-size:9px;font-weight:700;">🍽️ FOOD</div>'
+    +'<div style="color:#cc6600;font-weight:700;font-size:12px;">$'+(totalRest/totalDays).toFixed(2)+'/day</div>'
+    +'<div style="color:#666;font-size:9px;">$'+totalRest.toFixed(0)+' total</div></div>'
+    +'</div>'
+    +'<div style="background:#000066;border-radius:6px;padding:10px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:10px;margin-bottom:4px;">COMBINED AVERAGE DAILY COST</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:22px;">$'+combinedPerDay.toFixed(2)+' / day</div>'
+    +'<div style="color:#00ff88;font-size:11px;margin-top:4px;">$'+(combinedPerDay*7).toFixed(2)+'/wk &nbsp;·&nbsp; $'+(combinedPerDay*30).toFixed(2)+'/mo &nbsp;·&nbsp; $'+(combinedPerDay*365).toFixed(0)+'/yr</div>'
+    +'</div></div>';
+
+  el.innerHTML=combined;
   var gasEntries=LOG.filter(function(e){
     var desc=(e.desc||'').toUpperCase();
     return desc.indexOf('TRUCK GAS')>=0||desc.indexOf('GAS')>=0&&desc.indexOf('TRUCK')>=0;
@@ -2554,240 +2800,38 @@ function buildGrocDL() {
   const d=load();
   document.getElementById('groc-store-dl').innerHTML=(d.groc.stores||[]).map(s=>`<option value="${esc(s)}">`).join('');
   const items=[...new Set((d.groc.items||[]).map(i=>i.item))];
-  document.getElementById('groc-item-dl').innerHTML=items.map(s=>`<option value="${esc(s)}">`).join('');
+  (document.getElementById('groc-item-dl')||{}).innerHTML=items.map(s=>`<option value="${esc(s)}">`).join('');
 }
 function addGrocItem() {
   const d=load(); if(!d.groc){d.groc={items:[],stores:[]};}
-  const store  = document.getElementById('groc-store').value.trim();
-  const date   = document.getElementById('groc-date').value;
-  const item   = document.getElementById('groc-item').value.trim();
-  const brand  = document.getElementById('groc-brand').value.trim();
-  const cat    = document.getElementById('groc-cat').value;
-  const size   = document.getElementById('groc-size').value.trim();
-  const qty    = parseFloat(document.getElementById('groc-qty').value)||1;
-  const price  = parseFloat(document.getElementById('groc-price').value)||0;
-  const tax    = parseFloat(document.getElementById('groc-tax').value)||0;
-  const cal    = parseFloat(document.getElementById('groc-cal').value)||0;
-  const servings=parseFloat(document.getElementById('groc-servings').value)||0;
-  const sugar  = parseFloat(document.getElementById('groc-sugar').value)||0;
-  const protein= parseFloat(document.getElementById('groc-protein').value)||0;
-  const carbs  = parseFloat(document.getElementById('groc-carbs').value)||0;
-  const fat    = parseFloat(document.getElementById('groc-fat').value)||0;
-  const sodium = parseFloat(document.getElementById('groc-sodium').value)||0;
-  const notes  = document.getElementById('groc-notes').value.trim();
+  const store  = (document.getElementById('groc-store')||{value:''}).value.trim().toUpperCase();
+  const date   = (document.getElementById('groc-date')||{value:''}).value;
+  const item   = (document.getElementById('groc-item')||{value:''}).value.trim().toUpperCase();
+  const qty    = parseFloat((document.getElementById('groc-qty')||{value:'1'}).value)||1;
+  const price  = parseFloat((document.getElementById('groc-price')||{value:'0'}).value)||0;
+  const tax    = parseFloat((document.getElementById('groc-tax')||{value:'0'}).value)||0;
+  const cal    = parseFloat((document.getElementById('groc-cal')||{value:'0'}).value)||0;
+  const notes  = (document.getElementById('groc-notes')||{value:''}).value.trim();
   if(!item||!date){toast('Item & date required',false);return;}
   const total=parseFloat(((price*qty)+tax).toFixed(2));
-  d.groc.items.push({id:nextId(d.groc.items),store,date,item,brand,cat,size,qty,price,tax,total,cal,servings,sugar,protein,carbs,fat,sodium,notes});
+  if(!d.groc.items)d.groc.items=[];
+  d.groc.items.push({id:nextId(d.groc.items),store,date,item,qty,price,tax,total,cal,notes});
   if(store&&!(d.groc.stores||[]).includes(store)){if(!d.groc.stores)d.groc.stores=[];d.groc.stores.push(store);d.groc.stores.sort();}
-  save(d); buildGrocDL();
-  ['groc-item','groc-brand','groc-size','groc-price','groc-tax','groc-cal','groc-servings','groc-sugar','groc-protein','groc-carbs','groc-fat','groc-sodium','groc-notes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('groc-qty').value='1';
-  toast('Grocery item saved');
+  save(d);
+  ['groc-item','groc-price','groc-tax','groc-cal','groc-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var qel=document.getElementById('groc-qty');if(qel)qel.value='1';
+  toast('Item saved ✓',true);
 }
 function delGrocItem(id) {
   if(!confirm('Delete?'))return;
   const d=load();d.groc.items=d.groc.items.filter(x=>x.id!==id);
   save(d);renderGrocView();toast('Deleted');
 }
-function buildGrocFilters() {
-  const d=load();
-  const stores=[...new Set((d.groc.items||[]).map(i=>i.store).filter(Boolean))];
-  const cats=[...new Set((d.groc.items||[]).map(i=>i.cat).filter(Boolean))];
-  const yrs=[...new Set((d.groc.items||[]).map(i=>i.date.slice(0,4)).filter(Boolean))].sort().reverse();
-  document.getElementById('gv-store').innerHTML='<option value="">All Stores</option>'+stores.map(s=>`<option>${esc(s)}</option>`).join('');
-  document.getElementById('gv-cat').innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
-  document.getElementById('gv-yr').innerHTML='<option value="">All Years</option>'+yrs.map(y=>`<option>${y}</option>`).join('');
-}
-function renderGrocView() {
-  const d=load();
-  const fs=document.getElementById('gv-store').value;
-  const fc=document.getElementById('gv-cat').value;
-  const fy=document.getElementById('gv-yr').value;
-  const items=(d.groc.items||[]).filter(i=>(!fs||i.store===fs)&&(!fc||i.cat===fc)&&(!fy||i.date.startsWith(fy))).sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('groc-list').innerHTML=items.length?items.map(i=>`
-    <div class="list-row">
-      <div class="lr-dot" style="background:var(--green)"></div>
-      <div class="lr-body">
-        <div class="lr-main">${esc(i.item)}${i.brand?' <span style="color:var(--dim);font-size:11px;">'+esc(i.brand)+'</span>':''}</div>
-        <div class="lr-sub">${i.date} · ${esc(i.store||'—')} · ${esc(i.cat)}</div>
-        <div class="lr-sub">${i.size?esc(i.size)+' · ':''}Qty:${i.qty}${i.cal?' · '+i.cal+' cal':''}${i.sugar?' · '+i.sugar+'g sugar':''}</div>
-      </div>
-      <div class="lr-right">
-        <div class="lr-amt green">${fmt(i.total)}</div>
-        <div class="lr-amt2">${i.tax>0?'tax:'+fmt(i.tax):''}</div>
-        <button class="del-btn" onclick="delGrocItem(${i.id})">×</button>
-      </div>
-    </div>`)
-  .join(''):'<div style="color:var(--dim);padding:10px 0;">No items.</div>';
-}
-function buildGrocStatsFilters() {
-  const d=load();
-  const stores=[...new Set((d.groc.items||[]).map(i=>i.store).filter(Boolean))];
-  const yrs=[...new Set((d.groc.items||[]).map(i=>i.date.slice(0,4)).filter(Boolean))].sort().reverse();
-  document.getElementById('gs-store').innerHTML='<option value="">All Stores</option>'+stores.map(s=>`<option>${esc(s)}</option>`).join('');
-  document.getElementById('gs-yr').innerHTML='<option value="">All Years</option>'+yrs.map(y=>`<option>${y}</option>`).join('');
-}
-function renderGrocStats() {
-  const d=load();
-  const fs=document.getElementById('gs-store').value;
-  const fy=document.getElementById('gs-yr').value;
-  const items=(d.groc.items||[]).filter(i=>(!fs||i.store===fs)&&(!fy||i.date.startsWith(fy)));
-  if(!items.length){document.getElementById('groc-stat-content').innerHTML='<div class="card" style="color:var(--dim);font-size:12px;">No data.</div>';return;}
-  
-  const total=items.reduce((s,i)=>s+i.total,0);
-  const totalTax=items.reduce((s,i)=>s+(i.tax||0),0);
-  const totalCal=items.reduce((s,i)=>s+(i.cal||0),0);
-  const months=[...new Set(items.map(i=>i.date.slice(0,7)))].sort();
-  const monthCount=months.length||1;
-
-  // item counts
-  const itemCounts={};
-  for(const i of items){
-    itemCounts[i.item]=(itemCounts[i.item]||{cnt:0,total:0,cal:0});
-    itemCounts[i.item].cnt+=(i.qty||1);
-    itemCounts[i.item].total+=i.total;
-    itemCounts[i.item].cal+=(i.cal||0);
-  }
-
-  // by store
-  const byStore={};
-  for(const i of items){
-    if(!byStore[i.store])byStore[i.store]={total:0,tax:0,cnt:0};
-    byStore[i.store].total+=i.total;
-    byStore[i.store].tax+=(i.tax||0);
-    byStore[i.store].cnt++;
-  }
-
-  // month over month
-  const byMonth={};
-  for(const i of items){
-    const m=i.date.slice(0,7);
-    byMonth[m]=(byMonth[m]||0)+i.total;
-  }
-  const momKeys=Object.keys(byMonth).sort();
-
-  let h='';
-
-  // SUMMARY
-  h+=`<div style="background:#000044;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
-    <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">🛒 GROCERY SUMMARY</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
-        <div style="color:#ccccff;font-size:9px;">TOTAL SPENT</div>
-        <div style="color:#ff6666;font-weight:700;font-size:14px;">$${total.toFixed(2)}</div>
-      </div>
-      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
-        <div style="color:#ccccff;font-size:9px;">AVG/MONTH</div>
-        <div style="color:#ffaa00;font-weight:700;font-size:14px;">$${(total/monthCount).toFixed(2)}</div>
-      </div>
-      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
-        <div style="color:#ccccff;font-size:9px;">TOTAL TAX PAID</div>
-        <div style="color:#ff6666;font-weight:700;font-size:14px;">$${totalTax.toFixed(2)}</div>
-      </div>
-      <div style="background:#000033;border-radius:4px;padding:8px;text-align:center;">
-        <div style="color:#ccccff;font-size:9px;">TOTAL CALORIES</div>
-        <div style="color:#ffff00;font-weight:700;font-size:14px;">${totalCal.toLocaleString()}</div>
-      </div>
-    </div>
-  </div>`;
-
-  // BY STORE with tax rate
-  h+=`<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
-    <div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">BY STORE — TAX ANALYSIS</div>
-    <table style="width:100%;border-collapse:collapse;font-size:10px;">
-    <tr style="background:#0000cc;">
-      <th style="color:#ffff00;padding:4px;text-align:left;border:1px solid #333388;">STORE</th>
-      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">SPENT</th>
-      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">TAX</th>
-      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">RATE</th>
-      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">CNT</th>
-    </tr>`;
-  Object.entries(byStore).sort((a,b)=>b[1].total-a[1].total).forEach(([s,v])=>{
-    var rate=v.total>0?((v.tax/(v.total-v.tax))*100).toFixed(1):'0.0';
-    var rc=parseFloat(rate)===0?'#00ff88':parseFloat(rate)>8?'#ff6666':'#ffaa00';
-    h+=`<tr style="background:#00008a;">
-      <td style="padding:3px 4px;color:#ffff00;border:1px solid #333388;font-size:9px;">${esc(s).slice(0,16)}</td>
-      <td style="padding:3px 4px;color:#ff6666;text-align:right;border:1px solid #333388;">$${v.total.toFixed(0)}</td>
-      <td style="padding:3px 4px;color:#ffaa00;text-align:right;border:1px solid #333388;">$${v.tax.toFixed(2)}</td>
-      <td style="padding:3px 4px;text-align:right;border:1px solid #333388;color:${rc};font-weight:700;">${rate}%</td>
-      <td style="padding:3px 4px;color:#ccccff;text-align:right;border:1px solid #333388;">${v.cnt}</td>
-    </tr>`;
-  });
-  h+=`</table></div>`;
-
-  // MONTH OVER MONTH
-  if(momKeys.length>1){
-    h+=`<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
-      <div style="color:#ff88ff;font-weight:700;font-size:12px;margin-bottom:6px;">MONTH OVER MONTH COST</div>`;
-    momKeys.forEach((m,idx)=>{
-      var v=byMonth[m];
-      var prev=idx>0?byMonth[momKeys[idx-1]]:null;
-      var chg=prev?((v-prev)/prev*100).toFixed(1):null;
-      var cc=chg?parseFloat(chg)>=0?'#ff6666':'#00ff88':'#ccccff';
-      h+=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #333388;">
-        <span style="color:#ccccff;font-size:11px;">${m}</span>
-        <span style="color:#ffaa00;font-weight:700;font-size:11px;">$${v.toFixed(2)}</span>
-        ${chg?`<span style="color:${cc};font-size:10px;">${parseFloat(chg)>=0?'+':''}${chg}%</span>`:'<span></span>'}
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-
-  // TOP ITEMS BY COUNT
-  h+=`<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:10px;font-family:Courier New,monospace;">
-    <div style="color:#00ff88;font-weight:700;font-size:12px;margin-bottom:6px;">TOP ITEMS — COUNT · COST · CAL</div>
-    <table style="width:100%;border-collapse:collapse;font-size:10px;">
-    <tr style="background:#0000cc;">
-      <th style="color:#ffff00;padding:4px;text-align:left;border:1px solid #333388;">ITEM</th>
-      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">CNT</th>
-      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">TOTAL</th>
-      <th style="color:#ffff00;padding:4px;text-align:right;border:1px solid #333388;">CAL</th>
-    </tr>`;
-  Object.entries(itemCounts).sort((a,b)=>b[1].cnt-a[1].cnt).slice(0,15).forEach(([name,v])=>{
-    h+=`<tr style="background:#00008a;">
-      <td style="padding:3px 4px;color:#ffff00;border:1px solid #333388;font-size:9px;">${esc(name).slice(0,18)}</td>
-      <td style="padding:3px 4px;color:#00ffff;text-align:right;border:1px solid #333388;font-weight:700;">${v.cnt}</td>
-      <td style="padding:3px 4px;color:#ff6666;text-align:right;border:1px solid #333388;">$${v.total.toFixed(2)}</td>
-      <td style="padding:3px 4px;color:#ffaa00;text-align:right;border:1px solid #333388;">${v.cal>0?v.cal:'—'}</td>
-    </tr>`;
-  });
-  h+=`</table></div>`;
-
-  document.getElementById('groc-stat-content').innerHTML=h;
-}
-function buildGrocNutrFilters() {
-  const d=load();
-  const yrs=[...new Set((d.groc.items||[]).map(i=>i.date.slice(0,4)).filter(Boolean))].sort().reverse();
-  document.getElementById('gn-yr').innerHTML='<option value="">All Time</option>'+yrs.map(y=>`<option value="${y}">${y}</option>`).join('');
-}
-function renderGrocNutrition() {
-  const d=load();
-  const fy=document.getElementById('gn-yr').value;
-  const items=(d.groc.items||[]).filter(i=>!fy||i.date.startsWith(fy));
-  const totCal=items.reduce((s,i)=>s+(i.cal||0)*(i.servings||1)*(i.qty||1),0);
-  const totSugar=items.reduce((s,i)=>s+(i.sugar||0)*(i.servings||1)*(i.qty||1),0);
-  const totProtein=items.reduce((s,i)=>s+(i.protein||0)*(i.servings||1)*(i.qty||1),0);
-  const totCarbs=items.reduce((s,i)=>s+(i.carbs||0)*(i.servings||1)*(i.qty||1),0);
-  const topCal=[...items].sort((a,b)=>((b.cal||0)*(b.servings||1))-(( a.cal||0)*(a.servings||1))).slice(0,5);
-  const topSugar=[...items].sort((a,b)=>((b.sugar||0)*(b.servings||1))-((a.sugar||0)*(a.servings||1))).slice(0,5);
-  let h=`<div class="stat-grid c2" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Total Calories</div><div class="stat-val orange">${fmtN(totCal,0)}</div></div>
-    <div class="stat"><div class="stat-label">Total Sugar (g)</div><div class="stat-val red">${fmtN(totSugar,1)}</div></div>
-    <div class="stat"><div class="stat-label">Total Protein (g)</div><div class="stat-val green">${fmtN(totProtein,1)}</div></div>
-    <div class="stat"><div class="stat-label">Total Carbs (g)</div><div class="stat-val yellow">${fmtN(totCarbs,1)}</div></div>
-  </div>`;
-  if(topCal.length){
-    h+=`<div class="card"><div class="card-title orange">TOP CALORIE ITEMS</div>`;
-    for(const i of topCal){const tc=(i.cal||0)*(i.servings||1);if(tc>0)h+=`<div class="rep-row"><span class="rep-cat">${esc(i.item)}</span><span class="rep-amt orange">${fmtN(tc,0)} cal</span></div>`;}
-    h+=`</div>`;
-  }
-  if(topSugar.length){
-    h+=`<div class="card"><div class="card-title red">TOP SUGAR ITEMS</div>`;
-    for(const i of topSugar){const ts=(i.sugar||0)*(i.servings||1);if(ts>0)h+=`<div class="rep-row"><span class="rep-cat">${esc(i.item)}</span><span class="rep-amt red">${fmtN(ts,1)}g sugar</span></div>`;}
-    h+=`</div>`;
-  }
-  document.getElementById('groc-nutrition-content').innerHTML=h||'<div class="card" style="color:var(--dim);font-size:12px;">No nutrition data logged yet.</div>';
-}
+function buildGrocFilters(){}
+function renderGrocView(){}
+// old renderGrocStats replaced — handled by new version above
+function buildGrocNutrFilters() {}
+function renderGrocNutrition(){}
 
 // ═══════════════════════════════════════════════
 //  RESTAURANT TRACKER
@@ -2796,137 +2840,36 @@ function buildRestDL() {
   const d=load();
   document.getElementById('rest-store-dl').innerHTML=(d.rest.stores||[]).map(s=>`<option value="${esc(s)}">`).join('');
   const items=[...new Set((d.rest.items||[]).map(i=>i.item))];
-  document.getElementById('rest-item-dl').innerHTML=items.map(s=>`<option value="${esc(s)}">`).join('');
+  (document.getElementById('rest-item-dl')||{}).innerHTML=items.map(s=>`<option value="${esc(s)}">`).join('');
 }
 function addRestItem() {
   const d=load(); if(!d.rest){d.rest={items:[],stores:[]};}
-  const store   = document.getElementById('rest-store').value.trim();
-  const date    = document.getElementById('rest-date').value;
-  const item    = document.getElementById('rest-item').value.trim();
-  const cat     = document.getElementById('rest-cat').value;
-  const size    = document.getElementById('rest-size').value.trim();
-  const qty     = parseFloat(document.getElementById('rest-qty').value)||1;
-  const price   = parseFloat(document.getElementById('rest-price').value)||0;
-  const tax     = parseFloat(document.getElementById('rest-tax').value)||0;
-  const tip     = parseFloat(document.getElementById('rest-tip').value)||0;
-  const rtype   = document.getElementById('rest-type').value;
-  const cal     = parseFloat(document.getElementById('rest-cal').value)||0;
-  const oz      = parseFloat(document.getElementById('rest-oz').value)||0;
-  const sugar   = parseFloat(document.getElementById('rest-sugar').value)||0;
-  const protein = parseFloat(document.getElementById('rest-protein').value)||0;
-  const carbs   = parseFloat(document.getElementById('rest-carbs').value)||0;
-  const fat     = parseFloat(document.getElementById('rest-fat').value)||0;
-  const notes   = document.getElementById('rest-notes').value.trim();
+  const store = (document.getElementById('rest-store')||{value:''}).value.trim().toUpperCase();
+  const date  = (document.getElementById('rest-date')||{value:''}).value;
+  const item  = (document.getElementById('rest-item')||{value:''}).value.trim().toUpperCase();
+  const qty   = parseFloat((document.getElementById('rest-qty')||{value:'1'}).value)||1;
+  const price = parseFloat((document.getElementById('rest-price')||{value:'0'}).value)||0;
+  const notes = (document.getElementById('rest-notes')||{value:''}).value.trim();
   if(!item||!date){toast('Item & date required',false);return;}
-  const total=parseFloat(((price*qty)+tax+tip).toFixed(2));
-  d.rest.items.push({id:nextId(d.rest.items),store,date,item,cat,size,qty,price,tax,tip,rtype,total,cal,oz,sugar,protein,carbs,fat,notes});
+  const total=parseFloat((price*qty).toFixed(2));
+  if(!d.rest.items)d.rest.items=[];
+  d.rest.items.push({id:nextId(d.rest.items),store,date,item,qty,price,total,notes});
   if(store&&!(d.rest.stores||[]).includes(store)){if(!d.rest.stores)d.rest.stores=[];d.rest.stores.push(store);d.rest.stores.sort();}
-  save(d); buildRestDL();
-  ['rest-item','rest-size','rest-price','rest-tax','rest-tip','rest-cal','rest-oz','rest-sugar','rest-protein','rest-carbs','rest-fat','rest-notes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('rest-qty').value='1';
-  toast('Order saved');
+  save(d);
+  ['rest-item','rest-price','rest-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var qel=document.getElementById('rest-qty');if(qel)qel.value='1';
+  toast('Visit saved ✓',true);
 }
 function delRestItem(id) {
   if(!confirm('Delete?'))return;
   const d=load();d.rest.items=d.rest.items.filter(x=>x.id!==id);
   save(d);renderRestView();toast('Deleted');
 }
-function buildRestFilters() {
-  const d=load();
-  const stores=[...new Set((d.rest.items||[]).map(i=>i.store).filter(Boolean))];
-  const cats=[...new Set((d.rest.items||[]).map(i=>i.cat).filter(Boolean))];
-  const yrs=[...new Set((d.rest.items||[]).map(i=>i.date.slice(0,4)).filter(Boolean))].sort().reverse();
-  document.getElementById('rv-store').innerHTML='<option value="">All Restaurants</option>'+stores.map(s=>`<option>${esc(s)}</option>`).join('');
-  document.getElementById('rv-cat').innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
-  document.getElementById('rv-yr').innerHTML='<option value="">All Years</option>'+yrs.map(y=>`<option>${y}</option>`).join('');
-}
-function renderRestView() {
-  const d=load();
-  const fs=document.getElementById('rv-store').value;
-  const fc=document.getElementById('rv-cat').value;
-  const fy=document.getElementById('rv-yr').value;
-  const items=(d.rest.items||[]).filter(i=>(!fs||i.store===fs)&&(!fc||i.cat===fc)&&(!fy||i.date.startsWith(fy))).sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('rest-list').innerHTML=items.length?items.map(i=>`
-    <div class="list-row">
-      <div class="lr-dot" style="background:var(--orange)"></div>
-      <div class="lr-body">
-        <div class="lr-main">${esc(i.item)} <span class="tag tag-o">${esc(i.cat)}</span></div>
-        <div class="lr-sub">${i.date} · ${esc(i.store||'—')} · ${esc(i.rtype||'')}</div>
-        <div class="lr-sub">${i.size?esc(i.size)+' · ':''}Qty:${i.qty}${i.cal?' · '+i.cal+' cal':''}${i.sugar?' · '+i.sugar+'g sugar':''}</div>
-      </div>
-      <div class="lr-right">
-        <div class="lr-amt orange">${fmt(i.total)}</div>
-        <div class="lr-amt2">${i.tip>0?'tip:'+fmt(i.tip):''}${i.tax>0?' tax:'+fmt(i.tax):''}</div>
-        <button class="del-btn" onclick="delRestItem(${i.id})">×</button>
-      </div>
-    </div>`)
-  .join(''):'<div style="color:var(--dim);padding:10px 0;">No orders.</div>';
-}
-function buildRestStatsFilters() {
-  const d=load();
-  const stores=[...new Set((d.rest.items||[]).map(i=>i.store).filter(Boolean))];
-  const yrs=[...new Set((d.rest.items||[]).map(i=>i.date.slice(0,4)).filter(Boolean))].sort().reverse();
-  document.getElementById('rs-store').innerHTML='<option value="">All Restaurants</option>'+stores.map(s=>`<option>${esc(s)}</option>`).join('');
-  document.getElementById('rs-yr').innerHTML='<option value="">All Years</option>'+yrs.map(y=>`<option>${y}</option>`).join('');
-}
-function renderRestStats() {
-  const d=load();
-  const fs=document.getElementById('rs-store').value;
-  const fy=document.getElementById('rs-yr').value;
-  const items=(d.rest.items||[]).filter(i=>(!fs||i.store===fs)&&(!fy||i.date.startsWith(fy)));
-  if(!items.length){document.getElementById('rest-stat-content').innerHTML='<div class="card" style="color:var(--dim);font-size:12px;">No data.</div>';return;}
-  const total=items.reduce((s,i)=>s+i.total,0);
-  const totalTax=items.reduce((s,i)=>s+(i.tax||0),0);
-  const totalTip=items.reduce((s,i)=>s+(i.tip||0),0);
-  const byStore={},byCat={},byType={};
-  for(const i of items){
-    if(i.store){byStore[i.store]=(byStore[i.store]||0)+i.total;}
-    byCat[i.cat]=(byCat[i.cat]||0)+i.total;
-    if(i.rtype){byType[i.rtype]=(byType[i.rtype]||0)+i.total;}
-  }
-  const months=[...new Set(items.map(i=>i.date.slice(0,7)))].length||1;
-  let h=`<div class="stat-grid c3" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Total Spent</div><div class="stat-val red">${fmt(total)}</div></div>
-    <div class="stat"><div class="stat-label">Total Tips</div><div class="stat-val yellow">${fmt(totalTip)}</div></div>
-    <div class="stat"><div class="stat-label">Total Tax</div><div class="stat-val orange">${fmt(totalTax)}</div></div>
-  </div><div class="stat-grid c2" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Avg/Month</div><div class="stat-val orange">${fmt(total/months)}</div></div>
-    <div class="stat"><div class="stat-label">Est/Year</div><div class="stat-val red">${fmt((total/months)*12)}</div></div>
-  </div>`;
-  h+=`<div class="card"><div class="card-title orange">BY RESTAURANT</div>`;
-  for(const[s,v]of Object.entries(byStore).sort((a,b)=>b[1]-a[1]))
-    h+=`<div class="rep-row"><span class="rep-cat">${esc(s)}</span><span class="rep-amt orange">${fmt(v)}</span></div>`;
-  h+=`</div><div class="card"><div class="card-title yellow">BY FOOD TYPE</div>`;
-  for(const[c,v]of Object.entries(byCat).sort((a,b)=>b[1]-a[1]))
-    h+=`<div class="rep-row"><span class="rep-cat">${esc(c)}</span><span class="rep-amt yellow">${fmt(v)}</span></div>`;
-  h+=`</div>`;
-  document.getElementById('rest-stat-content').innerHTML=h;
-}
-function buildRestNutrFilters() {
-  const d=load();
-  const yrs=[...new Set((d.rest.items||[]).map(i=>i.date.slice(0,4)).filter(Boolean))].sort().reverse();
-  document.getElementById('rn-yr').innerHTML='<option value="">All Time</option>'+yrs.map(y=>`<option value="${y}">${y}</option>`).join('');
-}
-function renderRestNutrition() {
-  const d=load();
-  const fy=document.getElementById('rn-yr').value;
-  const items=(d.rest.items||[]).filter(i=>!fy||i.date.startsWith(fy));
-  const totCal=items.reduce((s,i)=>s+(i.cal||0)*(i.qty||1),0);
-  const totSugar=items.reduce((s,i)=>s+(i.sugar||0)*(i.qty||1),0);
-  const totProtein=items.reduce((s,i)=>s+(i.protein||0)*(i.qty||1),0);
-  const totCarbs=items.reduce((s,i)=>s+(i.carbs||0)*(i.qty||1),0);
-  const topCal=[...items].filter(i=>i.cal>0).sort((a,b)=>(b.cal||0)-(a.cal||0)).slice(0,5);
-  const topSugar=[...items].filter(i=>i.sugar>0).sort((a,b)=>(b.sugar||0)-(a.sugar||0)).slice(0,5);
-  let h=`<div class="stat-grid c2" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Total Calories</div><div class="stat-val orange">${fmtN(totCal,0)}</div></div>
-    <div class="stat"><div class="stat-label">Total Sugar (g)</div><div class="stat-val red">${fmtN(totSugar,1)}</div></div>
-    <div class="stat"><div class="stat-label">Total Protein (g)</div><div class="stat-val green">${fmtN(totProtein,1)}</div></div>
-    <div class="stat"><div class="stat-label">Total Carbs (g)</div><div class="stat-val yellow">${fmtN(totCarbs,1)}</div></div>
-  </div>`;
-  if(topCal.length){h+=`<div class="card"><div class="card-title orange">TOP CALORIE ITEMS</div>`;for(const i of topCal)h+=`<div class="rep-row"><span class="rep-cat">${esc(i.item)} · ${esc(i.store||'')}</span><span class="rep-amt orange">${i.cal} cal</span></div>`;h+=`</div>`;}
-  if(topSugar.length){h+=`<div class="card"><div class="card-title red">TOP SUGAR ITEMS</div>`;for(const i of topSugar)h+=`<div class="rep-row"><span class="rep-cat">${esc(i.item)} · ${esc(i.store||'')}</span><span class="rep-amt red">${i.sugar}g</span></div>`;h+=`</div>`;}
-  document.getElementById('rest-nutrition-content').innerHTML=h||'<div class="card" style="color:var(--dim);font-size:12px;">No nutrition data logged yet.</div>';
-}
+function buildRestFilters(){}
+function renderRestView(){}
+function buildRestStatsFilters(){}
+function buildRestNutrFilters() {}
+function renderRestNutrition(){}
 
 // ═══════════════════════════════════════════════
 //  RECEIPT SCANNER
@@ -4420,11 +4363,17 @@ function runIrsDesc(){
   var UTIL_KEYS=['ELECTRIC','GAS','WATER','PHONE','INTERNET','FAX','HEAT','HEATING','CABLE','UTILITY','COMED','PEOPLES'];
   var TAX_KEYS=['TAX','PERMIT','LICENSE','FEDERAL','STATE TAX','PROPERTY TAX','PRODUCTION TAX'];
 
+  // descs that are ALWAYS expenses regardless of amount
+  var ALWAYS_EXPENSE=['SUBCONTRACTOR','HARDWARE','ROOFING SUPPLIES','TRUCK GAS','TRUCK EXPENSE',
+    'ADVERTISING','DECORATION','INSURANCE','LANDSCAPE','LEGAL','SCAVENGER','STORAGE',
+    'PLUMBING','ELECTRIC REPAIRS','OFFICE SUPPLIES','FOOD GROCERY','JOB FOOD COST'];
+
   var secA=[],secB=[],secC=[],secD=[];
   Object.keys(descMap).forEach(function(d){
     var v=descMap[d];
     var du=d.toUpperCase();
-    if(v.amt>=0){
+    var forceExpense=ALWAYS_EXPENSE.some(function(k){return du.indexOf(k)>=0;});
+    if(v.amt>=0 && !forceExpense){
       secA.push(d);
     } else {
       var isUtil=UTIL_KEYS.some(function(k){return du.indexOf(k)>=0;});
@@ -4699,10 +4648,16 @@ function runMasterDesc(){
     descMap[d].amt+=e.amt;
   });
 
+  // descs always treated as expenses
+  var ALWAYS_EXP=['SUBCONTRACTOR','HARDWARE','ROOFING SUPPLIES','TRUCK GAS','TRUCK EXPENSE',
+    'ADVERTISING','DECORATION','INSURANCE','LANDSCAPE','LEGAL','SCAVENGER','STORAGE',
+    'PLUMBING','ELECTRIC REPAIRS','OFFICE SUPPLIES','FOOD GROCERY','JOB FOOD COST'];
+
   // separate credits (A) and debits (B)
   var credits=[],debits=[];
   Object.keys(descMap).forEach(function(d){
-    if(descMap[d].amt>=0)credits.push(d);
+    var forceExp=ALWAYS_EXP.some(function(k){return d.toUpperCase().indexOf(k)>=0;});
+    if(descMap[d].amt>=0 && !forceExp)credits.push(d);
     else debits.push(d);
   });
   credits.sort(function(a,b){return a.localeCompare(b);});
