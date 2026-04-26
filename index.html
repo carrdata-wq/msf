@@ -1425,11 +1425,32 @@ function renderFuelChart(){
     return;
   }
 
+  // detect Indiana vs Illinois by payee name
+  function isIndiana(payee){
+    var p=(payee||'').toUpperCase();
+    return p.indexOf(' IN')>=0||p.indexOf('GARY')>=0||p.indexOf('HAMMOND')>=0||p.indexOf('INDIANA')>=0||p.indexOf('MERRILLV')>=0||p.indexOf('LAKE STATI')>=0||p.indexOf('EAGLE GAS')>=0;
+  }
+
+  var inEntries=gasEntries.filter(function(e){return isIndiana(e.payee);});
+  var ilEntries=gasEntries.filter(function(e){return !isIndiana(e.payee);});
+
+  var inTotal=inEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var ilTotal=ilEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var inCnt=inEntries.length;
+  var ilCnt=ilEntries.length;
+  var inAvg=inCnt>0?inTotal/inCnt:0;
+  var ilAvg=ilCnt>0?ilTotal/ilCnt:0;
+  var savings=ilAvg>inAvg?(ilAvg-inAvg)*inCnt:0;
+
   // group by month
   var byMonth={};
+  var byMonthIN={};var byMonthIL={};
   gasEntries.forEach(function(e){
     var m=(e.date||'').slice(0,7);
-    byMonth[m]=(byMonth[m]||0)+Math.abs(e.amt);
+    var amt=Math.abs(e.amt);
+    byMonth[m]=(byMonth[m]||0)+amt;
+    if(isIndiana(e.payee))byMonthIN[m]=(byMonthIN[m]||0)+amt;
+    else byMonthIL[m]=(byMonthIL[m]||0)+amt;
   });
   var months=Object.keys(byMonth).sort();
   var maxVal=Math.max.apply(null,Object.values(byMonth));
@@ -1437,36 +1458,68 @@ function renderFuelChart(){
 
   var h='<div style="font-family:Courier New,monospace;">';
 
-  // summary
-  h+='<div style="display:flex;gap:8px;margin-bottom:12px;">'
-    +'<div style="flex:1;background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+  // summary cards
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
     +'<div style="color:#ccccff;font-size:9px;">AVG/MONTH</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+avgVal.toFixed(2)+'</div></div>'
-    +'<div style="flex:1;background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
     +'<div style="color:#ccccff;font-size:9px;">HIGHEST MONTH</div>'
     +'<div style="color:#ff4444;font-weight:700;font-size:14px;">$'+maxVal.toFixed(2)+'</div></div>'
     +'</div>';
 
-  // mountain/bar chart
+  // Indiana vs Illinois comparison
+  h+='<div style="background:#ffffff;border:2px solid #000066;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;text-align:center;">🏆 INDIANA vs ILLINOIS SAVINGS</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+    +'<div style="background:#e8f4e8;border:2px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#006600;font-weight:700;font-size:12px;">🏁 INDIANA</div>'
+    +'<div style="color:#006600;font-size:10px;">'+inCnt+' fill-ups</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:14px;">$'+inTotal.toFixed(2)+'</div>'
+    +'<div style="color:#006600;font-size:10px;">avg $'+inAvg.toFixed(2)+'/fill</div></div>'
+    +'<div style="background:#ffe8e8;border:2px solid #cc0000;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#cc0000;font-weight:700;font-size:12px;">🏠 ILLINOIS</div>'
+    +'<div style="color:#cc0000;font-size:10px;">'+ilCnt+' fill-ups</div>'
+    +'<div style="color:#cc0000;font-weight:700;font-size:14px;">$'+ilTotal.toFixed(2)+'</div>'
+    +'<div style="color:#cc0000;font-size:10px;">avg $'+ilAvg.toFixed(2)+'/fill</div></div>'
+    +'</div>'
+    +(savings>0?'<div style="background:#006600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ffffff;font-weight:700;font-size:11px;">💰 INDIANA SAVINGS vs IL PRICES</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+savings.toFixed(2)+' SAVED!</div>'
+    +'<div style="color:#ccffcc;font-size:10px;">avg $'+(ilAvg-inAvg).toFixed(2)+' cheaper per fill-up × '+inCnt+' Indiana fill-ups</div>'
+    +'</div>':'')
+    +'</div>';
+
+  // monthly bar chart
   h+='<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:10px;">MONTHLY GAS COST — BAR CHART</div>';
+    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:10px;">MONTHLY GAS COST — 🏁=Indiana 🏠=Illinois</div>';
 
   months.forEach(function(m){
     var v=byMonth[m];
+    var inV=byMonthIN[m]||0;
+    var ilV=byMonthIL[m]||0;
     var barPct=Math.round((v/maxVal)*100);
+    var inPct=Math.round((inV/maxVal)*100);
+    var ilPct=Math.round((ilV/maxVal)*100);
     var barColor=v>avgVal*1.3?'#cc0000':v>avgVal?'#cc6600':'#006600';
     var mo=m.slice(5,7)+'/'+m.slice(2,4);
-    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
-      +'<div style="color:#000066;font-size:10px;width:40px;text-align:right;font-weight:700;">'+mo+'</div>'
-      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:18px;position:relative;">'
-      +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;transition:width 0.3s;"></div>'
-      +'<span style="position:absolute;right:4px;top:1px;font-size:10px;color:#000000;font-weight:700;">$'+v.toFixed(0)+'</span>'
+    var flag=inV>0&&ilV>0?'🏁🏠':inV>0?'🏁':'🏠';
+    h+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">'
+      +'<div style="color:#000066;font-size:9px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
+      +'<div style="font-size:10px;width:20px;">'+flag+'</div>'
+      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
+      // Indiana portion green
+      +(inPct>0?'<div style="background:#006600;height:100%;border-radius:3px 0 0 3px;width:'+inPct+'%;position:absolute;left:0;"></div>':'')
+      // Illinois portion red (stacked)
+      +(ilPct>0?'<div style="background:#cc6600;height:100%;border-radius:'+(inPct===0?'3px':'0')+' 3px 3px '+(inPct===0?'3px':'0')+';width:'+ilPct+'%;position:absolute;left:'+inPct+'%;opacity:0.85;"></div>':'')
+      +'<span style="position:absolute;right:3px;top:1px;font-size:9px;color:#000000;font-weight:700;">$'+v.toFixed(0)+'</span>'
       +'</div></div>';
   });
 
-  // avg line note
-  h+='<div style="border-top:1px solid #cccccc;margin-top:8px;padding-top:6px;font-size:10px;color:#666666;">'
-    +'🟢 = below avg &nbsp; 🟠 = above avg &nbsp; 🔴 = 30%+ above avg'
+  h+='<div style="border-top:1px solid #cccccc;margin-top:8px;padding-top:6px;font-size:10px;color:#333333;">'
+    +'<span style="color:#006600;font-weight:700;">■ Indiana</span> &nbsp; '
+    +'<span style="color:#cc6600;font-weight:700;">■ Illinois</span> &nbsp; '
+    +'🟢=below avg 🟠=above avg 🔴=high'
     +'</div></div></div>';
 
   document.getElementById('fuel-chart-content').innerHTML=h;
@@ -1795,13 +1848,76 @@ function renderMileHistory(){
   recent.forEach(function(m,i){
     var prev=miles[miles.indexOf(m)-1];
     var driven=prev?m.odo-prev.odo:0;
-    h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-family:Courier New,monospace;font-size:11px;">'
+    h+='<div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:6px;">'
+      +'<div style="flex:1;font-family:Courier New,monospace;font-size:11px;">'
       +'<span style="color:var(--yellow);">'+m.date+'</span>'
-      +'<span style="color:#00ffff;">'+m.odo.toLocaleString()+' mi</span>'
-      +(driven>0?'<span style="color:#00ff88;">+'+driven.toLocaleString()+' mi</span>':'<span></span>')
+      +' <span style="color:#00ffff;">'+m.odo.toLocaleString()+' mi</span>'
+      +(driven>0?' <span style="color:#00ff88;">+'+driven.toLocaleString()+'</span>':'')
+      +(m.notes?' <span style="color:#aaaacc;font-size:10px;">'+m.notes+'</span>':'')
+      +'</div>'
+      +'<button onclick="editMileage('+m.id+')" style="padding:4px 8px;background:#0055aa;color:#fff;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;">EDT</button>'
+      +'<button onclick="delMileage('+m.id+')" style="padding:4px 8px;background:#880000;color:#fff;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;">DEL</button>'
       +'</div>';
   });
   document.getElementById('mile-history').innerHTML=h;
+}
+
+function editMileage(id){
+  const d=load();
+  var miles=(d.fuel&&d.fuel.miles)||[];
+  var m=miles.find(function(x){return x.id===id;});
+  if(!m)return;
+  var overlay=document.createElement('div');
+  overlay.id='mile-edit-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:380px;font-family:Courier New,monospace;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:12px;">✏️ EDIT MILEAGE</div>'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">DATE</div>'
+    +'<input type="date" id="mile-edit-date" value="'+m.date+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:8px;">'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">ODOMETER</div>'
+    +'<input type="number" id="mile-edit-odo" value="'+m.odo+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:8px;">'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">VEHICLE</div>'
+    +'<input type="text" id="mile-edit-veh" value="'+(m.veh||'TRUCK')+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:8px;">'
+    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">NOTES</div>'
+    +'<input type="text" id="mile-edit-notes" value="'+(m.notes||'')+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:12px;">'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="saveMileageEdit('+id+')" style="flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">SAVE</button>'
+    +'<button onclick="document.getElementById(\'mile-edit-overlay\').remove()" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function saveMileageEdit(id){
+  var date=document.getElementById('mile-edit-date').value;
+  var odo=parseFloat(document.getElementById('mile-edit-odo').value)||0;
+  var veh=document.getElementById('mile-edit-veh').value.toUpperCase().trim();
+  var notes=document.getElementById('mile-edit-notes').value.trim();
+  if(!date||!odo){toast('Date and odometer required',false);return;}
+  const d=load();
+  if(!d.fuel)d.fuel={logs:[],miles:[]};
+  for(var i=0;i<d.fuel.miles.length;i++){
+    if(d.fuel.miles[i].id===id){
+      d.fuel.miles[i].date=date;
+      d.fuel.miles[i].odo=odo;
+      d.fuel.miles[i].veh=veh;
+      d.fuel.miles[i].notes=notes;
+      break;
+    }
+  }
+  d.fuel.miles.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+  save(d);
+  document.getElementById('mile-edit-overlay').remove();
+  renderMileHistory();
+  toast('Mileage updated ✓',true);
+}
+
+function delMileage(id){
+  const d=load();
+  if(!d.fuel||!d.fuel.miles)return;
+  d.fuel.miles=d.fuel.miles.filter(function(m){return m.id!==id;});
+  save(d);
+  renderMileHistory();
+  toast('Deleted ✓',true);
 }
 function buildFuelFilters() {
   const d=load();
@@ -1820,32 +1936,39 @@ function renderFuelStats() {
     return desc.indexOf('TRUCK GAS')>=0||desc.indexOf('GAS')>=0&&desc.indexOf('TRUCK')>=0;
   }).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
 
-  // also get mileage logs
+  // mileage logs
   var mileLogs=((d.fuel&&d.fuel.miles)||[]).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
 
-  if(!gasEntries.length){
-    document.getElementById('fuel-stat-cards').innerHTML='<div style="color:#ffff00;font-family:Courier New,monospace;padding:20px;text-align:center;">No gas entries found in accounting.<br><span style="font-size:10px;color:#ccccff;">Add TRUCK GAS entries to accounting first.</span></div>';
-    document.getElementById('fuel-history').innerHTML='';
-    return;
-  }
+  // HARDCODED VEHICLE BASELINE — car purchased 10/01/2025 at 236,100 miles
+  var CAR_START_DATE='2025-10-01';
+  var CAR_START_ODO=236100;
+  var CAR_TODAY_ODO=253521;
+  var CAR_TOTAL_MILES=CAR_TODAY_ODO-CAR_START_ODO; // 17,421
 
-  // calculate totals
-  var totalCost=gasEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
-  var firstDate=new Date(gasEntries[0].date);
-  var lastDate=new Date(gasEntries[gasEntries.length-1].date);
-  var totalDays=Math.max(1,Math.round((lastDate-firstDate)/(1000*60*60*24)));
+  // get gas entries SINCE car purchase
+  var gasAfterPurchase=gasEntries.filter(function(e){return(e.date||'')>=CAR_START_DATE;});
+  var totalGasSincePurchase=gasAfterPurchase.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+
+  // total all gas
+  var totalCost=gasEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0)||totalGasSincePurchase;
+
+  // cost per mile
+  var costPerMile=CAR_TOTAL_MILES>0?totalGasSincePurchase/CAR_TOTAL_MILES:0;
+  var milesPerDollar=totalGasSincePurchase>0?CAR_TOTAL_MILES/totalGasSincePurchase:0;
+
+  // days since purchase
+  var daysSincePurchase=Math.round((new Date()-new Date(CAR_START_DATE))/(1000*60*60*24));
+  var milesPerDay=CAR_TOTAL_MILES/daysSincePurchase;
+  var projectedAnnual=Math.round(milesPerDay*365);
+
+  // overall avg/day gas cost
+  var firstDate=gasEntries.length?gasEntries[0].date:CAR_START_DATE;
+  var totalDays=Math.max(1,Math.round((new Date()-new Date(firstDate))/(1000*60*60*24)));
   var avgPerDay=totalCost/totalDays;
-
-  // mileage calcs
-  var totalMiles=0;var costPerMile=0;
-  if(mileLogs.length>=2){
-    totalMiles=mileLogs[mileLogs.length-1].odo-mileLogs[0].odo;
-    if(totalMiles>0)costPerMile=totalCost/totalMiles;
-  }
 
   var h='<div style="font-family:Courier New,monospace;">';
 
-  // summary
+  // main summary
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
     +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
     +'<div style="color:#ccccff;font-size:9px;">TOTAL GAS COST</div>'
@@ -1859,51 +1982,124 @@ function renderFuelStats() {
     +'<div style="background:#000044;border:1px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
     +'<div style="color:#ccccff;font-size:9px;">COST/YEAR EST</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(avgPerDay*365).toFixed(0)+'</div></div>'
-    +(totalMiles>0?'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">TOTAL MILES</div>'
-    +'<div style="color:#00ffff;font-weight:700;font-size:14px;">'+totalMiles.toLocaleString()+'</div></div>':'')
-    +(costPerMile>0?'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">COST/MILE</div>'
-    +'<div style="color:#00ffff;font-weight:700;font-size:14px;">$'+costPerMile.toFixed(3)+'</div></div>':'')
     +'</div>';
 
-  // DAY BY DAY DIARY — newest first
-  h+='<div style="background:#000033;border:1px solid #333388;border-radius:4px;padding:8px;margin-bottom:8px;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:11px;margin-bottom:8px;">⛽ GAS PURCHASE DIARY — DAY BY DAY COST</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
-    +'<tr style="background:#000080;">'
-    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:left;">DATE</th>'
-    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:left;">STATION</th>'
-    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:right;">AMT</th>'
-    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:right;">DAYS</th>'
-    +'<th style="color:#ffffff;padding:4px 3px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
-    +'</tr>';
+  // VEHICLE CORRELATION CARD
+  h+='<div style="background:#ffffff;border:2px solid #000066;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;text-align:center;">🚗 VEHICLE MILEAGE CORRELATION</div>'
+    +'<div style="color:#333333;font-size:10px;margin-bottom:6px;text-align:center;">Since purchase: '+CAR_START_DATE+' · Odo: '+CAR_START_ODO.toLocaleString()+' → '+CAR_TODAY_ODO.toLocaleString()+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
+    +'<div style="background:#e8f4e8;border:1px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#006600;font-size:9px;">MILES DRIVEN</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:15px;">'+CAR_TOTAL_MILES.toLocaleString()+'</div></div>'
+    +'<div style="background:#e8f4e8;border:1px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#006600;font-size:9px;">MILES/DAY AVG</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:15px;">'+milesPerDay.toFixed(1)+'</div></div>'
+    +'<div style="background:#fff8e8;border:1px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#cc6600;font-size:9px;">COST/MILE</div>'
+    +'<div style="color:#cc6600;font-weight:700;font-size:15px;">$'+costPerMile.toFixed(3)+'</div></div>'
+    +'<div style="background:#fff8e8;border:1px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#cc6600;font-size:9px;">MILES PER $1</div>'
+    +'<div style="color:#cc6600;font-weight:700;font-size:15px;">'+milesPerDollar.toFixed(1)+'</div></div>'
+    +'<div style="background:#e8e8ff;border:1px solid #000066;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#000066;font-size:9px;">PROJ ANNUAL MI</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:15px;">'+projectedAnnual.toLocaleString()+'</div></div>'
+    +'<div style="background:#e8e8ff;border:1px solid #000066;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#000066;font-size:9px;">GAS SINCE PURCH</div>'
+    +'<div style="color:#cc0000;font-weight:700;font-size:15px;">$'+totalGasSincePurchase.toFixed(2)+'</div></div>'
+    +'</div></div>';
 
-  // reverse for display newest first but calc days from sorted oldest first
-  var reversed=gasEntries.slice().reverse();
-  reversed.forEach(function(e,i){
-    var nextEntry=reversed[i+1]; // older entry
-    var daysBetween=1;
-    if(nextEntry){
-      daysBetween=Math.max(1,Math.round((new Date(e.date)-new Date(nextEntry.date))/(1000*60*60*24)));
-    }
-    var costPerDayEntry=Math.abs(e.amt)/daysBetween;
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dc=costPerDayEntry>15?'#cc0000':costPerDayEntry>8?'#cc6600':'#006600';
-    var dateDisp=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2-$3-$1').slice(0,8);
-    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:4px 3px;color:#000066;font-size:10px;">'+dateDisp+'</td>'
-      +'<td style="padding:4px 3px;color:#000066;font-weight:700;font-size:10px;">'+trunc(e.payee||'',12)+'</td>'
-      +'<td style="padding:4px 3px;text-align:right;color:#cc0000;font-weight:700;font-size:10px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'<td style="padding:4px 3px;text-align:right;color:#333333;font-size:10px;">'+daysBetween+'</td>'
-      +'<td style="padding:4px 3px;text-align:right;font-weight:700;font-size:10px;color:'+dc+';">$'+costPerDayEntry.toFixed(2)+'</td>'
-      +'</tr>';
+  // day by day diary
+  var byMonth={};
+  gasEntries.forEach(function(e){
+    var m=(e.date||'').slice(0,7);
+    byMonth[m]=(byMonth[m]||0)+Math.abs(e.amt);
+  });
+  var monthKeys=Object.keys(byMonth).sort().reverse().slice(0,6);
+  if(monthKeys.length){
+    h+='<div style="background:#000033;border:1px solid #333388;border-radius:4px;padding:8px;margin-bottom:8px;">'
+      +'<div style="color:#ffff00;font-weight:700;font-size:11px;margin-bottom:6px;">MONTHLY GAS COST</div>';
+    monthKeys.forEach(function(m){
+      var v=byMonth[m];
+      var barW=Math.min(100,(v/Math.max.apply(null,Object.values(byMonth)))*100);
+      h+='<div style="margin-bottom:4px;">'
+        +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;">'
+        +'<span style="color:#ccccff;">'+m+'</span>'
+        +'<span style="color:#ff6666;font-weight:700;">$'+v.toFixed(2)+'</span></div>'
+        +'<div style="background:#001133;border-radius:2px;height:8px;">'
+        +'<div style="background:#ff6666;height:100%;border-radius:2px;width:'+barW+'%;"></div></div>'
+        +'</div>';
+    });
+    h+='</div>';
+  }
+
+  // 12-MONTH FORWARD BUDGET PROJECTION
+  var byMonthAll={};
+  gasEntries.forEach(function(e){
+    var m=(e.date||'').slice(0,7);
+    byMonthAll[m]=(byMonthAll[m]||0)+Math.abs(e.amt);
+  });
+  var monthVals=Object.values(byMonthAll);
+  var last3Months=Object.keys(byMonthAll).sort().slice(-3).map(function(m){return byMonthAll[m];});
+  var trendAvg=last3Months.length?last3Months.reduce(function(s,v){return s+v;},0)/last3Months.length:avgPerDay*30;
+  var overallAvg=monthVals.length?monthVals.reduce(function(s,v){return s+v;},0)/monthVals.length:avgPerDay*30;
+
+  // build next 12 months
+  var now=new Date();
+  var futureMonths=[];
+  for(var fi=1;fi<=12;fi++){
+    var fd2=new Date(now.getFullYear(),now.getMonth()+fi,1);
+    var ym=fd2.getFullYear()+'-'+('0'+(fd2.getMonth()+1)).slice(-2);
+    // blend trend avg with overall avg
+    var budget=(trendAvg*0.6)+(overallAvg*0.4);
+    futureMonths.push({ym:ym,budget:budget});
+  }
+  var totalBudget12=futureMonths.reduce(function(s,m){return s+m.budget;},0);
+  var maxBudget=Math.max.apply(null,futureMonths.map(function(m){return m.budget;}));
+
+  h+='<div style="background:#ffffff;border:2px solid #000066;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;text-align:center;">📅 12-MONTH FORWARD GAS BUDGET</div>'
+    +'<div style="color:#333333;font-size:10px;margin-bottom:8px;text-align:center;">Based on your Byline debit card history</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
+    +'<div style="flex:1;background:#e8f4e8;border:1px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#006600;font-size:9px;">BUDGET/MONTH</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:15px;">$'+trendAvg.toFixed(0)+'</div></div>'
+    +'<div style="flex:1;background:#fff8e8;border:1px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#cc6600;font-size:9px;">TOTAL 12-MO</div>'
+    +'<div style="color:#cc6600;font-weight:700;font-size:15px;">$'+totalBudget12.toFixed(0)+'</div></div>'
+    +'<div style="flex:1;background:#e8e8ff;border:1px solid #000066;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#000066;font-size:9px;">PROJ MILES/YR</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:15px;">'+projectedAnnual.toLocaleString()+'</div></div>'
+    +'</div>';
+
+  // monthly budget bars
+  futureMonths.forEach(function(m){
+    var barPct=Math.round((m.budget/maxBudget)*100);
+    var mo=m.ym.slice(5,7)+'/'+m.ym.slice(2,4);
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+      +'<div style="color:#000066;font-size:10px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
+      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
+      +'<div style="background:#000066;height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
+      +'<span style="position:absolute;right:4px;top:1px;font-size:9px;color:#000000;font-weight:700;">$'+m.budget.toFixed(0)+'</span>'
+      +'</div></div>';
   });
 
-  h+='</table></div></div>';
+  // ytd projection
+  var ytdSoFar=Object.keys(byMonthAll).filter(function(m){return m.slice(0,4)===''+now.getFullYear();}).reduce(function(s,m){return s+byMonthAll[m];},0);
+  var monthsLeft=12-now.getMonth();
+  var projYTD=ytdSoFar+(trendAvg*monthsLeft);
+  h+='<div style="background:#000066;border-radius:4px;padding:8px;margin-top:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:10px;">'+now.getFullYear()+' FULL YEAR PROJECTION</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+projYTD.toFixed(0)+'</div>'
+    +'<div style="color:#aaaacc;font-size:9px;">$'+ytdSoFar.toFixed(0)+' actual YTD + $'+(trendAvg*monthsLeft).toFixed(0)+' projected remaining</div>'
+    +'</div>'
+    +'</div>';
+
+  h+='</div>';
   document.getElementById('fuel-stat-cards').innerHTML=h;
   document.getElementById('fuel-history').innerHTML='';
 }
+
 function delFuel(id) {
   if(!confirm('Delete?'))return;
   const d=load();d.fuel.logs=d.fuel.logs.filter(x=>x.id!==id);
