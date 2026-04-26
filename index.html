@@ -623,7 +623,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="fuel-menu" class="mod-menu">
     <div class="mod-menu-grid">
       <div class="mod-btn" onclick="fuelShow('mileage')"><div class="mb-icon green">🚗</div><div class="mb-label">Log Mileage</div><div class="mb-sub">Odometer · Date · Log at leisure</div></div>
-      <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon blue">📊</div><div class="mb-label">Day by Day</div><div class="mb-sub">Cost/day · Per purchase</div></div>
+      <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon blue">📊</div><div class="mb-label">Stats & Budget</div><div class="mb-sub">Cost/mile · 12-mo forecast</div></div>
+      <div class="mod-btn" onclick="renderDayByDay()"><div class="mb-icon yellow">📋</div><div class="mb-label">Day by Day</div><div class="mb-sub">Each purchase · $/day cost</div></div>
       <div class="mod-btn" onclick="fuelShow('chart')"><div class="mb-icon yellow">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · Cost trend</div></div>
     </div>
     <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">⛽ Gas costs auto-pulled from Accounting · DESC=TRUCK GAS</div>
@@ -1412,6 +1413,51 @@ function fuelShow(sub) {
     renderMileHistory();
   }
   if(sub==='log'){document.getElementById('fuel-date').value=today();}
+}
+
+function renderDayByDay(){
+  loadLog();
+  var gasEntries=LOG.filter(function(e){
+    return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;
+  }).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+
+  var overlay=document.createElement('div');
+  overlay.id='daybyday-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#1a1aff;z-index:9000;overflow-y:auto;';
+
+  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
+    +'<button onclick="document.getElementById(\'daybyday-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">⛽ Day by Day — '+gasEntries.length+' purchases</span>'
+    +'</div>'
+    +'<div style="padding:8px;font-family:Courier New,monospace;">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+    +'<tr style="background:#000080;">'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">DATE</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">STATION</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">AMT</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">DAYS</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
+    +'</tr>';
+
+  var show=gasEntries.slice(-60).reverse();
+  show.forEach(function(e,i){
+    var next=show[i+1];
+    var days=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
+    var cpd=Math.abs(e.amt)/days;
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1').slice(0,8);
+    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+      +'<td style="padding:4px;color:#000066;font-size:10px;">'+dt+'</td>'
+      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:10px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#333;">'+days+'</td>'
+      +'<td style="padding:4px;text-align:right;font-weight:700;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
+      +'</tr>';
+  });
+  h+='</table></div>';
+  overlay.innerHTML=h;
+  document.body.appendChild(overlay);
 }
 
 function renderFuelChart(){
