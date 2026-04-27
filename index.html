@@ -81,7 +81,7 @@ if('serviceWorker' in navigator){
   --accent:#0000aa; --hi:#ffff00;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;min-height:100vh;overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;min-height:100vh;overflow-x:hidden;}
 
 /* ── SCREEN SYSTEM ── */
 html,body{height:100%;overflow:hidden;margin:0;padding:0;}
@@ -91,16 +91,16 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 /* ── HEADER BAR ── */
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:7px 10px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;}
 .topbar .title{font-weight:700;font-size:13px;color:var(--green);flex:1;}
-.topbar .sub{font-size:9px;color:var(--dim);}
-.back-btn{background:none;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 8px;border-radius:3px;cursor:pointer;}
+.topbar .sub{font-size:13px;color:var(--dim);}
+.back-btn{background:none;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:4px 8px;border-radius:3px;cursor:pointer;}
 .back-btn:active{background:var(--border);}
-.bak-btn{background:none;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 6px;border-radius:3px;cursor:pointer;}
+.bak-btn{background:none;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:4px 6px;border-radius:3px;cursor:pointer;}
 
 /* ── MAIN MENU ── */
 #screen-main{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:10px 10px;}
 .main-header{text-align:center;margin-bottom:10px;padding-top:4px;}
 .main-title{font-size:15px;font-weight:700;color:var(--green);letter-spacing:1px;}
-.main-sub{font-size:10px;color:var(--dim);margin-top:2px;}
+.main-sub{font-size:14px;color:var(--dim);margin-top:2px;}
 .main-box{width:100%;max-width:420px;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
 .menu-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;background:var(--surface);}
 .menu-item:last-child{border-bottom:none;}
@@ -109,10 +109,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .menu-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
 .menu-label{flex:1;}
 .menu-label .ml{font-size:15px;font-weight:600;color:var(--hi);}
-.menu-label .ms{font-size:12px;color:var(--dim);margin-top:1px;}
+.menu-label .ms{font-size:14px;color:var(--dim);margin-top:1px;}
 .menu-arrow{color:var(--dim);font-size:14px;}
 .main-footer{margin-top:10px;display:flex;gap:8px;width:100%;max-width:420px;}
-.foot-btn{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px;border-radius:4px;cursor:pointer;text-align:center;}
+.foot-btn{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px;border-radius:4px;cursor:pointer;text-align:center;}
 .foot-btn:active{background:var(--border);}
 
 /* ── MODULE SUB-MENU ── */
@@ -121,15 +121,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .mod-btn{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:10px 8px;cursor:pointer;text-align:center;transition:background .1s;}
 .mod-btn:active{background:var(--border);}
 .mod-btn .mb-icon{font-size:16px;margin-bottom:3px;}
-.mod-btn .mb-label{font-size:11px;font-weight:600;color:var(--hi);}
-.mod-btn .mb-sub{font-size:9px;color:var(--dim);margin-top:1px;}
+.mod-btn .mb-label{font-size:13px;font-weight:600;color:var(--hi);}
+.mod-btn .mb-sub{font-size:13px;color:var(--dim);margin-top:1px;}
 
 /* ── FORMS ── */
 .fpage{padding:8px;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:10px;margin-bottom:8px;}
-.card-title{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+.card-title{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
 .field{margin-bottom:8px;}
-.field label{display:block;font-size:10px;color:var(--dim);margin-bottom:3px;}
+.field label{display:block;font-size:14px;color:var(--dim);margin-bottom:3px;}
 .field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px 9px;border-radius:4px;outline:none;-webkit-appearance:none;}
 .field input:focus,.field select:focus{border-color:var(--blue);}
 .field select option{background:var(--surface);}
@@ -137,7 +137,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
 
 /* ── BUTTONS ── */
-.btn{display:block;width:100%;padding:10px;border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px;letter-spacing:.3px;}
+.btn{display:block;width:100%;padding:10px;border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:6px;letter-spacing:.3px;}
 .btn:active{opacity:.8;}
 .btn-green{background:#005a4e;color:var(--green);border:1px solid var(--green);}
 .btn-red{background:#4a0000;color:var(--red);border:1px solid var(--red);}
@@ -153,7 +153,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .stat-grid.c3{grid-template-columns:1fr 1fr 1fr;}
 .stat{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:7px 6px;text-align:center;}
 .stat-label{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
-.stat-val{font-size:12px;font-weight:700;}
+.stat-val{font-size:14px;font-weight:700;}
 
 /* ── LISTS ── */
 .item-list{}
@@ -162,9 +162,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .lr-dot{width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0;}
 .lr-body{flex:1;min-width:0;}
 .lr-main{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.lr-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.lr-sub{font-size:13px;color:var(--dim);margin-top:2px;}
 .lr-tags{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;}
-.tag{font-size:10px;padding:1px 6px;border-radius:2px;font-weight:600;}
+.tag{font-size:14px;padding:1px 6px;border-radius:2px;font-weight:600;}
 .tag-g{background:rgba(0,230,118,.12);color:var(--green);}
 .tag-b{background:rgba(64,196,255,.12);color:var(--blue);}
 .tag-y{background:rgba(255,214,0,.12);color:var(--yellow);}
@@ -172,12 +172,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .tag-o{background:rgba(255,171,64,.12);color:var(--orange);}
 .lr-right{text-align:right;flex-shrink:0;}
 .lr-amt{font-size:14px;font-weight:700;}
-.lr-amt2{font-size:11px;color:var(--dim);margin-top:2px;}
+.lr-amt2{font-size:13px;color:var(--dim);margin-top:2px;}
 .del-btn{background:none;border:none;color:var(--dim);font-size:15px;cursor:pointer;padding:0 4px;}
 .del-btn:active{color:var(--red);}
 
 /* ── REPORT ROWS ── */
-.rep-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,42,56,.8);font-size:12px;}
+.rep-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,42,56,.8);font-size:14px;}
 .rep-row:last-child{border-bottom:none;}
 .rep-cat{color:var(--dim);}
 .rep-amt{font-weight:700;}
@@ -186,26 +186,26 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
 /* ── FILTER BAR ── */
 .fbar{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;}
-.fbar select{flex:1 1 100px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px 9px;border-radius:4px;-webkit-appearance:none;}
+.fbar select{flex:1 1 100px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px 9px;border-radius:4px;-webkit-appearance:none;}
 
 /* ── PORTFOLIO SPECIFIC ── */
 .holding-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px;}
 .holding-ticker{font-size:18px;font-weight:700;color:var(--hi);}
-.holding-name{font-size:11px;color:var(--dim);margin-top:1px;}
+.holding-name{font-size:13px;color:var(--dim);margin-top:1px;}
 .holding-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;}
 .hs{text-align:center;padding:6px 4px;background:var(--bg);border-radius:3px;}
-.hs-label{font-size:9px;color:var(--dim);text-transform:uppercase;}
-.hs-val{font-size:12px;font-weight:700;margin-top:2px;}
+.hs-label{font-size:13px;color:var(--dim);text-transform:uppercase;}
+.hs-val{font-size:14px;font-weight:700;margin-top:2px;}
 .holding-actions{display:flex;gap:7px;margin-top:10px;}
-.holding-actions button{flex:1;background:none;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px;border-radius:3px;cursor:pointer;}
+.holding-actions button{flex:1;background:none;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px;border-radius:3px;cursor:pointer;}
 .h-upd{border:1px solid var(--blue);color:var(--blue);}
 .h-del{border:1px solid var(--border);color:var(--dim);}
 
 /* ── SUGGESTIONS ── */
 .sug-box{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
-.sug-chip{background:var(--bg);border:1px solid var(--yellow);border-radius:4px;padding:8px 11px;cursor:pointer;text-align:left;width:100%;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);}
+.sug-chip{background:var(--bg);border:1px solid var(--yellow);border-radius:4px;padding:8px 11px;cursor:pointer;text-align:left;width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);}
 .sug-chip:active{background:var(--surface);}
-.sug-top{color:var(--yellow);font-weight:700;font-size:10px;margin-bottom:2px;}
+.sug-top{color:var(--yellow);font-weight:700;font-size:14px;margin-bottom:2px;}
 
 /* ── MASTERS ── */
 .master-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
@@ -214,10 +214,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .add-row{display:flex;gap:7px;margin-top:9px;}
 .add-row input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 11px;border-radius:4px;outline:none;}
 .add-row input:focus{border-color:var(--blue);}
-.add-row button{background:#005a4e;border:1px solid var(--green);color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 13px;border-radius:4px;cursor:pointer;white-space:nowrap;}
+.add-row button{background:#005a4e;border:1px solid var(--green);color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:8px 13px;border-radius:4px;cursor:pointer;white-space:nowrap;}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:9px 18px;border-radius:16px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999;white-space:nowrap;}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 18px;border-radius:16px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999;white-space:nowrap;}
 #toast.show{opacity:1;}
 
 /* colors */
@@ -235,7 +235,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .route-btn{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 8px;cursor:pointer;text-align:center;font-family:'IBM Plex Mono',monospace;}
 .route-btn:active{background:var(--border);}
 .route-btn .rb-icon{font-size:22px;margin-bottom:4px;}
-.route-btn .rb-label{font-size:12px;font-weight:700;}
+.route-btn .rb-label{font-size:14px;font-weight:700;}
 .scan-item-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
 .scan-item-row:last-child{border-bottom:none;}
 .scan-item-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
@@ -254,7 +254,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="main-header">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
-      <span id="online-status" style="font-size:9px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
+      <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
     <div class="main-sub">Select Module</div>
   </div>
@@ -422,30 +422,30 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
     style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:10px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:4px;"
     oninput="doFilter(this.value);showCmdHint(this.value)" onkeyup="xExit(this.value)">
-  <div id="hint" style="font-size:11px;color:#ccccff;margin-bottom:8px;">TYPE TO SEARCH -- TAP ROW TO SELECT</div>
-  <div style="font-size:10px;color:#ccccff;margin-bottom:3px;">ADD TO LISTS:</div>
+  <div id="hint" style="font-size:13px;color:#ccccff;margin-bottom:8px;">TYPE TO SEARCH -- TAP ROW TO SELECT</div>
+  <div style="font-size:14px;color:#ccccff;margin-bottom:3px;">ADD TO LISTS:</div>
   <div style="display:flex;gap:6px;margin-bottom:8px;">
-    <button onclick="showAdd('desc')" style="flex:1;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:7px;border:1px solid #ffff00;border-radius:4px;cursor:pointer;">+ ADD DESC</button>
-    <button onclick="showAdd('pcode')" style="flex:1;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:7px;border:1px solid #ffff00;border-radius:4px;cursor:pointer;">+ ADD PCODE</button>
+    <button onclick="showAdd('desc')" style="flex:1;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;border:1px solid #ffff00;border-radius:4px;cursor:pointer;">+ ADD DESC</button>
+    <button onclick="showAdd('pcode')" style="flex:1;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;border:1px solid #ffff00;border-radius:4px;cursor:pointer;">+ ADD PCODE</button>
   </div>
 
   <div id="box-desc" style="display:none;background:#000099;border:2px solid #ffff00;border-radius:4px;padding:10px;margin-bottom:8px;">
     <input type="text" id="new-desc" placeholder="TYPE NEW DESC..." autocomplete="off" autocapitalize="characters" spellcheck="false"
       style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:6px;">
     <div style="display:flex;gap:6px;margin-top:6px;">
-      <button onclick="saveAdd('desc')" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>
-      <button onclick="cancelAdd('desc')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">CANCEL</button>
+      <button onclick="saveAdd('desc')" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>
+      <button onclick="cancelAdd('desc')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">CANCEL</button>
     </div>
   </div>
   <div id="box-pcode" style="display:none;background:#000099;border:2px solid #ffff00;border-radius:4px;padding:10px;margin-bottom:8px;">
-    <div style="font-size:10px;color:#ccccff;margin-bottom:4px;">TYPE NEW PCODE:</div>
+    <div style="font-size:14px;color:#ccccff;margin-bottom:4px;">TYPE NEW PCODE:</div>
     <input type="text" id="new-pcode" placeholder="e.g. 5811" autocomplete="off" autocapitalize="characters" spellcheck="false"
       style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:6px;">
     <div style="display:flex;gap:6px;margin-top:6px;">
-      <button onclick="saveAdd('pcode')" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>
-      <button onclick="cancelAdd('pcode')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:4px;cursor:pointer;">CANCEL</button>
+      <button onclick="saveAdd('pcode')" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>
+      <button onclick="cancelAdd('pcode')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">CANCEL</button>
     </div>
-    <div style="font-size:10px;color:#ccccff;margin-top:8px;">CURRENT PCODES:</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:8px;">CURRENT PCODES:</div>
     <select id="pcode-preview" style="width:100%;background:#0000cc;border:2px solid #fff;color:#fff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px;border-radius:4px;outline:none;margin-top:4px;">
       <option>ROOF</option><option>BART</option><option>NORD</option><option>TOMM</option><option>TOUT</option>
       <option>10629</option><option>10735</option><option>2760</option><option>3120</option><option>5481</option>
@@ -453,28 +453,28 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </select>
   </div>
 
-  <table id="matrixtbl" style="width:100%;border-collapse:collapse;font-size:12px;display:none;">
+  <table id="matrixtbl" style="width:100%;border-collapse:collapse;font-size:14px;display:none;">
     <thead><tr>
-      <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:10px;">PAYEE</th>
-      <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:10px;">PCODE</th>
-      <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:10px;">DESCRIPTION</th>
+      <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">PAYEE</th>
+      <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">PCODE</th>
+      <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">DESCRIPTION</th>
     </tr></thead>
     <tbody id="tbody"></tbody>
   </table>
 
   <div id="addnew" style="display:none;background:#0000cc;border:2px solid #ffff00;border-radius:4px;padding:12px;margin-top:8px;">
     <div style="color:#ffaa00;font-weight:700;font-size:13px;">+ ADD NEW PAYEE / COMBO</div>
-    <div style="font-size:10px;color:#ccccff;margin-top:8px;">PAYEE NAME</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:8px;">PAYEE NAME</div>
     <input type="text" id="an-payee" placeholder="PAYEE NAME..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
       style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;text-transform:uppercase;margin-top:4px;">
-    <div style="font-size:10px;color:#ccccff;margin-top:8px;">PCODE</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:8px;">PCODE</div>
     <select id="an-pcode" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
       <option value="ROOF">ROOF</option><option value="BART">BART</option><option value="NORD">NORD</option>
       <option value="TOMM">TOMM</option><option value="TOUT">TOUT</option><option value="10629">10629</option>
       <option value="10735">10735</option><option value="2760">2760</option><option value="3120">3120</option>
       <option value="5481">5481</option><option value="OIL">OIL</option><option value="TRADE">TRADE</option>
     </select>
-    <div style="font-size:10px;color:#ccccff;margin-top:8px;">DESCRIPTION</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:8px;">DESCRIPTION</div>
     <select id="an-desc" onchange="checkAddDesc(this)" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
       <option>INCOME</option><option>RENT INCOME</option><option>SECURITY DEPOSIT</option><option>LATE FEE INCOME</option>
       <option>ADVERTISING EXPENSE</option><option>BANK CHARGES</option><option>BROKER FEES EXPENSE</option>
@@ -496,21 +496,21 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <option value="__NEW__">+ ADD NEW DESC...</option>
     </select>
     <div style="display:flex;gap:6px;margin-top:10px;">
-      <button onclick="saveNewPayee()" style="flex:2;padding:10px;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:12px;cursor:pointer;background:#ffff00;color:#000080;">SAVE + USE</button>
-      <button onclick="cancelNewPayee()" style="flex:1;padding:10px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:12px;cursor:pointer;background:#0000aa;color:#ccccff;">CANCEL</button>
+      <button onclick="saveNewPayee()" style="flex:2;padding:10px;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;background:#ffff00;color:#000080;">SAVE + USE</button>
+      <button onclick="cancelNewPayee()" style="flex:1;padding:10px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;background:#0000aa;color:#ccccff;">CANCEL</button>
     </div>
   </div>
 
   <div id="panel" style="display:none;margin-top:10px;padding:12px;background:#0000cc;border:2px solid #ffff00;border-radius:4px;">
-    <div style="font-size:10px;color:#ccccff;margin-top:6px;">PAYEE</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:6px;">PAYEE</div>
     <div id="p-payee" style="color:#ffff00;font-weight:700;font-size:14px;min-height:20px;"></div>
-    <div style="font-size:10px;color:#ccccff;margin-top:6px;">PCODE</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:6px;">PCODE</div>
     <select id="p-pcode" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;margin-top:4px;">
       <option>ROOF</option><option>BART</option><option>NORD</option><option>TOMM</option><option>TOUT</option>
       <option>10629</option><option>10735</option><option>2760</option><option>3120</option><option>5481</option>
       <option>OIL</option><option>TRADE</option>
     </select>
-    <div style="font-size:10px;color:#ccccff;margin-top:6px;">DESC</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:6px;">DESC</div>
     <div style="position:relative;">
       <input type="text" id="p-desc-search" placeholder="TYPE DESC (e.g. tr = TRUCK GAS)..." 
         autocomplete="off" autocapitalize="characters" spellcheck="false"
@@ -520,7 +520,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <input type="hidden" id="p-desc">
     <input type="hidden" id="h-payee">
-    <div style="font-size:10px;color:#ccccff;margin-top:6px;">DATE</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:6px;">DATE</div>
     <div style="display:flex;gap:4px;margin-top:4px;">
       <select id="p-mon" style="flex:1;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;" onchange="saveDatePref()">
         <option value="01">JAN</option><option value="02">FEB</option><option value="03">MAR</option><option value="04">APR</option>
@@ -530,44 +530,44 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <select id="p-day" style="flex:1;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;" onchange="saveDatePref()"></select>
       <select id="p-yr"  style="flex:1;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;" onchange="saveDatePref()"></select>
     </div>
-    <div style="font-size:10px;color:#ccccff;margin-top:6px;">AMOUNT $</div>
+    <div style="font-size:14px;color:#ccccff;margin-top:6px;">AMOUNT $</div>
     <input id="p-amt" type="number" placeholder="0.00" step="0.01" inputmode="numeric"
       style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;margin-top:4px;"
       onkeyup="autoDecimal(this)">
     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-      <button onclick="doSave()"  style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#006600;color:#ffffff;">SAVE</button>
-      <button onclick="doCopy()"  style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#0055aa;color:#ffffff;">COPY</button>
-      <button onclick="doDel()"   style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#880000;color:#ffffff;">CANCEL</button>
-      <button onclick="doExit()"  style="flex:1;padding:10px 6px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-size:11px;font-weight:700;cursor:pointer;background:#0000aa;color:#ccccff;">EXIT</button>
+      <button onclick="doSave()"  style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006600;color:#ffffff;">SAVE</button>
+      <button onclick="doCopy()"  style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#0055aa;color:#ffffff;">COPY</button>
+      <button onclick="doDel()"   style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#880000;color:#ffffff;">CANCEL</button>
+      <button onclick="doExit()"  style="flex:1;padding:10px 6px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#0000aa;color:#ccccff;">EXIT</button>
     </div>
   </div>
 
   <div id="logsec" style="display:block;margin-top:16px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <button onclick="goMain()" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:6px 12px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀ MENU</button>
+      <button onclick="goMain()" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:6px 12px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀ MENU</button>
       <span style="color:#ffff00;font-size:13px;font-weight:700;">LEDGER</span>
-      <span id="logcnt" style="color:#ccccff;font-size:10px;"></span>
+      <span id="logcnt" style="color:#ccccff;font-size:14px;"></span>
     </div>
     <!-- YEAR FILTER + CLEAR -->
     <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
       <select id="led-yr-filter" onchange="ledSetYear(this.value)" style="flex:1;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px;border-radius:4px;outline:none;-webkit-appearance:none;">
         <option value="">ALL YRS</option>
       </select>
-      <button onclick="doExportByYear()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:7px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">📄 YR CSV</button>
+      <button onclick="doExportByYear()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">📄 YR CSV</button>
     </div>
     <div id="totbar" style="background:#0000cc;border:1px solid #ffff00;border-radius:4px;padding:8px 12px;margin-bottom:8px;display:none;justify-content:space-between;">
-      <span style="font-size:11px;color:#ccccff;">ENTRIES: <strong id="tcnt" style="color:#ffff00;font-size:14px;">0</strong></span>
-      <span style="font-size:11px;color:#ccccff;">TOTAL: <strong id="ttot" style="color:#ffff00;font-size:14px;">$0.00</strong></span>
+      <span style="font-size:13px;color:#ccccff;">ENTRIES: <strong id="tcnt" style="color:#ffff00;font-size:14px;">0</strong></span>
+      <span style="font-size:13px;color:#ccccff;">TOTAL: <strong id="ttot" style="color:#ffff00;font-size:14px;">$0.00</strong></span>
     </div>
-    <table id="logtbl" style="width:100%;border-collapse:collapse;font-size:12px;">
+    <table id="logtbl" style="width:100%;border-collapse:collapse;font-size:14px;">
       <thead><tr>
-        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;white-space:nowrap;">DATE</th>
-        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;">PAYEE / VENDOR</th>
-        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;">DESC</th>
-        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:center;">PCO</th>
-        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:right;">AMT</th>
-        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:center;">•••</th>
-        <th style="background:#0000cc;color:#ff88ff;padding:5px 3px;border:1px solid #6666ff;font-size:10px;text-align:right;">#</th>
+        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;white-space:nowrap;">DATE</th>
+        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;">PAYEE / VENDOR</th>
+        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;">DESC</th>
+        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;text-align:center;">PCO</th>
+        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;text-align:right;">AMT</th>
+        <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;text-align:center;">•••</th>
+        <th style="background:#0000cc;color:#ff88ff;padding:5px 3px;border:1px solid #6666ff;font-size:14px;text-align:right;">#</th>
       </tr></thead>
       <tbody id="loglist"></tbody>
     </table>
@@ -589,29 +589,29 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div style="padding:10px;">
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptShow('pcode')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY PCODE</button>
-      <button onclick="rptShow('desc')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">BY DESC</button>
-      <button onclick="rptShow('payee')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">BY PAYEE</button>
-      <button onclick="rptShow('yr')"    style="flex:1;padding:12px 6px;background:#0000cc;color:#ffaa00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffaa00;border-radius:4px;cursor:pointer;">BY YR</button>
+      <button onclick="rptShow('pcode')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY PCODE</button>
+      <button onclick="rptShow('desc')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">BY DESC</button>
+      <button onclick="rptShow('payee')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">BY PAYEE</button>
+      <button onclick="rptShow('yr')"    style="flex:1;padding:12px 6px;background:#0000cc;color:#ffaa00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffaa00;border-radius:4px;cursor:pointer;">BY YR</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptShow('mon')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">BY MON</button>
-      <button onclick="rptShow('type')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">+/- TYPE</button>
-      <button onclick="rptShow('date')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY DATE</button>
-      <button onclick="rptShow('amt')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT</button>
+      <button onclick="rptShow('mon')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">BY MON</button>
+      <button onclick="rptShow('type')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">+/- TYPE</button>
+      <button onclick="rptShow('date')"  style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY DATE</button>
+      <button onclick="rptShow('amt')"   style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
+      <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptAll('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
-      <button onclick="rptAll('pcode')" style="flex:1;padding:10px 6px;background:#333300;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">ALL/PCODE</button>
-      <button onclick="rptAll('desc')"  style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:11px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
+      <button onclick="rptAll('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
+      <button onclick="rptAll('pcode')" style="flex:1;padding:10px 6px;background:#333300;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">ALL/PCODE</button>
+      <button onclick="rptAll('desc')"  style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptMasterDesc()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📋 MASTER DESC RPT</button>
-      <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT</button>
-      <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC</button>
+      <button onclick="rptMasterDesc()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📋 MASTER DESC RPT</button>
+      <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT</button>
+      <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC</button>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
@@ -628,7 +628,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="fuelShow('chart')"><div class="mb-icon yellow">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · Cost trend</div></div>
       <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
-    <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">⛽ Gas costs auto-pulled from Accounting · DESC=TRUCK GAS</div>
+    <div style="font-family:Courier New,monospace;font-size:14px;color:#ccccff;text-align:center;padding:8px;">⛽ Gas costs auto-pulled from Accounting · DESC=TRUCK GAS</div>
   </div>
 
   <!-- Log Gas Purchase -->
@@ -941,7 +941,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="grocShow('log')"><div class="mb-icon cyan">+</div><div class="mb-label">Add Item Detail</div><div class="mb-sub">Nutrition · Size · Notes</div></div>
       <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
-    <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">🛒 Grocery costs auto-pulled from Accounting · DESC=FOOD GROCERY</div>
+    <div style="font-family:Courier New,monospace;font-size:14px;color:#ccccff;text-align:center;padding:8px;">🛒 Grocery costs auto-pulled from Accounting · DESC=FOOD GROCERY</div>
   </div>
 
   <!-- Stats -->
@@ -998,7 +998,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="restShow('log')"><div class="mb-icon cyan">+</div><div class="mb-label">Add Visit Detail</div><div class="mb-sub">Items · Notes · Rating</div></div>
       <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
-    <div style="font-family:Courier New,monospace;font-size:10px;color:#ccccff;text-align:center;padding:8px;">🍽️ Restaurant costs auto-pulled from Accounting · DESC=JOB FOOD COST</div>
+    <div style="font-family:Courier New,monospace;font-size:14px;color:#ccccff;text-align:center;padding:8px;">🍽️ Restaurant costs auto-pulled from Accounting · DESC=JOB FOOD COST</div>
   </div>
 
   <!-- Stats -->
@@ -1050,7 +1050,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="scannerShow('stores')"><div class="mb-icon green">⊕</div><div class="mb-label">Store Routing</div><div class="mb-sub">Tag stores as grocery etc</div></div>
     </div>
     <div class="fpage" style="padding:12px;">
-      <div style="font-size:11px;color:var(--dim);line-height:1.7;">
+      <div style="font-size:13px;color:var(--dim);line-height:1.7;">
         <span style="color:var(--yellow)">▓ HOW IT WORKS</span><br>
         1. Tap Scan Receipt → take a photo<br>
         2. OCR reads all items + prices<br>
@@ -1074,25 +1074,25 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </label>
       <input type="file" id="receipt-input" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptPhoto(event)">
       
-      <div style="text-align:center;margin:10px 0;color:var(--dim);font-size:12px;">— OR —</div>
+      <div style="text-align:center;margin:10px 0;color:var(--dim);font-size:14px;">— OR —</div>
       
       <label style="display:block;background:#003300;border:2px solid #00ff88;border-radius:8px;padding:14px;text-align:center;cursor:pointer;margin-bottom:8px;" for="receipt-browse-input">
         <div style="font-size:24px;margin-bottom:4px;">📂</div>
         <div style="color:#00ff88;font-weight:700;font-size:14px;font-family:Courier New,monospace;">BROWSE FILES</div>
-        <div style="color:#ccccff;font-size:11px;font-family:Courier New,monospace;">Gallery · Downloads · Gmail attachments</div>
+        <div style="color:#ccccff;font-size:13px;font-family:Courier New,monospace;">Gallery · Downloads · Gmail attachments</div>
       </label>
       <input type="file" id="receipt-browse-input" accept="image/*,application/pdf" style="display:none" onchange="handleReceiptPhoto(event)">
       
-      <div style="font-size:11px;color:var(--dim);text-align:center;margin-top:4px;">💡 Forward Ray's email → save image → browse here</div>
+      <div style="font-size:13px;color:var(--dim);text-align:center;margin-top:4px;">💡 Forward Ray's email → save image → browse here</div>
     </div>
     <!-- Step 2: OCR Progress -->
     <div id="scan-step-progress" style="display:none">
       <div class="card">
         <div class="card-title yellow">📷 Reading Receipt...</div>
         <canvas id="receipt-preview" style="width:100%;border-radius:4px;margin-bottom:12px;"></canvas>
-        <div id="scan-status" style="font-size:12px;color:var(--dim);margin-bottom:8px;">Initializing OCR engine...</div>
+        <div id="scan-status" style="font-size:14px;color:var(--dim);margin-bottom:8px;">Initializing OCR engine...</div>
         <div class="progress-bar-wrap"><div class="progress-bar" id="scan-progress-bar" style="width:0%"></div></div>
-        <div id="scan-pct" style="font-size:11px;color:var(--dim);text-align:right;margin-top:4px;">0%</div>
+        <div id="scan-pct" style="font-size:13px;color:var(--dim);text-align:right;margin-top:4px;">0%</div>
       </div>
     </div>
     <!-- Step 3: Route Decision -->
@@ -1105,7 +1105,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         </div>
         <div id="scan-auto-route" style="margin-bottom:8px;"></div>
         <div id="scan-route-ask" style="display:none">
-          <div style="font-size:12px;color:var(--yellow);margin-bottom:8px;">Where should this receipt go?</div>
+          <div style="font-size:14px;color:var(--yellow);margin-bottom:8px;">Where should this receipt go?</div>
           <div class="route-btns">
             <div class="route-btn" onclick="setScanRoute('accounting')"><div class="rb-icon">$</div><div class="rb-label green">Accounting</div></div>
             <div class="route-btn" onclick="setScanRoute('grocery')"><div class="rb-icon">🛒</div><div class="rb-label green">Grocery</div></div>
@@ -1144,7 +1144,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <div class="card-title green">Items Found — uncheck to skip</div>
         <div id="scan-items-list"></div>
         <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border);margin-top:6px;">
-          <span style="font-size:12px;color:var(--dim);">Tax</span>
+          <span style="font-size:14px;color:var(--dim);">Tax</span>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;" id="scan-tax-display">$0.00</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;">
@@ -1155,15 +1155,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
       <!-- MANUAL ENTRY FALLBACK -->
       <div style="background:#000033;border:2px solid #ffaa00;border-radius:6px;padding:12px;margin-bottom:10px;font-family:Courier New,monospace;">
-        <div style="color:#ffaa00;font-weight:700;font-size:12px;margin-bottom:8px;">📝 MANUAL ENTRY — if OCR missed items</div>
+        <div style="color:#ffaa00;font-weight:700;font-size:14px;margin-bottom:8px;">📝 MANUAL ENTRY — if OCR missed items</div>
         <div style="display:flex;gap:6px;margin-bottom:6px;">
-          <input type="text" id="man-store" placeholder="STORE NAME" style="flex:2;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
-          <input type="date" id="man-date" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
+          <input type="text" id="man-store" placeholder="STORE NAME" style="flex:2;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">
+          <input type="date" id="man-date" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">
         </div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <input type="number" id="man-total" placeholder="TOTAL AMT" step="0.01" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
-          <input type="number" id="man-tax" placeholder="TAX" step="0.01" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffaa00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">
-          <select id="man-route" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:11px;padding:6px;border-radius:3px;">
+          <input type="number" id="man-total" placeholder="TOTAL AMT" step="0.01" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">
+          <input type="number" id="man-tax" placeholder="TAX" step="0.01" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffaa00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">
+          <select id="man-route" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:13px;padding:6px;border-radius:3px;">
             <option value="grocery">🛒 Grocery</option>
             <option value="inventory">📦 Inventory</option>
             <option value="accounting">$ Accounting</option>
@@ -1189,7 +1189,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="scan-stores" class="fpage" style="display:none">
     <div class="card">
       <div class="card-title yellow">Auto-Route Rules</div>
-      <div style="font-size:11px;color:var(--dim);margin-bottom:10px;">Tag a store name so it always routes to the right module automatically.</div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:10px;">Tag a store name so it always routes to the right module automatically.</div>
       <div id="store-route-list"></div>
       <div style="margin-top:10px;display:grid;gap:8px;">
         <div class="field-row">
@@ -1312,7 +1312,7 @@ function openModule(mod) {
   }
   if(mod==='reports') {
     loadLog();
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ccccff;font-family:Courier New,monospace;font-size:12px;padding:8px;">TAP A BUTTON ABOVE TO RUN REPORT</div>';
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:8px;">TAP A BUTTON ABOVE TO RUN REPORT</div>';
   }
   if(mod==='fuel')       { }
   if(mod==='utilities')  { }
@@ -1366,7 +1366,7 @@ function renderDayByDay(){
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">⛽ Day by Day — '+gasEntries.length+' purchases</span>'
     +'</div>'
     +'<div style="padding:8px;font-family:Courier New,monospace;">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
     +'<tr style="background:#000080;">'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">DATE</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">STATION</th>'
@@ -1384,8 +1384,8 @@ function renderDayByDay(){
     var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1').slice(0,8);
     h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:10px;">'+dt+'</td>'
-      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:10px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:4px;color:#000066;font-size:14px;">'+dt+'</td>'
+      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:14px;">'+trunc(e.payee||'',12)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;">'+days+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
@@ -1423,39 +1423,39 @@ function renderCombinedCosts(){
     // 3 category cards
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
     +'<div style="background:#000044;border:2px solid #ff6666;border-radius:6px;padding:10px;text-align:center;">'
-    +'<div style="color:#ff6666;font-weight:700;font-size:11px;">⛽ GAS</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:13px;">⛽ GAS</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tGas/days).toFixed(2)+'</div>'
-    +'<div style="color:#ccccff;font-size:9px;">per day</div>'
-    +'<div style="color:#ff6666;font-size:10px;margin-top:4px;">$'+tGas.toFixed(0)+' total</div></div>'
+    +'<div style="color:#ccccff;font-size:13px;">per day</div>'
+    +'<div style="color:#ff6666;font-size:14px;margin-top:4px;">$'+tGas.toFixed(0)+' total</div></div>'
     +'<div style="background:#000044;border:2px solid #00ff88;border-radius:6px;padding:10px;text-align:center;">'
-    +'<div style="color:#00ff88;font-weight:700;font-size:11px;">🛒 GROCERY</div>'
+    +'<div style="color:#00ff88;font-weight:700;font-size:13px;">🛒 GROCERY</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tGroc/days).toFixed(2)+'</div>'
-    +'<div style="color:#ccccff;font-size:9px;">per day</div>'
-    +'<div style="color:#00ff88;font-size:10px;margin-top:4px;">$'+tGroc.toFixed(0)+' total</div></div>'
+    +'<div style="color:#ccccff;font-size:13px;">per day</div>'
+    +'<div style="color:#00ff88;font-size:14px;margin-top:4px;">$'+tGroc.toFixed(0)+' total</div></div>'
     +'<div style="background:#000044;border:2px solid #ffaa00;border-radius:6px;padding:10px;text-align:center;">'
-    +'<div style="color:#ffaa00;font-weight:700;font-size:11px;">🍽️ FOOD</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:13px;">🍽️ FOOD</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tRest/days).toFixed(2)+'</div>'
-    +'<div style="color:#ccccff;font-size:9px;">per day</div>'
-    +'<div style="color:#ffaa00;font-size:10px;margin-top:4px;">$'+tRest.toFixed(0)+' total</div></div>'
+    +'<div style="color:#ccccff;font-size:13px;">per day</div>'
+    +'<div style="color:#ffaa00;font-size:14px;margin-top:4px;">$'+tRest.toFixed(0)+' total</div></div>'
     +'</div>'
     // big combined total
     +'<div style="background:#000022;border:3px solid #ffff00;border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:6px;">COMBINED AVERAGE DAILY COST</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">COMBINED AVERAGE DAILY COST</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:28px;">$'+cpd.toFixed(2)+'</div>'
-    +'<div style="color:#00ff88;font-size:12px;margin-top:8px;">'
+    +'<div style="color:#00ff88;font-size:14px;margin-top:8px;">'
     +'$'+(cpd*7).toFixed(2)+' / week &nbsp;·&nbsp; '
     +'$'+(cpd*30).toFixed(0)+' / month &nbsp;·&nbsp; '
     +'$'+(cpd*365).toFixed(0)+' / year'
     +'</div></div>'
     // PCT breakdown bar
     +'<div style="background:#ffffff;border-radius:6px;padding:12px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:8px;">SPENDING BREAKDOWN</div>';
+    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:8px;">SPENDING BREAKDOWN</div>';
 
   [{label:'⛽ Gas',val:tGas,color:'#cc0000'},{label:'🛒 Grocery',val:tGroc,color:'#006600'},{label:'🍽️ Restaurant',val:tRest,color:'#cc6600'}].forEach(function(row){
     var pct=tAll>0?((row.val/tAll)*100).toFixed(1):0;
     var bar=tAll>0?Math.round((row.val/tAll)*100):0;
     h+='<div style="margin-bottom:8px;">'
-      +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:3px;">'
       +'<span style="color:#000066;font-weight:700;">'+row.label+'</span>'
       +'<span style="color:'+row.color+';font-weight:700;">$'+row.val.toFixed(2)+' ('+pct+'%)</span></div>'
       +'<div style="background:#eeeeee;border-radius:3px;height:14px;">'
@@ -1514,38 +1514,38 @@ function renderFuelChart(){
   // summary cards
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
     +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">AVG/MONTH</div>'
+    +'<div style="color:#ccccff;font-size:13px;">AVG/MONTH</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+avgVal.toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">HIGHEST MONTH</div>'
+    +'<div style="color:#ccccff;font-size:13px;">HIGHEST MONTH</div>'
     +'<div style="color:#ff4444;font-weight:700;font-size:14px;">$'+maxVal.toFixed(2)+'</div></div>'
     +'</div>';
 
   // Indiana vs Illinois comparison
   h+='<div style="background:#ffffff;border:2px solid #000066;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;text-align:center;">🏆 INDIANA vs ILLINOIS SAVINGS</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:14px;margin-bottom:8px;text-align:center;">🏆 INDIANA vs ILLINOIS SAVINGS</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
     +'<div style="background:#e8f4e8;border:2px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#006600;font-weight:700;font-size:12px;">🏁 INDIANA</div>'
-    +'<div style="color:#006600;font-size:10px;">'+inCnt+' fill-ups</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:14px;">🏁 INDIANA</div>'
+    +'<div style="color:#006600;font-size:14px;">'+inCnt+' fill-ups</div>'
     +'<div style="color:#006600;font-weight:700;font-size:14px;">$'+inTotal.toFixed(2)+'</div>'
-    +'<div style="color:#006600;font-size:10px;">avg $'+inAvg.toFixed(2)+'/fill</div></div>'
+    +'<div style="color:#006600;font-size:14px;">avg $'+inAvg.toFixed(2)+'/fill</div></div>'
     +'<div style="background:#ffe8e8;border:2px solid #cc0000;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#cc0000;font-weight:700;font-size:12px;">🏠 ILLINOIS</div>'
-    +'<div style="color:#cc0000;font-size:10px;">'+ilCnt+' fill-ups</div>'
+    +'<div style="color:#cc0000;font-weight:700;font-size:14px;">🏠 ILLINOIS</div>'
+    +'<div style="color:#cc0000;font-size:14px;">'+ilCnt+' fill-ups</div>'
     +'<div style="color:#cc0000;font-weight:700;font-size:14px;">$'+ilTotal.toFixed(2)+'</div>'
-    +'<div style="color:#cc0000;font-size:10px;">avg $'+ilAvg.toFixed(2)+'/fill</div></div>'
+    +'<div style="color:#cc0000;font-size:14px;">avg $'+ilAvg.toFixed(2)+'/fill</div></div>'
     +'</div>'
     +(savings>0?'<div style="background:#006600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ffffff;font-weight:700;font-size:11px;">💰 INDIANA SAVINGS vs IL PRICES</div>'
+    +'<div style="color:#ffffff;font-weight:700;font-size:13px;">💰 INDIANA SAVINGS vs IL PRICES</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+savings.toFixed(2)+' SAVED!</div>'
-    +'<div style="color:#ccffcc;font-size:10px;">avg $'+(ilAvg-inAvg).toFixed(2)+' cheaper per fill-up × '+inCnt+' Indiana fill-ups</div>'
+    +'<div style="color:#ccffcc;font-size:14px;">avg $'+(ilAvg-inAvg).toFixed(2)+' cheaper per fill-up × '+inCnt+' Indiana fill-ups</div>'
     +'</div>':'')
     +'</div>';
 
   // monthly bar chart
   h+='<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:10px;">MONTHLY GAS COST — 🏁=Indiana 🏠=Illinois</div>';
+    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:10px;">MONTHLY GAS COST — 🏁=Indiana 🏠=Illinois</div>';
 
   months.forEach(function(m){
     var v=byMonth[m];
@@ -1558,18 +1558,18 @@ function renderFuelChart(){
     var mo=m.slice(5,7)+'/'+m.slice(2,4);
     var flag=inV>0&&ilV>0?'🏁🏠':inV>0?'🏁':'🏠';
     h+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">'
-      +'<div style="color:#000066;font-size:9px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
-      +'<div style="font-size:10px;width:20px;">'+flag+'</div>'
+      +'<div style="color:#000066;font-size:13px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
+      +'<div style="font-size:14px;width:20px;">'+flag+'</div>'
       +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
       // Indiana portion green
       +(inPct>0?'<div style="background:#006600;height:100%;border-radius:3px 0 0 3px;width:'+inPct+'%;position:absolute;left:0;"></div>':'')
       // Illinois portion red (stacked)
       +(ilPct>0?'<div style="background:#cc6600;height:100%;border-radius:'+(inPct===0?'3px':'0')+' 3px 3px '+(inPct===0?'3px':'0')+';width:'+ilPct+'%;position:absolute;left:'+inPct+'%;opacity:0.85;"></div>':'')
-      +'<span style="position:absolute;right:3px;top:1px;font-size:9px;color:#000000;font-weight:700;">$'+v.toFixed(0)+'</span>'
+      +'<span style="position:absolute;right:3px;top:1px;font-size:13px;color:#000000;font-weight:700;">$'+v.toFixed(0)+'</span>'
       +'</div></div>';
   });
 
-  h+='<div style="border-top:1px solid #cccccc;margin-top:8px;padding-top:6px;font-size:10px;color:#333333;">'
+  h+='<div style="border-top:1px solid #cccccc;margin-top:8px;padding-top:6px;font-size:14px;color:#333333;">'
     +'<span style="color:#006600;font-weight:700;">■ Indiana</span> &nbsp; '
     +'<span style="color:#cc6600;font-weight:700;">■ Illinois</span> &nbsp; '
     +'🟢=below avg 🟠=above avg 🔴=high'
@@ -1682,34 +1682,34 @@ function renderTrackerStats(entries,contentId,color,label){
   // summary cards
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
     +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">TOTAL SPENT</div>'
+    +'<div style="color:#ccccff;font-size:13px;">TOTAL SPENT</div>'
     +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+total.toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">COST/DAY AVG</div>'
+    +'<div style="color:#ccccff;font-size:13px;">COST/DAY AVG</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+perDay.toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">COST/WEEK</div>'
+    +'<div style="color:#ccccff;font-size:13px;">COST/WEEK</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(perDay*7).toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">COST/MONTH</div>'
+    +'<div style="color:#ccccff;font-size:13px;">COST/MONTH</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(perDay*30).toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">TOTAL VISITS</div>'
+    +'<div style="color:#ccccff;font-size:13px;">TOTAL VISITS</div>'
     +'<div style="color:'+color+';font-weight:700;font-size:14px;">'+entries.length+'</div></div>'
     +'<div style="background:#000044;border:1px solid '+color+';border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">AVG PER VISIT</div>'
+    +'<div style="color:#ccccff;font-size:13px;">AVG PER VISIT</div>'
     +'<div style="color:'+color+';font-weight:700;font-size:14px;">$'+(total/entries.length).toFixed(2)+'</div></div>'
     +'</div>';
 
   // top vendors
   h+='<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:10px;margin-bottom:8px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:8px;">TOP STORES / VENDORS</div>';
+    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:8px;">TOP STORES / VENDORS</div>';
   vendors.forEach(function(v,i){
     var amt=byVendor[v];
     var pct=Math.round((amt/total)*100);
     var bar=Math.round((amt/byVendor[vendors[0]])*100);
     h+='<div style="margin-bottom:6px;">'
-      +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:2px;">'
       +'<span style="color:#000066;font-weight:700;">'+trunc(v,18)+'</span>'
       +'<span style="color:#cc0000;font-weight:700;">$'+amt.toFixed(2)+' ('+pct+'%)</span></div>'
       +'<div style="background:#eeeeee;border-radius:3px;height:12px;">'
@@ -1745,14 +1745,14 @@ function renderTrackerChart(entries,contentId,color,label){
   var h='<div style="font-family:Courier New,monospace;">'
     +'<div style="display:flex;gap:8px;margin-bottom:10px;">'
     +'<div style="flex:1;background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">AVG/MONTH</div>'
+    +'<div style="color:#ccccff;font-size:13px;">AVG/MONTH</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+avgVal.toFixed(2)+'</div></div>'
     +'<div style="flex:1;background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">HIGHEST MONTH</div>'
+    +'<div style="color:#ccccff;font-size:13px;">HIGHEST MONTH</div>'
     +'<div style="color:#ff4444;font-weight:700;font-size:14px;">$'+maxVal.toFixed(2)+'</div></div>'
     +'</div>'
     +'<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:11px;margin-bottom:10px;">'+label+' — MONTHLY COST</div>';
+    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:10px;">'+label+' — MONTHLY COST</div>';
 
   months.forEach(function(m){
     var v=byMonth[m];
@@ -1760,13 +1760,13 @@ function renderTrackerChart(entries,contentId,color,label){
     var barColor=v>avgVal*1.3?'#cc0000':v>avgVal?'#cc6600':color;
     var mo=m.slice(5,7)+'/'+m.slice(2,4);
     h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
-      +'<div style="color:#000066;font-size:10px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
+      +'<div style="color:#000066;font-size:14px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
       +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
       +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
-      +'<span style="position:absolute;right:3px;top:1px;font-size:9px;color:#000;font-weight:700;">$'+v.toFixed(0)+'</span>'
+      +'<span style="position:absolute;right:3px;top:1px;font-size:13px;color:#000;font-weight:700;">$'+v.toFixed(0)+'</span>'
       +'</div></div>';
   });
-  h+='<div style="border-top:1px solid #ccc;margin-top:8px;padding-top:6px;font-size:10px;color:#666;">'
+  h+='<div style="border-top:1px solid #ccc;margin-top:8px;padding-top:6px;font-size:14px;color:#666;">'
     +'🟢=below avg &nbsp; 🟠=above avg &nbsp; 🔴=high</div></div></div>';
   document.getElementById(contentId).innerHTML=h;
 }
@@ -1797,7 +1797,7 @@ function renderDayByDayOverlay(entries,title){
     +'<button onclick="document.getElementById(\'dbd-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+title+' — '+entries.length+' shown</span>'
     +'</div><div style="padding:8px;font-family:Courier New,monospace;">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
     +'<tr style="background:#000080;">'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">DATE</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">VENDOR</th>'
@@ -1813,8 +1813,8 @@ function renderDayByDayOverlay(entries,title){
     var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1').slice(0,8);
     h+='<tr style="'+bg+';border-bottom:1px solid #ccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:10px;">'+dt+'</td>'
-      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:10px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:4px;color:#000066;font-size:14px;">'+dt+'</td>'
+      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:14px;">'+trunc(e.payee||'',12)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;">'+days+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
@@ -1990,11 +1990,11 @@ function renderPL() {
   const net=ti-te;
   let h=`<div class="card"><div class="card-title green">INCOME</div>`;
   for(const[c,a]of Object.entries(ib).sort((a,b)=>b[1]-a[1]))h+=`<div class="rep-row"><span class="rep-cat">${esc(c)}</span><span class="rep-amt green">${fmt(a)}</span></div>`;
-  if(!Object.keys(ib).length)h+=`<div style="color:var(--dim);font-size:12px;padding:4px 0;">No income.</div>`;
+  if(!Object.keys(ib).length)h+=`<div style="color:var(--dim);font-size:14px;padding:4px 0;">No income.</div>`;
   h+=`<div class="rep-total"><span>Total Income</span><span class="green">${fmt(ti)}</span></div></div>`;
   h+=`<div class="card"><div class="card-title red">EXPENSES</div>`;
   for(const[c,a]of Object.entries(eb).sort((a,b)=>b[1]-a[1]))h+=`<div class="rep-row"><span class="rep-cat">${esc(c)}</span><span class="rep-amt red">${fmt(-a)}</span></div>`;
-  if(!Object.keys(eb).length)h+=`<div style="color:var(--dim);font-size:12px;padding:4px 0;">No expenses.</div>`;
+  if(!Object.keys(eb).length)h+=`<div style="color:var(--dim);font-size:14px;padding:4px 0;">No expenses.</div>`;
   h+=`<div class="rep-total"><span>Total Expenses</span><span class="red">${fmt(-te)}</span></div></div>`;
   const nc=net>=0?'green':'red';
   h+=`<div class="rep-net"><span>${net>=0?'NET PROFIT':'NET LOSS'}</span><span class="${nc}">${fmt(net)}</span></div>`;
@@ -2004,13 +2004,13 @@ function renderBS() {
   const d=load();const b=d.acct.balances;let ta=0,tl=0,ar='',lr='';
   for(const a of['Cash','Accounts Receivable','Inventory','Equipment','Other Assets']){const v=b[a]||0;if(v!==0){ar+=`<div class="rep-row"><span class="rep-cat">${a}</span><span class="rep-amt green">${fmt(v)}</span></div>`;ta+=v;}}
   for(const a of['Accounts Payable','Loans Payable','Credit Card','Other Liabilities']){const v=b[a]||0;if(v!==0){lr+=`<div class="rep-row"><span class="rep-cat">${a}</span><span class="rep-amt red">${fmt(v)}</span></div>`;tl+=v;}}
-  if(!ar)ar=`<div style="color:var(--dim);font-size:11px;padding:4px 0;">None set.</div>`;
-  if(!lr)lr=`<div style="color:var(--dim);font-size:11px;padding:4px 0;">None set.</div>`;
+  if(!ar)ar=`<div style="color:var(--dim);font-size:13px;padding:4px 0;">None set.</div>`;
+  if(!lr)lr=`<div style="color:var(--dim);font-size:13px;padding:4px 0;">None set.</div>`;
   const eq=ta-tl;const ec=eq>=0?'green':'red';
   document.getElementById('bs-content').innerHTML=`
     <div class="card"><div class="card-title green">ASSETS</div>${ar}<div class="rep-total"><span>Total Assets</span><span class="green">${fmt(ta)}</span></div></div>
     <div class="card"><div class="card-title red">LIABILITIES</div>${lr}<div class="rep-total"><span>Total Liabilities</span><span class="red">${fmt(tl)}</span></div></div>
-    <div class="card" style="border-color:var(--blue)"><div class="rep-total" style="font-size:15px;padding:4px 0;"><span class="blue">OWNER'S EQUITY</span><span class="${ec}">${fmt(eq)}</span></div><div style="font-size:10px;color:var(--dim);margin-top:6px;">Assets ${fmt(ta)} = Liabilities ${fmt(tl)} + Equity ${fmt(eq)}</div></div>`;
+    <div class="card" style="border-color:var(--blue)"><div class="rep-total" style="font-size:15px;padding:4px 0;"><span class="blue">OWNER'S EQUITY</span><span class="${ec}">${fmt(eq)}</span></div><div style="font-size:14px;color:var(--dim);margin-top:6px;">Assets ${fmt(ta)} = Liabilities ${fmt(tl)} + Equity ${fmt(eq)}</div></div>`;
 }
 function setAcctBal() {
   const d=load();const acct=document.getElementById('bs-acct-name').value;
@@ -2041,7 +2041,7 @@ function renderMasters() {
 }
 function renderML(elId,items,field,cc) {
   const el=document.getElementById(elId);
-  if(!items.length){el.innerHTML=`<div style="color:var(--dim);font-size:11px;padding:4px 0;">None yet.</div>`;return;}
+  if(!items.length){el.innerHTML=`<div style="color:var(--dim);font-size:13px;padding:4px 0;">None yet.</div>`;return;}
   el.innerHTML=items.map(v=>`<div class="master-row"><span class="master-name ${cc}">${esc(v)}</span><button class="del-btn" onclick="delM('${field}','${esc(v)}')">×</button></div>`).join('');
 }
 
@@ -2098,19 +2098,19 @@ function renderMileHistory(){
   var miles=(d.fuel&&d.fuel.miles)||[];
   var recent=miles.slice(-10).reverse();
   var h='';
-  if(!recent.length){document.getElementById('mile-history').innerHTML='<div style="color:var(--dim);font-size:12px;">No mileage logged yet</div>';return;}
+  if(!recent.length){document.getElementById('mile-history').innerHTML='<div style="color:var(--dim);font-size:14px;">No mileage logged yet</div>';return;}
   recent.forEach(function(m,i){
     var prev=miles[miles.indexOf(m)-1];
     var driven=prev?m.odo-prev.odo:0;
     h+='<div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:6px;">'
-      +'<div style="flex:1;font-family:Courier New,monospace;font-size:11px;">'
+      +'<div style="flex:1;font-family:Courier New,monospace;font-size:13px;">'
       +'<span style="color:var(--yellow);">'+m.date+'</span>'
       +' <span style="color:#00ffff;">'+m.odo.toLocaleString()+' mi</span>'
       +(driven>0?' <span style="color:#00ff88;">+'+driven.toLocaleString()+'</span>':'')
-      +(m.notes?' <span style="color:#aaaacc;font-size:10px;">'+m.notes+'</span>':'')
+      +(m.notes?' <span style="color:#aaaacc;font-size:14px;">'+m.notes+'</span>':'')
       +'</div>'
-      +'<button onclick="editMileage('+m.id+')" style="padding:4px 8px;background:#0055aa;color:#fff;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;">EDT</button>'
-      +'<button onclick="delMileage('+m.id+')" style="padding:4px 8px;background:#880000;color:#fff;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;">DEL</button>'
+      +'<button onclick="editMileage('+m.id+')" style="padding:4px 8px;background:#0055aa;color:#fff;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;">EDT</button>'
+      +'<button onclick="delMileage('+m.id+')" style="padding:4px 8px;background:#880000;color:#fff;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;">DEL</button>'
       +'</div>';
   });
   document.getElementById('mile-history').innerHTML=h;
@@ -2126,13 +2126,13 @@ function editMileage(id){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:380px;font-family:Courier New,monospace;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:12px;">✏️ EDIT MILEAGE</div>'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">DATE</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:4px;">DATE</div>'
     +'<input type="date" id="mile-edit-date" value="'+m.date+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:8px;">'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">ODOMETER</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:4px;">ODOMETER</div>'
     +'<input type="number" id="mile-edit-odo" value="'+m.odo+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:8px;">'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">VEHICLE</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:4px;">VEHICLE</div>'
     +'<input type="text" id="mile-edit-veh" value="'+(m.veh||'TRUCK')+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:8px;">'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">NOTES</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:4px;">NOTES</div>'
     +'<input type="text" id="mile-edit-notes" value="'+(m.notes||'')+'" style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;margin-bottom:12px;">'
     +'<div style="display:flex;gap:8px;">'
     +'<button onclick="saveMileageEdit('+id+')" style="flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">SAVE</button>'
@@ -2204,22 +2204,22 @@ function renderFuelStats() {
     +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:8px;text-align:center;">💰 COMBINED DAILY COST ANALYSIS</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">'
     +'<div style="background:#fff0f0;border:1px solid #cc0000;border-radius:4px;padding:6px;text-align:center;">'
-    +'<div style="color:#cc0000;font-size:9px;font-weight:700;">⛽ GAS</div>'
-    +'<div style="color:#cc0000;font-weight:700;font-size:12px;">$'+(totalGas/totalDays).toFixed(2)+'/day</div>'
-    +'<div style="color:#666;font-size:9px;">$'+totalGas.toFixed(0)+' total</div></div>'
+    +'<div style="color:#cc0000;font-size:13px;font-weight:700;">⛽ GAS</div>'
+    +'<div style="color:#cc0000;font-weight:700;font-size:14px;">$'+(totalGas/totalDays).toFixed(2)+'/day</div>'
+    +'<div style="color:#666;font-size:13px;">$'+totalGas.toFixed(0)+' total</div></div>'
     +'<div style="background:#f0fff0;border:1px solid #006600;border-radius:4px;padding:6px;text-align:center;">'
-    +'<div style="color:#006600;font-size:9px;font-weight:700;">🛒 GROCERY</div>'
-    +'<div style="color:#006600;font-weight:700;font-size:12px;">$'+(totalGroc/totalDays).toFixed(2)+'/day</div>'
-    +'<div style="color:#666;font-size:9px;">$'+totalGroc.toFixed(0)+' total</div></div>'
+    +'<div style="color:#006600;font-size:13px;font-weight:700;">🛒 GROCERY</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:14px;">$'+(totalGroc/totalDays).toFixed(2)+'/day</div>'
+    +'<div style="color:#666;font-size:13px;">$'+totalGroc.toFixed(0)+' total</div></div>'
     +'<div style="background:#fff8e0;border:1px solid #cc6600;border-radius:4px;padding:6px;text-align:center;">'
-    +'<div style="color:#cc6600;font-size:9px;font-weight:700;">🍽️ FOOD</div>'
-    +'<div style="color:#cc6600;font-weight:700;font-size:12px;">$'+(totalRest/totalDays).toFixed(2)+'/day</div>'
-    +'<div style="color:#666;font-size:9px;">$'+totalRest.toFixed(0)+' total</div></div>'
+    +'<div style="color:#cc6600;font-size:13px;font-weight:700;">🍽️ FOOD</div>'
+    +'<div style="color:#cc6600;font-weight:700;font-size:14px;">$'+(totalRest/totalDays).toFixed(2)+'/day</div>'
+    +'<div style="color:#666;font-size:13px;">$'+totalRest.toFixed(0)+' total</div></div>'
     +'</div>'
     +'<div style="background:#000066;border-radius:6px;padding:10px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:10px;margin-bottom:4px;">COMBINED AVERAGE DAILY COST</div>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:4px;">COMBINED AVERAGE DAILY COST</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:22px;">$'+combinedPerDay.toFixed(2)+' / day</div>'
-    +'<div style="color:#00ff88;font-size:11px;margin-top:4px;">$'+(combinedPerDay*7).toFixed(2)+'/wk &nbsp;·&nbsp; $'+(combinedPerDay*30).toFixed(2)+'/mo &nbsp;·&nbsp; $'+(combinedPerDay*365).toFixed(0)+'/yr</div>'
+    +'<div style="color:#00ff88;font-size:13px;margin-top:4px;">$'+(combinedPerDay*7).toFixed(2)+'/wk &nbsp;·&nbsp; $'+(combinedPerDay*30).toFixed(2)+'/mo &nbsp;·&nbsp; $'+(combinedPerDay*365).toFixed(0)+'/yr</div>'
     +'</div></div>';
 
   el.innerHTML=combined;
@@ -2263,41 +2263,41 @@ function renderFuelStats() {
   // main summary
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">'
     +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">TOTAL GAS COST</div>'
+    +'<div style="color:#ccccff;font-size:13px;">TOTAL GAS COST</div>'
     +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+totalCost.toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">AVG COST/DAY</div>'
+    +'<div style="color:#ccccff;font-size:13px;">AVG COST/DAY</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+avgPerDay.toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:1px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">COST/WEEK</div>'
+    +'<div style="color:#ccccff;font-size:13px;">COST/WEEK</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(avgPerDay*7).toFixed(2)+'</div></div>'
     +'<div style="background:#000044;border:1px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:9px;">COST/YEAR EST</div>'
+    +'<div style="color:#ccccff;font-size:13px;">COST/YEAR EST</div>'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+(avgPerDay*365).toFixed(0)+'</div></div>'
     +'</div>';
 
   // VEHICLE CORRELATION CARD
   h+='<div style="background:#ffffff;border:2px solid #000066;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;text-align:center;">🚗 VEHICLE MILEAGE CORRELATION</div>'
-    +'<div style="color:#333333;font-size:10px;margin-bottom:6px;text-align:center;">Since purchase: '+CAR_START_DATE+' · Odo: '+CAR_START_ODO.toLocaleString()+' → '+CAR_TODAY_ODO.toLocaleString()+'</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:14px;margin-bottom:8px;text-align:center;">🚗 VEHICLE MILEAGE CORRELATION</div>'
+    +'<div style="color:#333333;font-size:14px;margin-bottom:6px;text-align:center;">Since purchase: '+CAR_START_DATE+' · Odo: '+CAR_START_ODO.toLocaleString()+' → '+CAR_TODAY_ODO.toLocaleString()+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
     +'<div style="background:#e8f4e8;border:1px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#006600;font-size:9px;">MILES DRIVEN</div>'
+    +'<div style="color:#006600;font-size:13px;">MILES DRIVEN</div>'
     +'<div style="color:#006600;font-weight:700;font-size:15px;">'+CAR_TOTAL_MILES.toLocaleString()+'</div></div>'
     +'<div style="background:#e8f4e8;border:1px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#006600;font-size:9px;">MILES/DAY AVG</div>'
+    +'<div style="color:#006600;font-size:13px;">MILES/DAY AVG</div>'
     +'<div style="color:#006600;font-weight:700;font-size:15px;">'+milesPerDay.toFixed(1)+'</div></div>'
     +'<div style="background:#fff8e8;border:1px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#cc6600;font-size:9px;">COST/MILE</div>'
+    +'<div style="color:#cc6600;font-size:13px;">COST/MILE</div>'
     +'<div style="color:#cc6600;font-weight:700;font-size:15px;">$'+costPerMile.toFixed(3)+'</div></div>'
     +'<div style="background:#fff8e8;border:1px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#cc6600;font-size:9px;">MILES PER $1</div>'
+    +'<div style="color:#cc6600;font-size:13px;">MILES PER $1</div>'
     +'<div style="color:#cc6600;font-weight:700;font-size:15px;">'+milesPerDollar.toFixed(1)+'</div></div>'
     +'<div style="background:#e8e8ff;border:1px solid #000066;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#000066;font-size:9px;">PROJ ANNUAL MI</div>'
+    +'<div style="color:#000066;font-size:13px;">PROJ ANNUAL MI</div>'
     +'<div style="color:#000066;font-weight:700;font-size:15px;">'+projectedAnnual.toLocaleString()+'</div></div>'
     +'<div style="background:#e8e8ff;border:1px solid #000066;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#000066;font-size:9px;">GAS SINCE PURCH</div>'
+    +'<div style="color:#000066;font-size:13px;">GAS SINCE PURCH</div>'
     +'<div style="color:#cc0000;font-weight:700;font-size:15px;">$'+totalGasSincePurchase.toFixed(2)+'</div></div>'
     +'</div></div>';
 
@@ -2310,12 +2310,12 @@ function renderFuelStats() {
   var monthKeys=Object.keys(byMonth).sort().reverse().slice(0,6);
   if(monthKeys.length){
     h+='<div style="background:#000033;border:1px solid #333388;border-radius:4px;padding:8px;margin-bottom:8px;">'
-      +'<div style="color:#ffff00;font-weight:700;font-size:11px;margin-bottom:6px;">MONTHLY GAS COST</div>';
+      +'<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:6px;">MONTHLY GAS COST</div>';
     monthKeys.forEach(function(m){
       var v=byMonth[m];
       var barW=Math.min(100,(v/Math.max.apply(null,Object.values(byMonth)))*100);
       h+='<div style="margin-bottom:4px;">'
-        +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;">'
+        +'<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:2px;">'
         +'<span style="color:#ccccff;">'+m+'</span>'
         +'<span style="color:#ff6666;font-weight:700;">$'+v.toFixed(2)+'</span></div>'
         +'<div style="background:#001133;border-radius:2px;height:8px;">'
@@ -2350,17 +2350,17 @@ function renderFuelStats() {
   var maxBudget=Math.max.apply(null,futureMonths.map(function(m){return m.budget;}));
 
   h+='<div style="background:#ffffff;border:2px solid #000066;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;text-align:center;">📅 12-MONTH FORWARD GAS BUDGET</div>'
-    +'<div style="color:#333333;font-size:10px;margin-bottom:8px;text-align:center;">Based on your Byline debit card history</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:14px;margin-bottom:6px;text-align:center;">📅 12-MONTH FORWARD GAS BUDGET</div>'
+    +'<div style="color:#333333;font-size:14px;margin-bottom:8px;text-align:center;">Based on your Byline debit card history</div>'
     +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
     +'<div style="flex:1;background:#e8f4e8;border:1px solid #006600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#006600;font-size:9px;">BUDGET/MONTH</div>'
+    +'<div style="color:#006600;font-size:13px;">BUDGET/MONTH</div>'
     +'<div style="color:#006600;font-weight:700;font-size:15px;">$'+trendAvg.toFixed(0)+'</div></div>'
     +'<div style="flex:1;background:#fff8e8;border:1px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#cc6600;font-size:9px;">TOTAL 12-MO</div>'
+    +'<div style="color:#cc6600;font-size:13px;">TOTAL 12-MO</div>'
     +'<div style="color:#cc6600;font-weight:700;font-size:15px;">$'+totalBudget12.toFixed(0)+'</div></div>'
     +'<div style="flex:1;background:#e8e8ff;border:1px solid #000066;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#000066;font-size:9px;">PROJ MILES/YR</div>'
+    +'<div style="color:#000066;font-size:13px;">PROJ MILES/YR</div>'
     +'<div style="color:#000066;font-weight:700;font-size:15px;">'+projectedAnnual.toLocaleString()+'</div></div>'
     +'</div>';
 
@@ -2369,10 +2369,10 @@ function renderFuelStats() {
     var barPct=Math.round((m.budget/maxBudget)*100);
     var mo=m.ym.slice(5,7)+'/'+m.ym.slice(2,4);
     h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
-      +'<div style="color:#000066;font-size:10px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
+      +'<div style="color:#000066;font-size:14px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
       +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
       +'<div style="background:#000066;height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
-      +'<span style="position:absolute;right:4px;top:1px;font-size:9px;color:#000000;font-weight:700;">$'+m.budget.toFixed(0)+'</span>'
+      +'<span style="position:absolute;right:4px;top:1px;font-size:13px;color:#000000;font-weight:700;">$'+m.budget.toFixed(0)+'</span>'
       +'</div></div>';
   });
 
@@ -2381,9 +2381,9 @@ function renderFuelStats() {
   var monthsLeft=12-now.getMonth();
   var projYTD=ytdSoFar+(trendAvg*monthsLeft);
   h+='<div style="background:#000066;border-radius:4px;padding:8px;margin-top:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:10px;">'+now.getFullYear()+' FULL YEAR PROJECTION</div>'
+    +'<div style="color:#ccccff;font-size:14px;">'+now.getFullYear()+' FULL YEAR PROJECTION</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+projYTD.toFixed(0)+'</div>'
-    +'<div style="color:#aaaacc;font-size:9px;">$'+ytdSoFar.toFixed(0)+' actual YTD + $'+(trendAvg*monthsLeft).toFixed(0)+' projected remaining</div>'
+    +'<div style="color:#aaaacc;font-size:13px;">$'+ytdSoFar.toFixed(0)+' actual YTD + $'+(trendAvg*monthsLeft).toFixed(0)+' projected remaining</div>'
     +'</div>'
     +'</div>';
 
@@ -2447,7 +2447,7 @@ function renderUtilStats() {
   const fp=document.getElementById('util-fprop').value;
   const fy=document.getElementById('util-fyr').value;
   let logs=d.util.logs.filter(l=>(!fp||l.prop===fp)&&(!fy||(l.period||'').startsWith(fy))).sort((a,b)=>(b.period||'').localeCompare(a.period||''));
-  if(!logs.length){document.getElementById('util-stat-cards').innerHTML='<div class="card" style="color:var(--dim);font-size:12px;">No utility records yet.</div>';document.getElementById('util-history').innerHTML='';return;}
+  if(!logs.length){document.getElementById('util-stat-cards').innerHTML='<div class="card" style="color:var(--dim);font-size:14px;">No utility records yet.</div>';document.getElementById('util-history').innerHTML='';return;}
   const totElec=logs.filter(l=>l.type==='electric').reduce((s,l)=>s+l.bill,0);
   const totGas=logs.filter(l=>l.type==='gas').reduce((s,l)=>s+l.bill,0);
   const totOther=logs.filter(l=>l.type==='other').reduce((s,l)=>s+l.bill,0);
@@ -2524,7 +2524,7 @@ function renderInvView() {
     return `<div class="list-row">
       <div class="lr-dot" style="background:var(--blue)"></div>
       <div class="lr-body">
-        <div class="lr-main">${esc(i.name)}${i.sku?' <span style="color:var(--dim);font-size:11px;">['+esc(i.sku)+']</span>':''}</div>
+        <div class="lr-main">${esc(i.name)}${i.sku?' <span style="color:var(--dim);font-size:13px;">['+esc(i.sku)+']</span>':''}</div>
         <div class="lr-sub">${i.cat}${i.loc?' · '+esc(i.loc):''} · ${fmtN(i.qty,2)} ${i.unit} @ ${fmt(i.cost)}/${i.unit}</div>
       </div>
       <div class="lr-right">
@@ -2605,7 +2605,7 @@ function renderPortfolio() {
   const holdings=d.port.holdings.filter(h=>!ft||h.type===ft);
   if(!holdings.length){
     document.getElementById('port-summary').innerHTML='';
-    document.getElementById('port-list').innerHTML='<div class="card" style="color:var(--dim);font-size:12px;">No holdings.</div>';return;
+    document.getElementById('port-list').innerHTML='<div class="card" style="color:var(--dim);font-size:14px;">No holdings.</div>';return;
   }
   let totalVal=0,totalBasis=0;
   for(const h of holdings){totalVal+=h.shares*h.price;totalBasis+=h.shares*h.basis;}
@@ -2625,7 +2625,7 @@ function renderPortfolio() {
     return `<div class="holding-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div class="holding-ticker">${esc(h.ticker)} <span class="tag ${typeColors[h.type]||'tag-g'}" style="font-size:10px;vertical-align:middle;">${h.type}</span></div>
+          <div class="holding-ticker">${esc(h.ticker)} <span class="tag ${typeColors[h.type]||'tag-g'}" style="font-size:14px;vertical-align:middle;">${h.type}</span></div>
           <div class="holding-name">${esc(h.name||'')}${h.broker?' · '+esc(h.broker):''}</div>
         </div>
         <button class="del-btn" style="font-size:18px;" onclick="delHolding(${h.id})">×</button>
@@ -2648,10 +2648,10 @@ function delHolding(id) {
 }
 function renderPriceUpdate() {
   const d=load();
-  if(!d.port.holdings.length){document.getElementById('port-price-rows').innerHTML='<div style="color:var(--dim);font-size:12px;">No holdings.</div>';return;}
+  if(!d.port.holdings.length){document.getElementById('port-price-rows').innerHTML='<div style="color:var(--dim);font-size:14px;">No holdings.</div>';return;}
   document.getElementById('port-price-rows').innerHTML=d.port.holdings.map(h=>`
     <div class="field-row" style="margin-bottom:8px;align-items:center;">
-      <div class="field" style="margin:0;"><label style="color:var(--yellow)">${esc(h.ticker)}</label><div style="font-size:11px;color:var(--dim);">Last: ${fmt(h.price)}</div></div>
+      <div class="field" style="margin:0;"><label style="color:var(--yellow)">${esc(h.ticker)}</label><div style="font-size:13px;color:var(--dim);">Last: ${fmt(h.price)}</div></div>
       <div class="field" style="margin:0;"><label>New Price ($)</label><input type="number" id="price-${h.id}" inputmode="decimal" step="0.0001" placeholder="${h.price||'0.00'}" style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:IBM Plex Mono,monospace;font-size:14px;padding:8px 10px;border-radius:4px;width:100%;outline:none;"></div>
     </div>`).join('');
 }
@@ -2696,7 +2696,7 @@ function addWorker() {
 function renderWorkerList() {
   const d=load();
   const el=document.getElementById('worker-list');
-  if(!d.work.workers.length){el.innerHTML='<div style="color:var(--dim);font-size:12px;">No workers yet.</div>';return;}
+  if(!d.work.workers.length){el.innerHTML='<div style="color:var(--dim);font-size:14px;">No workers yet.</div>';return;}
   el.innerHTML=d.work.workers.map(w=>`<div class="master-row"><span class="master-name purple">${esc(w.name)}</span><button class="del-btn" onclick="delWorker(${w.id})">×</button></div>`).join('');
 }
 function delWorker(id) {
@@ -2788,7 +2788,7 @@ function renderWorkReport() {
   </div><div class="card"><div class="card-title purple">BY WORKER</div>`;
   for(const[w,v]of Object.entries(byWorker).sort((a,b)=>b[1].pay-a[1].pay))
     h+=`<div class="rep-row"><span class="rep-cat">${esc(w)} · ${fmtN(v.hrs,2)}h</span><span class="rep-amt purple">${fmt(v.pay)}</span></div>`;
-  if(!Object.keys(byWorker).length)h+=`<div style="color:var(--dim);font-size:12px;padding:4px 0;">No data.</div>`;
+  if(!Object.keys(byWorker).length)h+=`<div style="color:var(--dim);font-size:14px;padding:4px 0;">No data.</div>`;
   h+=`<div class="rep-total"><span>Total</span><span class="red">${fmt(totPay)}</span></div></div>`;
   document.getElementById('work-report-content').innerHTML=h;
 }
@@ -3074,7 +3074,7 @@ function showRouteStep() {
   if(_scanRoute) {
     const icons = {accounting:'$',grocery:'🛒',restaurant:'🍽️',inventory:'📦'};
     const colors= {accounting:'green',grocery:'green',restaurant:'orange',inventory:'blue'};
-    autoEl.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:10px;display:flex;align-items:center;gap:10px;"><span style="font-size:22px;">${icons[_scanRoute]||'?'}</span><div><div style="font-size:12px;color:var(--dim);">Auto-routed to</div><div style="font-weight:700;color:var(--${colors[_scanRoute]||'text'})">${_scanRoute.toUpperCase()}</div></div><button onclick="overrideRoute()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 8px;border-radius:3px;cursor:pointer;">Change</button></div>`;
+    autoEl.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:10px;display:flex;align-items:center;gap:10px;"><span style="font-size:22px;">${icons[_scanRoute]||'?'}</span><div><div style="font-size:14px;color:var(--dim);">Auto-routed to</div><div style="font-weight:700;color:var(--${colors[_scanRoute]||'text'})">${_scanRoute.toUpperCase()}</div></div><button onclick="overrideRoute()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:5px 8px;border-radius:3px;cursor:pointer;">Change</button></div>`;
     askEl.style.display='none';
     acctEl.style.display = _scanRoute==='accounting' ? 'block':'none';
     nextBtn.style.display='block';
@@ -3102,7 +3102,7 @@ function setScanRoute(route) {
   document.getElementById('scan-next-btn').style.display='block';
   const icons={accounting:'$',grocery:'🛒',restaurant:'🍽️',inventory:'📦'};
   const colors={accounting:'green',grocery:'green',restaurant:'orange',inventory:'blue'};
-  document.getElementById('scan-auto-route').innerHTML=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:10px;display:flex;align-items:center;gap:10px;"><span style="font-size:22px;">${icons[route]}</span><div><div style="font-size:12px;color:var(--dim);">Routing to</div><div style="font-weight:700;color:var(--${colors[route]})">${route.toUpperCase()}</div></div></div>`;
+  document.getElementById('scan-auto-route').innerHTML=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:10px;display:flex;align-items:center;gap:10px;"><span style="font-size:22px;">${icons[route]}</span><div><div style="font-size:14px;color:var(--dim);">Routing to</div><div style="font-weight:700;color:var(--${colors[route]})">${route.toUpperCase()}</div></div></div>`;
 }
 
 function overrideRoute() {
@@ -3124,21 +3124,21 @@ function showScanItems() {
   document.getElementById('scan-total-display').textContent = fmt(p.total||p.items.reduce((s,i)=>s+i.price,0)+(p.tax||0));
 
   if(!p.items.length) {
-    document.getElementById('scan-items-list').innerHTML=`<div style="color:var(--yellow);font-size:12px;padding:10px 0;">⚠ No items detected — try better lighting or a flatter receipt.<br><br>You can still save a manual entry.</div>`;
+    document.getElementById('scan-items-list').innerHTML=`<div style="color:var(--yellow);font-size:14px;padding:10px 0;">⚠ No items detected — try better lighting or a flatter receipt.<br><br>You can still save a manual entry.</div>`;
     return;
   }
   document.getElementById('scan-items-list').innerHTML = p.items.map((item,i)=>`
     <div class="scan-item-row" style="flex-direction:column;align-items:flex-start;padding:8px;margin-bottom:4px;background:#000044;border-radius:4px;border:1px solid #333388;">
       <div style="display:flex;align-items:center;width:100%;gap:8px;">
         <input type="checkbox" id="sci-${i}" ${item.selected?'checked':''} onchange="_scanParsed.items[${i}].selected=this.checked">
-        <span class="scan-item-name" style="flex:1;color:#ffff00;font-weight:700;font-size:12px;">${esc(item.name)}</span>
-        <input type="number" value="${item.price.toFixed(2)}" step="0.01" style="width:70px;background:#000033;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:4px;border-radius:3px;text-align:right;" onchange="_scanParsed.items[${i}].price=parseFloat(this.value)||0">
+        <span class="scan-item-name" style="flex:1;color:#ffff00;font-weight:700;font-size:14px;">${esc(item.name)}</span>
+        <input type="number" value="${item.price.toFixed(2)}" step="0.01" style="width:70px;background:#000033;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:4px;border-radius:3px;text-align:right;" onchange="_scanParsed.items[${i}].price=parseFloat(this.value)||0">
       </div>
       <div style="display:flex;gap:10px;margin-top:4px;padding-left:24px;">
-        <span style="color:#ccccff;font-size:10px;">QTY: <input type="number" value="${item.qty||1}" min="1" style="width:40px;background:#000033;border:1px solid #333388;color:#ffff00;font-family:Courier New,monospace;font-size:10px;padding:2px;border-radius:3px;" onchange="_scanParsed.items[${i}].qty=parseInt(this.value)||1"></span>
-        <span style="color:#ffaa00;font-size:10px;">CAL: ${item.cal||'?'}</span>
-        <span style="color:${parseFloat(item.taxRate||0)===0?'#00ff88':'#ff6666'};font-size:10px;">TAX: ${item.taxRate||0}%</span>
-        <span style="color:#ccccff;font-size:10px;">UNIT: $${(item.unitPrice||item.price).toFixed(2)}</span>
+        <span style="color:#ccccff;font-size:14px;">QTY: <input type="number" value="${item.qty||1}" min="1" style="width:40px;background:#000033;border:1px solid #333388;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:2px;border-radius:3px;" onchange="_scanParsed.items[${i}].qty=parseInt(this.value)||1"></span>
+        <span style="color:#ffaa00;font-size:14px;">CAL: ${item.cal||'?'}</span>
+        <span style="color:${parseFloat(item.taxRate||0)===0?'#00ff88':'#ff6666'};font-size:14px;">TAX: ${item.taxRate||0}%</span>
+        <span style="color:#ccccff;font-size:14px;">UNIT: $${(item.unitPrice||item.price).toFixed(2)}</span>
       </div>
     </div>`).join('');
 }
@@ -3355,7 +3355,7 @@ function renderStoreRoutes() {
     <div class="master-row">
       <span class="master-name yellow">${esc(r.store)} <span style="color:var(--dim)">→</span> ${icons[r.route]||''} ${r.route}</span>
       <button class="del-btn" onclick="delStoreRoute('${esc(r.store)}')">×</button>
-    </div>`).join(''):'<div style="color:var(--dim);font-size:11px;padding:4px 0;">No custom rules yet. Built-in: Menards→Accounting, Aldi→Grocery, etc.</div>';
+    </div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:4px 0;">No custom rules yet. Built-in: Menards→Accounting, Aldi→Grocery, etc.</div>';
 }
 
 // ═══════════════════════════════════════════════
@@ -3430,8 +3430,8 @@ function doExportCSV(){
   const filename='mfs-data-'+dateStr+'.json';
   const popupHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
     +'<div style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:6px;">📤 '+filename+' — '+mxLog.length+' entries</div>'
-    +'<div style="color:#ccccff;font-size:10px;margin-bottom:6px;">Long-press → Select All → Copy → Gmail</div>'
-    +'<textarea id="backup-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #ffff00;color:#ffffff;font-family:Courier New,monospace;font-size:10px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+backupText+'</textarea>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">Long-press → Select All → Copy → Gmail</div>'
+    +'<textarea id="backup-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #ffff00;color:#ffffff;font-family:Courier New,monospace;font-size:14px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+backupText+'</textarea>'
     +'<div style="display:flex;gap:8px;margin-top:8px;">'
     +'<button onclick="manualSelectAllCopy()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📋 COPY</button>'
     +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
@@ -3471,35 +3471,35 @@ function doViewData(){
   var yrs={};
   LOG.forEach(function(e){var y=(e.date||'').slice(0,4);if(!yrs[y])yrs[y]={inc:0,exp:0};if(e.amt>=0)yrs[y].inc+=e.amt;else yrs[y].exp+=e.amt;});
   var html='<div style="background:#000044;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:8px;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">LEDGER SUMMARY</div>'
-    +'<div style="color:#ccccff;font-size:11px;">ENTRIES: <span style="color:#ffff00;font-weight:700;">'+LOG.length+'</span></div>'
-    +'<div style="color:#ccccff;font-size:11px;">INCOME: <span style="color:#00ffff;font-weight:700;">+$'+inc.toFixed(2)+'</span></div>'
-    +'<div style="color:#ccccff;font-size:11px;">EXPENSE: <span style="color:#ff6666;font-weight:700;">-$'+Math.abs(exp).toFixed(2)+'</span></div>'
-    +'<div style="color:#ccccff;font-size:11px;">NET: <span style="color:'+(total>=0?'#00ffff':'#ff6666')+';font-weight:700;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span></div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">LEDGER SUMMARY</div>'
+    +'<div style="color:#ccccff;font-size:13px;">ENTRIES: <span style="color:#ffff00;font-weight:700;">'+LOG.length+'</span></div>'
+    +'<div style="color:#ccccff;font-size:13px;">INCOME: <span style="color:#00ffff;font-weight:700;">+$'+inc.toFixed(2)+'</span></div>'
+    +'<div style="color:#ccccff;font-size:13px;">EXPENSE: <span style="color:#ff6666;font-weight:700;">-$'+Math.abs(exp).toFixed(2)+'</span></div>'
+    +'<div style="color:#ccccff;font-size:13px;">NET: <span style="color:'+(total>=0?'#00ffff':'#ff6666')+';font-weight:700;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span></div>'
     +'</div>';
   // year by year
   var yrKeys=Object.keys(yrs).sort().reverse();
   if(yrKeys.length){
     html+='<div style="background:#000044;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:8px;">'
-      +'<div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">BY YEAR</div>';
+      +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">BY YEAR</div>';
     yrKeys.forEach(function(y){
       var net=yrs[y].inc+yrs[y].exp;
       html+='<div style="display:flex;justify-content:space-between;border-bottom:1px solid #333388;padding:4px 0;">'
-        +'<span style="color:#ffff00;font-size:11px;">'+y+'</span>'
-        +'<span style="color:#00ffff;font-size:11px;">+$'+yrs[y].inc.toFixed(2)+'</span>'
-        +'<span style="color:#ff6666;font-size:11px;">-$'+Math.abs(yrs[y].exp).toFixed(2)+'</span>'
-        +'<span style="color:'+(net>=0?'#00ff88':'#ff6666')+';font-size:11px;font-weight:700;">'+(net>=0?'+':'-')+'$'+Math.abs(net).toFixed(2)+'</span>'
+        +'<span style="color:#ffff00;font-size:13px;">'+y+'</span>'
+        +'<span style="color:#00ffff;font-size:13px;">+$'+yrs[y].inc.toFixed(2)+'</span>'
+        +'<span style="color:#ff6666;font-size:13px;">-$'+Math.abs(yrs[y].exp).toFixed(2)+'</span>'
+        +'<span style="color:'+(net>=0?'#00ff88':'#ff6666')+';font-size:13px;font-weight:700;">'+(net>=0?'+':'-')+'$'+Math.abs(net).toFixed(2)+'</span>'
         +'</div>';
     });
     html+='</div>';
   }
   // masters summary
   html+='<div style="background:#000044;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:8px;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">MASTERS</div>'
-    +'<div style="color:#ccccff;font-size:11px;">PAYEES: <span style="color:#ffff00;">'+((d.acct.payees||[]).length)+'</span></div>'
-    +'<div style="color:#ccccff;font-size:11px;">PCODES: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_pcodes')||'[]').length+12)+'</span></div>'
-    +'<div style="color:#ccccff;font-size:11px;">DESCS: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_descs')||'[]').length+35)+'</span></div>'
-    +'<div style="color:#ccccff;font-size:11px;">CUSTOM COMBOS: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_custom')||'[]').length)+'</span></div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">MASTERS</div>'
+    +'<div style="color:#ccccff;font-size:13px;">PAYEES: <span style="color:#ffff00;">'+((d.acct.payees||[]).length)+'</span></div>'
+    +'<div style="color:#ccccff;font-size:13px;">PCODES: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_pcodes')||'[]').length+12)+'</span></div>'
+    +'<div style="color:#ccccff;font-size:13px;">DESCS: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_descs')||'[]').length+35)+'</span></div>'
+    +'<div style="color:#ccccff;font-size:13px;">CUSTOM COMBOS: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_custom')||'[]').length)+'</span></div>'
     +'</div>'
     +'<button onclick="doEmailData()" style="width:100%;background:#3a2000;color:#ffaa00;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #ffaa00;border-radius:4px;cursor:pointer;margin-bottom:6px;">📧 EMAIL THIS DATA</button>'
     +'<button onclick="doExportCSV()" style="width:100%;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">📄 EXPORT CSV FOR FOXBASE</button>';
@@ -3535,13 +3535,13 @@ function doOpenFiles(){
     {name:'mfs-backup-'+today()+'.json', desc:'FULL BACKUP — all data', fn:'doBackup'},
     {name:'mfs-masters-'+today()+'.json', desc:'MASTERS — pcodes/payees/descs', fn:'exportMasters'}
   ];
-  var html='<div style="color:#ffff00;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin-bottom:10px;">📁 MFS FILES — TAP TO DOWNLOAD</div>';
+  var html='<div style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:10px;">📁 MFS FILES — TAP TO DOWNLOAD</div>';
   files.forEach(function(f){
     html+='<div style="background:#000044;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:8px;">'
-      +'<div style="color:#00ff88;font-weight:700;font-size:12px;font-family:Courier New,monospace;">'+f.name+'</div>'
-      +'<div style="color:#ccccff;font-size:10px;font-family:Courier New,monospace;margin:4px 0;">'+f.desc+'</div>'
+      +'<div style="color:#00ff88;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+f.name+'</div>'
+      +'<div style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;margin:4px 0;">'+f.desc+'</div>'
       +'<button onclick="'+f.fn+'();document.getElementById(\'files-overlay\').style.display=\'none\';" '
-      +'style="width:100%;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">⬇ DOWNLOAD</button>'
+      +'style="width:100%;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:8px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">⬇ DOWNLOAD</button>'
       +'</div>';
   });
   document.getElementById('files-content').innerHTML=html;
@@ -3588,8 +3588,8 @@ function doClearAllData(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ff4444;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="color:#ff4444;font-weight:700;font-size:15px;margin-bottom:10px;">🗑 CLEAR ALL DATA</div>'
-    +'<div style="color:#ffff00;font-size:12px;margin-bottom:6px;">⚠️ THIS WILL DELETE ALL ENTRIES!</div>'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:16px;">Did you backup first?<br>This cannot be undone.</div>'
+    +'<div style="color:#ffff00;font-size:14px;margin-bottom:6px;">⚠️ THIS WILL DELETE ALL ENTRIES!</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:16px;">Did you backup first?<br>This cannot be undone.</div>'
     +'<div style="display:flex;gap:10px;">'
     +'<button onclick="confirmClearAll()" style="flex:1;background:#ff4444;color:#ffffff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
     +'<button onclick="document.getElementById(\'clear-overlay\').remove();goMain();" style="flex:1;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
@@ -3654,7 +3654,7 @@ function doCopyToMfs2(){
     overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
     overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:14px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;">'
       +'<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">💾 mfs2.html SAVED TO DOWNLOADS</div>'
-      +'<div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Go to Downloads → tap mfs2.html → Share → Email to yourself</div>'
+      +'<div style="color:#ccccff;font-size:13px;margin-bottom:12px;">Go to Downloads → tap mfs2.html → Share → Email to yourself</div>'
       +'<div style="display:flex;gap:8px;">'
       +'<button onclick="doShareMfs2()" style="flex:2;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE NOW</button>'
       +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();goMain();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
@@ -3682,8 +3682,8 @@ function showMfsUpdate(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:15px;margin-bottom:12px;">🔄 MFS GITHUB UPDATE</div>'
-    +'<div style="color:#ccccff;font-size:12px;margin-bottom:20px;">Push current code to GitHub?<br><span style="color:#ffff00;">carrdata-wq.github.io/msf</span></div>'
-    +'<div id="update-status" style="color:#ffff00;font-size:12px;margin-bottom:12px;min-height:16px;"></div>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:20px;">Push current code to GitHub?<br><span style="color:#ffff00;">carrdata-wq.github.io/msf</span></div>'
+    +'<div id="update-status" style="color:#ffff00;font-size:14px;margin-bottom:12px;min-height:16px;"></div>'
     +'<div style="display:flex;gap:10px;">'
     +'<button id="push-btn" onclick="doGitHubUpdate(this)" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
     +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();goMain();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
@@ -3749,11 +3749,11 @@ function showFileManager(){
   var html='';
   files.forEach(function(f){
     html+='<div style="background:#000044;border:1px solid #333388;border-radius:4px;padding:10px;margin-bottom:8px;">'
-      +'<div style="color:'+f.color+';font-weight:700;font-size:12px;">'+f.name+'</div>'
-      +'<div style="color:#ccccff;font-size:10px;margin:4px 0;">'+f.desc+'</div>'
+      +'<div style="color:'+f.color+';font-weight:700;font-size:14px;">'+f.name+'</div>'
+      +'<div style="color:#ccccff;font-size:14px;margin:4px 0;">'+f.desc+'</div>'
       +'<div style="display:flex;gap:6px;margin-top:6px;">'
-      +'<button onclick="'+f.fn+'()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:8px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">⬇ SAVE</button>'
-      +'<button onclick="copyFileData(\''+f.fn+'\')" style="flex:1;background:#000033;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:8px;border:1px solid #00ffff;border-radius:4px;cursor:pointer;">📋 COPY</button>'
+      +'<button onclick="'+f.fn+'()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:8px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">⬇ SAVE</button>'
+      +'<button onclick="copyFileData(\''+f.fn+'\')" style="flex:1;background:#000033;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:8px;border:1px solid #00ffff;border-radius:4px;cursor:pointer;">📋 COPY</button>'
       +'</div></div>';
   });
   document.getElementById('filemgr-content').innerHTML=html;
@@ -3781,9 +3781,9 @@ function doBankImport(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">🏦 BYLINE BANK CSV IMPORT</div>'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Select your Byline AccountHistory.csv file:</div>'
-    +'<input type="file" id="bank-csv-input" accept=".csv" style="width:100%;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:8px;border-radius:4px;margin-bottom:10px;box-sizing:border-box;">'
-    +'<div id="bank-status" style="color:#ffff00;font-size:11px;margin-bottom:10px;min-height:16px;"></div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:12px;">Select your Byline AccountHistory.csv file:</div>'
+    +'<input type="file" id="bank-csv-input" accept=".csv" style="width:100%;background:#000033;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;margin-bottom:10px;box-sizing:border-box;">'
+    +'<div id="bank-status" style="color:#ffff00;font-size:13px;margin-bottom:10px;min-height:16px;"></div>'
     +'<div id="bank-preview" style="max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button id="bank-import-btn" onclick="doBankImportConfirm()" style="display:none;flex:2;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">✅ IMPORT ALL</button>'
@@ -3842,8 +3842,8 @@ function doBankCSVPreview(file){
       var cleanPayee=cleanPayeeName(match.payee);
       _bankRows.push({date:isoDate,rawDesc:rawDesc,payee:cleanPayee,pcode:match.pcode,desc:match.desc,amt:amt});
     }
-    var html='<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
-    html+='<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+    var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
+    html+='<table style="width:100%;border-collapse:collapse;font-size:14px;">'
       +'<tr style="background:#0000aa;">'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">DATE</th>'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PAYEE</th>'
@@ -3853,13 +3853,13 @@ function doBankCSVPreview(file){
     _bankRows.slice(0,10).forEach(function(r){
       var ac=r.amt>=0?'#00ffff':'#ff6666';
       html+='<tr style="background:#00008a;">'
-        +'<td style="padding:3px;color:#ccccff;border:1px solid #333388;font-size:9px;">'+r.date.slice(5)+'</td>'
-        +'<td style="padding:3px;color:#ffff00;border:1px solid #333388;font-size:9px;">'+trunc(r.payee,14)+'</td>'
-        +'<td style="padding:3px;color:#00ffff;border:1px solid #333388;font-size:9px;">'+r.pcode+'</td>'
-        +'<td style="padding:3px;text-align:right;border:1px solid #333388;font-size:9px;color:'+ac+';">'+(r.amt>=0?'+':'-')+'$'+Math.abs(r.amt).toFixed(2)+'</td>'
+        +'<td style="padding:3px;color:#ccccff;border:1px solid #333388;font-size:13px;">'+r.date.slice(5)+'</td>'
+        +'<td style="padding:3px;color:#ffff00;border:1px solid #333388;font-size:13px;">'+trunc(r.payee,14)+'</td>'
+        +'<td style="padding:3px;color:#00ffff;border:1px solid #333388;font-size:13px;">'+r.pcode+'</td>'
+        +'<td style="padding:3px;text-align:right;border:1px solid #333388;font-size:13px;color:'+ac+';">'+(r.amt>=0?'+':'-')+'$'+Math.abs(r.amt).toFixed(2)+'</td>'
         +'</tr>';
     });
-    if(_bankRows.length>10)html+='<tr><td colspan="4" style="color:#ccccff;padding:3px;font-size:9px;text-align:center;">...and '+(_bankRows.length-10)+' more</td></tr>';
+    if(_bankRows.length>10)html+='<tr><td colspan="4" style="color:#ccccff;padding:3px;font-size:13px;text-align:center;">...and '+(_bankRows.length-10)+' more</td></tr>';
     html+='</table>';
     document.getElementById('bank-preview').innerHTML=html;
     document.getElementById('bank-status').innerHTML='<span style="color:#00ff88;">✓ Ready to import '+_bankRows.length+' entries</span>';
@@ -3942,7 +3942,7 @@ function doBankImportConfirm(){
   prog.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   prog.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:12px;">🏦 BYLINE BANK IMPORT</div>'
-    +'<div id="imp-msg" style="color:#ffff00;font-size:12px;margin-bottom:12px;">Loading entries...</div>'
+    +'<div id="imp-msg" style="color:#ffff00;font-size:14px;margin-bottom:12px;">Loading entries...</div>'
     +'<div style="background:#000033;border:1px solid #333388;border-radius:4px;height:24px;margin-bottom:8px;overflow:hidden;">'
     +'<div id="imp-bar" style="height:100%;background:linear-gradient(90deg,#00ff88,#00ffff);width:0%;transition:width 0.2s;border-radius:4px;"></div>'
     +'</div>'
@@ -3995,18 +3995,18 @@ function showDupReview(idx){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ffaa00;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;">'
     +'<div style="color:#ffaa00;font-weight:700;font-size:14px;margin-bottom:6px;text-align:center;">⚠️ POSSIBLE DUPLICATE</div>'
-    +'<div style="color:#ccccff;font-size:10px;text-align:center;margin-bottom:10px;">'+(idx+1)+' of '+_dupQueue.length+' to review</div>'
+    +'<div style="color:#ccccff;font-size:14px;text-align:center;margin-bottom:10px;">'+(idx+1)+' of '+_dupQueue.length+' to review</div>'
     +'<div style="background:#000033;border:1px solid #ffaa00;border-radius:4px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#ffff00;font-weight:700;font-size:13px;">'+r.payee+'</div>'
     +'<div style="color:#ff6666;font-weight:700;font-size:18px;">$'+Math.abs(r.amt).toFixed(2)+'</div>'
-    +'<div style="color:#aaaacc;font-size:11px;">'+r.date+' · '+r.desc+'</div>'
+    +'<div style="color:#aaaacc;font-size:13px;">'+r.date+' · '+r.desc+'</div>'
     +'</div>'
-    +'<div style="color:#ffff00;font-size:11px;margin-bottom:12px;text-align:center;">Already in ledger.<br>Is this a REAL second charge?</div>'
+    +'<div style="color:#ffff00;font-size:13px;margin-bottom:12px;text-align:center;">Already in ledger.<br>Is this a REAL second charge?</div>'
     +'<div style="display:flex;gap:10px;margin-bottom:8px;">'
-    +'<button onclick="dupKeepBoth('+idx+')" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:16px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y<br><span style="font-size:10px;">KEEP BOTH</span></button>'
-    +'<button onclick="dupSkipIt('+idx+')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:16px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N<br><span style="font-size:10px;">SKIP IT</span></button>'
+    +'<button onclick="dupKeepBoth('+idx+')" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:16px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y<br><span style="font-size:14px;">KEEP BOTH</span></button>'
+    +'<button onclick="dupSkipIt('+idx+')" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:16px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N<br><span style="font-size:14px;">SKIP IT</span></button>'
     +'</div>'
-    +'<button onclick="dupSkipAll()" style="width:100%;background:#333;color:#ccc;font-family:Courier New,monospace;font-size:11px;padding:8px;border:none;border-radius:4px;cursor:pointer;">SKIP ALL REMAINING</button>'
+    +'<button onclick="dupSkipAll()" style="width:100%;background:#333;color:#ccc;font-family:Courier New,monospace;font-size:13px;padding:8px;border:none;border-radius:4px;cursor:pointer;">SKIP ALL REMAINING</button>'
     +'</div>';
   document.body.appendChild(overlay);
 }
@@ -4196,7 +4196,7 @@ function doClearLog(){
   overlay.innerHTML='<div style="background:#0000cc;border:3px solid #ff6666;border-radius:8px;padding:20px;max-width:360px;width:100%;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="font-size:28px;margin-bottom:10px;">⚠️</div>'
     +'<div style="color:#ff6666;font-weight:700;font-size:15px;margin-bottom:8px;">DELETE ALL ENTRIES?</div>'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:16px;">This removes ALL your ledger data permanently. Backup first!</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:16px;">This removes ALL your ledger data permanently. Backup first!</div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button onclick="confirmClearLog(this)" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">YES DELETE</button>'
     +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove()" style="flex:1;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:1px solid #6666ff;border-radius:6px;cursor:pointer;">CANCEL</button>'
@@ -4270,7 +4270,7 @@ function rptAll(sortBy){
   }
   var opts=Object.keys(seen).sort();
   var label=sortBy==='payee'?'PAYEE':sortBy==='pcode'?'PCODE':'DESC';
-  var selHtml='<div style="font-size:10px;color:#ccccff;font-family:Courier New,monospace;margin-bottom:4px;">PICK '+label+':</div>'
+  var selHtml='<div style="font-size:14px;color:#ccccff;font-family:Courier New,monospace;margin-bottom:4px;">PICK '+label+':</div>'
     +'<div id="rpt-picker-list" style="background:#0000cc;border:2px solid #ffff00;border-radius:4px;margin-bottom:10px;max-height:220px;overflow-y:auto;">';
   selHtml+='<div onclick="rptAllFilter(\''+sortBy+'\',\'\')" style="padding:10px 12px;color:#ccccff;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #333388;cursor:pointer;">ALL ('+opts.length+' items)</div>';
   for(var j=0;j<opts.length;j++){
@@ -4301,30 +4301,30 @@ function rptAllFilter(sortBy, pick){
   var label=sortBy==='payee'?'PAYEE':sortBy==='pcode'?'PCO':'DESC';
   var total=rows.reduce(function(s,e){return s+e.amt;},0);
   var tc=total>=0?'#00ffff':'#ff6666';
-  var html='<div style="color:#ffff00;font-family:Courier New,monospace;font-size:11px;font-weight:700;margin-bottom:6px;">'+(pick||'ALL')+' — '+rows.length+' entries</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:11px;">'
+  var html='<div style="color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;margin-bottom:6px;">'+(pick||'ALL')+' — '+rows.length+' entries</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
     +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">DATE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">PAYEE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">DESC</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;">PCO</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:9px;text-align:right;">AMT</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:13px;">DATE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:13px;">PAYEE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:13px;">DESC</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:13px;">PCO</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:13px;text-align:right;">AMT</th>'
     +'</tr>';
   for(var i=0;i<rows.length;i++){
     var e=rows[i];
     var ac=e.amt>=0?'#00ffff':'#ff6666';
     var bg=i%2===0?'background:#00008a':'background:#000077';
     html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
-      +'<td style="padding:5px 3px;color:#ccccff;white-space:nowrap;font-size:10px;">'+fmtDate(e.date)+'</td>'
-      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.payee||'',9)+'</td>'
-      +'<td style="padding:5px 3px;color:#ffffff;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.desc||'',9)+'</td>'
-      +'<td style="padding:5px 3px;color:#00ffff;font-size:10px;text-align:center;white-space:nowrap;">'+((e.pcode||'').slice(0,4))+'</td>'
-      +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:10px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:5px 3px;color:#ccccff;white-space:nowrap;font-size:14px;">'+fmtDate(e.date)+'</td>'
+      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.payee||'',9)+'</td>'
+      +'<td style="padding:5px 3px;color:#ffffff;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.desc||'',9)+'</td>'
+      +'<td style="padding:5px 3px;color:#00ffff;font-size:14px;text-align:center;white-space:nowrap;">'+((e.pcode||'').slice(0,4))+'</td>'
+      +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:14px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'</tr>';
   }
   html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
-    +'<td colspan="4" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:10px;">TOTAL ('+rows.length+')</td>'
-    +'<td style="padding:6px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:11px;color:'+tc+';">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:14px;">TOTAL ('+rows.length+')</td>'
+    +'<td style="padding:6px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:13px;color:'+tc+';">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
     +'</tr></table>';
   document.getElementById('rpt-all-table').innerHTML=html;
 }
@@ -4344,8 +4344,8 @@ function rptIrsDesc(){
     +'<div style="background:#003300;border:2px solid #00ff88;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:13px;margin-bottom:8px;">🏛 IRS DESC SUMMARY REPORT</div>'
     +'<div style="display:flex;gap:6px;">'
-    +'<select id="irs-yr" onchange="runIrsDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
-    +'<select id="irs-pc" onchange="runIrsDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
+    +'<select id="irs-yr" onchange="runIrsDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
+    +'<select id="irs-pc" onchange="runIrsDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
     +'</div></div>'
     +'<div id="irs-output"></div></div>';
   document.getElementById('rpt-content').innerHTML=html;
@@ -4409,12 +4409,12 @@ function runIrsDesc(){
   var cols=showPco?3:2;
 
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;">';
-  h+='<div style="color:#ffff00;font-size:10px;margin-bottom:2px;">'+today2+' &nbsp;&nbsp; IRSDESC.RPT &nbsp;&nbsp; '+yrLabel+(pc?' · '+pcLabel:'')+'</div>';
-  h+='<div style="color:#00ff88;font-weight:700;font-size:12px;margin-bottom:8px;text-align:center;border-bottom:1px solid #006600;padding-bottom:4px;">IRS DESC SUMMARY REPORT</div>';
-  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:11px;">';
+  h+='<div style="color:#ffff00;font-size:14px;margin-bottom:2px;">'+today2+' &nbsp;&nbsp; IRSDESC.RPT &nbsp;&nbsp; '+yrLabel+(pc?' · '+pcLabel:'')+'</div>';
+  h+='<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;text-align:center;border-bottom:1px solid #006600;padding-bottom:4px;">IRS DESC SUMMARY REPORT</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">';
 
   function secHeader(label,color){
-    return '<tr style="background:'+color+';"><td colspan="'+cols+'" style="padding:4px 6px;font-weight:700;font-size:10px;color:#ffffff;">'+label+'</td></tr>';
+    return '<tr style="background:'+color+';"><td colspan="'+cols+'" style="padding:4px 6px;font-weight:700;font-size:14px;color:#ffffff;">'+label+'</td></tr>';
   }
 
   function secRows(list,isCredit,bg1,bg2){
@@ -4425,9 +4425,9 @@ function runIrsDesc(){
       var ac=isCredit?'#006600':'#cc0000';
       var sign=v.amt>=0?'+':'-';
       html+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-        +'<td style="padding:5px 4px;color:#000066;font-size:11px;font-weight:700;">'+esc(d)+'</td>'
-        +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:11px;color:'+ac+';">'+sign+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
-        +(showPco?'<td style="padding:5px 4px;text-align:center;font-size:10px;color:#333399;">'+v.pcode+'</td>':'')
+        +'<td style="padding:5px 4px;color:#000066;font-size:13px;font-weight:700;">'+esc(d)+'</td>'
+        +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+sign+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
+        +(showPco?'<td style="padding:5px 4px;text-align:center;font-size:14px;color:#333399;">'+v.pcode+'</td>':'')
         +'</tr>';
     });
     return {html:html,total:total};
@@ -4436,8 +4436,8 @@ function runIrsDesc(){
   function subTotal(label,total,color){
     var tc=total>=0?'#006600':'#cc0000';
     return '<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
-      +'<td style="padding:4px 6px;color:#000000;font-size:10px;font-style:italic;font-weight:700;">* '+label+' Subtotal *</td>'
-      +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:'+tc+';font-size:11px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
+      +'<td style="padding:4px 6px;color:#000000;font-size:14px;font-style:italic;font-weight:700;">* '+label+' Subtotal *</td>'
+      +'<td style="padding:4px 6px;text-align:right;font-weight:700;color:'+tc+';font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
       +(showPco?'<td></td>':'')
       +'</tr>';
   }
@@ -4477,8 +4477,8 @@ function runIrsDesc(){
   // NET TOTAL
   var gc=grandTotal>=0?'#006600':'#cc0000';
   h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:12px;">*** NET TOTAL ***</td>'
-    +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:12px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'<td style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:14px;">*** NET TOTAL ***</td>'
+    +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
     +(showPco?'<td></td>':'')
     +'</tr></table></div>';
 
@@ -4496,8 +4496,8 @@ function rptAuditDesc(){
     +'<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">🔍 CARRINGTON DESCRIPTION REPORT</div>'
     +'<div style="display:flex;gap:6px;">'
-    +'<select id="aud-yr" onchange="runAuditDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
-    +'<select id="aud-pc" onchange="runAuditDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
+    +'<select id="aud-yr" onchange="runAuditDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
+    +'<select id="aud-pc" onchange="runAuditDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
     +'</div></div>'
     +'<div id="aud-output"></div></div>';
   document.getElementById('rpt-content').innerHTML=html;
@@ -4534,15 +4534,15 @@ function runAuditDesc(){
   });
 
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">';
-  h+='<div style="color:#ffff00;font-weight:700;font-size:10px;font-family:Courier New,monospace;margin-bottom:2px;">'
+  h+='<div style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:2px;">'
     +'PAGE 1 &nbsp;&nbsp; CCDESSEE.PRG, AUDIT FOR ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
-    +'<div style="color:#ff88ff;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin-bottom:4px;text-align:center;">'
+    +'<div style="color:#ff88ff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:4px;text-align:center;">'
     +'CARRINGTON DESCRIPTION REPORT</div>'
-    +'<div style="color:#ccccff;font-size:9px;font-family:Courier New,monospace;margin-bottom:6px;border-bottom:1px solid #333388;padding-bottom:4px;">'
+    +'<div style="color:#ccccff;font-size:13px;font-family:Courier New,monospace;margin-bottom:6px;border-bottom:1px solid #333388;padding-bottom:4px;">'
     +'** Audit File for Pcode, Year: '+pcLabel+' '+yrLabel+'</div>';
 
   // header
-  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:9px;">'
+  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
     +'<tr style="background:#0000cc;">'
     +'<th style="color:#ffff00;padding:3px;text-align:left;border:1px solid #333388;">VENDOR</th>'
     +'<th style="color:#ffff00;padding:3px;text-align:left;border:1px solid #333388;">DESC</th>'
@@ -4565,7 +4565,7 @@ function runAuditDesc(){
 
     // DESC group header
     h+='<tr style="background:#000080;border-top:2px solid #aaaacc;">'
-      +'<td colspan="8" style="padding:4px 3px;color:#ffffff;font-size:9px;font-weight:700;">'
+      +'<td colspan="8" style="padding:4px 3px;color:#ffffff;font-size:13px;font-weight:700;">'
       +'*&nbsp;&nbsp; Pct/Amt/Aver&gt; '+pcLabel+' '+trunc(desc,20)
       +' &nbsp;&nbsp;&nbsp; '+Math.abs(parseFloat(grpPct)).toFixed(2)
       +' &nbsp; '+(grpTotal>=0?'+':'-')+'$'+Math.abs(grpTotal).toFixed(2)
@@ -4585,36 +4585,36 @@ function runAuditDesc(){
       var pct=grpTotal!==0?((e.amt/Math.abs(grpTotal))*100).toFixed(2):'0.00';
 
       h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-        +'<td style="padding:3px;color:#000066;font-size:9px;font-weight:700;white-space:nowrap;">'+trunc(e.payee||'',16)+'</td>'
-        +'<td style="padding:3px;color:#333333;font-size:9px;white-space:nowrap;">'+trunc(desc,7)+'</td>'
-        +'<td style="padding:3px;color:#555555;font-size:9px;text-align:center;white-space:nowrap;">'+dtFmt+'</td>'
-        +'<td style="padding:3px;text-align:right;font-size:9px;font-weight:700;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
-        +'<td style="padding:3px;text-align:right;font-size:9px;color:#666600;">'+pct+'</td>'
-        +'<td style="padding:3px;text-align:right;font-size:9px;color:#333333;">1</td>'
-        +'<td style="padding:3px;text-align:right;font-size:9px;color:'+vc+';">'+(vAvg>=0?'+':'-')+'$'+Math.abs(vAvg).toFixed(2)+'</td>'
-        +'<td style="padding:3px;text-align:right;font-size:9px;color:'+ytdc+';">'+(ytd>=0?'+':'-')+'$'+Math.abs(ytd).toFixed(2)+'</td>'
+        +'<td style="padding:3px;color:#000066;font-size:13px;font-weight:700;white-space:nowrap;">'+trunc(e.payee||'',16)+'</td>'
+        +'<td style="padding:3px;color:#333333;font-size:13px;white-space:nowrap;">'+trunc(desc,7)+'</td>'
+        +'<td style="padding:3px;color:#555555;font-size:13px;text-align:center;white-space:nowrap;">'+dtFmt+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:13px;font-weight:700;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:13px;color:#666600;">'+pct+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:13px;color:#333333;">1</td>'
+        +'<td style="padding:3px;text-align:right;font-size:13px;color:'+vc+';">'+(vAvg>=0?'+':'-')+'$'+Math.abs(vAvg).toFixed(2)+'</td>'
+        +'<td style="padding:3px;text-align:right;font-size:13px;color:'+ytdc+';">'+(ytd>=0?'+':'-')+'$'+Math.abs(ytd).toFixed(2)+'</td>'
         +'</tr>';
     });
 
     // subsubtotal
     var stc=grpTotal>=0?'#006600':'#cc0000';
     h+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
-      +'<td colspan="2" style="padding:3px;color:#000000;font-size:9px;font-style:italic;font-weight:700;">* Subsubtotal *</td>'
+      +'<td colspan="2" style="padding:3px;color:#000000;font-size:13px;font-style:italic;font-weight:700;">* Subsubtotal *</td>'
       +'<td></td>'
-      +'<td style="padding:3px;text-align:right;font-size:9px;font-weight:700;color:'+stc+';">'+(grpTotal>=0?'+':'-')+'$'+Math.abs(grpTotal).toFixed(2)+'</td>'
+      +'<td style="padding:3px;text-align:right;font-size:13px;font-weight:700;color:'+stc+';">'+(grpTotal>=0?'+':'-')+'$'+Math.abs(grpTotal).toFixed(2)+'</td>'
       +'<td></td>'
-      +'<td style="padding:3px;text-align:right;font-size:9px;color:#000000;font-weight:700;">'+grp.length+'</td>'
+      +'<td style="padding:3px;text-align:right;font-size:13px;color:#000000;font-weight:700;">'+grp.length+'</td>'
       +'<td colspan="2"></td></tr>';
   });
 
   // grand total
   var gc=grandTotal>=0?'#006600':'#cc0000';
   h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td colspan="2" style="padding:5px 3px;color:#ffffff;font-weight:700;font-size:10px;">*** Total ***</td>'
+    +'<td colspan="2" style="padding:5px 3px;color:#ffffff;font-weight:700;font-size:14px;">*** Total ***</td>'
     +'<td></td>'
-    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
     +'<td></td>'
-    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:10px;color:#ffffff;">'+rows.length+'</td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffffff;">'+rows.length+'</td>'
     +'<td colspan="2"></td></tr>'
     +'</table></div>';
 
@@ -4635,8 +4635,8 @@ function rptMasterDesc(){
     +'<div style="background:#0000aa;border:2px solid #ff88ff;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#ff88ff;font-weight:700;font-size:13px;margin-bottom:8px;">📋 MASTER DESCRIPTION REPORT</div>'
     +'<div style="display:flex;gap:6px;">'
-    +'<select id="mdr-yr" onchange="runMasterDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
-    +'<select id="mdr-pc" onchange="runMasterDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
+    +'<select id="mdr-yr" onchange="runMasterDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
+    +'<select id="mdr-pc" onchange="runMasterDesc()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+pcOpts+'</select>'
     +'</div></div>'
     +'<div id="mdr-output"></div>'
     +'</div>';
@@ -4688,26 +4688,26 @@ function runMasterDesc(){
   var cols=showPco?7:6;
 
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:11px;font-family:Courier New,monospace;margin-bottom:4px;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">'
     +'PAGE 1 &nbsp;&nbsp;&nbsp; ACCOUNTING &nbsp;&nbsp;&nbsp; '+today2+'</div>'
-    +'<div style="color:#ff88ff;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'
+    +'<div style="color:#ff88ff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'
     +'Master Description Report &nbsp;&nbsp; '+yrLabel+(pc?' · '+pc:'')+'</div>';
 
   // header row
-  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:10px;">'
+  h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:14px;">'
     +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:1px solid #333388;font-size:9px;">DESCRIPTION</th>'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">HOW<br>MANY</th>'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">AMOUNT</th>'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">RANK</th>'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">PCT%</th>'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:9px;">AVG</th>'
-    +(showPco?'<th style="color:#ffff00;padding:4px 3px;text-align:center;border:1px solid #333388;font-size:9px;">PCO</th>':'')
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:1px solid #333388;font-size:13px;">DESCRIPTION</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:13px;">HOW<br>MANY</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:13px;">AMOUNT</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:13px;">RANK</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:13px;">PCT%</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #333388;font-size:13px;">AVG</th>'
+    +(showPco?'<th style="color:#ffff00;padding:4px 3px;text-align:center;border:1px solid #333388;font-size:13px;">PCO</th>':'')
     +'</tr>';
 
   function buildSection(label, list, sectionTotal, isCredit){
     var secRows='<tr style="background:#000080;">'
-      +'<td colspan="'+cols+'" style="padding:4px 6px;color:#ffffff;font-weight:700;font-size:10px;">* B=DEBITS A=CREDITS -> '+label+'</td></tr>';
+      +'<td colspan="'+cols+'" style="padding:4px 6px;color:#ffffff;font-weight:700;font-size:14px;">* B=DEBITS A=CREDITS -> '+label+'</td></tr>';
     list.forEach(function(d,idx){
       var v=descMap[d];
       var pct=sectionTotal!==0?((v.amt/Math.abs(sectionTotal))*100).toFixed(2):'0.00';
@@ -4715,22 +4715,22 @@ function runMasterDesc(){
       var ac=v.amt>=0?'#006600':'#cc0000';
       var bg=idx%2===0?'background:#ffffff':'background:#f0f4ff';
       secRows+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-        +'<td style="padding:4px 3px;color:#000066;font-size:10px;font-weight:700;white-space:nowrap;">'+esc(d)+'</td>'
-        +'<td style="padding:4px 3px;color:#333333;text-align:right;font-size:10px;">'+v.cnt+'</td>'
-        +'<td style="padding:4px 3px;text-align:right;font-size:10px;font-weight:700;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
-        +'<td style="padding:4px 3px;color:#666600;text-align:right;font-size:10px;">'+(idx+1)+'</td>'
-        +'<td style="padding:4px 3px;color:#666600;text-align:right;font-size:10px;">'+Math.abs(parseFloat(pct)).toFixed(2)+'%</td>'
-        +'<td style="padding:4px 3px;text-align:right;font-size:10px;color:'+ac+';">'+(parseFloat(avg)>=0?'+':'-')+'$'+Math.abs(parseFloat(avg)).toFixed(2)+'</td>'
-        +(showPco?'<td style="padding:4px 3px;color:#333399;text-align:center;font-size:9px;">'+v.pcode+'</td>':'')
+        +'<td style="padding:4px 3px;color:#000066;font-size:14px;font-weight:700;white-space:nowrap;">'+esc(d)+'</td>'
+        +'<td style="padding:4px 3px;color:#333333;text-align:right;font-size:14px;">'+v.cnt+'</td>'
+        +'<td style="padding:4px 3px;text-align:right;font-size:14px;font-weight:700;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
+        +'<td style="padding:4px 3px;color:#666600;text-align:right;font-size:14px;">'+(idx+1)+'</td>'
+        +'<td style="padding:4px 3px;color:#666600;text-align:right;font-size:14px;">'+Math.abs(parseFloat(pct)).toFixed(2)+'%</td>'
+        +'<td style="padding:4px 3px;text-align:right;font-size:14px;color:'+ac+';">'+(parseFloat(avg)>=0?'+':'-')+'$'+Math.abs(parseFloat(avg)).toFixed(2)+'</td>'
+        +(showPco?'<td style="padding:4px 3px;color:#333399;text-align:center;font-size:13px;">'+v.pcode+'</td>':'')
         +'</tr>';
     });
     var stAmt=list.reduce(function(s,d){return s+descMap[d].amt;},0);
     var stCnt=list.reduce(function(s,d){return s+descMap[d].cnt;},0);
     var stc=stAmt>=0?'#006600':'#cc0000';
     secRows+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
-      +'<td style="padding:4px 3px;color:#000000;font-size:10px;font-style:italic;font-weight:700;">* Subsubtotal *</td>'
-      +'<td style="padding:4px 3px;color:#000000;text-align:right;font-size:10px;font-weight:700;">'+stCnt+'</td>'
-      +'<td style="padding:4px 3px;text-align:right;font-size:10px;font-weight:700;color:'+stc+';">'+(stAmt>=0?'+':'-')+'$'+Math.abs(stAmt).toFixed(2)+'</td>'
+      +'<td style="padding:4px 3px;color:#000000;font-size:14px;font-style:italic;font-weight:700;">* Subsubtotal *</td>'
+      +'<td style="padding:4px 3px;color:#000000;text-align:right;font-size:14px;font-weight:700;">'+stCnt+'</td>'
+      +'<td style="padding:4px 3px;text-align:right;font-size:14px;font-weight:700;color:'+stc+';">'+(stAmt>=0?'+':'-')+'$'+Math.abs(stAmt).toFixed(2)+'</td>'
       +'<td colspan="'+(cols-3)+'"></td></tr>';
     return secRows;
   }
@@ -4742,10 +4742,10 @@ function runMasterDesc(){
   var grandAmt=rows.reduce(function(s,e){return s+e.amt;},0);
   var grandCnt=rows.length;
   h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td style="padding:5px 3px;color:#ffffff;font-weight:700;font-size:11px;">*** Total ***</td>'
-    +'<td style="padding:5px 3px;color:#ffffff;text-align:right;font-weight:700;font-size:11px;">'+grandCnt+'</td>'
-    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:11px;color:#ffff00;">'+(grandAmt>=0?'+':'-')+'$'+Math.abs(grandAmt).toFixed(2)+'</td>'
-    +'<td colspan="'+(cols-3)+'" style="padding:5px 3px;color:#ccccff;font-size:9px;">'+debits.length+' desc types</td></tr>'
+    +'<td style="padding:5px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** Total ***</td>'
+    +'<td style="padding:5px 3px;color:#ffffff;text-align:right;font-weight:700;font-size:13px;">'+grandCnt+'</td>'
+    +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(grandAmt>=0?'+':'-')+'$'+Math.abs(grandAmt).toFixed(2)+'</td>'
+    +'<td colspan="'+(cols-3)+'" style="padding:5px 3px;color:#ccccff;font-size:13px;">'+debits.length+' desc types</td></tr>'
     +'</table></div>';
 
   document.getElementById('mdr-output').innerHTML=h;
@@ -4779,54 +4779,54 @@ function rptYearCompare(){
   // header
   html+='<div style="background:#0000aa;border:2px solid #ff88ff;border-radius:6px;padding:10px;margin-bottom:10px;text-align:center;">'
     +'<div style="color:#ff88ff;font-weight:700;font-size:13px;">📊 YEAR COMPARISON — IRS BALANCE SHEET</div>'
-    +'<div style="color:#ccccff;font-size:10px;">Last '+yrArr.length+' years</div>'
+    +'<div style="color:#ccccff;font-size:14px;">Last '+yrArr.length+' years</div>'
     +'</div>';
 
   // comparison table
-  html+='<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+  html+='<table style="width:100%;border-collapse:collapse;font-size:13px;">'
     +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ff88ff;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:10px;">SECTION</th>';
+    +'<th style="color:#ff88ff;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">SECTION</th>';
   yrArr.forEach(function(y){
-    html+='<th style="color:#ffff00;padding:6px 4px;text-align:right;border:1px solid #6666ff;font-size:10px;">'+y+'</th>';
+    html+='<th style="color:#ffff00;padding:6px 4px;text-align:right;border:1px solid #6666ff;font-size:14px;">'+y+'</th>';
   });
   html+='</tr>';
 
   // SECTION A — INCOME
   html+='<tr style="background:#003300;">'
-    +'<td style="padding:8px 4px;color:#00ff88;font-weight:700;font-size:11px;border:1px solid #6666ff;">A. INCOME</td>';
+    +'<td style="padding:8px 4px;color:#00ff88;font-weight:700;font-size:13px;border:1px solid #6666ff;">A. INCOME</td>';
   yrArr.forEach(function(y){
     var incCnt=LOG.filter(function(e){return(e.date||'').slice(0,4)===y&&e.amt>=0;}).length;
-    html+='<td style="padding:8px 4px;color:#00ff88;font-weight:700;text-align:right;border:1px solid #6666ff;">+$'+yrData[y].inc.toFixed(2)+'<br><span style="color:#ccccff;font-size:9px;">'+incCnt+' items</span></td>';
+    html+='<td style="padding:8px 4px;color:#00ff88;font-weight:700;text-align:right;border:1px solid #6666ff;">+$'+yrData[y].inc.toFixed(2)+'<br><span style="color:#ccccff;font-size:13px;">'+incCnt+' items</span></td>';
   });
   html+='</tr>';
 
   // SECTION B — EXPENSES
   html+='<tr style="background:#330000;">'
-    +'<td style="padding:8px 4px;color:#ff6666;font-weight:700;font-size:11px;border:1px solid #6666ff;">B. EXPENSES</td>';
+    +'<td style="padding:8px 4px;color:#ff6666;font-weight:700;font-size:13px;border:1px solid #6666ff;">B. EXPENSES</td>';
   yrArr.forEach(function(y){
     var expCnt=LOG.filter(function(e){return(e.date||'').slice(0,4)===y&&e.amt<0;}).length;
-    html+='<td style="padding:8px 4px;color:#ff6666;font-weight:700;text-align:right;border:1px solid #6666ff;">-$'+Math.abs(yrData[y].exp).toFixed(2)+'<br><span style="color:#ccccff;font-size:9px;">'+expCnt+' items</span></td>';
+    html+='<td style="padding:8px 4px;color:#ff6666;font-weight:700;text-align:right;border:1px solid #6666ff;">-$'+Math.abs(yrData[y].exp).toFixed(2)+'<br><span style="color:#ccccff;font-size:13px;">'+expCnt+' items</span></td>';
   });
   html+='</tr>';
 
   // SECTION C — P/L
   html+='<tr style="background:#0000aa;border-top:2px solid #ffff00;">'
-    +'<td style="padding:8px 4px;color:#ffff00;font-weight:700;font-size:11px;border:1px solid #ffff00;">C. NET P/L</td>';
+    +'<td style="padding:8px 4px;color:#ffff00;font-weight:700;font-size:13px;border:1px solid #ffff00;">C. NET P/L</td>';
   yrArr.forEach(function(y){
     var pl=yrData[y].inc+yrData[y].exp;
     var pc=pl>=0?'#00ffff':'#ff6666';
     var pct=yrData[y].inc>0?((pl/yrData[y].inc)*100).toFixed(1):'0.0';
-    html+='<td style="padding:8px 4px;font-weight:700;text-align:right;border:1px solid #ffff00;color:'+pc+';">'+(pl>=0?'+':'-')+'$'+Math.abs(pl).toFixed(2)+'<br><span style="font-size:9px;">'+pct+'%</span></td>';
+    html+='<td style="padding:8px 4px;font-weight:700;text-align:right;border:1px solid #ffff00;color:'+pc+';">'+(pl>=0?'+':'-')+'$'+Math.abs(pl).toFixed(2)+'<br><span style="font-size:13px;">'+pct+'%</span></td>';
   });
   html+='</tr>';
 
   // ENTRIES COUNT
   html+='<tr style="background:#000044;">'
-    +'<td style="padding:6px 4px;color:#ccccff;font-size:10px;border:1px solid #6666ff;">ENTRIES</td>';
+    +'<td style="padding:6px 4px;color:#ccccff;font-size:14px;border:1px solid #6666ff;">ENTRIES</td>';
   yrArr.forEach(function(y){
     var pl=yrData[y].inc+yrData[y].exp;
     var expPct=yrData[y].inc>0?((Math.abs(yrData[y].exp)/yrData[y].inc)*100).toFixed(0):'0';
-    html+='<td style="padding:6px 4px;color:#ccccff;text-align:right;font-size:10px;border:1px solid #6666ff;">'+yrData[y].entries+'<br><span style="font-size:9px;color:#ffaa00;">'+expPct+'% exp</span></td>';
+    html+='<td style="padding:6px 4px;color:#ccccff;text-align:right;font-size:14px;border:1px solid #6666ff;">'+yrData[y].entries+'<br><span style="font-size:13px;color:#ffaa00;">'+expPct+'% exp</span></td>';
   });
   html+='</tr>';
 
@@ -4835,7 +4835,7 @@ function rptYearCompare(){
   // year over year change
   if(yrArr.length>=2){
     html+='<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-top:10px;">'
-      +'<div style="color:#ff88ff;font-weight:700;font-size:11px;margin-bottom:6px;">YEAR OVER YEAR CHANGE</div>';
+      +'<div style="color:#ff88ff;font-weight:700;font-size:13px;margin-bottom:6px;">YEAR OVER YEAR CHANGE</div>';
     for(var i=0;i<yrArr.length-1;i++){
       var y1=yrArr[i];var y2=yrArr[i+1];
       var pl1=yrData[y1].inc+yrData[y1].exp;
@@ -4844,8 +4844,8 @@ function rptYearCompare(){
       var pct=pl2!==0?((diff/Math.abs(pl2))*100).toFixed(1):'—';
       var dc=diff>=0?'#00ff88':'#ff6666';
       html+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #333388;">'
-        +'<span style="color:#ccccff;font-size:11px;">'+y2+' → '+y1+'</span>'
-        +'<span style="color:'+dc+';font-weight:700;font-size:11px;">'+(diff>=0?'+':'-')+'$'+Math.abs(diff).toFixed(2)+' ('+pct+'%)</span>'
+        +'<span style="color:#ccccff;font-size:13px;">'+y2+' → '+y1+'</span>'
+        +'<span style="color:'+dc+';font-weight:700;font-size:13px;">'+(diff>=0?'+':'-')+'$'+Math.abs(diff).toFixed(2)+' ('+pct+'%)</span>'
         +'</div>';
     }
     html+='</div>';
@@ -4853,7 +4853,7 @@ function rptYearCompare(){
 
   // DESC BREAKDOWN BY YEAR
   html+='<div style="background:#000033;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-top:10px;">'
-    +'<div style="color:#ff88ff;font-weight:700;font-size:11px;margin-bottom:8px;">DESC BREAKDOWN BY YEAR</div>';
+    +'<div style="color:#ff88ff;font-weight:700;font-size:13px;margin-bottom:8px;">DESC BREAKDOWN BY YEAR</div>';
 
   // get all descs
   var descMap={};
@@ -4875,23 +4875,23 @@ function rptYearCompare(){
   descArr.sort(function(a,b){return b.total-a.total;});
 
   // table header
-  html+='<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+  html+='<table style="width:100%;border-collapse:collapse;font-size:14px;">'
     +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:1px solid #6666ff;font-size:9px;">DESC</th>';
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:1px solid #6666ff;font-size:13px;">DESC</th>';
   yrArr.forEach(function(y){
-    html+='<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #6666ff;font-size:9px;">'+y+'</th>';
+    html+='<th style="color:#ffff00;padding:4px 3px;text-align:right;border:1px solid #6666ff;font-size:13px;">'+y+'</th>';
   });
-  html+='<th style="color:#ff88ff;padding:4px 3px;text-align:right;border:1px solid #6666ff;font-size:9px;">CHG%</th>';
+  html+='<th style="color:#ff88ff;padding:4px 3px;text-align:right;border:1px solid #6666ff;font-size:13px;">CHG%</th>';
   html+='</tr>';
 
   descArr.forEach(function(item,idx){
     var bg=idx%2===0?'background:#00008a':'background:#000077';
     html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
-      +'<td style="padding:4px 3px;color:#ffff00;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(item.desc,14)+'</td>';
+      +'<td style="padding:4px 3px;color:#ffff00;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(item.desc,14)+'</td>';
     yrArr.forEach(function(y){
       var v=descMap[item.desc][y]||0;
       var vc=v>=0?'#00ffff':'#ff6666';
-      html+='<td style="padding:4px 3px;text-align:right;font-size:10px;color:'+vc+';font-weight:700;">'+(v!==0?(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2):'—')+'</td>';
+      html+='<td style="padding:4px 3px;text-align:right;font-size:14px;color:'+vc+';font-weight:700;">'+(v!==0?(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2):'—')+'</td>';
     });
     // pct change newest vs oldest available year
     var vals=yrArr.map(function(y){return descMap[item.desc][y]||0;}).filter(function(v){return v!==0;});
@@ -4902,7 +4902,7 @@ function rptYearCompare(){
       var pc=parseFloat(pct)>=0?'#00ff88':'#ff6666';
       pctHtml='<span style="color:'+pc+';font-weight:700;">'+(parseFloat(pct)>=0?'+':'')+pct+'%</span>';
     }
-    html+='<td style="padding:4px 3px;text-align:right;font-size:10px;">'+pctHtml+'</td>';
+    html+='<td style="padding:4px 3px;text-align:right;font-size:14px;">'+pctHtml+'</td>';
     html+='</tr>';
   });
 
@@ -4915,6 +4915,11 @@ function rptYearCompare(){
 
 function rptShow(type){
   loadLog();
+  // FoxBase style — payee needs type-ahead prompt first
+  if(type==='payee'){
+    rptPayeeSearch();
+    return;
+  }
   _rptType=type;
   _rptPage=0;
   var map={};
@@ -4938,6 +4943,77 @@ function rptShow(type){
   rptRender();
 }
 
+function rptPayeeSearch(){
+  loadLog();
+  var allPayees=[...new Set(LOG.map(function(e){return e.payee||'';}).filter(Boolean))].sort();
+  var rptContent=document.getElementById('rpt-content');
+  rptContent.innerHTML='<div style="font-family:Courier New,monospace;padding:8px;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">🔍 PAYEE SEARCH</div>'
+    +'<div style="color:#ccccff;font-size:12px;margin-bottom:8px;">Type to search — shows all matching payees</div>'
+    +'<input type="text" id="payee-search-input" placeholder="e.g. PAN or PANCAKE or MC..." '
+    +'style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #00ff88;color:#ffff00;'
+    +'font-family:Courier New,monospace;font-size:16px;padding:10px;border-radius:4px;outline:none;margin-bottom:8px;" '
+    +'oninput="rptPayeeFilter(this.value)" autocomplete="off">'
+    +'<div id="payee-search-results"></div>'
+    +'</div>';
+  document.getElementById('screen-reports').scrollTop=0;
+  setTimeout(function(){
+    var el=document.getElementById('payee-search-input');
+    if(el){el.focus();}
+    rptPayeeFilter('');
+  },100);
+}
+
+function rptPayeeFilter(val){
+  loadLog();
+  var allPayees=[...new Set(LOG.map(function(e){return e.payee||'';}).filter(Boolean))].sort();
+  var v=val.toUpperCase().trim();
+  var matches=v?allPayees.filter(function(p){return p.toUpperCase().indexOf(v)>=0;}):allPayees;
+  var h='';
+  if(!matches.length){
+    h='<div style="color:#ff6666;font-family:Courier New,monospace;font-size:13px;padding:10px;">No payees found</div>';
+  } else {
+    h='<div style="color:#ccccff;font-size:11px;margin-bottom:6px;font-family:Courier New,monospace;">'+matches.length+' match'+( matches.length===1?'':'es')+'</div>';
+    matches.slice(0,30).forEach(function(p){
+      var total=LOG.filter(function(e){return e.payee===p;}).reduce(function(s,e){return s+e.amt;},0);
+      var cnt=LOG.filter(function(e){return e.payee===p;}).length;
+      var tc=total>=0?'#00ffff':'#ff6666';
+      h+='<div onclick="rptPayeeSelect(\''+p.replace(/'/g,"\\'")+'\')" '
+        +'style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;'
+        +'margin-bottom:3px;background:#000044;border:1px solid #333388;border-radius:4px;cursor:pointer;">'
+        +'<div>'
+        +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+p+'</div>'
+        +'<div style="color:#aaaacc;font-size:11px;font-family:Courier New,monospace;">'+cnt+' entries</div>'
+        +'</div>'
+        +'<div style="color:'+tc+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</div>'
+        +'</div>';
+    });
+    if(matches.length>30){
+      h+='<div style="color:#ccccff;font-size:11px;text-align:center;padding:8px;font-family:Courier New,monospace;">...type more to narrow down ('+matches.length+' total)</div>';
+    }
+  }
+  var el=document.getElementById('payee-search-results');
+  if(el)el.innerHTML=h;
+}
+
+function rptPayeeSelect(payee){
+  loadLog();
+  _rptType='payee';
+  _rptPage=0;
+  var map={};
+  for(var i=0;i<LOG.length;i++){
+    var e=LOG[i];
+    if(e.payee!==payee)continue;
+    var key=e.payee||'?';
+    if(!map[key])map[key]={total:0,count:0,rows:[]};
+    map[key].total+=e.amt;
+    map[key].count++;
+    map[key].rows.push(e);
+  }
+  _rptArr=Object.keys(map).map(function(k){return{key:k,total:map[k].total,count:map[k].count,rows:map[k].rows};});
+  rptRender();
+}
+
 function rptRender(){
   var type=_rptType;
   var arr=_rptArr;
@@ -4951,13 +5027,13 @@ function rptRender(){
   if(_rptPage>=totalPages)_rptPage=0;
   var start=_rptPage*_pageSize;
   var pageArr=arr.slice(start,start+_pageSize);
-  var html='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:11px;">'
+  var html='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
     +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:10px;">'+label+'</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:10px;">'+(type==='pcode'?'PAYEE':'DESC')+'</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:10px;">'+(type==='pcode'?'DESC':'PCO')+'</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:10px;">#</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:10px;">AMT</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:14px;">'+label+'</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:14px;">'+(type==='pcode'?'PAYEE':'DESC')+'</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:14px;">'+(type==='pcode'?'DESC':'PCO')+'</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:14px;">#</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:14px;">AMT</th>'
     +'</tr>';
   for(var j=0;j<pageArr.length;j++){
     var r=pageArr[j];
@@ -4983,25 +5059,25 @@ function rptRender(){
       col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
     }
     html+='<tr onclick="rptDrill(\''+type+'\',\''+r.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+bg+';border-bottom:1px solid #333388;cursor:pointer;">'
-      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:10px;">›</span></td>'
-      +'<td style="padding:5px 3px;color:#ffffff;font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
-      +'<td style="padding:5px 3px;color:#00ffff;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
-      +'<td style="padding:5px 3px;color:#ccccff;text-align:center;font-size:11px;">'+r.count+'</td>'
-      +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:11px;color:'+col+';">'+(r.total>=0?'+':'-')+'$'+Math.abs(r.total).toFixed(2)+'</td>'
+      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
+      +'<td style="padding:5px 3px;color:#ffffff;font-size:14px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
+      +'<td style="padding:5px 3px;color:#00ffff;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
+      +'<td style="padding:5px 3px;color:#ccccff;text-align:center;font-size:13px;">'+r.count+'</td>'
+      +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:13px;color:'+col+';">'+(r.total>=0?'+':'-')+'$'+Math.abs(r.total).toFixed(2)+'</td>'
       +'</tr>';
   }
   var gc=grand>=0?'#00ffff':'#ff6666';
   html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
-    +'<td colspan="3" style="padding:7px 4px;color:#ffff00;font-weight:700;font-size:11px;">TOTAL</td>'
-    +'<td style="padding:7px 4px;color:#ccccff;text-align:center;font-size:11px;">'+LOG.length+'</td>'
-    +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+gc+';font-size:11px;">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
+    +'<td colspan="3" style="padding:7px 4px;color:#ffff00;font-weight:700;font-size:13px;">TOTAL</td>'
+    +'<td style="padding:7px 4px;color:#ccccff;text-align:center;font-size:13px;">'+LOG.length+'</td>'
+    +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+gc+';font-size:13px;">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
     +'</tr></table>';
   // pagination
   if(totalPages>1){
     html+='<div style="display:flex;gap:6px;margin-top:8px;justify-content:center;align-items:center;">'
-      +'<button onclick="rptPage('+(Math.max(0,_rptPage-1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:12px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀</button>'
-      +'<span style="color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:0 10px;">'+(_rptPage+1)+' / '+totalPages+'</span>'
-      +'<button onclick="rptPage('+(Math.min(totalPages-1,_rptPage+1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:12px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">▶</button>'
+      +'<button onclick="rptPage('+(Math.max(0,_rptPage-1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀</button>'
+      +'<span style="color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:0 10px;">'+(_rptPage+1)+' / '+totalPages+'</span>'
+      +'<button onclick="rptPage('+(Math.min(totalPages-1,_rptPage+1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">▶</button>'
       +'</div>';
   }
   document.getElementById('rpt-content').innerHTML=html;
@@ -5038,7 +5114,7 @@ function rptDrill(type,key){
 
   var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+key+'</span>'
-    +'<button onclick="rptShow(\''+type+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:11px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'<button onclick="rptShow(\''+type+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
     +'</div>';
 
   // month breakdown rows — tap to expand
@@ -5050,16 +5126,16 @@ function rptDrill(type,key){
     var monLabel=MONTHS[mo]+' '+yr;
     html+='<div style="background:#000055;border:1px solid #3333aa;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+key+'\',\''+m+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-      +'<span style="color:#ffff00;font-weight:700;font-size:12px;font-family:Courier New,monospace;">'+monLabel+'</span>'
+      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
       +'<span style="color:'+mc+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(mon.total>=0?'+':'-')+'$'+Math.abs(mon.total).toFixed(2)+'</span>'
       +'</div>'
-      +'<div style="color:#ccccff;font-size:10px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
+      +'<div style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
       +'</div>';
   });
 
   // grand total
   html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:11px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
     +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
 
@@ -5086,26 +5162,26 @@ function rptDrillMonth(type,key,mon){
 
   var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+key+' — '+monLabel+'</span>'
-    +'<button onclick="rptDrill(\''+type+'\',\''+key+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:11px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'<button onclick="rptDrill(\''+type+'\',\''+key+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
     +'</div>';
 
   rows.forEach(function(e){
     var ac=e.amt>=0?'#00ffff':'#ff6666';
     html+='<div style="background:#0000cc;border:1px solid #5555ee;border-radius:4px;padding:8px;margin-bottom:5px;">'
       +'<div style="display:flex;justify-content:space-between;">'
-      +'<span style="color:#ffff00;font-weight:700;font-size:12px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
+      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
       +'<span style="color:'+ac+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</span>'
       +'</div>'
       +'<div style="display:flex;justify-content:space-between;margin-top:3px;">'
-      +'<span style="color:#ccccff;font-size:10px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
-      +'<span style="color:#00ffff;font-size:10px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
+      +'<span style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
+      +'<span style="color:#00ffff;font-size:14px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
       +'</div>'
-      +'<div style="color:#ffffff;font-size:10px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
+      +'<div style="color:#ffffff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
       +'</div>';
   });
 
   html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:4px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:11px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
     +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
 
@@ -5367,26 +5443,26 @@ function renderLog(){
     var e=pageRows[i];var isOpen=(_openId===e.id);
     var rs=(i===0&&_ledPage===0)?'background:#0055ff;border:2px solid #00ffff;':'background:#00008a;border-bottom:1px solid #5555ee;';
     html+='<tr style="cursor:pointer;'+rs+'">'
-      +'<td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:11px;">'+fmtDate(e.date)+'</td>'
-      +'<td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:11px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,14)+'</td>'
-      +'<td style="padding:6px 3px;color:#ffffff;font-size:11px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,8)+'</td>'
-      +'<td style="padding:6px 3px;color:#00ffff;font-size:11px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
-      +'<td style="padding:6px 3px;font-weight:700;font-size:11px;text-align:right;white-space:nowrap;min-width:55px;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
+      +'<td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">'+fmtDate(e.date)+'</td>'
+      +'<td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,14)+'</td>'
+      +'<td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,8)+'</td>'
+      +'<td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
+      +'<td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
       +'<td style="padding:3px 2px;text-align:center;white-space:nowrap;">'
-      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')">DEL</button> '
-      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')">CPY</button> '
-      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:10px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog('+e.id+')">EDT</button>'
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')">DEL</button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')">CPY</button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog('+e.id+')">EDT</button>'
       +'</td>'
-      +'<td style="padding:6px 3px;color:#ff88ff;font-size:10px;text-align:right;white-space:nowrap;font-weight:700;">'+(start+i+1)+'</td>'
+      +'<td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">'+(start+i+1)+'</td>'
       +'</tr>';
   }
   tbody.innerHTML=html;
   // pagination controls
   var pgDiv=document.getElementById('led-pages');
   if(totalPages<=1){pgDiv.innerHTML='';return;}
-  var pgHtml='<button onclick="ledPage('+(Math.max(0,_ledPage-1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:12px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀</button>';
-  pgHtml+='<span style="color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:0 10px;">'+(_ledPage+1)+' / '+totalPages+'</span>';
-  pgHtml+='<button onclick="ledPage('+(Math.min(totalPages-1,_ledPage+1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:12px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">▶</button>';
+  var pgHtml='<button onclick="ledPage('+(Math.max(0,_ledPage-1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀</button>';
+  pgHtml+='<span style="color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:0 10px;">'+(_ledPage+1)+' / '+totalPages+'</span>';
+  pgHtml+='<button onclick="ledPage('+(Math.min(totalPages-1,_ledPage+1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">▶</button>';
   pgDiv.innerHTML=pgHtml;
 }
 function ledPage(p){_ledPage=p;renderLog();}
@@ -5400,9 +5476,9 @@ function showGlobalReplace(payee,pcode,desc,cnt){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:10px;">🔄 GLOBAL REPLACE</div>'
-    +'<div style="color:#ccccff;font-size:12px;margin-bottom:6px;">Found <span style="color:#00ffff;font-weight:700;">'+cnt+' more</span> entries for:</div>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">Found <span style="color:#00ffff;font-weight:700;">'+cnt+' more</span> entries for:</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:6px;">'+payee+'</div>'
-    +'<div style="color:#ccccff;font-size:11px;margin-bottom:12px;">Apply <span style="color:#00ff88;">'+pcode+' / '+desc+'</span> to ALL?</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:12px;">Apply <span style="color:#00ff88;">'+pcode+' / '+desc+'</span> to ALL?</div>'
     +'<div style="display:flex;gap:10px;">'
     +'<button onclick="doGlobalReplace()" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
     +'<button onclick="document.getElementById(\'gr-overlay\').remove();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
@@ -5540,7 +5616,7 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
     <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
     <div style="color:#ffff00;font-weight:700;font-size:16px;margin-bottom:8px;">BACKUP REMINDER</div>
     <div id="bkp-count" style="color:#00ffff;font-size:13px;margin-bottom:16px;"></div>
-    <div style="color:#ccccff;font-size:11px;margin-bottom:20px;">TAP BACKUP NOW TO SAVE YOUR DATA TO A FILE</div>
+    <div style="color:#ccccff;font-size:13px;margin-bottom:20px;">TAP BACKUP NOW TO SAVE YOUR DATA TO A FILE</div>
     <button onclick="doBackup();document.getElementById('bkp-overlay').style.display='none';"
       style="width:100%;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:15px;padding:13px;border:none;border-radius:4px;cursor:pointer;margin-bottom:10px;">
       ⬇ BACKUP NOW
@@ -5555,8 +5631,8 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
   <div style="background:#0000cc;border:3px solid #00ffff;border-radius:8px;padding:16px;width:100%;max-width:400px;font-family:Courier New,monospace;">
     <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">📋 SELECT ALL → COPY → PASTE INTO EMAIL</div>
     <textarea id="bkp-txt-area" readonly
-      style="width:100%;height:180px;background:#000033;border:2px solid #6666ff;color:#ccccff;font-family:Courier New,monospace;font-size:10px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
-    <div style="color:#ccccff;font-size:10px;margin:8px 0;">LONG-PRESS THE TEXT ABOVE → SELECT ALL → COPY</div>
+      style="width:100%;height:180px;background:#000033;border:2px solid #6666ff;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
+    <div style="color:#ccccff;font-size:14px;margin:8px 0;">LONG-PRESS THE TEXT ABOVE → SELECT ALL → COPY</div>
     <button onclick="document.getElementById('bkp-txt-overlay').style.display='none';"
       style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;margin-top:4px;">
       CLOSE
@@ -5571,7 +5647,7 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
       <button onclick="document.getElementById('files-overlay').style.display='none'" style="background:none;border:none;color:#ccccff;font-size:18px;cursor:pointer;">✕</button>
     </div>
     <div id="files-content"></div>
-    <div style="color:#ccccff;font-size:10px;margin-top:8px;">AFTER DOWNLOAD → EDGE DOWNLOADS → TAP 3 DOTS → SHARE → EMAIL</div>
+    <div style="color:#ccccff;font-size:14px;margin-top:8px;">AFTER DOWNLOAD → EDGE DOWNLOADS → TAP 3 DOTS → SHARE → EMAIL</div>
   </div>
 </div>
 
@@ -5579,7 +5655,7 @@ buildDays();buildYears();loadDatePref();doFilter('');renderLog();
 <div id="email-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:1000;align-items:center;justify-content:center;padding:16px;">
   <div style="background:#0000cc;border:2px solid #ffaa00;border-radius:8px;padding:14px;width:100%;max-width:400px;font-family:Courier New,monospace;">
     <div style="color:#ffaa00;font-weight:700;font-size:13px;margin-bottom:8px;">📧 LONG-PRESS → SELECT ALL → COPY → PASTE INTO EMAIL</div>
-    <textarea id="email-txt" readonly style="width:100%;height:200px;background:#000033;border:2px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:10px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
+    <textarea id="email-txt" readonly style="width:100%;height:200px;background:#000033;border:2px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:14px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
     <button onclick="document.getElementById('email-overlay').style.display='none'" style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;margin-top:8px;">CLOSE</button>
   </div>
 </div>
