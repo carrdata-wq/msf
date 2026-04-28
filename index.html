@@ -618,6 +618,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT</button>
       <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC</button>
     </div>
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button onclick="rptPLChart()" style="flex:1;padding:14px 6px;background:#000080;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">⛰️ P&L MOUNTAIN CHART</button>
+    </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
 </div>
@@ -1371,23 +1374,32 @@ function renderDayByDay(){
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">⛽ Day by Day — '+gasEntries.length+' purchases</span>'
     +'</div>'
     +'<div style="padding:8px;font-family:Courier New,monospace;">'
+    +'<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">DAYS = days since last fill &nbsp;·&nbsp; 30D AVG = rolling 30-day $/day burn rate</div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
     +'<tr style="background:#000080;">'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">DATE</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">STATION</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">AMT</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">DAYS</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">30D AVG</th>'
     +'</tr>';
 
   var show=gasEntries.slice(-60).reverse();
   show.forEach(function(e,i){
     var next=show[i+1];
-    var days=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
-    var cpd=Math.abs(e.amt)/days;
+    var days=next?Math.max(1,Math.round((new Date(e.date+'T00:00:00')-new Date(next.date+'T00:00:00'))/(1000*60*60*24))):1;
+    // rolling 30-day burn rate: sum of all gas spend in trailing 30 days / 30
+    var endD=new Date(e.date+'T00:00:00');
+    var startD=new Date(endD);startD.setDate(startD.getDate()-29);
+    var spend=0;
+    for(var j=0;j<gasEntries.length;j++){
+      var d=new Date(gasEntries[j].date+'T00:00:00');
+      if(d>=startD && d<=endD) spend+=Math.abs(gasEntries[j].amt);
+    }
+    var cpd=spend/30;
     var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
-    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1').slice(0,8);
+    var dc=cpd>20?'#cc0000':cpd>10?'#cc6600':'#006600';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
     h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
       +'<td style="padding:4px;color:#000066;font-size:14px;">'+dt+'</td>'
       +'<td style="padding:4px;color:#000066;font-weight:700;font-size:14px;">'+trunc(e.payee||'',12)+'</td>'
@@ -1784,15 +1796,17 @@ function renderRestChart(){
 }
 
 function renderGrocDayByDay(){
-  var entries=getGrocEntries().slice(-60).reverse();
-  renderDayByDayOverlay(entries,'🛒 Grocery Day by Day');
+  var all=getGrocEntries();
+  renderDayByDayOverlay(all,'🛒 Grocery Day by Day');
 }
 function renderRestDayByDay(){
-  var entries=getRestEntries().slice(-60).reverse();
-  renderDayByDayOverlay(entries,'🍽️ Restaurant Day by Day');
+  var all=getRestEntries();
+  renderDayByDayOverlay(all,'🍽️ Restaurant Day by Day');
 }
 
-function renderDayByDayOverlay(entries,title){
+function renderDayByDayOverlay(allEntries,title){
+  // allEntries = full sorted list (oldest first); show last 60 newest-first
+  var entries=allEntries.slice(-60).reverse();
   var old=document.getElementById('dbd-overlay');
   if(old)old.remove();
   var overlay=document.createElement('div');
@@ -1802,21 +1816,30 @@ function renderDayByDayOverlay(entries,title){
     +'<button onclick="document.getElementById(\'dbd-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+title+' — '+entries.length+' shown</span>'
     +'</div><div style="padding:8px;font-family:Courier New,monospace;">'
+    +'<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">DAYS = days since last visit &nbsp;·&nbsp; 30D AVG = rolling 30-day $/day cost</div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
     +'<tr style="background:#000080;">'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">DATE</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">VENDOR</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">AMT</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">DAYS</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">$/DAY</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">30D AVG</th>'
     +'</tr>';
   entries.forEach(function(e,i){
     var next=entries[i+1];
-    var days=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
-    var cpd=Math.abs(e.amt)/days;
+    var days=next?Math.max(1,Math.round((new Date(e.date+'T00:00:00')-new Date(next.date+'T00:00:00'))/(1000*60*60*24))):1;
+    // rolling 30-day cost: sum of all entries in trailing 30 days / 30
+    var endD=new Date(e.date+'T00:00:00');
+    var startD=new Date(endD);startD.setDate(startD.getDate()-29);
+    var spend=0;
+    for(var j=0;j<allEntries.length;j++){
+      var d=new Date(allEntries[j].date+'T00:00:00');
+      if(d>=startD && d<=endD) spend+=Math.abs(allEntries[j].amt);
+    }
+    var cpd=spend/30;
     var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
-    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1').slice(0,8);
+    var dc=cpd>20?'#cc0000':cpd>10?'#cc6600':'#006600';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
     h+='<tr style="'+bg+';border-bottom:1px solid #ccc;">'
       +'<td style="padding:4px;color:#000066;font-size:14px;">'+dt+'</td>'
       +'<td style="padding:4px;color:#000066;font-weight:700;font-size:14px;">'+trunc(e.payee||'',12)+'</td>'
@@ -4823,6 +4846,177 @@ function runMasterDesc(){
   document.getElementById('mdr-output').innerHTML=h;
 }
 
+function rptPLChart(){
+  loadLog();
+  if(!LOG.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+
+  // aggregate by month
+  var monMap={};
+  LOG.forEach(function(e){
+    var m=(e.date||'').slice(0,7);
+    if(!m||m.length<7)return;
+    if(!monMap[m])monMap[m]={inc:0,exp:0};
+    if(e.amt>=0) monMap[m].inc+=e.amt;
+    else         monMap[m].exp+=Math.abs(e.amt);
+  });
+  var months=Object.keys(monMap).sort();
+  if(!months.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATED ENTRIES</div>';
+    return;
+  }
+
+  // scale: max of any single month's income or expense
+  var maxVal=0;
+  months.forEach(function(m){
+    if(monMap[m].inc>maxVal)maxVal=monMap[m].inc;
+    if(monMap[m].exp>maxVal)maxVal=monMap[m].exp;
+  });
+  if(maxVal===0)maxVal=1;
+
+  // SVG dimensions (viewBox — scales responsively)
+  var W=720,H=380;
+  var pT=30,pR=15,pB=70,pL=60;
+  var cW=W-pL-pR;
+  var cH=H-pT-pB;
+  var zeroY=pT+cH/2;
+  var halfH=cH/2;
+  var n=months.length;
+  var xStep=n>1?cW/(n-1):0;
+
+  function xAt(i){return pL+(n>1?i*xStep:cW/2);}
+  function yInc(v){return zeroY-(v/maxVal)*halfH;}  // income above zero
+  function yExp(v){return zeroY+(v/maxVal)*halfH;}  // expense below zero
+
+  // INCOME mountain path (above zero line)
+  var incPath='M '+xAt(0)+' '+zeroY;
+  for(var i=0;i<n;i++) incPath+=' L '+xAt(i)+' '+yInc(monMap[months[i]].inc);
+  incPath+=' L '+xAt(n-1)+' '+zeroY+' Z';
+
+  // EXPENSE mountain path (below zero line)
+  var expPath='M '+xAt(0)+' '+zeroY;
+  for(var i=0;i<n;i++) expPath+=' L '+xAt(i)+' '+yExp(monMap[months[i]].exp);
+  expPath+=' L '+xAt(n-1)+' '+zeroY+' Z';
+
+  // NET P&L line — relative to zero, scaled by halfH
+  var netPath='';
+  for(var i=0;i<n;i++){
+    var net=monMap[months[i]].inc-monMap[months[i]].exp;
+    var y=zeroY-(net/maxVal)*halfH;
+    if(y<pT)y=pT;if(y>pT+cH)y=pT+cH;
+    netPath+=(i===0?'M ':' L ')+xAt(i)+' '+y;
+  }
+
+  // X-axis month labels — show every Nth depending on count
+  var labelStep=Math.max(1,Math.ceil(n/8));
+  var monLabels='';
+  for(var i=0;i<n;i++){
+    if(i%labelStep!==0 && i!==n-1) continue;
+    var m=months[i];
+    var yr=m.slice(2,4); // 2-digit year
+    var mo=parseInt(m.slice(5,7),10)-1;
+    var lbl=MONTHS[mo]+"'"+yr;
+    monLabels+='<text x="'+xAt(i)+'" y="'+(pT+cH+18)+'" fill="#000066" font-family="Courier New,monospace" font-size="11" font-weight="700" text-anchor="middle" transform="rotate(-30 '+xAt(i)+' '+(pT+cH+18)+')">'+lbl+'</text>';
+  }
+
+  // Y-axis labels (max, half, zero, half-, max-)
+  function fmtAmt(v){
+    if(Math.abs(v)>=1000) return '$'+(v/1000).toFixed(1)+'k';
+    return '$'+Math.round(v);
+  }
+  var yLabels=''
+    +'<text x="'+(pL-6)+'" y="'+(pT+4)+'" fill="#006699" font-family="Courier New,monospace" font-size="10" font-weight="700" text-anchor="end">+'+fmtAmt(maxVal)+'</text>'
+    +'<text x="'+(pL-6)+'" y="'+(zeroY-halfH/2+4)+'" fill="#0099cc" font-family="Courier New,monospace" font-size="10" text-anchor="end">+'+fmtAmt(maxVal/2)+'</text>'
+    +'<text x="'+(pL-6)+'" y="'+(zeroY+4)+'" fill="#000000" font-family="Courier New,monospace" font-size="11" font-weight="700" text-anchor="end">$0</text>'
+    +'<text x="'+(pL-6)+'" y="'+(zeroY+halfH/2+4)+'" fill="#cc3366" font-family="Courier New,monospace" font-size="10" text-anchor="end">-'+fmtAmt(maxVal/2)+'</text>'
+    +'<text x="'+(pL-6)+'" y="'+(pT+cH+4)+'" fill="#990033" font-family="Courier New,monospace" font-size="10" font-weight="700" text-anchor="end">-'+fmtAmt(maxVal)+'</text>';
+
+  // grid lines — darker on white
+  var grid=''
+    +'<line x1="'+pL+'" y1="'+zeroY+'" x2="'+(W-pR)+'" y2="'+zeroY+'" stroke="#000000" stroke-width="1.2" stroke-opacity="0.6"/>'
+    +'<line x1="'+pL+'" y1="'+(zeroY-halfH/2)+'" x2="'+(W-pR)+'" y2="'+(zeroY-halfH/2)+'" stroke="#aaaaaa" stroke-width="0.5" stroke-dasharray="3,4"/>'
+    +'<line x1="'+pL+'" y1="'+(zeroY+halfH/2)+'" x2="'+(W-pR)+'" y2="'+(zeroY+halfH/2)+'" stroke="#aaaaaa" stroke-width="0.5" stroke-dasharray="3,4"/>'
+    +'<line x1="'+pL+'" y1="'+pT+'" x2="'+(W-pR)+'" y2="'+pT+'" stroke="#cccccc" stroke-width="0.5"/>'
+    +'<line x1="'+pL+'" y1="'+(pT+cH)+'" x2="'+(W-pR)+'" y2="'+(pT+cH)+'" stroke="#cccccc" stroke-width="0.5"/>';
+
+  // calc summary
+  var totIncome=months.reduce(function(s,m){return s+monMap[m].inc;},0);
+  var totExpense=months.reduce(function(s,m){return s+monMap[m].exp;},0);
+  var netPL=totIncome-totExpense;
+  var netColor=netPL>=0?'#006600':'#cc0000';
+  var bestMon=months[0],worstMon=months[0],bestNet=-Infinity,worstNet=Infinity;
+  months.forEach(function(m){
+    var n2=monMap[m].inc-monMap[m].exp;
+    if(n2>bestNet){bestNet=n2;bestMon=m;}
+    if(n2<worstNet){worstNet=n2;worstMon=m;}
+  });
+  function fmtMonLbl(m){
+    var yr=m.slice(0,4);
+    var mo=parseInt(m.slice(5,7),10)-1;
+    return MONTHS[mo]+' '+yr;
+  }
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#ffffff;border:2px solid #000066;border-radius:6px;">'
+    +'<defs>'
+    +  '<linearGradient id="incGrad" x1="0%" y1="0%" x2="0%" y2="100%">'
+    +    '<stop offset="0%" stop-color="#0066cc" stop-opacity="0.85"/>'
+    +    '<stop offset="100%" stop-color="#66ccff" stop-opacity="0.25"/>'
+    +  '</linearGradient>'
+    +  '<linearGradient id="expGrad" x1="0%" y1="0%" x2="0%" y2="100%">'
+    +    '<stop offset="0%" stop-color="#ff99aa" stop-opacity="0.25"/>'
+    +    '<stop offset="100%" stop-color="#cc0033" stop-opacity="0.85"/>'
+    +  '</linearGradient>'
+    +'</defs>'
+    +grid
+    +'<path d="'+incPath+'" fill="url(#incGrad)" stroke="#003388" stroke-width="2" stroke-linejoin="round"/>'
+    +'<path d="'+expPath+'" fill="url(#expGrad)" stroke="#990033" stroke-width="2" stroke-linejoin="round"/>'
+    +'<path d="'+netPath+'" fill="none" stroke="#cc6600" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+    +yLabels
+    +monLabels
+    // title
+    +'<text x="'+(W/2)+'" y="18" fill="#000066" font-family="Courier New,monospace" font-size="14" font-weight="700" text-anchor="middle">⛰️ P&amp;L MOUNTAIN — '+months.length+' MONTHS</text>'
+    +'</svg>';
+
+  var html='<div style="font-family:Courier New,monospace;">'
+    // summary cards
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">'
+    +'<div style="background:#ffffff;border:2px solid #003388;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#003388;font-size:11px;">TOT INCOME</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:14px;">+$'+totIncome.toFixed(2)+'</div></div>'
+    +'<div style="background:#ffffff;border:2px solid #990033;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#990033;font-size:11px;">TOT EXPENSE</div>'
+    +'<div style="color:#cc0000;font-weight:700;font-size:14px;">-$'+totExpense.toFixed(2)+'</div></div>'
+    +'<div style="background:#ffffff;border:2px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#cc6600;font-size:11px;">NET P&amp;L</div>'
+    +'<div style="color:'+netColor+';font-weight:700;font-size:14px;">'+(netPL>=0?'+':'-')+'$'+Math.abs(netPL).toFixed(2)+'</div></div>'
+    +'</div>'
+    // chart
+    +svg
+    // legend
+    +'<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:8px;margin-top:8px;display:flex;justify-content:space-around;flex-wrap:wrap;gap:8px;font-size:12px;">'
+    +'<span style="color:#003388;font-weight:700;">▲ INCOME (blue mountain)</span>'
+    +'<span style="color:#990033;font-weight:700;">▼ EXPENSE (red mountain)</span>'
+    +'<span style="color:#cc6600;font-weight:700;">— NET P&amp;L LINE</span>'
+    +'</div>'
+    // best/worst
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">'
+    +'<div style="background:#ffffff;border:2px solid #006600;border-radius:4px;padding:8px;">'
+    +'<div style="color:#006600;font-size:11px;font-weight:700;">🏆 BEST MONTH</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:13px;">'+fmtMonLbl(bestMon)+'</div>'
+    +'<div style="color:#006600;font-weight:700;font-size:13px;">'+(bestNet>=0?'+':'-')+'$'+Math.abs(bestNet).toFixed(2)+'</div></div>'
+    +'<div style="background:#ffffff;border:2px solid #cc0000;border-radius:4px;padding:8px;">'
+    +'<div style="color:#cc0000;font-size:11px;font-weight:700;">📉 WORST MONTH</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:13px;">'+fmtMonLbl(worstMon)+'</div>'
+    +'<div style="color:#cc0000;font-weight:700;font-size:13px;">'+(worstNet>=0?'+':'-')+'$'+Math.abs(worstNet).toFixed(2)+'</div></div>'
+    +'</div>'
+    +'</div>';
+
+  document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
 function rptYearCompare(){
   loadLog();
   if(!LOG.length){document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';return;}
@@ -5141,16 +5335,17 @@ function rptPayeeSelect(payee){
       +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
       +'</tr>';
 
-    // detail rows newest first
+    // detail rows newest first — date as MM/DD/YY
     yrRows.forEach(function(e,i){
       var ac=e.amt>=0?'#006600':'#cc0000';
       var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-      var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+      var d=e.date||'';
+      var dt=d.length>=10?(d.slice(5,7)+'/'+d.slice(8,10)+'/'+d.slice(2,4)):d;
       h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-        +'<td style="padding:5px 3px;color:#333333;font-size:12px;white-space:nowrap;">'+dt+'</td>'
-        +'<td style="padding:5px 3px;color:#000066;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
-        +'<td style="padding:5px 3px;color:#666666;font-size:11px;">'+trunc(e.pcode||'',6)+'</td>'
-        +'<td style="padding:5px 3px;color:#aaaaaa;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
+        +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
+        +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
+        +'<td style="padding:5px 3px;color:#333399;font-size:11px;">'+trunc(e.pcode||'',6)+'</td>'
+        +'<td style="padding:5px 3px;color:#888888;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
         +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
         +'</tr>';
     });
