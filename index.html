@@ -609,7 +609,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptAll('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
+      <button onclick="rptShow('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
       <button onclick="rptAll('pcode')" style="flex:1;padding:10px 6px;background:#333300;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">ALL/PCODE</button>
       <button onclick="rptAll('desc')"  style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
     </div>
@@ -4342,12 +4342,13 @@ function rptAll(sortBy){
   var opts=Object.keys(seen).sort();
   var label=sortBy==='payee'?'PAYEE':sortBy==='pcode'?'PCODE':'DESC';
   var selHtml='<div style="font-size:14px;color:#ccccff;font-family:Courier New,monospace;margin-bottom:4px;">PICK '+label+':</div>'
-    +'<div id="rpt-picker-list" style="background:#0000cc;border:2px solid #ffff00;border-radius:4px;margin-bottom:10px;max-height:220px;overflow-y:auto;">';
-  selHtml+='<div onclick="rptAllFilter(\''+sortBy+'\',\'\')" style="padding:10px 12px;color:#ccccff;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #333388;cursor:pointer;">ALL ('+opts.length+' items)</div>';
+    +'<div id="rpt-picker-list" style="background:#ffffff;border:2px solid #999999;border-radius:4px;margin-bottom:10px;max-height:220px;overflow-y:auto;">';
+  selHtml+='<div onclick="rptAllFilter(\''+sortBy+'\',\'\')" style="padding:10px 12px;background:#e8e8e8;color:#000000;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #cccccc;cursor:pointer;">ALL ('+opts.length+' items)</div>';
   for(var j=0;j<opts.length;j++){
     var o=opts[j];
+    var pbg=j%2===0?'background:#ffffff':'background:#f0f4ff';
     selHtml+='<div onclick="rptAllFilter(\''+sortBy+'\',\''+o.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\''+')" '
-      +'style="padding:10px 12px;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #222266;cursor:pointer;">'+o+'</div>';
+      +'style="padding:10px 12px;'+pbg+';color:#000066;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #cccccc;cursor:pointer;">'+o+'</div>';
   }
   selHtml+='</div><div id="rpt-all-table"></div>';
   document.getElementById('rpt-content').innerHTML=selHtml;
@@ -4383,18 +4384,18 @@ function rptAllFilter(sortBy, pick){
     +'</tr>';
   for(var i=0;i<rows.length;i++){
     var e=rows[i];
-    var ac=e.amt>=0?'#00ffff':'#ff6666';
-    var bg=i%2===0?'background:#00008a':'background:#000077';
-    html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
-      +'<td style="padding:5px 3px;color:#ccccff;white-space:nowrap;font-size:14px;">'+fmtDate(e.date)+'</td>'
-      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.payee||'',9)+'</td>'
-      +'<td style="padding:5px 3px;color:#ffffff;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.desc||'',9)+'</td>'
-      +'<td style="padding:5px 3px;color:#00ffff;font-size:14px;text-align:center;white-space:nowrap;">'+((e.pcode||'').slice(0,4))+'</td>'
+    var ac=e.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    html+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+      +'<td style="padding:5px 3px;color:#555555;white-space:nowrap;font-size:14px;">'+fmtDate(e.date)+'</td>'
+      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.payee||'',9)+'</td>'
+      +'<td style="padding:5px 3px;color:#333333;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.desc||'',9)+'</td>'
+      +'<td style="padding:5px 3px;color:#333399;font-size:14px;text-align:center;white-space:nowrap;">'+((e.pcode||'').slice(0,4))+'</td>'
       +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:14px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'</tr>';
   }
-  html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
-    +'<td colspan="4" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:14px;">TOTAL ('+rows.length+')</td>'
+  html+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
+    +'<td colspan="4" style="padding:6px 3px;color:#000000;font-weight:700;font-size:14px;">TOTAL ('+rows.length+')</td>'
     +'<td style="padding:6px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:13px;color:'+tc+';">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
     +'</tr></table>';
   document.getElementById('rpt-all-table').innerHTML=html;
@@ -4956,12 +4957,12 @@ function rptYearCompare(){
   html+='</tr>';
 
   descArr.forEach(function(item,idx){
-    var bg=idx%2===0?'background:#00008a':'background:#000077';
-    html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
-      +'<td style="padding:4px 3px;color:#ffff00;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(item.desc,14)+'</td>';
+    var bg=idx%2===0?'background:#ffffff':'background:#f0f4ff';
+    html+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+      +'<td style="padding:4px 3px;color:#000066;font-weight:700;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(item.desc,14)+'</td>';
     yrArr.forEach(function(y){
       var v=descMap[item.desc][y]||0;
-      var vc=v>=0?'#00ffff':'#ff6666';
+      var vc=v>=0?'#006600':'#cc0000';
       html+='<td style="padding:4px 3px;text-align:right;font-size:14px;color:'+vc+';font-weight:700;">'+(v!==0?(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2):'—')+'</td>';
     });
     // pct change newest vs oldest available year
@@ -4970,7 +4971,7 @@ function rptYearCompare(){
     if(vals.length>=2){
       var newest=vals[0];var oldest=vals[vals.length-1];
       var pct=oldest!==0?((newest-oldest)/Math.abs(oldest)*100).toFixed(0):'—';
-      var pc=parseFloat(pct)>=0?'#00ff88':'#ff6666';
+      var pc=parseFloat(pct)>=0?'#006600':'#cc0000';
       pctHtml='<span style="color:'+pc+';font-weight:700;">'+(parseFloat(pct)>=0?'+':'')+pct+'%</span>';
     }
     html+='<td style="padding:4px 3px;text-align:right;font-size:14px;">'+pctHtml+'</td>';
@@ -4991,12 +4992,27 @@ function rptShow(type){
     rptPayeeSearch();
     return;
   }
+  // year — clean index listing
+  if(type==='yr'){
+    rptShowYr();
+    return;
+  }
+  // month — clean index listing
+  if(type==='mon'){
+    rptShowMon();
+    return;
+  }
+  // date — clean index listing
+  if(type==='date'){
+    rptShowDate();
+    return;
+  }
   _rptType=type;
   _rptPage=0;
   var map={};
   for(var i=0;i<LOG.length;i++){
     var e=LOG[i];
-    var key=type==='pcode'?(e.pcode||'?').slice(0,3)
+    var key=type==='pcode'?(e.pcode||'?')
            :type==='desc' ?(e.desc ||'?')
            :type==='yr'   ?(e.date ||'?').slice(0,4)
            :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -5010,7 +5026,12 @@ function rptShow(type){
     map[key].rows.push(e);
   }
   _rptArr=Object.keys(map).map(function(k){return{key:k,total:map[k].total,count:map[k].count,rows:map[k].rows};});
-  _rptArr.sort(function(a,b){return a.total-b.total;});
+  // pcode sorted alphanumeric (indexed); others by total
+  if(type==='pcode'){
+    _rptArr.sort(function(a,b){return a.key.localeCompare(b.key);});
+  } else {
+    _rptArr.sort(function(a,b){return a.total-b.total;});
+  }
   rptRender();
 }
 
@@ -5025,9 +5046,9 @@ function rptPayeeSearch(){
     payeeMap[p].amt+=e.amt;
     if(!payeeMap[p].last||(e.date||'')>payeeMap[p].last)payeeMap[p].last=e.date||'';
   });
-  // sort newest first
+  // sort A-Z (indexed) — search still filters on top of this
   var allPayees=Object.keys(payeeMap).sort(function(a,b){
-    return payeeMap[b].last.localeCompare(payeeMap[a].last);
+    return a.localeCompare(b);
   });
   window._payeeMap=payeeMap;
   window._allPayees=allPayees;
@@ -5061,21 +5082,18 @@ function rptPayeeFilter(val){
     +'<th style="color:#ffff00;padding:4px;text-align:right;border-bottom:1px solid #ffff00;">AMOUNT</th>'
     +'<th style="color:#ffff00;padding:4px;text-align:right;border-bottom:1px solid #ffff00;">LAST</th>'
     +'</tr>';
-  matches.slice(0,50).forEach(function(p,i){
+  matches.forEach(function(p,i){
     var v2=payeeMap[p];
-    var tc=v2.amt>=0?'#00ffff':'#ff6666';
-    var bg=i%2===0?'background:#000044':'background:#00003a';
+    var tc=v2.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
     var dt=(v2.last||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3');
-    h+='<tr style="'+bg+';cursor:pointer;" onclick="rptPayeeSelect(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"> '
-      +'<td style="padding:5px 4px;color:#ffff00;font-size:12px;">'+trunc(p,18)+'</td>'
-      +'<td style="padding:5px 4px;color:#ccccff;text-align:right;font-size:11px;">'+v2.cnt+'</td>'
+    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptPayeeSelect(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"> '
+      +'<td style="padding:5px 4px;color:#000066;font-weight:700;font-size:12px;">'+trunc(p,18)+'</td>'
+      +'<td style="padding:5px 4px;color:#666600;text-align:right;font-size:11px;">'+v2.cnt+'</td>'
       +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:12px;color:'+tc+';">'+(v2.amt>=0?'+':'-')+'$'+Math.abs(v2.amt).toFixed(2)+'</td>'
-      +'<td style="padding:5px 4px;color:#aaaacc;text-align:right;font-size:10px;">'+dt+'</td>'
+      +'<td style="padding:5px 4px;color:#555555;text-align:right;font-size:10px;">'+dt+'</td>'
       +'</tr>';
   });
-  if(matches.length>50){
-    h+='<tr><td colspan="4" style="color:#ccccff;font-size:11px;text-align:center;padding:6px;">...'+( matches.length-50)+' more — type to narrow</td></tr>';
-  }
   h+='</table>';
   var el=document.getElementById('payee-search-results');
   if(el)el.innerHTML=h;
@@ -5178,8 +5196,8 @@ function rptRender(){
     +'</tr>';
   for(var j=0;j<pageArr.length;j++){
     var r=pageArr[j];
-    var col=r.total>=0?'#00ffff':'#ff6666';
-    var bg=j%2===0?'background:#00008a':'background:#000077';
+    var col=r.total>=0?'#006600':'#cc0000';
+    var bg=j%2===0?'background:#ffffff':'background:#f0f4ff';
     var mainKey=trunc(r.key,20);
     var col2,col3;
     if(type==='pcode'){
@@ -5199,18 +5217,18 @@ function rptRender(){
       col2=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',20):'—';
       col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
     }
-    html+='<tr onclick="rptDrill(\''+type+'\',\''+r.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+bg+';border-bottom:1px solid #333388;cursor:pointer;">'
-      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
-      +'<td style="padding:5px 3px;color:#ffffff;font-size:14px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
-      +'<td style="padding:5px 3px;color:#00ffff;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
-      +'<td style="padding:5px 3px;color:#ccccff;text-align:center;font-size:13px;">'+r.count+'</td>'
+    html+='<tr onclick="rptDrill(\''+type+'\',\''+r.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+bg+';border-bottom:1px solid #cccccc;cursor:pointer;">'
+      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:13px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
+      +'<td style="padding:5px 3px;color:#333333;font-size:14px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
+      +'<td style="padding:5px 3px;color:#333399;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
+      +'<td style="padding:5px 3px;color:#666600;text-align:center;font-size:13px;">'+r.count+'</td>'
       +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:13px;color:'+col+';">'+(r.total>=0?'+':'-')+'$'+Math.abs(r.total).toFixed(2)+'</td>'
       +'</tr>';
   }
-  var gc=grand>=0?'#00ffff':'#ff6666';
-  html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
-    +'<td colspan="3" style="padding:7px 4px;color:#ffff00;font-weight:700;font-size:13px;">TOTAL</td>'
-    +'<td style="padding:7px 4px;color:#ccccff;text-align:center;font-size:13px;">'+LOG.length+'</td>'
+  var gc=grand>=0?'#006600':'#cc0000';
+  html+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
+    +'<td colspan="3" style="padding:7px 4px;color:#000000;font-weight:700;font-size:13px;">TOTAL</td>'
+    +'<td style="padding:7px 4px;color:#000000;text-align:center;font-weight:700;font-size:13px;">'+LOG.length+'</td>'
     +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+gc+';font-size:13px;">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
     +'</tr></table>';
   // pagination
@@ -5227,10 +5245,503 @@ function rptPage(p){_rptPage=p;rptRender();document.getElementById('screen-repor
 
 var MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
+function rptShowYr(){
+  loadLog();
+  if(!LOG.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+  // build year totals
+  var yrMap={};
+  LOG.forEach(function(e){
+    var y=(e.date||'?').slice(0,4);
+    if(!yrMap[y])yrMap[y]={cnt:0,amt:0};
+    yrMap[y].cnt++;
+    yrMap[y].amt+=e.amt;
+  });
+  var years=Object.keys(yrMap).sort().reverse(); // newest year first
+
+  var grand=LOG.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grand>=0?'#006600':'#cc0000';
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">YEARS — TAP TO DRILL</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:left;border-bottom:2px solid #ffff00;font-size:14px;">YR</th>'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">#</th>'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">TOTAL</th>'
+    +'</tr>';
+
+  years.forEach(function(y,i){
+    var v=yrMap[y];
+    var ac=v.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptDrill(\'yr\',\''+y+'\')">'
+      +'<td style="padding:8px 6px;color:#000066;font-weight:700;font-size:15px;">'+y+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
+      +'<td style="padding:8px 6px;color:#666600;text-align:right;font-size:14px;">'+v.cnt+'</td>'
+      +'<td style="padding:8px 6px;text-align:right;font-weight:700;font-size:14px;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  h+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
+    +'<td style="padding:7px 6px;color:#000000;font-weight:700;font-size:14px;">TOTAL</td>'
+    +'<td style="padding:7px 6px;color:#000000;text-align:right;font-weight:700;font-size:14px;">'+LOG.length+'</td>'
+    +'<td style="padding:7px 6px;text-align:right;font-weight:700;font-size:14px;color:'+gc+';">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
+    +'</tr></table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptDrillYr(yr){
+  loadLog();
+  // entries in this year, newest first
+  var rows=LOG.filter(function(e){return(e.date||'').slice(0,4)===yr;})
+    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
+  if(!rows.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    // header bar
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">YEAR: '+yr+'</span>'
+    +'<button onclick="rptShow(\'yr\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'</div>'
+    // summary card
+    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="display:flex;justify-content:space-between;">'
+    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries</span>'
+    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
+    +'</div></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+    // column header
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DATE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PAYEE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DESC</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PCO</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border-bottom:1px solid #ffff00;font-size:12px;">AMT</th>'
+    +'</tr>';
+
+  rows.forEach(function(e,i){
+    var ac=e.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+      +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
+      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',12)+'</td>'
+      +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
+      +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  // grand total
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** '+yr+' GRAND TOTAL ***</td>'
+    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'</tr>'
+    +'</table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptShowMon(){
+  loadLog();
+  if(!LOG.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+  // build month totals
+  var monMap={};
+  LOG.forEach(function(e){
+    var m=(e.date||'?').slice(0,7);
+    if(!monMap[m])monMap[m]={cnt:0,amt:0};
+    monMap[m].cnt++;
+    monMap[m].amt+=e.amt;
+  });
+  var months=Object.keys(monMap).sort().reverse(); // last in first
+
+  var grand=LOG.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grand>=0?'#006600':'#cc0000';
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">MONTHS — TAP TO DRILL</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:left;border-bottom:2px solid #ffff00;font-size:14px;">MON</th>'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">#</th>'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">TOTAL</th>'
+    +'</tr>';
+
+  months.forEach(function(m,i){
+    var v=monMap[m];
+    var ac=v.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var yr=m.slice(0,4);
+    var mo=parseInt(m.slice(5,7),10)-1;
+    var monLabel=MONTHS[mo]+' '+yr;
+    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptDrill(\'mon\',\''+m+'\')">'
+      +'<td style="padding:8px 6px;color:#000066;font-weight:700;font-size:14px;">'+monLabel+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
+      +'<td style="padding:8px 6px;color:#666600;text-align:right;font-size:14px;">'+v.cnt+'</td>'
+      +'<td style="padding:8px 6px;text-align:right;font-weight:700;font-size:14px;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  h+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
+    +'<td style="padding:7px 6px;color:#000000;font-weight:700;font-size:14px;">TOTAL</td>'
+    +'<td style="padding:7px 6px;color:#000000;text-align:right;font-weight:700;font-size:14px;">'+LOG.length+'</td>'
+    +'<td style="padding:7px 6px;text-align:right;font-weight:700;font-size:14px;color:'+gc+';">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
+    +'</tr></table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptDrillMon(monKey){
+  loadLog();
+  // entries in this month, newest first
+  var rows=LOG.filter(function(e){return(e.date||'').slice(0,7)===monKey;})
+    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
+  if(!rows.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+  var yr=monKey.slice(0,4);
+  var mo=parseInt(monKey.slice(5,7),10)-1;
+  var monLabel=MONTHS[mo]+' '+yr;
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    // header bar
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
+    +'<button onclick="rptShow(\'mon\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'</div>'
+    // summary card
+    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="display:flex;justify-content:space-between;">'
+    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries</span>'
+    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
+    +'</div></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+    // column header
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DATE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PAYEE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DESC</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PCO</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border-bottom:1px solid #ffff00;font-size:12px;">AMT</th>'
+    +'</tr>';
+
+  rows.forEach(function(e,i){
+    var ac=e.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+      +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
+      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',12)+'</td>'
+      +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
+      +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  // grand total
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** '+monLabel+' GRAND TOTAL ***</td>'
+    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'</tr>'
+    +'</table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptShowDate(){
+  loadLog();
+  if(!LOG.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+  // build date totals
+  var dateMap={};
+  LOG.forEach(function(e){
+    var d=e.date||'?';
+    if(!dateMap[d])dateMap[d]={cnt:0,amt:0};
+    dateMap[d].cnt++;
+    dateMap[d].amt+=e.amt;
+  });
+  var dates=Object.keys(dateMap).sort().reverse(); // last in first
+
+  var grand=LOG.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grand>=0?'#006600':'#cc0000';
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">DATES — TAP TO DRILL</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:left;border-bottom:2px solid #ffff00;font-size:14px;">DATE</th>'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">#</th>'
+    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">TOTAL</th>'
+    +'</tr>';
+
+  dates.forEach(function(d,i){
+    var v=dateMap[d];
+    var ac=v.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var dt=d.replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptDrill(\'date\',\''+d+'\')">'
+      +'<td style="padding:8px 6px;color:#000066;font-weight:700;font-size:14px;">'+dt+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
+      +'<td style="padding:8px 6px;color:#666600;text-align:right;font-size:14px;">'+v.cnt+'</td>'
+      +'<td style="padding:8px 6px;text-align:right;font-weight:700;font-size:14px;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  h+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
+    +'<td style="padding:7px 6px;color:#000000;font-weight:700;font-size:14px;">TOTAL</td>'
+    +'<td style="padding:7px 6px;color:#000000;text-align:right;font-weight:700;font-size:14px;">'+LOG.length+'</td>'
+    +'<td style="padding:7px 6px;text-align:right;font-weight:700;font-size:14px;color:'+gc+';">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
+    +'</tr></table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptDrillDate(dateKey){
+  loadLog();
+  // entries on this date
+  var rows=LOG.filter(function(e){return(e.date||'')===dateKey;});
+  if(!rows.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+  var dtLabel=dateKey.replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    // header bar
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">DATE: '+dtLabel+'</span>'
+    +'<button onclick="rptShow(\'date\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'</div>'
+    // summary card
+    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="display:flex;justify-content:space-between;">'
+    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries</span>'
+    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
+    +'</div></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+    // column header
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PAYEE</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DESC</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PCO</th>'
+    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border-bottom:1px solid #ffff00;font-size:12px;">AMT</th>'
+    +'</tr>';
+
+  rows.forEach(function(e,i){
+    var ac=e.amt>=0?'#006600':'#cc0000';
+    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',14)+'</td>'
+      +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
+      +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
+      +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  // grand total
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td colspan="3" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** '+dtLabel+' GRAND TOTAL ***</td>'
+    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'</tr>'
+    +'</table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptDrillDesc(desc){
+  loadLog();
+  // get all entries for this desc, newest first
+  var rows=LOG.filter(function(e){return(e.desc||'?')===desc;})
+    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
+  if(!rows.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+
+  // group by year
+  var byYear={};
+  rows.forEach(function(e){
+    var yr=(e.date||'').slice(0,4)||'????';
+    if(!byYear[yr])byYear[yr]=[];
+    byYear[yr].push(e);
+  });
+  var years=Object.keys(byYear).sort().reverse();
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    // header bar
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">DESC: '+desc+'</span>'
+    +'<button onclick="rptShow(\'desc\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'</div>'
+    // summary card
+    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="display:flex;justify-content:space-between;">'
+    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries · '+years.length+' year'+(years.length===1?'':'s')+'</span>'
+    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
+    +'</div></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+
+  years.forEach(function(yr){
+    var yrRows=byYear[yr];
+    var yrTotal=yrRows.reduce(function(s,e){return s+e.amt;},0);
+    var yc=yrTotal>=0?'#006600':'#cc0000';
+
+    // year header
+    h+='<tr style="background:#000080;">'
+      +'<td colspan="4" style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:13px;">'
+      +'▶ '+yr+' &nbsp;&nbsp; '+yrRows.length+' entries'
+      +'</td>'
+      +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
+      +'</tr>';
+
+    // detail rows newest first (already sorted)
+    yrRows.forEach(function(e,i){
+      var ac=e.amt>=0?'#006600':'#cc0000';
+      var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+      var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+      h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+        +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
+        +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',14)+'</td>'
+        +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
+        +'<td style="padding:5px 3px;color:#888888;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
+        +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+        +'</tr>';
+    });
+
+    // year subtotal
+    h+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
+      +'<td colspan="4" style="padding:4px 3px;color:#000000;font-size:11px;font-style:italic;font-weight:700;">* '+yr+' Subtotal *</td>'
+      +'<td style="padding:4px 3px;text-align:right;font-weight:700;font-size:12px;color:'+yc+';">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  // grand total
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** GRAND TOTAL ***</td>'
+    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'</tr>'
+    +'</table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
+function rptDrillPcode(pcode){
+  loadLog();
+  // get all entries for this pcode, newest first
+  var rows=LOG.filter(function(e){return(e.pcode||'?')===pcode;})
+    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
+  if(!rows.length){
+    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    return;
+  }
+
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+
+  // group by year
+  var byYear={};
+  rows.forEach(function(e){
+    var yr=(e.date||'').slice(0,4)||'????';
+    if(!byYear[yr])byYear[yr]=[];
+    byYear[yr].push(e);
+  });
+  var years=Object.keys(byYear).sort().reverse();
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    // header bar
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">PCODE: '+pcode+'</span>'
+    +'<button onclick="rptShow(\'pcode\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+    +'</div>'
+    // summary card
+    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="display:flex;justify-content:space-between;">'
+    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries · '+years.length+' year'+(years.length===1?'':'s')+'</span>'
+    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
+    +'</div></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+
+  years.forEach(function(yr){
+    var yrRows=byYear[yr];
+    var yrTotal=yrRows.reduce(function(s,e){return s+e.amt;},0);
+    var yc=yrTotal>=0?'#006600':'#cc0000';
+
+    // year header
+    h+='<tr style="background:#000080;">'
+      +'<td colspan="4" style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:13px;">'
+      +'▶ '+yr+' &nbsp;&nbsp; '+yrRows.length+' entries'
+      +'</td>'
+      +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
+      +'</tr>';
+
+    // detail rows newest first (already sorted)
+    yrRows.forEach(function(e,i){
+      var ac=e.amt>=0?'#006600':'#cc0000';
+      var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+      var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+      h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+        +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
+        +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',14)+'</td>'
+        +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
+        +'<td style="padding:5px 3px;color:#888888;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
+        +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+        +'</tr>';
+    });
+
+    // year subtotal
+    h+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
+      +'<td colspan="4" style="padding:4px 3px;color:#000000;font-size:11px;font-style:italic;font-weight:700;">* '+yr+' Subtotal *</td>'
+      +'<td style="padding:4px 3px;text-align:right;font-weight:700;font-size:12px;color:'+yc+';">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  // grand total
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** GRAND TOTAL ***</td>'
+    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'</tr>'
+    +'</table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
+}
+
 function rptDrill(type,key){
   loadLog();
+  // pcode and desc get a quick year-grouped drill (no month layer)
+  if(type==='pcode'){ rptDrillPcode(key); return; }
+  if(type==='desc'){ rptDrillDesc(key); return; }
+  if(type==='yr'){ rptDrillYr(key); return; }
+  if(type==='mon'){ rptDrillMon(key); return; }
+  if(type==='date'){ rptDrillDate(key); return; }
   var rows=LOG.filter(function(e){
-    var k=type==='pcode'?(e.pcode||'?').slice(0,3)
+    var k=type==='pcode'?(e.pcode||'?')
          :type==='desc' ?(e.desc ||'?')
          :type==='yr'   ?(e.date ||'?').slice(0,4)
          :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -5259,24 +5770,25 @@ function rptDrill(type,key){
     +'</div>';
 
   // month breakdown rows — tap to expand
-  monKeys.forEach(function(m){
+  monKeys.forEach(function(m,idx){
     var mon=monMap[m];
-    var mc=mon.total>=0?'#00ffff':'#ff6666';
+    var mc=mon.total>=0?'#006600':'#cc0000';
     var yr=m.slice(0,4);
     var mo=parseInt(m.slice(5,7),10)-1;
     var monLabel=MONTHS[mo]+' '+yr;
-    html+='<div style="background:#000055;border:1px solid #3333aa;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+key+'\',\''+m+'\')">'
+    var bg=idx%2===0?'#ffffff':'#f0f4ff';
+    html+='<div style="background:'+bg+';border:1px solid #cccccc;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+key+'\',\''+m+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
+      +'<span style="color:#000066;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
       +'<span style="color:'+mc+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(mon.total>=0?'+':'-')+'$'+Math.abs(mon.total).toFixed(2)+'</span>'
       +'</div>'
-      +'<div style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
+      +'<div style="color:#666666;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
       +'</div>';
   });
 
   // grand total
-  html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
+  html+='<div style="background:#e8e8e8;border:2px solid #999999;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
+    +'<span style="color:#000000;font-weight:700;font-size:13px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
     +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
 
@@ -5287,7 +5799,7 @@ function rptDrill(type,key){
 function rptDrillMonth(type,key,mon){
   loadLog();
   var rows=LOG.filter(function(e){
-    var k=type==='pcode'?(e.pcode||'?').slice(0,3)
+    var k=type==='pcode'?(e.pcode||'?')
          :type==='desc' ?(e.desc ||'?')
          :type==='yr'   ?(e.date ||'?').slice(0,4)
          :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -5306,23 +5818,24 @@ function rptDrillMonth(type,key,mon){
     +'<button onclick="rptDrill(\''+type+'\',\''+key+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
     +'</div>';
 
-  rows.forEach(function(e){
-    var ac=e.amt>=0?'#00ffff':'#ff6666';
-    html+='<div style="background:#0000cc;border:1px solid #5555ee;border-radius:4px;padding:8px;margin-bottom:5px;">'
+  rows.forEach(function(e,idx){
+    var ac=e.amt>=0?'#006600':'#cc0000';
+    var bg=idx%2===0?'#ffffff':'#f0f4ff';
+    html+='<div style="background:'+bg+';border:1px solid #cccccc;border-radius:4px;padding:8px;margin-bottom:5px;">'
       +'<div style="display:flex;justify-content:space-between;">'
-      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
+      +'<span style="color:#000066;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
       +'<span style="color:'+ac+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</span>'
       +'</div>'
       +'<div style="display:flex;justify-content:space-between;margin-top:3px;">'
-      +'<span style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
-      +'<span style="color:#00ffff;font-size:14px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
+      +'<span style="color:#555555;font-size:14px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
+      +'<span style="color:#333399;font-size:14px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
       +'</div>'
-      +'<div style="color:#ffffff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
+      +'<div style="color:#333333;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
       +'</div>';
   });
 
-  html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:4px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
+  html+='<div style="background:#e8e8e8;border:2px solid #999999;border-radius:4px;padding:8px;margin-top:4px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
+    +'<span style="color:#000000;font-weight:700;font-size:13px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
     +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
 
