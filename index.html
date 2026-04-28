@@ -354,6 +354,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ff4444;">Clear All Data</div><div class="ms">Wipe ledger · Fresh start · Backup first!</div></div>
       <div class="menu-arrow" style="color:#ff4444;">›</div>
     </div>
+    <div class="menu-item" onclick="doCheatSheet()">
+      <div class="menu-num">9</div><div class="menu-icon">📝</div>
+      <div class="menu-label"><div class="ml" style="color:#ffff00;">DESC Cheat Sheet</div><div class="ms">Fix EXPENSE descs · Bulk assign PCODE/DESC</div></div>
+      <div class="menu-arrow" style="color:#ffff00;">›</div>
+    </div>
   </div>
   </div>
 </div>
@@ -3606,6 +3611,72 @@ function confirmClearAll(){
   setTimeout(function(){goMain();},1000);
 }
 
+function doCheatSheet(){
+  loadLog();
+  var expEntries=LOG.filter(function(e){
+    var d=(e.desc||'').toUpperCase();
+    return d==='EXPENSE'||d==='UNKNOWN'||d==='';
+  });
+  if(!expEntries.length){toast('No EXPENSE entries — all descs assigned! ✓',true);goMain();return;}
+  var byPayee={};
+  expEntries.forEach(function(e){
+    var p=e.payee||'UNKNOWN';
+    if(!byPayee[p])byPayee[p]={cnt:0,amt:0};
+    byPayee[p].cnt++;byPayee[p].amt+=e.amt;
+  });
+  var allDescs=[...new Set(LOG.map(function(e){return e.desc||'';}).filter(Boolean))].sort();
+  var allPcodes=[...new Set(LOG.map(function(e){return e.pcode||'';}).filter(Boolean))].sort();
+  var descOpts=allDescs.map(function(d){return'<option value="'+d+'">'+d+'</option>';}).join('');
+  var pcOpts=allPcodes.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+  var old=document.getElementById('cheatsheet-overlay');if(old)old.remove();
+  var overlay=document.createElement('div');
+  overlay.id='cheatsheet-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#000033;z-index:9000;overflow-y:auto;font-family:Courier New,monospace;';
+  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
+    +'<button onclick="document.getElementById(\'cheatsheet-overlay\').remove();goMain();" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ DONE</button>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">📝 '+Object.keys(byPayee).length+' payees need DESC</span>'
+    +'</div><div style="padding:8px;">'
+    +'<div style="color:#00ff88;font-size:11px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry</div>';
+  Object.keys(byPayee).sort().forEach(function(payee,i){
+    var v=byPayee[payee];
+    var sid='cs_'+i;
+    var bg=i%2===0?'background:#000044':'background:#00003a';
+    h+='<div style="'+bg+';border:1px solid #333388;border-radius:4px;padding:8px;margin-bottom:6px;">'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
+      +'<div style="color:#ffff00;font-weight:700;font-size:13px;">'+trunc(payee,22)+'</div>'
+      +'<div style="color:#ff6666;font-size:11px;">'+v.cnt+' · $'+Math.abs(v.amt).toFixed(0)+'</div></div>'
+      +'<div style="display:flex;gap:6px;margin-bottom:6px;">'
+      +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
+      +'<select id="'+sid+'_dc" style="flex:2;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
+      +'</div>'
+      +'<button onclick="cheatSheetApply(\''+payee.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',' +'\''+sid+'\')" '
+      +'style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;border:none;border-radius:4px;cursor:pointer;">'
+      +'REPLACE ALL FOR '+trunc(payee,18)+'</button></div>';
+  });
+  h+='</div>';
+  overlay.innerHTML=h;
+  document.body.appendChild(overlay);
+}
+
+function cheatSheetApply(payee,sid){
+  var pc=(document.getElementById(sid+'_pc')||{value:''}).value;
+  var dc=(document.getElementById(sid+'_dc')||{value:''}).value;
+  if(!pc&&!dc){toast('Pick PCODE and DESC first',false);return;}
+  loadLog();var fixed=0;
+  LOG.forEach(function(e){
+    if(e.payee===payee){
+      var d=(e.desc||'').toUpperCase();
+      if(d==='EXPENSE'||d==='UNKNOWN'||d===''){
+        if(pc)e.pcode=pc;if(dc)e.desc=dc;fixed++;
+      }
+    }
+  });
+  saveLog();
+  toast('✓ '+fixed+' entries updated for '+payee,true);
+  var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
+  doCheatSheet();
+}
+
 function doFixZelleNames(){
   loadLog();
   var fixed=0;
@@ -4945,73 +5016,143 @@ function rptShow(type){
 
 function rptPayeeSearch(){
   loadLog();
-  var allPayees=[...new Set(LOG.map(function(e){return e.payee||'';}).filter(Boolean))].sort();
+  // pre-cache payee totals ONCE for speed
+  var payeeMap={};
+  LOG.forEach(function(e){
+    var p=e.payee||'';if(!p)return;
+    if(!payeeMap[p])payeeMap[p]={cnt:0,amt:0,last:''};
+    payeeMap[p].cnt++;
+    payeeMap[p].amt+=e.amt;
+    if(!payeeMap[p].last||(e.date||'')>payeeMap[p].last)payeeMap[p].last=e.date||'';
+  });
+  // sort newest first
+  var allPayees=Object.keys(payeeMap).sort(function(a,b){
+    return payeeMap[b].last.localeCompare(payeeMap[a].last);
+  });
+  window._payeeMap=payeeMap;
+  window._allPayees=allPayees;
+
   var rptContent=document.getElementById('rpt-content');
   rptContent.innerHTML='<div style="font-family:Courier New,monospace;padding:8px;">'
-    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">🔍 PAYEE SEARCH</div>'
-    +'<div style="color:#ccccff;font-size:12px;margin-bottom:8px;">Type to search — shows all matching payees</div>'
-    +'<input type="text" id="payee-search-input" placeholder="e.g. PAN or PANCAKE or MC..." '
+    +'<input type="text" id="payee-search-input" placeholder="Type payee name e.g. PAN MC EAGLE..." '
     +'style="width:100%;box-sizing:border-box;background:#000033;border:2px solid #00ff88;color:#ffff00;'
-    +'font-family:Courier New,monospace;font-size:16px;padding:10px;border-radius:4px;outline:none;margin-bottom:8px;" '
+    +'font-family:Courier New,monospace;font-size:15px;padding:10px;border-radius:4px;outline:none;margin-bottom:6px;" '
     +'oninput="rptPayeeFilter(this.value)" autocomplete="off">'
     +'<div id="payee-search-results"></div>'
     +'</div>';
   document.getElementById('screen-reports').scrollTop=0;
   setTimeout(function(){
     var el=document.getElementById('payee-search-input');
-    if(el){el.focus();}
+    if(el)el.focus();
     rptPayeeFilter('');
   },100);
 }
 
 function rptPayeeFilter(val){
-  loadLog();
-  var allPayees=[...new Set(LOG.map(function(e){return e.payee||'';}).filter(Boolean))].sort();
+  var payeeMap=window._payeeMap||{};
+  var allPayees=window._allPayees||[];
   var v=val.toUpperCase().trim();
   var matches=v?allPayees.filter(function(p){return p.toUpperCase().indexOf(v)>=0;}):allPayees;
-  var h='';
-  if(!matches.length){
-    h='<div style="color:#ff6666;font-family:Courier New,monospace;font-size:13px;padding:10px;">No payees found</div>';
-  } else {
-    h='<div style="color:#ccccff;font-size:11px;margin-bottom:6px;font-family:Courier New,monospace;">'+matches.length+' match'+( matches.length===1?'':'es')+'</div>';
-    matches.slice(0,30).forEach(function(p){
-      var total=LOG.filter(function(e){return e.payee===p;}).reduce(function(s,e){return s+e.amt;},0);
-      var cnt=LOG.filter(function(e){return e.payee===p;}).length;
-      var tc=total>=0?'#00ffff':'#ff6666';
-      h+='<div onclick="rptPayeeSelect(\''+p.replace(/'/g,"\\'")+'\')" '
-        +'style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;'
-        +'margin-bottom:3px;background:#000044;border:1px solid #333388;border-radius:4px;cursor:pointer;">'
-        +'<div>'
-        +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+p+'</div>'
-        +'<div style="color:#aaaacc;font-size:11px;font-family:Courier New,monospace;">'+cnt+' entries</div>'
-        +'</div>'
-        +'<div style="color:'+tc+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</div>'
-        +'</div>';
-    });
-    if(matches.length>30){
-      h+='<div style="color:#ccccff;font-size:11px;text-align:center;padding:8px;font-family:Courier New,monospace;">...type more to narrow down ('+matches.length+' total)</div>';
-    }
+  var h='<div style="color:#ccccff;font-size:11px;margin-bottom:4px;">'+matches.length+' payees — tap to view report</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:12px;">'
+    +'<tr style="background:#0000cc;">'
+    +'<th style="color:#ffff00;padding:4px;text-align:left;border-bottom:1px solid #ffff00;">PAYEE</th>'
+    +'<th style="color:#ffff00;padding:4px;text-align:right;border-bottom:1px solid #ffff00;">#</th>'
+    +'<th style="color:#ffff00;padding:4px;text-align:right;border-bottom:1px solid #ffff00;">AMOUNT</th>'
+    +'<th style="color:#ffff00;padding:4px;text-align:right;border-bottom:1px solid #ffff00;">LAST</th>'
+    +'</tr>';
+  matches.slice(0,50).forEach(function(p,i){
+    var v2=payeeMap[p];
+    var tc=v2.amt>=0?'#00ffff':'#ff6666';
+    var bg=i%2===0?'background:#000044':'background:#00003a';
+    var dt=(v2.last||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3');
+    h+='<tr style="'+bg+';cursor:pointer;" onclick="rptPayeeSelect(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"> '
+      +'<td style="padding:5px 4px;color:#ffff00;font-size:12px;">'+trunc(p,18)+'</td>'
+      +'<td style="padding:5px 4px;color:#ccccff;text-align:right;font-size:11px;">'+v2.cnt+'</td>'
+      +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:12px;color:'+tc+';">'+(v2.amt>=0?'+':'-')+'$'+Math.abs(v2.amt).toFixed(2)+'</td>'
+      +'<td style="padding:5px 4px;color:#aaaacc;text-align:right;font-size:10px;">'+dt+'</td>'
+      +'</tr>';
+  });
+  if(matches.length>50){
+    h+='<tr><td colspan="4" style="color:#ccccff;font-size:11px;text-align:center;padding:6px;">...'+( matches.length-50)+' more — type to narrow</td></tr>';
   }
+  h+='</table>';
   var el=document.getElementById('payee-search-results');
   if(el)el.innerHTML=h;
 }
 
 function rptPayeeSelect(payee){
   loadLog();
-  _rptType='payee';
-  _rptPage=0;
-  var map={};
-  for(var i=0;i<LOG.length;i++){
-    var e=LOG[i];
-    if(e.payee!==payee)continue;
-    var key=e.payee||'?';
-    if(!map[key])map[key]={total:0,count:0,rows:[]};
-    map[key].total+=e.amt;
-    map[key].count++;
-    map[key].rows.push(e);
-  }
-  _rptArr=Object.keys(map).map(function(k){return{key:k,total:map[k].total,count:map[k].count,rows:map[k].rows};});
-  rptRender();
+  // get all entries for this payee newest first
+  var rows=LOG.filter(function(e){return e.payee===payee;})
+    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
+  if(!rows.length)return;
+
+  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
+  var gc=grandTotal>=0?'#00ffff':'#ff6666';
+
+  // group by year
+  var byYear={};
+  rows.forEach(function(e){
+    var yr=(e.date||'').slice(0,4)||'????';
+    if(!byYear[yr])byYear[yr]=[];
+    byYear[yr].push(e);
+  });
+  var years=Object.keys(byYear).sort().reverse();
+
+  var h='<div style="font-family:Courier New,monospace;">'
+    // header
+    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#00ffff;font-weight:700;font-size:14px;">'+payee+'</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:4px;">'
+    +'<span style="color:#ccccff;font-size:12px;">'+rows.length+' total entries</span>'
+    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
+    +'</div></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+
+  years.forEach(function(yr){
+    var yrRows=byYear[yr];
+    var yrTotal=yrRows.reduce(function(s,e){return s+e.amt;},0);
+    var yc=yrTotal>=0?'#006600':'#cc0000';
+
+    // year header
+    h+='<tr style="background:#000080;">'
+      +'<td colspan="4" style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:13px;">'
+      +'▶ '+yr+' &nbsp;&nbsp; '+yrRows.length+' entries'
+      +'</td>'
+      +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
+      +'</tr>';
+
+    // detail rows newest first
+    yrRows.forEach(function(e,i){
+      var ac=e.amt>=0?'#006600':'#cc0000';
+      var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+      var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+      h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
+        +'<td style="padding:5px 3px;color:#333333;font-size:12px;white-space:nowrap;">'+dt+'</td>'
+        +'<td style="padding:5px 3px;color:#000066;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
+        +'<td style="padding:5px 3px;color:#666666;font-size:11px;">'+trunc(e.pcode||'',6)+'</td>'
+        +'<td style="padding:5px 3px;color:#aaaaaa;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
+        +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
+        +'</tr>';
+    });
+
+    // year subtotal
+    h+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
+      +'<td colspan="4" style="padding:4px 3px;color:#000000;font-size:11px;font-style:italic;font-weight:700;">* '+yr+' Subtotal *</td>'
+      +'<td style="padding:4px 3px;text-align:right;font-weight:700;font-size:12px;color:'+yc+';">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+
+  // grand total
+  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** GRAND TOTAL ***</td>'
+    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'</tr>'
+    +'</table></div>';
+
+  document.getElementById('rpt-content').innerHTML=h;
+  document.getElementById('screen-reports').scrollTop=0;
 }
 
 function rptRender(){
