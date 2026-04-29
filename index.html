@@ -3906,9 +3906,11 @@ function doBankCSVPreview(file){
     var lines=e.target.result.split('\n');
     _bankRows=[];
     var skipped=0;
-    for(var i=1;i<lines.length;i++){
+    var headersSkipped=0;
+    var foundData=false;
+    for(var i=0;i<lines.length;i++){
       var line=lines[i].trim();
-      if(!line)continue;
+      if(!line){if(!foundData)headersSkipped++;continue;}
       var cols=[];var inq=false;var cur='';
       for(var c=0;c<line.length;c++){
         if(line[c]==='"'){inq=!inq;}
@@ -3921,10 +3923,16 @@ function doBankCSVPreview(file){
       var debit=parseFloat(cols[4])||0;
       var credit=parseFloat(cols[5])||0;
       var status=cols[6]||'';
-      if(!dateStr||!rawDesc)continue;
-      if(status.toLowerCase()==='pending'){skipped++;continue;}
+      // header detection — date must look like M/D/Y, and we need an amount
       var dp=dateStr.split('/');
-      if(dp.length!==3)continue;
+      var validDate=(dp.length===3 && !isNaN(parseInt(dp[0],10)) && !isNaN(parseInt(dp[1],10)) && !isNaN(parseInt(dp[2],10)) && parseInt(dp[0],10)>=1 && parseInt(dp[0],10)<=12);
+      var hasAmount=(debit!==0||credit!==0);
+      if(!validDate||!rawDesc||!hasAmount){
+        if(!foundData)headersSkipped++;
+        continue;
+      }
+      foundData=true;
+      if(status.toLowerCase()==='pending'){skipped++;continue;}
       var isoDate=dp[2]+'-'+('0'+dp[0]).slice(-2)+'-'+('0'+dp[1]).slice(-2);
       // get match
       var match=bankAutoMatch(rawDesc);
@@ -3938,7 +3946,8 @@ function doBankCSVPreview(file){
     }
     // sort oldest-first — so as processChunk unshifts each row, the NEWEST date ends up at the top of LOG
     _bankRows.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-    var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
+    var hdrNote=headersSkipped>0?' · skipped '+headersSkipped+' header line'+(headersSkipped===1?'':'s'):'';
+    var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)'+hdrNote+'</div>';
     html+='<table style="width:100%;border-collapse:collapse;font-size:14px;">'
       +'<tr style="background:#0000aa;">'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">DATE</th>'
