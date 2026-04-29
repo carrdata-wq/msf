@@ -3936,6 +3936,8 @@ function doBankCSVPreview(file){
       var cleanPayee=cleanPayeeName(match.payee);
       _bankRows.push({date:isoDate,rawDesc:rawDesc,payee:cleanPayee,pcode:match.pcode,desc:match.desc,amt:amt});
     }
+    // sort oldest-first — so as processChunk unshifts each row, the NEWEST date ends up at the top of LOG
+    _bankRows.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
     var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
     html+='<table style="width:100%;border-collapse:collapse;font-size:14px;">'
       +'<tr style="background:#0000aa;">'
@@ -3944,7 +3946,7 @@ function doBankCSVPreview(file){
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PCO</th>'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;text-align:right;">AMT</th>'
       +'</tr>';
-    _bankRows.slice(0,10).forEach(function(r){
+    _bankRows.slice(-10).reverse().forEach(function(r){
       var ac=r.amt>=0?'#00ffff':'#ff6666';
       html+='<tr style="background:#00008a;">'
         +'<td style="padding:3px;color:#ccccff;border:1px solid #333388;font-size:13px;">'+r.date.slice(5)+'</td>'
@@ -4069,6 +4071,8 @@ function doBankImportConfirm(){
     if(idx<total&&_bankDone===''){setTimeout(processChunk,10);}
     else{
       _bankDone='x';_dupAdded=added;_dupSkipped=skipped;
+      // safety net: sort LOG by date newest-first so display order is consistent
+      LOG.sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
       saveLog();
       Array.from(document.body.children).forEach(function(el){
         if(el.style.position==='fixed'||el.style.cssText.indexOf('position:fixed')>=0){el.remove();}
@@ -6258,6 +6262,12 @@ function fmtDate(d){if(!d)return '';var p=d.split('-');if(p.length!==3)return d;
 function trunc(s,n){if(!s)return '';s=s.replace(/https?:\/\/\S+/gi,'').replace(/www\.\S+/gi,'').trim();return s.length>n?s.slice(0,n):s;}
 function fmtAmt(a){return (a>=0?'+$':'-$')+Math.abs(a).toFixed(2);}
 function renderLog(){
+  // always show newest dates first
+  LOG.sort(function(a,b){
+    var d=(b.date||'').localeCompare(a.date||'');
+    if(d!==0)return d;
+    return (b.id||0)-(a.id||0); // tie-break: newer id first
+  });
   var tbody=document.getElementById('loglist');
   // build year dropdown
   var yrSel=document.getElementById('led-yr-filter');
