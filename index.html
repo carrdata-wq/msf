@@ -558,6 +558,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <select id="led-yr-filter" onchange="ledSetYear(this.value)" style="flex:1;background:#0000cc;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px;border-radius:4px;outline:none;-webkit-appearance:none;">
         <option value="">ALL YRS</option>
       </select>
+      <button id="led-sort-btn" onclick="ledToggleSort()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">🔽 NEWEST</button>
       <button onclick="doExportByYear()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">📄 YR CSV</button>
     </div>
     <div id="totbar" style="background:#0000cc;border:1px solid #ffff00;border-radius:4px;padding:8px 12px;margin-bottom:8px;display:none;justify-content:space-between;">
@@ -609,7 +610,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptShow('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
+      <button onclick="rptAll('payee')" style="flex:1;padding:10px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">ALL/PAYEE</button>
       <button onclick="rptAll('pcode')" style="flex:1;padding:10px 6px;background:#333300;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">ALL/PCODE</button>
       <button onclick="rptAll('desc')"  style="flex:1;padding:10px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">ALL/DESC</button>
     </div>
@@ -617,9 +618,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptMasterDesc()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📋 MASTER DESC RPT</button>
       <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT</button>
       <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC</button>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptPLChart()" style="flex:1;padding:14px 6px;background:#000080;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">⛰️ P&L MOUNTAIN CHART</button>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
@@ -1365,47 +1363,104 @@ function renderDayByDay(){
     return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;
   }).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
 
+  var old=document.getElementById('daybyday-overlay');if(old)old.remove();
   var overlay=document.createElement('div');
   overlay.id='daybyday-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:#1a1aff;z-index:9000;overflow-y:auto;';
 
+  // calc stats
+  var total=gasEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var allDates=gasEntries.map(function(e){return e.date||'';}).filter(Boolean).sort();
+  var spanDays=allDates.length>=2?Math.max(1,Math.round((new Date(allDates[allDates.length-1])-new Date(allDates[0]))/(1000*60*60*24))):30;
+  var perDay=total/spanDays;
+  var per30=perDay*30;
+  var perWeek=perDay*7;
+
+  // 4-week moving average — group by week
+  var byWeek={};
+  gasEntries.forEach(function(e){
+    var d=new Date(e.date||'');
+    var jan1=new Date(d.getFullYear(),0,1);
+    var wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+    var key=d.getFullYear()+'-W'+('0'+wk).slice(-2);
+    byWeek[key]=(byWeek[key]||0)+Math.abs(e.amt);
+  });
+  var wkKeys=Object.keys(byWeek).sort().reverse();
+  var movAvg=[];
+  wkKeys.forEach(function(wk,i){
+    var slice=wkKeys.slice(Math.max(0,i-3),i+1);
+    var avg=slice.reduce(function(s,k){return s+byWeek[k];},0)/slice.length;
+    // build readable MM/DD label from week key
+    var yr=parseInt(wk.slice(0,4));
+    var wkNum=parseInt(wk.slice(6));
+    var jan1=new Date(yr,0,1);
+    var wkStart=new Date(jan1.getTime()+(wkNum-1)*7*86400000);
+    var mm=('0'+(wkStart.getMonth()+1)).slice(-2);
+    var dd=('0'+wkStart.getDate()).slice(-2);
+    var label=mm+'/'+dd+'/'+yr;
+    movAvg.push({wk:wk,label:label,val:byWeek[wk],avg:avg});
+  });
+
+  var show=gasEntries.slice().reverse();
   var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
     +'<button onclick="document.getElementById(\'daybyday-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">⛽ Day by Day — '+gasEntries.length+' purchases</span>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">⛽ Gas Day by Day</span>'
     +'</div>'
-    +'<div style="padding:8px;font-family:Courier New,monospace;">'
-    +'<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">DAYS = days since last fill &nbsp;·&nbsp; 30D AVG = rolling 30-day $/day burn rate</div>'
+    // summary cards
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px;font-family:Courier New,monospace;">'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:11px;">$/DAY AVG</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+perDay.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:11px;">30-DAY AVG</div>'
+    +'<div style="color:#00ff88;font-weight:700;font-size:15px;">$'+per30.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #ff6666;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:11px;">$/WEEK AVG</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+perWeek.toFixed(2)+'</div></div>'
+    +'</div>'
+    // 4-week moving average chart
+    +'<div style="background:#ffffff;border-radius:4px;margin:0 8px 8px;padding:10px;font-family:Courier New,monospace;">'
+    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;">4-WEEK MOVING AVERAGE</div>';
+
+  var maxWk=Math.max.apply(null,movAvg.map(function(w){return w.val;}));
+  movAvg.forEach(function(w){
+    var barPct=Math.round((w.val/maxWk)*100);
+    var avgPct=Math.round((w.avg/maxWk)*100);
+    var barColor=w.val>w.avg*1.2?'#cc0000':w.val>w.avg?'#cc6600':'#006600';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+      +'<div style="color:#000066;font-size:10px;width:58px;text-align:right;">'+w.label+'</div>'
+      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:14px;position:relative;">'
+      +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
+      +'<div style="position:absolute;top:0;left:'+avgPct+'%;width:2px;height:100%;background:#000066;"></div>'
+      +'<span style="position:absolute;right:3px;top:0;font-size:10px;color:#000;font-weight:700;">$'+w.val.toFixed(0)+'</span>'
+      +'</div></div>';
+  });
+  h+='<div style="font-size:10px;color:#666;margin-top:4px;">▌ blue line = 4-wk moving avg &nbsp; 🟢=below 🟠=above 🔴=high</div>'
+    +'</div>'
+    // day by day table
+    +'<div style="padding:0 8px 8px;font-family:Courier New,monospace;">'
     +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
     +'<tr style="background:#000080;">'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">DATE</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">STATION</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">AMT</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">DAYS</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">30D AVG</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
     +'</tr>';
 
-  var show=gasEntries.slice(-60).reverse();
   show.forEach(function(e,i){
     var next=show[i+1];
-    var days=next?Math.max(1,Math.round((new Date(e.date+'T00:00:00')-new Date(next.date+'T00:00:00'))/(1000*60*60*24))):1;
-    // rolling 30-day burn rate: sum of all gas spend in trailing 30 days / 30
-    var endD=new Date(e.date+'T00:00:00');
-    var startD=new Date(endD);startD.setDate(startD.getDate()-29);
-    var spend=0;
-    for(var j=0;j<gasEntries.length;j++){
-      var d=new Date(gasEntries[j].date+'T00:00:00');
-      if(d>=startD && d<=endD) spend+=Math.abs(gasEntries[j].amt);
-    }
-    var cpd=spend/30;
+    var days=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
+    var cpd=Math.abs(e.amt)/days;
     var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dc=cpd>20?'#cc0000':cpd>10?'#cc6600':'#006600';
-    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+    var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
     h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:14px;">'+dt+'</td>'
-      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:14px;">'+trunc(e.payee||'',12)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#333;">'+days+'</td>'
-      +'<td style="padding:4px;text-align:right;font-weight:700;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
+      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+'</td>'
+      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days+'</td>'
+      +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
       +'</tr>';
   });
   h+='</table></div>';
@@ -1522,7 +1577,7 @@ function renderFuelChart(){
     if(isIndiana(e.payee))byMonthIN[m]=(byMonthIN[m]||0)+amt;
     else byMonthIL[m]=(byMonthIL[m]||0)+amt;
   });
-  var months=Object.keys(byMonth).sort();
+  var months=Object.keys(byMonth).sort().reverse();
   var maxVal=Math.max.apply(null,Object.values(byMonth));
   var avgVal=Object.values(byMonth).reduce(function(s,v){return s+v;},0)/months.length;
 
@@ -1755,7 +1810,7 @@ function renderTrackerChart(entries,contentId,color,label){
     var m=(e.date||'').slice(0,7);
     byMonth[m]=(byMonth[m]||0)+Math.abs(e.amt);
   });
-  var months=Object.keys(byMonth).sort();
+  var months=Object.keys(byMonth).sort().reverse();
   var maxVal=Math.max.apply(null,Object.values(byMonth));
   var avgVal=Object.values(byMonth).reduce(function(s,v){return s+v;},0)/months.length;
 
@@ -1763,7 +1818,6 @@ function renderTrackerChart(entries,contentId,color,label){
     +'<div style="display:flex;gap:8px;margin-bottom:10px;">'
     +'<div style="flex:1;background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
     +'<div style="color:#ccccff;font-size:13px;">AVG/MONTH</div>'
-    +'<div style="color:#ffaa00;font-weight:700;font-size:14px;">$'+avgVal.toFixed(2)+'</div></div>'
     +'<div style="flex:1;background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
     +'<div style="color:#ccccff;font-size:13px;">HIGHEST MONTH</div>'
     +'<div style="color:#ff4444;font-weight:700;font-size:14px;">$'+maxVal.toFixed(2)+'</div></div>'
@@ -1796,62 +1850,118 @@ function renderRestChart(){
 }
 
 function renderGrocDayByDay(){
-  var all=getGrocEntries();
-  renderDayByDayOverlay(all,'🛒 Grocery Day by Day');
+  var entries=getGrocEntries().slice().reverse();
+  renderDayByDayOverlay(entries,'🛒 Grocery Day by Day');
 }
 function renderRestDayByDay(){
-  var all=getRestEntries();
-  renderDayByDayOverlay(all,'🍽️ Restaurant Day by Day');
+  var entries=getRestEntries().slice().reverse();
+  renderDayByDayOverlay(entries,'🍽️ Restaurant Day by Day');
 }
 
-function renderDayByDayOverlay(allEntries,title){
-  // allEntries = full sorted list (oldest first); show last 60 newest-first
-  var entries=allEntries.slice(-60).reverse();
+function renderDayByDayOverlay(entries,title){
   var old=document.getElementById('dbd-overlay');
   if(old)old.remove();
+
+  var total=entries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
+  var allDates=entries.map(function(e){return e.date||'';}).filter(Boolean).sort();
+  var spanDays=allDates.length>=2?Math.max(1,Math.round((new Date(allDates[allDates.length-1])-new Date(allDates[0]))/(1000*60*60*24))):30;
+  var perDay=total/spanDays;
+  var per30=perDay*30;
+  var perWeek=perDay*7;
+
+  // 4-week moving average
+  var byWeek={};
+  entries.forEach(function(e){
+    var d=new Date(e.date||'');
+    var jan1=new Date(d.getFullYear(),0,1);
+    var wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+    var key=d.getFullYear()+'-W'+('0'+wk).slice(-2);
+    byWeek[key]=(byWeek[key]||0)+Math.abs(e.amt);
+  });
+  var wkKeys=Object.keys(byWeek).sort().reverse();
+  var movAvg=[];
+  wkKeys.forEach(function(wk,i){
+    var slice=wkKeys.slice(Math.max(0,i-3),i+1);
+    var avg=slice.reduce(function(s,k){return s+byWeek[k];},0)/slice.length;
+    // build readable MM/DD label from week key
+    var yr=parseInt(wk.slice(0,4));
+    var wkNum=parseInt(wk.slice(6));
+    var jan1=new Date(yr,0,1);
+    var wkStart=new Date(jan1.getTime()+(wkNum-1)*7*86400000);
+    var mm=('0'+(wkStart.getMonth()+1)).slice(-2);
+    var dd=('0'+wkStart.getDate()).slice(-2);
+    var label=mm+'/'+dd+'/'+yr;
+    movAvg.push({wk:wk,label:label,val:byWeek[wk],avg:avg});
+  });
+
   var overlay=document.createElement('div');
   overlay.id='dbd-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:#1a1aff;z-index:9000;overflow-y:auto;';
   var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
     +'<button onclick="document.getElementById(\'dbd-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+title+' — '+entries.length+' shown</span>'
-    +'</div><div style="padding:8px;font-family:Courier New,monospace;">'
-    +'<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">DAYS = days since last visit &nbsp;·&nbsp; 30D AVG = rolling 30-day $/day cost</div>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+title+'</span>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px;font-family:Courier New,monospace;">'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:11px;">$/DAY AVG</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+perDay.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:11px;">30-DAY AVG</div>'
+    +'<div style="color:#00ff88;font-weight:700;font-size:15px;">$'+per30.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #ff6666;border-radius:4px;padding:8px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:11px;">$/WEEK AVG</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+perWeek.toFixed(2)+'</div></div>'
+    +'</div>';
+
+  // 4-week moving avg chart
+  if(movAvg.length){
+    var maxWk=Math.max.apply(null,movAvg.map(function(w){return w.val;}));
+    h+='<div style="background:#ffffff;border-radius:4px;margin:0 8px 8px;padding:10px;font-family:Courier New,monospace;">'
+      +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;">4-WEEK MOVING AVERAGE</div>';
+    movAvg.forEach(function(w){
+      var barPct=Math.round((w.val/maxWk)*100);
+      var avgPct=Math.round((w.avg/maxWk)*100);
+      var barColor=w.val>w.avg*1.2?'#cc0000':w.val>w.avg?'#cc6600':'#006600';
+      h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+        +'<div style="color:#000066;font-size:10px;width:58px;text-align:right;">'+w.label+'</div>'
+        +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:14px;position:relative;">'
+        +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
+        +'<div style="position:absolute;top:0;left:'+avgPct+'%;width:2px;height:100%;background:#000066;"></div>'
+        +'<span style="position:absolute;right:3px;top:0;font-size:10px;color:#000;font-weight:700;">$'+w.val.toFixed(0)+'</span>'
+        +'</div></div>';
+    });
+    h+='<div style="font-size:10px;color:#666;margin-top:4px;">▌ blue = 4-wk avg &nbsp; 🟢=below 🟠=above 🔴=high</div></div>';
+  }
+
+  h+='<div style="padding:0 8px 8px;font-family:Courier New,monospace;">'
     +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
     +'<tr style="background:#000080;">'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">DATE</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">VENDOR</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">AMT</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">DAYS</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">30D AVG</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">$/DAY</th>'
     +'</tr>';
   entries.forEach(function(e,i){
     var next=entries[i+1];
-    var days=next?Math.max(1,Math.round((new Date(e.date+'T00:00:00')-new Date(next.date+'T00:00:00'))/(1000*60*60*24))):1;
-    // rolling 30-day cost: sum of all entries in trailing 30 days / 30
-    var endD=new Date(e.date+'T00:00:00');
-    var startD=new Date(endD);startD.setDate(startD.getDate()-29);
-    var spend=0;
-    for(var j=0;j<allEntries.length;j++){
-      var d=new Date(allEntries[j].date+'T00:00:00');
-      if(d>=startD && d<=endD) spend+=Math.abs(allEntries[j].amt);
-    }
-    var cpd=spend/30;
+    var days2=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
+    var cpd=Math.abs(e.amt)/days2;
     var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dc=cpd>20?'#cc0000':cpd>10?'#cc6600':'#006600';
-    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+    var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
     h+='<tr style="'+bg+';border-bottom:1px solid #ccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:14px;">'+dt+'</td>'
-      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:14px;">'+trunc(e.payee||'',12)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#333;">'+days+'</td>'
-      +'<td style="padding:4px;text-align:right;font-weight:700;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
+      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+'</td>'
+      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days2+'</td>'
+      +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
       +'</tr>';
   });
   h+='</table></div>';
   overlay.innerHTML=h;
   document.body.appendChild(overlay);
 }
+
 
 // ═══════════════════════════════════════════════
 //  DATALISTS
@@ -3651,9 +3761,6 @@ function doCheatSheet(){
   var allPcodes=[...new Set(LOG.map(function(e){return e.pcode||'';}).filter(Boolean))].sort();
   var descOpts=allDescs.map(function(d){return'<option value="'+d+'">'+d+'</option>';}).join('');
   var pcOpts=allPcodes.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
-  // ADD NEW options at top of each dropdown
-  var descOptsWithNew='<option value="">DESC</option><option value="__NEW__" style="background:#005500;color:#00ff88;font-weight:700;">+ ADD NEW DESC...</option>'+descOpts;
-  var pcOptsWithNew='<option value="">PCODE</option><option value="__NEW__" style="background:#005500;color:#00ff88;font-weight:700;">+ ADD NEW PCODE...</option>'+pcOpts;
   var old=document.getElementById('cheatsheet-overlay');if(old)old.remove();
   var overlay=document.createElement('div');
   overlay.id='cheatsheet-overlay';
@@ -3672,8 +3779,8 @@ function doCheatSheet(){
       +'<div style="color:#ffff00;font-weight:700;font-size:13px;">'+trunc(payee,22)+'</div>'
       +'<div style="color:#ff6666;font-size:11px;">'+v.cnt+' · $'+Math.abs(v.amt).toFixed(0)+'</div></div>'
       +'<div style="display:flex;gap:6px;margin-bottom:6px;">'
-      +'<select id="'+sid+'_pc" onchange="cheatSheetSelectChange(this,\'pc\',\''+sid+'\')" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;">'+pcOptsWithNew+'</select>'
-      +'<select id="'+sid+'_dc" onchange="cheatSheetSelectChange(this,\'dc\',\''+sid+'\')" style="flex:2;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;">'+descOptsWithNew+'</select>'
+      +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
+      +'<select id="'+sid+'_dc" style="flex:2;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
       +'</div>'
       +'<button onclick="cheatSheetApply(\''+payee.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',' +'\''+sid+'\')" '
       +'style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;border:none;border-radius:4px;cursor:pointer;">'
@@ -3684,52 +3791,9 @@ function doCheatSheet(){
   document.body.appendChild(overlay);
 }
 
-function cheatSheetSelectChange(sel,kind,sid){
-  if(sel.value!=='__NEW__')return;
-  var label=kind==='pc'?'PCODE':'DESC';
-  var prompt2=kind==='pc'?'Enter NEW PCODE (e.g. 10629, ROOF, TRA):':'Enter NEW DESC (e.g. ROOFING SUPPLIES, OFFICE):';
-  var val=window.prompt(prompt2,'');
-  if(!val||!val.trim()){sel.value='';return;}
-  val=val.trim().toUpperCase();
-  // validation — pcode allow alphanumeric, desc anything but limit length
-  if(kind==='pc'){
-    if(!/^[A-Z0-9_-]{1,8}$/.test(val)){toast('PCODE must be 1-8 chars (letters/numbers)',false);sel.value='';return;}
-  }else{
-    if(val.length>30){toast('DESC max 30 chars',false);sel.value='';return;}
-  }
-  // check if already exists in dropdown
-  var exists=false;
-  for(var i=0;i<sel.options.length;i++){
-    if(sel.options[i].value===val){exists=true;sel.value=val;break;}
-  }
-  if(!exists){
-    // add new option and select it
-    var opt=document.createElement('option');
-    opt.value=val;opt.textContent=val;opt.style.cssText='background:#000022;color:'+(kind==='pc'?'#00ffff':'#ffff00')+';font-weight:700;';
-    // insert before the existing options but after __NEW__
-    sel.insertBefore(opt,sel.options[2]||null);
-    sel.value=val;
-    toast('✓ NEW '+label+' "'+val+'" — added. Click REPLACE ALL to apply.',true);
-  }
-  // mirror the new value to all other dropdowns of the same kind so it's reusable on other payees
-  var allSelects=document.querySelectorAll('#cheatsheet-overlay select[id$="_'+kind+'"]');
-  allSelects.forEach(function(s){
-    if(s===sel)return;
-    var has=false;
-    for(var j=0;j<s.options.length;j++) if(s.options[j].value===val){has=true;break;}
-    if(!has){
-      var o=document.createElement('option');
-      o.value=val;o.textContent=val;o.style.cssText='background:#000022;color:'+(kind==='pc'?'#00ffff':'#ffff00')+';font-weight:700;';
-      s.insertBefore(o,s.options[2]||null);
-    }
-  });
-}
-
 function cheatSheetApply(payee,sid){
   var pc=(document.getElementById(sid+'_pc')||{value:''}).value;
   var dc=(document.getElementById(sid+'_dc')||{value:''}).value;
-  if(pc==='__NEW__'){toast('Pick a PCODE first (or type a new one)',false);return;}
-  if(dc==='__NEW__'){toast('Pick a DESC first (or type a new one)',false);return;}
   if(!pc&&!dc){toast('Pick PCODE and DESC first',false);return;}
   loadLog();var fixed=0;
   LOG.forEach(function(e){
@@ -3952,11 +4016,9 @@ function doBankCSVPreview(file){
     var lines=e.target.result.split('\n');
     _bankRows=[];
     var skipped=0;
-    var headersSkipped=0;
-    var foundData=false;
-    for(var i=0;i<lines.length;i++){
+    for(var i=1;i<lines.length;i++){
       var line=lines[i].trim();
-      if(!line){if(!foundData)headersSkipped++;continue;}
+      if(!line)continue;
       var cols=[];var inq=false;var cur='';
       for(var c=0;c<line.length;c++){
         if(line[c]==='"'){inq=!inq;}
@@ -3969,16 +4031,10 @@ function doBankCSVPreview(file){
       var debit=parseFloat(cols[4])||0;
       var credit=parseFloat(cols[5])||0;
       var status=cols[6]||'';
-      // header detection — date must look like M/D/Y, and we need an amount
-      var dp=dateStr.split('/');
-      var validDate=(dp.length===3 && !isNaN(parseInt(dp[0],10)) && !isNaN(parseInt(dp[1],10)) && !isNaN(parseInt(dp[2],10)) && parseInt(dp[0],10)>=1 && parseInt(dp[0],10)<=12);
-      var hasAmount=(debit!==0||credit!==0);
-      if(!validDate||!rawDesc||!hasAmount){
-        if(!foundData)headersSkipped++;
-        continue;
-      }
-      foundData=true;
+      if(!dateStr||!rawDesc)continue;
       if(status.toLowerCase()==='pending'){skipped++;continue;}
+      var dp=dateStr.split('/');
+      if(dp.length!==3)continue;
       var isoDate=dp[2]+'-'+('0'+dp[0]).slice(-2)+'-'+('0'+dp[1]).slice(-2);
       // get match
       var match=bankAutoMatch(rawDesc);
@@ -3990,10 +4046,7 @@ function doBankCSVPreview(file){
       var cleanPayee=cleanPayeeName(match.payee);
       _bankRows.push({date:isoDate,rawDesc:rawDesc,payee:cleanPayee,pcode:match.pcode,desc:match.desc,amt:amt});
     }
-    // sort oldest-first — so as processChunk unshifts each row, the NEWEST date ends up at the top of LOG
-    _bankRows.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-    var hdrNote=headersSkipped>0?' · skipped '+headersSkipped+' header line'+(headersSkipped===1?'':'s'):'';
-    var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)'+hdrNote+'</div>';
+    var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
     html+='<table style="width:100%;border-collapse:collapse;font-size:14px;">'
       +'<tr style="background:#0000aa;">'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">DATE</th>'
@@ -4001,7 +4054,7 @@ function doBankCSVPreview(file){
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PCO</th>'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;text-align:right;">AMT</th>'
       +'</tr>';
-    _bankRows.slice(-10).reverse().forEach(function(r){
+    _bankRows.slice(0,10).forEach(function(r){
       var ac=r.amt>=0?'#00ffff':'#ff6666';
       html+='<tr style="background:#00008a;">'
         +'<td style="padding:3px;color:#ccccff;border:1px solid #333388;font-size:13px;">'+r.date.slice(5)+'</td>'
@@ -4126,8 +4179,6 @@ function doBankImportConfirm(){
     if(idx<total&&_bankDone===''){setTimeout(processChunk,10);}
     else{
       _bankDone='x';_dupAdded=added;_dupSkipped=skipped;
-      // safety net: sort LOG by date newest-first so display order is consistent
-      LOG.sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
       saveLog();
       Array.from(document.body.children).forEach(function(el){
         if(el.style.position==='fixed'||el.style.cssText.indexOf('position:fixed')>=0){el.remove();}
@@ -4336,6 +4387,7 @@ var _shown=[];
 var _ledYr='';
 var _ledPage=0;
 var _pageSize=20;
+var _ledSort='desc'; // desc=newest first, asc=oldest first
 
 function ledSetYear(yr){
   _ledYr=yr;
@@ -4424,13 +4476,12 @@ function rptAll(sortBy){
   var opts=Object.keys(seen).sort();
   var label=sortBy==='payee'?'PAYEE':sortBy==='pcode'?'PCODE':'DESC';
   var selHtml='<div style="font-size:14px;color:#ccccff;font-family:Courier New,monospace;margin-bottom:4px;">PICK '+label+':</div>'
-    +'<div id="rpt-picker-list" style="background:#ffffff;border:2px solid #999999;border-radius:4px;margin-bottom:10px;max-height:220px;overflow-y:auto;">';
-  selHtml+='<div onclick="rptAllFilter(\''+sortBy+'\',\'\')" style="padding:10px 12px;background:#e8e8e8;color:#000000;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #cccccc;cursor:pointer;">ALL ('+opts.length+' items)</div>';
+    +'<div id="rpt-picker-list" style="background:#0000cc;border:2px solid #ffff00;border-radius:4px;margin-bottom:10px;max-height:220px;overflow-y:auto;">';
+  selHtml+='<div onclick="rptAllFilter(\''+sortBy+'\',\'\')" style="padding:10px 12px;color:#ccccff;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #333388;cursor:pointer;">ALL ('+opts.length+' items)</div>';
   for(var j=0;j<opts.length;j++){
     var o=opts[j];
-    var pbg=j%2===0?'background:#ffffff':'background:#f0f4ff';
     selHtml+='<div onclick="rptAllFilter(\''+sortBy+'\',\''+o.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\''+')" '
-      +'style="padding:10px 12px;'+pbg+';color:#000066;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #cccccc;cursor:pointer;">'+o+'</div>';
+      +'style="padding:10px 12px;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #222266;cursor:pointer;">'+o+'</div>';
   }
   selHtml+='</div><div id="rpt-all-table"></div>';
   document.getElementById('rpt-content').innerHTML=selHtml;
@@ -4466,18 +4517,18 @@ function rptAllFilter(sortBy, pick){
     +'</tr>';
   for(var i=0;i<rows.length;i++){
     var e=rows[i];
-    var ac=e.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    html+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:5px 3px;color:#555555;white-space:nowrap;font-size:14px;">'+fmtDate(e.date)+'</td>'
-      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.payee||'',9)+'</td>'
-      +'<td style="padding:5px 3px;color:#333333;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.desc||'',9)+'</td>'
-      +'<td style="padding:5px 3px;color:#333399;font-size:14px;text-align:center;white-space:nowrap;">'+((e.pcode||'').slice(0,4))+'</td>'
+    var ac=e.amt>=0?'#00ffff':'#ff6666';
+    var bg=i%2===0?'background:#00008a':'background:#000077';
+    html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
+      +'<td style="padding:5px 3px;color:#ccccff;white-space:nowrap;font-size:14px;">'+fmtDate(e.date)+'</td>'
+      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.payee||'',9)+'</td>'
+      +'<td style="padding:5px 3px;color:#ffffff;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">'+trunc(e.desc||'',9)+'</td>'
+      +'<td style="padding:5px 3px;color:#00ffff;font-size:14px;text-align:center;white-space:nowrap;">'+((e.pcode||'').slice(0,4))+'</td>'
       +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:14px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'</tr>';
   }
-  html+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
-    +'<td colspan="4" style="padding:6px 3px;color:#000000;font-weight:700;font-size:14px;">TOTAL ('+rows.length+')</td>'
+  html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
+    +'<td colspan="4" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:14px;">TOTAL ('+rows.length+')</td>'
     +'<td style="padding:6px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:13px;color:'+tc+';">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</td>'
     +'</tr></table>';
   document.getElementById('rpt-all-table').innerHTML=html;
@@ -4905,177 +4956,6 @@ function runMasterDesc(){
   document.getElementById('mdr-output').innerHTML=h;
 }
 
-function rptPLChart(){
-  loadLog();
-  if(!LOG.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-
-  // aggregate by month
-  var monMap={};
-  LOG.forEach(function(e){
-    var m=(e.date||'').slice(0,7);
-    if(!m||m.length<7)return;
-    if(!monMap[m])monMap[m]={inc:0,exp:0};
-    if(e.amt>=0) monMap[m].inc+=e.amt;
-    else         monMap[m].exp+=Math.abs(e.amt);
-  });
-  var months=Object.keys(monMap).sort();
-  if(!months.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATED ENTRIES</div>';
-    return;
-  }
-
-  // scale: max of any single month's income or expense
-  var maxVal=0;
-  months.forEach(function(m){
-    if(monMap[m].inc>maxVal)maxVal=monMap[m].inc;
-    if(monMap[m].exp>maxVal)maxVal=monMap[m].exp;
-  });
-  if(maxVal===0)maxVal=1;
-
-  // SVG dimensions (viewBox — scales responsively)
-  var W=720,H=380;
-  var pT=30,pR=15,pB=70,pL=60;
-  var cW=W-pL-pR;
-  var cH=H-pT-pB;
-  var zeroY=pT+cH/2;
-  var halfH=cH/2;
-  var n=months.length;
-  var xStep=n>1?cW/(n-1):0;
-
-  function xAt(i){return pL+(n>1?i*xStep:cW/2);}
-  function yInc(v){return zeroY-(v/maxVal)*halfH;}  // income above zero
-  function yExp(v){return zeroY+(v/maxVal)*halfH;}  // expense below zero
-
-  // INCOME mountain path (above zero line)
-  var incPath='M '+xAt(0)+' '+zeroY;
-  for(var i=0;i<n;i++) incPath+=' L '+xAt(i)+' '+yInc(monMap[months[i]].inc);
-  incPath+=' L '+xAt(n-1)+' '+zeroY+' Z';
-
-  // EXPENSE mountain path (below zero line)
-  var expPath='M '+xAt(0)+' '+zeroY;
-  for(var i=0;i<n;i++) expPath+=' L '+xAt(i)+' '+yExp(monMap[months[i]].exp);
-  expPath+=' L '+xAt(n-1)+' '+zeroY+' Z';
-
-  // NET P&L line — relative to zero, scaled by halfH
-  var netPath='';
-  for(var i=0;i<n;i++){
-    var net=monMap[months[i]].inc-monMap[months[i]].exp;
-    var y=zeroY-(net/maxVal)*halfH;
-    if(y<pT)y=pT;if(y>pT+cH)y=pT+cH;
-    netPath+=(i===0?'M ':' L ')+xAt(i)+' '+y;
-  }
-
-  // X-axis month labels — show every Nth depending on count
-  var labelStep=Math.max(1,Math.ceil(n/8));
-  var monLabels='';
-  for(var i=0;i<n;i++){
-    if(i%labelStep!==0 && i!==n-1) continue;
-    var m=months[i];
-    var yr=m.slice(2,4); // 2-digit year
-    var mo=parseInt(m.slice(5,7),10)-1;
-    var lbl=MONTHS[mo]+"'"+yr;
-    monLabels+='<text x="'+xAt(i)+'" y="'+(pT+cH+18)+'" fill="#000066" font-family="Courier New,monospace" font-size="11" font-weight="700" text-anchor="middle" transform="rotate(-30 '+xAt(i)+' '+(pT+cH+18)+')">'+lbl+'</text>';
-  }
-
-  // Y-axis labels (max, half, zero, half-, max-)
-  function fmtAmt(v){
-    if(Math.abs(v)>=1000) return '$'+(v/1000).toFixed(1)+'k';
-    return '$'+Math.round(v);
-  }
-  var yLabels=''
-    +'<text x="'+(pL-6)+'" y="'+(pT+4)+'" fill="#006699" font-family="Courier New,monospace" font-size="10" font-weight="700" text-anchor="end">+'+fmtAmt(maxVal)+'</text>'
-    +'<text x="'+(pL-6)+'" y="'+(zeroY-halfH/2+4)+'" fill="#0099cc" font-family="Courier New,monospace" font-size="10" text-anchor="end">+'+fmtAmt(maxVal/2)+'</text>'
-    +'<text x="'+(pL-6)+'" y="'+(zeroY+4)+'" fill="#000000" font-family="Courier New,monospace" font-size="11" font-weight="700" text-anchor="end">$0</text>'
-    +'<text x="'+(pL-6)+'" y="'+(zeroY+halfH/2+4)+'" fill="#cc3366" font-family="Courier New,monospace" font-size="10" text-anchor="end">-'+fmtAmt(maxVal/2)+'</text>'
-    +'<text x="'+(pL-6)+'" y="'+(pT+cH+4)+'" fill="#990033" font-family="Courier New,monospace" font-size="10" font-weight="700" text-anchor="end">-'+fmtAmt(maxVal)+'</text>';
-
-  // grid lines — darker on white
-  var grid=''
-    +'<line x1="'+pL+'" y1="'+zeroY+'" x2="'+(W-pR)+'" y2="'+zeroY+'" stroke="#000000" stroke-width="1.2" stroke-opacity="0.6"/>'
-    +'<line x1="'+pL+'" y1="'+(zeroY-halfH/2)+'" x2="'+(W-pR)+'" y2="'+(zeroY-halfH/2)+'" stroke="#aaaaaa" stroke-width="0.5" stroke-dasharray="3,4"/>'
-    +'<line x1="'+pL+'" y1="'+(zeroY+halfH/2)+'" x2="'+(W-pR)+'" y2="'+(zeroY+halfH/2)+'" stroke="#aaaaaa" stroke-width="0.5" stroke-dasharray="3,4"/>'
-    +'<line x1="'+pL+'" y1="'+pT+'" x2="'+(W-pR)+'" y2="'+pT+'" stroke="#cccccc" stroke-width="0.5"/>'
-    +'<line x1="'+pL+'" y1="'+(pT+cH)+'" x2="'+(W-pR)+'" y2="'+(pT+cH)+'" stroke="#cccccc" stroke-width="0.5"/>';
-
-  // calc summary
-  var totIncome=months.reduce(function(s,m){return s+monMap[m].inc;},0);
-  var totExpense=months.reduce(function(s,m){return s+monMap[m].exp;},0);
-  var netPL=totIncome-totExpense;
-  var netColor=netPL>=0?'#006600':'#cc0000';
-  var bestMon=months[0],worstMon=months[0],bestNet=-Infinity,worstNet=Infinity;
-  months.forEach(function(m){
-    var n2=monMap[m].inc-monMap[m].exp;
-    if(n2>bestNet){bestNet=n2;bestMon=m;}
-    if(n2<worstNet){worstNet=n2;worstMon=m;}
-  });
-  function fmtMonLbl(m){
-    var yr=m.slice(0,4);
-    var mo=parseInt(m.slice(5,7),10)-1;
-    return MONTHS[mo]+' '+yr;
-  }
-
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#ffffff;border:2px solid #000066;border-radius:6px;">'
-    +'<defs>'
-    +  '<linearGradient id="incGrad" x1="0%" y1="0%" x2="0%" y2="100%">'
-    +    '<stop offset="0%" stop-color="#0066cc" stop-opacity="0.85"/>'
-    +    '<stop offset="100%" stop-color="#66ccff" stop-opacity="0.25"/>'
-    +  '</linearGradient>'
-    +  '<linearGradient id="expGrad" x1="0%" y1="0%" x2="0%" y2="100%">'
-    +    '<stop offset="0%" stop-color="#ff99aa" stop-opacity="0.25"/>'
-    +    '<stop offset="100%" stop-color="#cc0033" stop-opacity="0.85"/>'
-    +  '</linearGradient>'
-    +'</defs>'
-    +grid
-    +'<path d="'+incPath+'" fill="url(#incGrad)" stroke="#003388" stroke-width="2" stroke-linejoin="round"/>'
-    +'<path d="'+expPath+'" fill="url(#expGrad)" stroke="#990033" stroke-width="2" stroke-linejoin="round"/>'
-    +'<path d="'+netPath+'" fill="none" stroke="#cc6600" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
-    +yLabels
-    +monLabels
-    // title
-    +'<text x="'+(W/2)+'" y="18" fill="#000066" font-family="Courier New,monospace" font-size="14" font-weight="700" text-anchor="middle">⛰️ P&amp;L MOUNTAIN — '+months.length+' MONTHS</text>'
-    +'</svg>';
-
-  var html='<div style="font-family:Courier New,monospace;">'
-    // summary cards
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">'
-    +'<div style="background:#ffffff;border:2px solid #003388;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#003388;font-size:11px;">TOT INCOME</div>'
-    +'<div style="color:#006600;font-weight:700;font-size:14px;">+$'+totIncome.toFixed(2)+'</div></div>'
-    +'<div style="background:#ffffff;border:2px solid #990033;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#990033;font-size:11px;">TOT EXPENSE</div>'
-    +'<div style="color:#cc0000;font-weight:700;font-size:14px;">-$'+totExpense.toFixed(2)+'</div></div>'
-    +'<div style="background:#ffffff;border:2px solid #cc6600;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#cc6600;font-size:11px;">NET P&amp;L</div>'
-    +'<div style="color:'+netColor+';font-weight:700;font-size:14px;">'+(netPL>=0?'+':'-')+'$'+Math.abs(netPL).toFixed(2)+'</div></div>'
-    +'</div>'
-    // chart
-    +svg
-    // legend
-    +'<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:8px;margin-top:8px;display:flex;justify-content:space-around;flex-wrap:wrap;gap:8px;font-size:12px;">'
-    +'<span style="color:#003388;font-weight:700;">▲ INCOME (blue mountain)</span>'
-    +'<span style="color:#990033;font-weight:700;">▼ EXPENSE (red mountain)</span>'
-    +'<span style="color:#cc6600;font-weight:700;">— NET P&amp;L LINE</span>'
-    +'</div>'
-    // best/worst
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">'
-    +'<div style="background:#ffffff;border:2px solid #006600;border-radius:4px;padding:8px;">'
-    +'<div style="color:#006600;font-size:11px;font-weight:700;">🏆 BEST MONTH</div>'
-    +'<div style="color:#000066;font-weight:700;font-size:13px;">'+fmtMonLbl(bestMon)+'</div>'
-    +'<div style="color:#006600;font-weight:700;font-size:13px;">'+(bestNet>=0?'+':'-')+'$'+Math.abs(bestNet).toFixed(2)+'</div></div>'
-    +'<div style="background:#ffffff;border:2px solid #cc0000;border-radius:4px;padding:8px;">'
-    +'<div style="color:#cc0000;font-size:11px;font-weight:700;">📉 WORST MONTH</div>'
-    +'<div style="color:#000066;font-weight:700;font-size:13px;">'+fmtMonLbl(worstMon)+'</div>'
-    +'<div style="color:#cc0000;font-weight:700;font-size:13px;">'+(worstNet>=0?'+':'-')+'$'+Math.abs(worstNet).toFixed(2)+'</div></div>'
-    +'</div>'
-    +'</div>';
-
-  document.getElementById('rpt-content').innerHTML=html;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
 function rptYearCompare(){
   loadLog();
   if(!LOG.length){document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';return;}
@@ -5210,12 +5090,12 @@ function rptYearCompare(){
   html+='</tr>';
 
   descArr.forEach(function(item,idx){
-    var bg=idx%2===0?'background:#ffffff':'background:#f0f4ff';
-    html+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:4px 3px;color:#000066;font-weight:700;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(item.desc,14)+'</td>';
+    var bg=idx%2===0?'background:#00008a':'background:#000077';
+    html+='<tr style="'+bg+';border-bottom:1px solid #333388;">'
+      +'<td style="padding:4px 3px;color:#ffff00;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(item.desc,14)+'</td>';
     yrArr.forEach(function(y){
       var v=descMap[item.desc][y]||0;
-      var vc=v>=0?'#006600':'#cc0000';
+      var vc=v>=0?'#00ffff':'#ff6666';
       html+='<td style="padding:4px 3px;text-align:right;font-size:14px;color:'+vc+';font-weight:700;">'+(v!==0?(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2):'—')+'</td>';
     });
     // pct change newest vs oldest available year
@@ -5224,7 +5104,7 @@ function rptYearCompare(){
     if(vals.length>=2){
       var newest=vals[0];var oldest=vals[vals.length-1];
       var pct=oldest!==0?((newest-oldest)/Math.abs(oldest)*100).toFixed(0):'—';
-      var pc=parseFloat(pct)>=0?'#006600':'#cc0000';
+      var pc=parseFloat(pct)>=0?'#00ff88':'#ff6666';
       pctHtml='<span style="color:'+pc+';font-weight:700;">'+(parseFloat(pct)>=0?'+':'')+pct+'%</span>';
     }
     html+='<td style="padding:4px 3px;text-align:right;font-size:14px;">'+pctHtml+'</td>';
@@ -5245,27 +5125,12 @@ function rptShow(type){
     rptPayeeSearch();
     return;
   }
-  // year — clean index listing
-  if(type==='yr'){
-    rptShowYr();
-    return;
-  }
-  // month — clean index listing
-  if(type==='mon'){
-    rptShowMon();
-    return;
-  }
-  // date — clean index listing
-  if(type==='date'){
-    rptShowDate();
-    return;
-  }
   _rptType=type;
   _rptPage=0;
   var map={};
   for(var i=0;i<LOG.length;i++){
     var e=LOG[i];
-    var key=type==='pcode'?(e.pcode||'?')
+    var key=type==='pcode'?(e.pcode||'?').slice(0,3)
            :type==='desc' ?(e.desc ||'?')
            :type==='yr'   ?(e.date ||'?').slice(0,4)
            :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -5279,12 +5144,7 @@ function rptShow(type){
     map[key].rows.push(e);
   }
   _rptArr=Object.keys(map).map(function(k){return{key:k,total:map[k].total,count:map[k].count,rows:map[k].rows};});
-  // pcode sorted alphanumeric (indexed); others by total
-  if(type==='pcode'){
-    _rptArr.sort(function(a,b){return a.key.localeCompare(b.key);});
-  } else {
-    _rptArr.sort(function(a,b){return a.total-b.total;});
-  }
+  _rptArr.sort(function(a,b){return a.total-b.total;});
   rptRender();
 }
 
@@ -5299,9 +5159,9 @@ function rptPayeeSearch(){
     payeeMap[p].amt+=e.amt;
     if(!payeeMap[p].last||(e.date||'')>payeeMap[p].last)payeeMap[p].last=e.date||'';
   });
-  // sort A-Z (indexed) — search still filters on top of this
+  // sort newest first
   var allPayees=Object.keys(payeeMap).sort(function(a,b){
-    return a.localeCompare(b);
+    return payeeMap[b].last.localeCompare(payeeMap[a].last);
   });
   window._payeeMap=payeeMap;
   window._allPayees=allPayees;
@@ -5335,18 +5195,21 @@ function rptPayeeFilter(val){
     +'<th style="color:#ffff00;padding:4px;text-align:right;border-bottom:1px solid #ffff00;">AMOUNT</th>'
     +'<th style="color:#ffff00;padding:4px;text-align:right;border-bottom:1px solid #ffff00;">LAST</th>'
     +'</tr>';
-  matches.forEach(function(p,i){
+  matches.slice(0,50).forEach(function(p,i){
     var v2=payeeMap[p];
-    var tc=v2.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dt=(v2.last||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
-    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptPayeeSelect(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"> '
-      +'<td style="padding:5px 4px;color:#000066;font-weight:700;font-size:12px;">'+trunc(p,18)+'</td>'
-      +'<td style="padding:5px 4px;color:#666600;text-align:right;font-size:11px;">'+v2.cnt+'</td>'
+    var tc=v2.amt>=0?'#00ffff':'#ff6666';
+    var bg=i%2===0?'background:#000044':'background:#00003a';
+    var dt=(v2.last||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3');
+    h+='<tr style="'+bg+';cursor:pointer;" onclick="rptPayeeSelect(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')"> '
+      +'<td style="padding:5px 4px;color:#ffff00;font-size:12px;">'+trunc(p,18)+'</td>'
+      +'<td style="padding:5px 4px;color:#ccccff;text-align:right;font-size:11px;">'+v2.cnt+'</td>'
       +'<td style="padding:5px 4px;text-align:right;font-weight:700;font-size:12px;color:'+tc+';">'+(v2.amt>=0?'+':'-')+'$'+Math.abs(v2.amt).toFixed(2)+'</td>'
-      +'<td style="padding:5px 4px;color:#555555;text-align:right;font-size:11px;white-space:nowrap;">'+dt+'</td>'
+      +'<td style="padding:5px 4px;color:#aaaacc;text-align:right;font-size:10px;">'+dt+'</td>'
       +'</tr>';
   });
+  if(matches.length>50){
+    h+='<tr><td colspan="4" style="color:#ccccff;font-size:11px;text-align:center;padding:6px;">...'+( matches.length-50)+' more — type to narrow</td></tr>';
+  }
   h+='</table>';
   var el=document.getElementById('payee-search-results');
   if(el)el.innerHTML=h;
@@ -5394,17 +5257,16 @@ function rptPayeeSelect(payee){
       +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
       +'</tr>';
 
-    // detail rows newest first — date as MM/DD/YY
+    // detail rows newest first
     yrRows.forEach(function(e,i){
       var ac=e.amt>=0?'#006600':'#cc0000';
       var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-      var d=e.date||'';
-      var dt=d.length>=10?(d.slice(5,7)+'/'+d.slice(8,10)+'/'+d.slice(2,4)):d;
+      var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
       h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-        +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
-        +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
-        +'<td style="padding:5px 3px;color:#333399;font-size:11px;">'+trunc(e.pcode||'',6)+'</td>'
-        +'<td style="padding:5px 3px;color:#888888;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
+        +'<td style="padding:5px 3px;color:#333333;font-size:12px;white-space:nowrap;">'+dt+'</td>'
+        +'<td style="padding:5px 3px;color:#000066;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
+        +'<td style="padding:5px 3px;color:#666666;font-size:11px;">'+trunc(e.pcode||'',6)+'</td>'
+        +'<td style="padding:5px 3px;color:#aaaaaa;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
         +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
         +'</tr>';
     });
@@ -5450,8 +5312,8 @@ function rptRender(){
     +'</tr>';
   for(var j=0;j<pageArr.length;j++){
     var r=pageArr[j];
-    var col=r.total>=0?'#006600':'#cc0000';
-    var bg=j%2===0?'background:#ffffff':'background:#f0f4ff';
+    var col=r.total>=0?'#00ffff':'#ff6666';
+    var bg=j%2===0?'background:#00008a':'background:#000077';
     var mainKey=trunc(r.key,20);
     var col2,col3;
     if(type==='pcode'){
@@ -5471,18 +5333,18 @@ function rptRender(){
       col2=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',20):'—';
       col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
     }
-    html+='<tr onclick="rptDrill(\''+type+'\',\''+r.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+bg+';border-bottom:1px solid #cccccc;cursor:pointer;">'
-      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:13px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
-      +'<td style="padding:5px 3px;color:#333333;font-size:14px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
-      +'<td style="padding:5px 3px;color:#333399;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
-      +'<td style="padding:5px 3px;color:#666600;text-align:center;font-size:13px;">'+r.count+'</td>'
+    html+='<tr onclick="rptDrill(\''+type+'\',\''+r.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+bg+';border-bottom:1px solid #333388;cursor:pointer;">'
+      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
+      +'<td style="padding:5px 3px;color:#ffffff;font-size:14px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
+      +'<td style="padding:5px 3px;color:#00ffff;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
+      +'<td style="padding:5px 3px;color:#ccccff;text-align:center;font-size:13px;">'+r.count+'</td>'
       +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:13px;color:'+col+';">'+(r.total>=0?'+':'-')+'$'+Math.abs(r.total).toFixed(2)+'</td>'
       +'</tr>';
   }
-  var gc=grand>=0?'#006600':'#cc0000';
-  html+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
-    +'<td colspan="3" style="padding:7px 4px;color:#000000;font-weight:700;font-size:13px;">TOTAL</td>'
-    +'<td style="padding:7px 4px;color:#000000;text-align:center;font-weight:700;font-size:13px;">'+LOG.length+'</td>'
+  var gc=grand>=0?'#00ffff':'#ff6666';
+  html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
+    +'<td colspan="3" style="padding:7px 4px;color:#ffff00;font-weight:700;font-size:13px;">TOTAL</td>'
+    +'<td style="padding:7px 4px;color:#ccccff;text-align:center;font-size:13px;">'+LOG.length+'</td>'
     +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+gc+';font-size:13px;">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
     +'</tr></table>';
   // pagination
@@ -5499,503 +5361,10 @@ function rptPage(p){_rptPage=p;rptRender();document.getElementById('screen-repor
 
 var MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
-function rptShowYr(){
-  loadLog();
-  if(!LOG.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-  // build year totals
-  var yrMap={};
-  LOG.forEach(function(e){
-    var y=(e.date||'?').slice(0,4);
-    if(!yrMap[y])yrMap[y]={cnt:0,amt:0};
-    yrMap[y].cnt++;
-    yrMap[y].amt+=e.amt;
-  });
-  var years=Object.keys(yrMap).sort().reverse(); // newest year first
-
-  var grand=LOG.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grand>=0?'#006600':'#cc0000';
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">YEARS — TAP TO DRILL</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
-    +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:left;border-bottom:2px solid #ffff00;font-size:14px;">YR</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">#</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">TOTAL</th>'
-    +'</tr>';
-
-  years.forEach(function(y,i){
-    var v=yrMap[y];
-    var ac=v.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptDrill(\'yr\',\''+y+'\')">'
-      +'<td style="padding:8px 6px;color:#000066;font-weight:700;font-size:15px;">'+y+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
-      +'<td style="padding:8px 6px;color:#666600;text-align:right;font-size:14px;">'+v.cnt+'</td>'
-      +'<td style="padding:8px 6px;text-align:right;font-weight:700;font-size:14px;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  h+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
-    +'<td style="padding:7px 6px;color:#000000;font-weight:700;font-size:14px;">TOTAL</td>'
-    +'<td style="padding:7px 6px;color:#000000;text-align:right;font-weight:700;font-size:14px;">'+LOG.length+'</td>'
-    +'<td style="padding:7px 6px;text-align:right;font-weight:700;font-size:14px;color:'+gc+';">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
-    +'</tr></table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
-function rptDrillYr(yr){
-  loadLog();
-  // entries in this year, newest first
-  var rows=LOG.filter(function(e){return(e.date||'').slice(0,4)===yr;})
-    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
-  if(!rows.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grandTotal>=0?'#00ffff':'#ff6666';
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    // header bar
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">YEAR: '+yr+'</span>'
-    +'<button onclick="rptShow(\'yr\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
-    +'</div>'
-    // summary card
-    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="display:flex;justify-content:space-between;">'
-    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries</span>'
-    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
-    +'</div></div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-    // column header
-    +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DATE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PAYEE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DESC</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PCO</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border-bottom:1px solid #ffff00;font-size:12px;">AMT</th>'
-    +'</tr>';
-
-  rows.forEach(function(e,i){
-    var ac=e.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
-    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
-      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',12)+'</td>'
-      +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',12)+'</td>'
-      +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
-      +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  // grand total
-  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** '+yr+' GRAND TOTAL ***</td>'
-    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
-    +'</tr>'
-    +'</table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
-function rptShowMon(){
-  loadLog();
-  if(!LOG.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-  // build month totals
-  var monMap={};
-  LOG.forEach(function(e){
-    var m=(e.date||'?').slice(0,7);
-    if(!monMap[m])monMap[m]={cnt:0,amt:0};
-    monMap[m].cnt++;
-    monMap[m].amt+=e.amt;
-  });
-  var months=Object.keys(monMap).sort().reverse(); // last in first
-
-  var grand=LOG.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grand>=0?'#006600':'#cc0000';
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">MONTHS — TAP TO DRILL</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
-    +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:left;border-bottom:2px solid #ffff00;font-size:14px;">MON</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">#</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">TOTAL</th>'
-    +'</tr>';
-
-  months.forEach(function(m,i){
-    var v=monMap[m];
-    var ac=v.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var yr=m.slice(0,4);
-    var mo=parseInt(m.slice(5,7),10)-1;
-    var monLabel=MONTHS[mo]+' '+yr;
-    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptDrill(\'mon\',\''+m+'\')">'
-      +'<td style="padding:8px 6px;color:#000066;font-weight:700;font-size:14px;">'+monLabel+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
-      +'<td style="padding:8px 6px;color:#666600;text-align:right;font-size:14px;">'+v.cnt+'</td>'
-      +'<td style="padding:8px 6px;text-align:right;font-weight:700;font-size:14px;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  h+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
-    +'<td style="padding:7px 6px;color:#000000;font-weight:700;font-size:14px;">TOTAL</td>'
-    +'<td style="padding:7px 6px;color:#000000;text-align:right;font-weight:700;font-size:14px;">'+LOG.length+'</td>'
-    +'<td style="padding:7px 6px;text-align:right;font-weight:700;font-size:14px;color:'+gc+';">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
-    +'</tr></table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
-function rptDrillMon(monKey){
-  loadLog();
-  // entries in this month, newest first
-  var rows=LOG.filter(function(e){return(e.date||'').slice(0,7)===monKey;})
-    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
-  if(!rows.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grandTotal>=0?'#00ffff':'#ff6666';
-  var yr=monKey.slice(0,4);
-  var mo=parseInt(monKey.slice(5,7),10)-1;
-  var monLabel=MONTHS[mo]+' '+yr;
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    // header bar
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
-    +'<button onclick="rptShow(\'mon\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
-    +'</div>'
-    // summary card
-    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="display:flex;justify-content:space-between;">'
-    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries</span>'
-    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
-    +'</div></div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-    // column header
-    +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DATE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PAYEE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DESC</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PCO</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border-bottom:1px solid #ffff00;font-size:12px;">AMT</th>'
-    +'</tr>';
-
-  rows.forEach(function(e,i){
-    var ac=e.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
-    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
-      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',12)+'</td>'
-      +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',12)+'</td>'
-      +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
-      +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  // grand total
-  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** '+monLabel+' GRAND TOTAL ***</td>'
-    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
-    +'</tr>'
-    +'</table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
-function rptShowDate(){
-  loadLog();
-  if(!LOG.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-  // build date totals
-  var dateMap={};
-  LOG.forEach(function(e){
-    var d=e.date||'?';
-    if(!dateMap[d])dateMap[d]={cnt:0,amt:0};
-    dateMap[d].cnt++;
-    dateMap[d].amt+=e.amt;
-  });
-  var dates=Object.keys(dateMap).sort().reverse(); // last in first
-
-  var grand=LOG.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grand>=0?'#006600':'#cc0000';
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">DATES — TAP TO DRILL</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
-    +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:left;border-bottom:2px solid #ffff00;font-size:14px;">DATE</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">#</th>'
-    +'<th style="color:#ffff00;padding:6px 4px;text-align:right;border-bottom:2px solid #ffff00;font-size:14px;">TOTAL</th>'
-    +'</tr>';
-
-  dates.forEach(function(d,i){
-    var v=dateMap[d];
-    var ac=v.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dt=d.replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
-    h+='<tr style="'+bg+';cursor:pointer;border-bottom:1px solid #cccccc;" onclick="rptDrill(\'date\',\''+d+'\')">'
-      +'<td style="padding:8px 6px;color:#000066;font-weight:700;font-size:14px;">'+dt+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
-      +'<td style="padding:8px 6px;color:#666600;text-align:right;font-size:14px;">'+v.cnt+'</td>'
-      +'<td style="padding:8px 6px;text-align:right;font-weight:700;font-size:14px;color:'+ac+';">'+(v.amt>=0?'+':'-')+'$'+Math.abs(v.amt).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  h+='<tr style="background:#e8e8e8;border-top:2px solid #999999;">'
-    +'<td style="padding:7px 6px;color:#000000;font-weight:700;font-size:14px;">TOTAL</td>'
-    +'<td style="padding:7px 6px;color:#000000;text-align:right;font-weight:700;font-size:14px;">'+LOG.length+'</td>'
-    +'<td style="padding:7px 6px;text-align:right;font-weight:700;font-size:14px;color:'+gc+';">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
-    +'</tr></table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
-function rptDrillDate(dateKey){
-  loadLog();
-  // entries on this date
-  var rows=LOG.filter(function(e){return(e.date||'')===dateKey;});
-  if(!rows.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grandTotal>=0?'#00ffff':'#ff6666';
-  var dtLabel=dateKey.replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    // header bar
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">DATE: '+dtLabel+'</span>'
-    +'<button onclick="rptShow(\'date\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
-    +'</div>'
-    // summary card
-    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="display:flex;justify-content:space-between;">'
-    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries</span>'
-    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
-    +'</div></div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-    // column header
-    +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PAYEE</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">DESC</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border-bottom:1px solid #ffff00;font-size:12px;">PCO</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border-bottom:1px solid #ffff00;font-size:12px;">AMT</th>'
-    +'</tr>';
-
-  rows.forEach(function(e,i){
-    var ac=e.amt>=0?'#006600':'#cc0000';
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',14)+'</td>'
-      +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
-      +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
-      +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  // grand total
-  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td colspan="3" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** '+dtLabel+' GRAND TOTAL ***</td>'
-    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
-    +'</tr>'
-    +'</table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
-function rptDrillDesc(desc){
-  loadLog();
-  // get all entries for this desc, newest first
-  var rows=LOG.filter(function(e){return(e.desc||'?')===desc;})
-    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
-  if(!rows.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-
-  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grandTotal>=0?'#00ffff':'#ff6666';
-
-  // group by year
-  var byYear={};
-  rows.forEach(function(e){
-    var yr=(e.date||'').slice(0,4)||'????';
-    if(!byYear[yr])byYear[yr]=[];
-    byYear[yr].push(e);
-  });
-  var years=Object.keys(byYear).sort().reverse();
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    // header bar
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">DESC: '+desc+'</span>'
-    +'<button onclick="rptShow(\'desc\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
-    +'</div>'
-    // summary card
-    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="display:flex;justify-content:space-between;">'
-    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries · '+years.length+' year'+(years.length===1?'':'s')+'</span>'
-    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
-    +'</div></div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-
-  years.forEach(function(yr){
-    var yrRows=byYear[yr];
-    var yrTotal=yrRows.reduce(function(s,e){return s+e.amt;},0);
-    var yc=yrTotal>=0?'#006600':'#cc0000';
-
-    // year header
-    h+='<tr style="background:#000080;">'
-      +'<td colspan="4" style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:13px;">'
-      +'▶ '+yr+' &nbsp;&nbsp; '+yrRows.length+' entries'
-      +'</td>'
-      +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
-      +'</tr>';
-
-    // detail rows newest first (already sorted)
-    yrRows.forEach(function(e,i){
-      var ac=e.amt>=0?'#006600':'#cc0000';
-      var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-      var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
-      h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-        +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
-        +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',14)+'</td>'
-        +'<td style="padding:5px 3px;color:#333399;font-size:12px;">'+(e.pcode||'—')+'</td>'
-        +'<td style="padding:5px 3px;color:#888888;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
-        +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
-        +'</tr>';
-    });
-
-    // year subtotal
-    h+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
-      +'<td colspan="4" style="padding:4px 3px;color:#000000;font-size:11px;font-style:italic;font-weight:700;">* '+yr+' Subtotal *</td>'
-      +'<td style="padding:4px 3px;text-align:right;font-weight:700;font-size:12px;color:'+yc+';">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  // grand total
-  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** GRAND TOTAL ***</td>'
-    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
-    +'</tr>'
-    +'</table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
-function rptDrillPcode(pcode){
-  loadLog();
-  // get all entries for this pcode, newest first
-  var rows=LOG.filter(function(e){return(e.pcode||'?')===pcode;})
-    .sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
-  if(!rows.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO DATA FOUND</div>';
-    return;
-  }
-
-  var grandTotal=rows.reduce(function(s,e){return s+e.amt;},0);
-  var gc=grandTotal>=0?'#00ffff':'#ff6666';
-
-  // group by year
-  var byYear={};
-  rows.forEach(function(e){
-    var yr=(e.date||'').slice(0,4)||'????';
-    if(!byYear[yr])byYear[yr]=[];
-    byYear[yr].push(e);
-  });
-  var years=Object.keys(byYear).sort().reverse();
-
-  var h='<div style="font-family:Courier New,monospace;">'
-    // header bar
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">PCODE: '+pcode+'</span>'
-    +'<button onclick="rptShow(\'pcode\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
-    +'</div>'
-    // summary card
-    +'<div style="background:#0000cc;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
-    +'<div style="display:flex;justify-content:space-between;">'
-    +'<span style="color:#ccccff;font-size:13px;">'+rows.length+' total entries · '+years.length+' year'+(years.length===1?'':'s')+'</span>'
-    +'<span style="color:'+gc+';font-weight:700;font-size:14px;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</span>'
-    +'</div></div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-
-  years.forEach(function(yr){
-    var yrRows=byYear[yr];
-    var yrTotal=yrRows.reduce(function(s,e){return s+e.amt;},0);
-    var yc=yrTotal>=0?'#006600':'#cc0000';
-
-    // year header
-    h+='<tr style="background:#000080;">'
-      +'<td colspan="4" style="padding:6px 4px;color:#ffffff;font-weight:700;font-size:13px;">'
-      +'▶ '+yr+' &nbsp;&nbsp; '+yrRows.length+' entries'
-      +'</td>'
-      +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:#ffff00;">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
-      +'</tr>';
-
-    // detail rows newest first (already sorted)
-    yrRows.forEach(function(e,i){
-      var ac=e.amt>=0?'#006600':'#cc0000';
-      var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-      var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
-      h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-        +'<td style="padding:5px 3px;color:#555555;font-size:12px;white-space:nowrap;">'+dt+'</td>'
-        +'<td style="padding:5px 3px;color:#000066;font-weight:700;font-size:12px;">'+trunc(e.payee||'',14)+'</td>'
-        +'<td style="padding:5px 3px;color:#333333;font-size:12px;">'+trunc(e.desc||'',14)+'</td>'
-        +'<td style="padding:5px 3px;color:#888888;font-size:11px;text-align:right;">#'+e.id.toString().slice(-4)+'</td>'
-        +'<td style="padding:5px 3px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</td>'
-        +'</tr>';
-    });
-
-    // year subtotal
-    h+='<tr style="background:#e0e0e0;border-top:2px solid #999999;">'
-      +'<td colspan="4" style="padding:4px 3px;color:#000000;font-size:11px;font-style:italic;font-weight:700;">* '+yr+' Subtotal *</td>'
-      +'<td style="padding:4px 3px;text-align:right;font-weight:700;font-size:12px;color:'+yc+';">'+(yrTotal>=0?'+':'-')+'$'+Math.abs(yrTotal).toFixed(2)+'</td>'
-      +'</tr>';
-  });
-
-  // grand total
-  h+='<tr style="background:#000080;border-top:2px solid #ffff00;">'
-    +'<td colspan="4" style="padding:6px 3px;color:#ffffff;font-weight:700;font-size:13px;">*** GRAND TOTAL ***</td>'
-    +'<td style="padding:6px 3px;text-align:right;font-weight:700;font-size:14px;color:#ffff00;">'+(grandTotal>=0?'+':'-')+'$'+Math.abs(grandTotal).toFixed(2)+'</td>'
-    +'</tr>'
-    +'</table></div>';
-
-  document.getElementById('rpt-content').innerHTML=h;
-  document.getElementById('screen-reports').scrollTop=0;
-}
-
 function rptDrill(type,key){
   loadLog();
-  // pcode and desc get a quick year-grouped drill (no month layer)
-  if(type==='pcode'){ rptDrillPcode(key); return; }
-  if(type==='desc'){ rptDrillDesc(key); return; }
-  if(type==='yr'){ rptDrillYr(key); return; }
-  if(type==='mon'){ rptDrillMon(key); return; }
-  if(type==='date'){ rptDrillDate(key); return; }
   var rows=LOG.filter(function(e){
-    var k=type==='pcode'?(e.pcode||'?')
+    var k=type==='pcode'?(e.pcode||'?').slice(0,3)
          :type==='desc' ?(e.desc ||'?')
          :type==='yr'   ?(e.date ||'?').slice(0,4)
          :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -6024,25 +5393,24 @@ function rptDrill(type,key){
     +'</div>';
 
   // month breakdown rows — tap to expand
-  monKeys.forEach(function(m,idx){
+  monKeys.forEach(function(m){
     var mon=monMap[m];
-    var mc=mon.total>=0?'#006600':'#cc0000';
+    var mc=mon.total>=0?'#00ffff':'#ff6666';
     var yr=m.slice(0,4);
     var mo=parseInt(m.slice(5,7),10)-1;
     var monLabel=MONTHS[mo]+' '+yr;
-    var bg=idx%2===0?'#ffffff':'#f0f4ff';
-    html+='<div style="background:'+bg+';border:1px solid #cccccc;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+key+'\',\''+m+'\')">'
+    html+='<div style="background:#000055;border:1px solid #3333aa;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+key+'\',\''+m+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-      +'<span style="color:#000066;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
+      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
       +'<span style="color:'+mc+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(mon.total>=0?'+':'-')+'$'+Math.abs(mon.total).toFixed(2)+'</span>'
       +'</div>'
-      +'<div style="color:#666666;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
+      +'<div style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
       +'</div>';
   });
 
   // grand total
-  html+='<div style="background:#e8e8e8;border:2px solid #999999;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#000000;font-weight:700;font-size:13px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
+  html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
     +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
 
@@ -6053,7 +5421,7 @@ function rptDrill(type,key){
 function rptDrillMonth(type,key,mon){
   loadLog();
   var rows=LOG.filter(function(e){
-    var k=type==='pcode'?(e.pcode||'?')
+    var k=type==='pcode'?(e.pcode||'?').slice(0,3)
          :type==='desc' ?(e.desc ||'?')
          :type==='yr'   ?(e.date ||'?').slice(0,4)
          :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -6072,24 +5440,23 @@ function rptDrillMonth(type,key,mon){
     +'<button onclick="rptDrill(\''+type+'\',\''+key+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
     +'</div>';
 
-  rows.forEach(function(e,idx){
-    var ac=e.amt>=0?'#006600':'#cc0000';
-    var bg=idx%2===0?'#ffffff':'#f0f4ff';
-    html+='<div style="background:'+bg+';border:1px solid #cccccc;border-radius:4px;padding:8px;margin-bottom:5px;">'
+  rows.forEach(function(e){
+    var ac=e.amt>=0?'#00ffff':'#ff6666';
+    html+='<div style="background:#0000cc;border:1px solid #5555ee;border-radius:4px;padding:8px;margin-bottom:5px;">'
       +'<div style="display:flex;justify-content:space-between;">'
-      +'<span style="color:#000066;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
+      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
       +'<span style="color:'+ac+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</span>'
       +'</div>'
       +'<div style="display:flex;justify-content:space-between;margin-top:3px;">'
-      +'<span style="color:#555555;font-size:14px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
-      +'<span style="color:#333399;font-size:14px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
+      +'<span style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
+      +'<span style="color:#00ffff;font-size:14px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
       +'</div>'
-      +'<div style="color:#333333;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
+      +'<div style="color:#ffffff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
       +'</div>';
   });
 
-  html+='<div style="background:#e8e8e8;border:2px solid #999999;border-radius:4px;padding:8px;margin-top:4px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#000000;font-weight:700;font-size:13px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
+  html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:4px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
+    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
     +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
 
@@ -6316,13 +5683,15 @@ var _openId=null;
 function fmtDate(d){if(!d)return '';var p=d.split('-');if(p.length!==3)return d;return p[1]+p[2]+p[0].slice(2);}
 function trunc(s,n){if(!s)return '';s=s.replace(/https?:\/\/\S+/gi,'').replace(/www\.\S+/gi,'').trim();return s.length>n?s.slice(0,n):s;}
 function fmtAmt(a){return (a>=0?'+$':'-$')+Math.abs(a).toFixed(2);}
+function ledToggleSort(){
+  _ledSort=_ledSort==='desc'?'asc':'desc';
+  _ledPage=0;
+  var btn=document.getElementById('led-sort-btn');
+  if(btn)btn.innerHTML=_ledSort==='desc'?'🔽 NEWEST':'🔼 OLDEST';
+  renderLog();
+}
+
 function renderLog(){
-  // always show newest dates first
-  LOG.sort(function(a,b){
-    var d=(b.date||'').localeCompare(a.date||'');
-    if(d!==0)return d;
-    return (b.id||0)-(a.id||0); // tie-break: newer id first
-  });
   var tbody=document.getElementById('loglist');
   // build year dropdown
   var yrSel=document.getElementById('led-yr-filter');
@@ -6333,7 +5702,11 @@ function renderLog(){
     yrSel.innerHTML='<option value="">ALL YRS</option>'+yrArr.map(function(y){return'<option value="'+y+'"'+(y===_ledYr?' selected':'')+'>'+y+'</option>';}).join('');
   }
   // filter by year
-  var filtered=_ledYr?LOG.filter(function(e){return(e.date||'').slice(0,4)===_ledYr;}):LOG;
+  var filtered=_ledYr?LOG.filter(function(e){return(e.date||'').slice(0,4)===_ledYr;}):LOG.slice();
+  // sort by toggle
+  filtered.sort(function(a,b){
+    return _ledSort==='asc'?(a.date||'').localeCompare(b.date||''):(b.date||'').localeCompare(a.date||'');
+  });
   if(!filtered.length){
     tbody.innerHTML='<tr><td colspan="6" style="color:#ccccff;padding:10px;text-align:center;">No entries</td></tr>';
     document.getElementById('totbar').style.display='none';
