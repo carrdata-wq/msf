@@ -3651,6 +3651,9 @@ function doCheatSheet(){
   var allPcodes=[...new Set(LOG.map(function(e){return e.pcode||'';}).filter(Boolean))].sort();
   var descOpts=allDescs.map(function(d){return'<option value="'+d+'">'+d+'</option>';}).join('');
   var pcOpts=allPcodes.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
+  // ADD NEW options at top of each dropdown
+  var descOptsWithNew='<option value="">DESC</option><option value="__NEW__" style="background:#005500;color:#00ff88;font-weight:700;">+ ADD NEW DESC...</option>'+descOpts;
+  var pcOptsWithNew='<option value="">PCODE</option><option value="__NEW__" style="background:#005500;color:#00ff88;font-weight:700;">+ ADD NEW PCODE...</option>'+pcOpts;
   var old=document.getElementById('cheatsheet-overlay');if(old)old.remove();
   var overlay=document.createElement('div');
   overlay.id='cheatsheet-overlay';
@@ -3669,8 +3672,8 @@ function doCheatSheet(){
       +'<div style="color:#ffff00;font-weight:700;font-size:13px;">'+trunc(payee,22)+'</div>'
       +'<div style="color:#ff6666;font-size:11px;">'+v.cnt+' · $'+Math.abs(v.amt).toFixed(0)+'</div></div>'
       +'<div style="display:flex;gap:6px;margin-bottom:6px;">'
-      +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
-      +'<select id="'+sid+'_dc" style="flex:2;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
+      +'<select id="'+sid+'_pc" onchange="cheatSheetSelectChange(this,\'pc\',\''+sid+'\')" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;">'+pcOptsWithNew+'</select>'
+      +'<select id="'+sid+'_dc" onchange="cheatSheetSelectChange(this,\'dc\',\''+sid+'\')" style="flex:2;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;">'+descOptsWithNew+'</select>'
       +'</div>'
       +'<button onclick="cheatSheetApply(\''+payee.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',' +'\''+sid+'\')" '
       +'style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;border:none;border-radius:4px;cursor:pointer;">'
@@ -3681,9 +3684,52 @@ function doCheatSheet(){
   document.body.appendChild(overlay);
 }
 
+function cheatSheetSelectChange(sel,kind,sid){
+  if(sel.value!=='__NEW__')return;
+  var label=kind==='pc'?'PCODE':'DESC';
+  var prompt2=kind==='pc'?'Enter NEW PCODE (e.g. 10629, ROOF, TRA):':'Enter NEW DESC (e.g. ROOFING SUPPLIES, OFFICE):';
+  var val=window.prompt(prompt2,'');
+  if(!val||!val.trim()){sel.value='';return;}
+  val=val.trim().toUpperCase();
+  // validation — pcode allow alphanumeric, desc anything but limit length
+  if(kind==='pc'){
+    if(!/^[A-Z0-9_-]{1,8}$/.test(val)){toast('PCODE must be 1-8 chars (letters/numbers)',false);sel.value='';return;}
+  }else{
+    if(val.length>30){toast('DESC max 30 chars',false);sel.value='';return;}
+  }
+  // check if already exists in dropdown
+  var exists=false;
+  for(var i=0;i<sel.options.length;i++){
+    if(sel.options[i].value===val){exists=true;sel.value=val;break;}
+  }
+  if(!exists){
+    // add new option and select it
+    var opt=document.createElement('option');
+    opt.value=val;opt.textContent=val;opt.style.cssText='background:#000022;color:'+(kind==='pc'?'#00ffff':'#ffff00')+';font-weight:700;';
+    // insert before the existing options but after __NEW__
+    sel.insertBefore(opt,sel.options[2]||null);
+    sel.value=val;
+    toast('✓ NEW '+label+' "'+val+'" — added. Click REPLACE ALL to apply.',true);
+  }
+  // mirror the new value to all other dropdowns of the same kind so it's reusable on other payees
+  var allSelects=document.querySelectorAll('#cheatsheet-overlay select[id$="_'+kind+'"]');
+  allSelects.forEach(function(s){
+    if(s===sel)return;
+    var has=false;
+    for(var j=0;j<s.options.length;j++) if(s.options[j].value===val){has=true;break;}
+    if(!has){
+      var o=document.createElement('option');
+      o.value=val;o.textContent=val;o.style.cssText='background:#000022;color:'+(kind==='pc'?'#00ffff':'#ffff00')+';font-weight:700;';
+      s.insertBefore(o,s.options[2]||null);
+    }
+  });
+}
+
 function cheatSheetApply(payee,sid){
   var pc=(document.getElementById(sid+'_pc')||{value:''}).value;
   var dc=(document.getElementById(sid+'_dc')||{value:''}).value;
+  if(pc==='__NEW__'){toast('Pick a PCODE first (or type a new one)',false);return;}
+  if(dc==='__NEW__'){toast('Pick a DESC first (or type a new one)',false);return;}
   if(!pc&&!dc){toast('Pick PCODE and DESC first',false);return;}
   loadLog();var fixed=0;
   LOG.forEach(function(e){
