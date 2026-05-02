@@ -979,6 +979,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <!-- ADD / EDIT CLIENT -->
   <div id="pc-add" class="fpage" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="pcShow('')">◀ Phone Menu</button>
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="goMain()">🏠 Main Menu</button>
+    </div>
     <div class="card">
       <div class="card-title green" id="pc-form-title">+ NEW CLIENT</div>
       <input type="hidden" id="pc-id">
@@ -1017,6 +1021,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <!-- LOCATE (white-table search) -->
   <div id="pc-list" class="fpage" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="pcShow('')">◀ Phone Menu</button>
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="goMain()">🏠 Main Menu</button>
+    </div>
     <div class="card" style="padding:8px;">
       <div style="font-size:13px;color:var(--cyan);margin-bottom:5px;">🔎 LOCATE — type partial name (FoxBase: 'FOX'$PAYEE)</div>
       <div class="fbar" style="margin-bottom:6px;">
@@ -1039,11 +1047,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
     </div>
     <div id="pc-list-rows"></div>
-    <button class="btn btn-dim" onclick="pcShow('')">◀ Back</button>
   </div>
 
   <!-- FIND BY JOB -->
   <div id="pc-find" class="fpage" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="pcShow('')">◀ Phone Menu</button>
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="goMain()">🏠 Main Menu</button>
+    </div>
     <div class="fbar">
       <select id="pc-find-status" onchange="renderFindClients()">
         <option value="">All Status</option>
@@ -1056,11 +1067,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <select id="pc-find-jobtype" onchange="renderFindClients()"><option value="">All Jobs</option></select>
     </div>
     <div class="card" style="padding:6px 12px;"><div id="pc-find-rows"></div></div>
-    <button class="btn btn-dim" onclick="pcShow('')">◀ Back</button>
   </div>
 
   <!-- TOOLS -->
   <div id="pc-tools" class="fpage" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="pcShow('')">◀ Phone Menu</button>
+      <button class="btn btn-dim" style="flex:1;margin:0;padding:8px;font-size:13px;" onclick="goMain()">🏠 Main Menu</button>
+    </div>
     <div class="card">
       <div class="card-title purple">⚙ CLIENT DATABASE TOOLS</div>
       <button class="btn btn-blue" onclick="pcExportCSV()">📤 Export to CSV</button>
@@ -1071,7 +1085,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button class="btn btn-red" onclick="pcClearAll()">🗑 Clear All Clients</button>
       <div id="pc-tools-output" style="margin-top:10px;font-size:13px;color:var(--dim);"></div>
     </div>
-    <button class="btn btn-dim" onclick="pcShow('')">◀ Back</button>
   </div>
 </div>
 
@@ -2007,11 +2020,13 @@ function renderRestChart(){
 
 var _dbdActive='groc'; // 'groc' or 'rest'
 function renderGrocDayByDay(){
+  if(_dbdActive!=='groc') window._dbdShowAll=false; // reset on switch
   _dbdActive='groc';
   var entries=getGrocEntries().slice().reverse();
   renderDayByDayOverlay(entries,'🛒 Grocery Day by Day');
 }
 function renderRestDayByDay(){
+  if(_dbdActive!=='rest') window._dbdShowAll=false;
   _dbdActive='rest';
   var entries=getRestEntries().slice().reverse();
   renderDayByDayOverlay(entries,'🍽️ Restaurant Day by Day');
@@ -2056,55 +2071,71 @@ function renderDayByDayOverlay(entries,title){
   var overlay=document.createElement('div');
   overlay.id='dbd-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:#1a1aff;z-index:9000;overflow-y:auto;';
-  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
-    +'<button onclick="document.getElementById(\'dbd-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+title+'</span>'
+  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:10px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
+    +'<button onclick="document.getElementById(\'dbd-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:10px 16px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:16px;">'+title+'</span>'
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px;font-family:Courier New,monospace;">'
-    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:11px;">$/DAY AVG</div>'
-    +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+perDay.toFixed(2)+'</div></div>'
-    +'<div style="background:#000044;border:2px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:11px;">30-DAY AVG</div>'
-    +'<div style="color:#00ff88;font-weight:700;font-size:15px;">$'+per30.toFixed(2)+'</div></div>'
-    +'<div style="background:#000044;border:2px solid #ff6666;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:11px;">$/WEEK AVG</div>'
-    +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+perWeek.toFixed(2)+'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px;font-family:Courier New,monospace;">'
+    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:5px;padding:10px 6px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:13px;">$/DAY</div>'
+    +'<div style="color:#ffaa00;font-weight:700;font-size:24px;">$'+perDay.toFixed(2)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #00ff88;border-radius:5px;padding:10px 6px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:13px;">30-DAY</div>'
+    +'<div style="color:#00ff88;font-weight:700;font-size:24px;">$'+per30.toFixed(0)+'</div></div>'
+    +'<div style="background:#000044;border:2px solid #ff6666;border-radius:5px;padding:10px 6px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:13px;">$/WK</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:24px;">$'+perWeek.toFixed(0)+'</div></div>'
     +'</div>';
 
-  // 4-week moving avg chart
+  // 4-week moving avg chart — only last 8 weeks for cleaner mobile view
   if(movAvg.length){
-    var maxWk=Math.max.apply(null,movAvg.map(function(w){return w.val;}))||1;
-  // cap bar at 95% so nothing goes off screen
-  var capVal=maxWk;
-    h+='<div style="background:#ffffff;border-radius:4px;margin:0 8px 8px;padding:10px;font-family:Courier New,monospace;">'
-      +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;">4-WEEK MOVING AVERAGE</div>';
-    movAvg.forEach(function(w){
+    var movShown=movAvg.slice(0,8);  // most recent 8 (already reversed: newest first)
+    var maxWk=Math.max.apply(null,movShown.map(function(w){return w.val;}))||1;
+    h+='<div style="background:#ffffff;border-radius:5px;margin:0 10px 10px;padding:10px;font-family:Courier New,monospace;">'
+      +'<div style="color:#000066;font-weight:700;font-size:14px;margin-bottom:8px;">📊 LAST 8 WEEKS</div>';
+    movShown.forEach(function(w){
       var barPct=Math.min(95,Math.round((w.val/maxWk)*100));
       var avgPct=Math.round((w.avg/maxWk)*100);
       var barColor=w.val>w.avg*1.2?'#cc0000':w.val>w.avg?'#cc6600':'#006600';
-      h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-        +'<div style="color:#000066;font-size:10px;width:58px;text-align:right;">'+w.label+'</div>'
-        +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:14px;position:relative;">'
+      h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+        +'<div style="color:#000066;font-size:13px;width:64px;text-align:right;font-weight:700;">'+w.label+'</div>'
+        +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:22px;position:relative;">'
         +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
         +'<div style="position:absolute;top:0;left:'+avgPct+'%;width:2px;height:100%;background:#000066;"></div>'
-        +'<span style="position:absolute;right:3px;top:0;font-size:10px;color:#000;font-weight:700;">$'+w.val.toFixed(0)+'</span>'
+        +'<span style="position:absolute;right:6px;top:0;font-size:14px;line-height:22px;color:#000;font-weight:700;">$'+w.val.toFixed(0)+'</span>'
         +'</div></div>';
     });
-    h+='<div style="font-size:10px;color:#666;margin-top:4px;">▌ blue = 4-wk avg &nbsp; 🟢=below 🟠=above 🔴=high</div></div>';
+    h+='<div style="font-size:12px;color:#666;margin-top:4px;">▌ blue=4wk avg · 🟢below · 🟠above · 🔴high</div></div>';
   }
 
-  h+='<div style="padding:0 8px 8px;font-family:Courier New,monospace;">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
+  // Day-by-day table — last 30 entries by default, with toggle for full
+  var totalEntries=entries.length;
+  var entriesShown=window._dbdShowAll?entries:entries.slice(0,30);
+
+  // Detect dup groups across ENTIRE set (not just visible) — same date + same amt
+  var dupGroupCount={};
+  entries.forEach(function(e){
+    var key=(e.date||'')+'|'+Math.round((parseFloat(e.amt)||0)*100);
+    dupGroupCount[key]=(dupGroupCount[key]||0)+1;
+  });
+  var dupExtras=0;
+  Object.keys(dupGroupCount).forEach(function(k){ if(dupGroupCount[k]>1) dupExtras+=dupGroupCount[k]-1; });
+
+  h+='<div style="padding:0 10px 10px;font-family:Courier New,monospace;">';
+  if(dupExtras>0){
+    h+='<button onclick="dbdAutoDeleteDups()" style="width:100%;background:#cc0000;color:#fff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:14px;border:none;border-radius:5px;cursor:pointer;margin-bottom:10px;">🗑 AUTO-DELETE '+dupExtras+' DUPLICATE'+(dupExtras===1?'':'S')+'</button>';
+  }
+  h+='<div style="color:#ffff00;font-size:14px;margin-bottom:6px;">📋 RECENT '+entriesShown.length+(totalEntries>entriesShown.length?' OF '+totalEntries:'')+'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:16px;">'
     +'<tr style="background:#000080;">'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">DATE</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:left;">VENDOR</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">AMT</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">DAYS</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">$/DAY</th>'
+    +'<th style="color:#fff;padding:6px 4px;border:1px solid #aaa;text-align:left;font-size:13px;">DATE</th>'
+    +'<th style="color:#fff;padding:6px 4px;border:1px solid #aaa;text-align:left;font-size:13px;">VENDOR</th>'
+    +'<th style="color:#fff;padding:6px 4px;border:1px solid #aaa;text-align:right;font-size:13px;">AMT</th>'
+    +'<th style="color:#fff;padding:6px 4px;border:1px solid #aaa;text-align:right;font-size:13px;">DAYS</th>'
+    +'<th style="color:#fff;padding:6px 4px;border:1px solid #aaa;text-align:right;font-size:13px;">$/DAY</th>'
     +'</tr>';
-  entries.forEach(function(e,i){
-    var next=entries[i+1];
+  entriesShown.forEach(function(e,i){
+    var next=entriesShown[i+1]||entries[i+1];  // for last shown row, peek into full list
     var days2=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
     var cpd=Math.abs(e.amt)/days2;
     var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
@@ -2112,25 +2143,74 @@ function renderDayByDayOverlay(entries,title){
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
     // flag same-date+same-amt as likely dup
     var isDup=next && next.date===e.date && Math.abs(Math.abs(next.amt)-Math.abs(e.amt))<0.01;
-    var prev=entries[i-1];
+    var prev=entriesShown[i-1];
     var isDup2=prev && prev.date===e.date && Math.abs(Math.abs(prev.amt)-Math.abs(e.amt))<0.01;
     var dupFlag=(isDup||isDup2)?'background:#fff3a8;':bg;
     h+='<tr style="'+dupFlag+';border-bottom:1px solid #ccc;cursor:pointer;" onclick="dbdConfirmDel('+JSON.stringify(e.id||0)+',this)">'
-      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+(isDup||isDup2?' <span style="color:#cc6600;font-weight:700;">⚠</span>':'')+'</td>'
-      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;" title="'+esc(e.payee||'')+'">'+trunc(e.payee||'',12)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days2+'</td>'
-      +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
+      +'<td style="padding:8px 4px;color:#000066;font-size:16px;white-space:nowrap;font-weight:700;">'+dt+(isDup||isDup2?' <span style="color:#cc6600;">⚠</span>':'')+'</td>'
+      +'<td style="padding:8px 4px;color:#000066;font-weight:700;font-size:16px;" title="'+esc(e.payee||'')+'">'+trunc(e.payee||'',12)+'</td>'
+      +'<td style="padding:8px 4px;text-align:right;color:#cc0000;font-weight:700;font-size:16px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:8px 4px;text-align:right;color:#333;font-size:16px;">'+days2+'</td>'
+      +'<td style="padding:8px 4px;text-align:right;font-weight:700;font-size:16px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
       +'</tr>';
   });
   h+='</table>';
-  h+='<div style="background:#fff8d8;color:#000;font-size:12px;padding:8px 10px;margin-top:6px;border:1px solid #cc6600;border-radius:4px;">⚠ <b>YELLOW ROWS</b> = same date + same amount as adjacent row (likely duplicate). Tap any row to delete.</div>';
+  if(!window._dbdShowAll && totalEntries>30){
+    h+='<button onclick="window._dbdShowAll=true;'+(_dbdActive==='rest'?'renderRestDayByDay()':'renderGrocDayByDay()')+';document.getElementById(\'dbd-overlay\').scrollTop=99999;" style="width:100%;background:#0066cc;color:#fff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:12px;border:none;border-radius:5px;margin-top:10px;cursor:pointer;">▼ SHOW ALL '+totalEntries+' ENTRIES</button>';
+  } else if(window._dbdShowAll){
+    h+='<button onclick="window._dbdShowAll=false;'+(_dbdActive==='rest'?'renderRestDayByDay()':'renderGrocDayByDay()')+';" style="width:100%;background:#666;color:#fff;font-family:Courier New,monospace;font-size:14px;padding:10px;border:none;border-radius:5px;margin-top:10px;cursor:pointer;">▲ SHOW JUST LATEST 30</button>';
+  }
+  h+='<div style="background:#fff8d8;color:#000;font-size:14px;padding:10px;margin-top:10px;border:1px solid #cc6600;border-radius:5px;">⚠ <b>YELLOW ROWS</b> = same date + same amount (likely dup) · Tap any row to delete.</div>';
   h+='</div>';
   overlay.innerHTML=h;
   document.body.appendChild(overlay);
 }
 
 // Tap row in day-by-day to delete from mx_log
+// Auto-delete all same-date+same-amount dups across the active view (Grocery or Restaurant)
+function dbdAutoDeleteDups(){
+  var entries=_dbdActive==='rest'?getRestEntries():getGrocEntries();
+  // Group by date + amount-in-cents
+  var groups={};
+  entries.forEach(function(e){
+    var key=(e.date||'')+'|'+Math.round((parseFloat(e.amt)||0)*100);
+    (groups[key]=groups[key]||[]).push(e);
+  });
+  var idsToDelete=[];
+  var groupCount=0;
+  Object.keys(groups).forEach(function(k){
+    var g=groups[k];
+    if(g.length>1){
+      groupCount++;
+      // Sort by id ascending — keep the oldest (smallest id), delete the rest
+      g.sort(function(a,b){ return (a.id||0)-(b.id||0); });
+      g.slice(1).forEach(function(e){ if(e.id) idsToDelete.push(e.id); });
+    }
+  });
+  if(!idsToDelete.length){
+    toast('No exact duplicates found',false);
+    return;
+  }
+  if(!confirm(
+    'AUTO-DELETE DUPLICATES?\n\n'+
+    'Found '+groupCount+' group'+(groupCount===1?'':'s')+' of duplicates ('+idsToDelete.length+' extra entries).\n\n'+
+    'Will keep the oldest of each, delete the rest.\n'+
+    'This cannot be undone.'
+  )) return;
+  var idSet=new Set(idsToDelete);
+  loadLog();
+  var before=LOG.length;
+  LOG=LOG.filter(function(e){ return !idSet.has(e.id||0); });
+  var actuallyDeleted=before-LOG.length;
+  saveLog();
+  toast('✓ Deleted '+actuallyDeleted+' duplicate'+(actuallyDeleted===1?'':'s'));
+  // Refresh whichever view is active
+  var overlay=document.getElementById('dbd-overlay');
+  if(overlay) overlay.remove();
+  if(_dbdActive==='rest') renderRestDayByDay();
+  else renderGrocDayByDay();
+}
+
 function dbdConfirmDel(id, rowEl){
   if(!id){ toast('Entry has no ID — cannot delete',false); return; }
   var payee=rowEl?rowEl.querySelector('td:nth-child(2)').textContent:'';
@@ -3265,16 +3345,49 @@ function pcDetailHTML(c){
     (c.notes?'<div style="font-size:13px;color:#fff;margin:6px 0;padding:6px;background:var(--surface);border-radius:3px;white-space:pre-wrap;">'+esc(c.notes)+'</div>':'')+
     '<div style="font-size:13px;color:var(--dim);margin-top:4px;">ID: '+c.id+' · Added: '+esc(c.added||'')+(c.contact?' · Last: '+esc(c.contact):'')+(c.pcode?' · PCODE: '+esc(c.pcode):'')+(c.jobtype?' · JOB: '+esc(c.jobtype):'')+'</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;">'+
-      (tel?'<a href="tel:'+tel+'" onclick="event.stopPropagation()" class="btn btn-green" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">📞 CALL</a>':'')+
-      (tel2?'<a href="tel:'+tel2+'" onclick="event.stopPropagation()" class="btn btn-blue" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">📞 CALL 2</a>':'')+
-      (c.email?'<a href="mailto:'+esc(c.email)+'" onclick="event.stopPropagation()" class="btn btn-blue" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">✉ EMAIL</a>':'')+
-      (mapHref?'<a href="'+mapHref+'" target="_blank" onclick="event.stopPropagation()" class="btn btn-yellow" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">🗺 MAP</a>':'')+
-      (tel?'<a href="sms:'+tel+'" onclick="event.stopPropagation()" class="btn btn-purple" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">💬 TEXT</a>':'')+
-      (c.pcode?'<button class="btn btn-orange" style="margin:0;padding:8px;font-size:13px;" onclick="event.stopPropagation();pcShowJobs('+c.id+')">💼 JOBS</button>':'')+
-      '<button class="btn btn-blue" style="margin:0;padding:8px;font-size:13px;" onclick="event.stopPropagation();pcEdit('+c.id+')">✎ EDIT</button>'+
-      '<button class="btn btn-purple" style="margin:0;padding:8px;font-size:13px;" onclick="event.stopPropagation();pcCopyClient('+c.id+')">📋 COPY</button>'+
+      (tel?'<a href="tel:'+tel+'" onclick="event.stopPropagation()" class="btn btn-green" style="text-decoration:none;text-align:center;margin:0;padding:10px;font-size:14px;font-weight:700;">📞 CALL</a>':'')+
+      (tel2?'<a href="tel:'+tel2+'" onclick="event.stopPropagation()" class="btn btn-blue" style="text-decoration:none;text-align:center;margin:0;padding:10px;font-size:14px;font-weight:700;">📞 CALL 2</a>':'')+
+      (c.email?'<a href="mailto:'+esc(c.email)+'" onclick="event.stopPropagation()" class="btn btn-blue" style="text-decoration:none;text-align:center;margin:0;padding:10px;font-size:14px;font-weight:700;">✉ EMAIL</a>':'')+
+      (mapHref?'<a href="'+mapHref+'" target="_blank" onclick="event.stopPropagation()" class="btn btn-yellow" style="text-decoration:none;text-align:center;margin:0;padding:10px;font-size:14px;font-weight:700;">🗺 MAP</a>':'')+
+      (tel?'<a href="sms:'+tel+'" onclick="event.stopPropagation()" class="btn btn-purple" style="text-decoration:none;text-align:center;margin:0;padding:10px;font-size:14px;font-weight:700;">💬 TEXT</a>':'')+
+      '<button class="btn btn-orange" style="margin:0;padding:10px;font-size:14px;font-weight:700;" onclick="event.stopPropagation();pcShareClient('+c.id+')">📤 SHARE</button>'+
+      (c.pcode?'<button class="btn btn-orange" style="margin:0;padding:10px;font-size:14px;font-weight:700;" onclick="event.stopPropagation();pcShowJobs('+c.id+')">💼 JOBS</button>':'')+
+      '<button class="btn btn-blue" style="margin:0;padding:10px;font-size:14px;font-weight:700;" onclick="event.stopPropagation();pcEdit('+c.id+')">✎ EDIT</button>'+
+      '<button class="btn btn-purple" style="margin:0;padding:10px;font-size:14px;font-weight:700;" onclick="event.stopPropagation();pcCopyClient('+c.id+')">📋 COPY</button>'+
+    '</div>'+
+    // BIG EXIT bar — for driving — gets you out fast
+    '<div style="margin-top:10px;border-top:2px solid var(--cyan);padding-top:10px;">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'+
+        '<button class="btn" style="background:#005a4e;color:var(--green);border:2px solid var(--green);margin:0;padding:14px;font-size:15px;font-weight:700;" onclick="event.stopPropagation();pcShow(\'\')">◀ PHONE MENU</button>'+
+        '<button class="btn" style="background:#3a2e00;color:var(--yellow);border:2px solid var(--yellow);margin:0;padding:14px;font-size:15px;font-weight:700;" onclick="event.stopPropagation();goMain()">🏠 MAIN MENU</button>'+
+      '</div>'+
     '</div>'+
   '</div>';
+}
+
+// Email this client's contact info to a third party
+function pcShareClient(id){
+  var arr=pcLoad();
+  var c=arr.find(x=>x.id===id);
+  if(!c) return;
+  var lines=[];
+  lines.push(c.name);
+  lines.push('='.repeat(Math.min(60,c.name.length)));
+  if(c.phone)   lines.push('Phone:   '+c.phone);
+  if(c.phone2)  lines.push('Phone 2: '+c.phone2);
+  if(c.email)   lines.push('Email:   '+c.email);
+  var addr=[c.address,c.city,c.state,c.zip].filter(Boolean).join(', ');
+  if(addr)      lines.push('Address: '+addr);
+  if(c.pcode)   lines.push('PCODE:   '+c.pcode);
+  if(c.jobtype) lines.push('Job:     '+c.jobtype);
+  if(c.status)  lines.push('Status:  '+c.status);
+  if(c.notes)   lines.push('','Notes:','  '+c.notes);
+  lines.push('');
+  lines.push('— sent from MFS Phone Clients');
+  var subj='Contact: '+c.name;
+  var body=lines.join('\n');
+  window.location.href='mailto:?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  toast('Opening email to share '+c.name);
 }
 
 function pcRowHTML(c,expanded){
@@ -3313,7 +3426,32 @@ function renderClients(){
   var arr=pcLoad();
   var q=(document.getElementById('pc-search').value||'').trim().toUpperCase();
   var fs=document.getElementById('pc-filter-status').value;
-  // FoxBase 'FOX'$PAYEE behavior: substring match in NAME first, then fallback to other fields
+  var el=document.getElementById('pc-list-rows');
+
+  // EMPTY STATE — no search, no filter — show prompt instead of laundry list
+  if(!q && !fs){
+    var counts={ACTIVE:0,PENDING:0,DONE:0,COLD:0};
+    arr.forEach(function(c){ if(counts[c.status]!=null) counts[c.status]++; });
+    el.innerHTML=
+      '<div class="card" style="padding:18px;text-align:center;">'+
+        '<div style="font-size:38px;margin-bottom:6px;">🔎</div>'+
+        '<div style="color:var(--cyan);font-size:15px;font-weight:700;margin-bottom:4px;">TYPE TO LOCATE</div>'+
+        '<div style="color:var(--dim);font-size:13px;margin-bottom:12px;">Examples: <span class="yellow">FOX</span> · <span class="yellow">CHICAGO</span> · <span class="yellow">312</span></div>'+
+        '<div style="border-top:1px solid var(--border);padding-top:10px;font-size:13px;">'+
+          '<div style="color:var(--cyan);font-weight:700;margin-bottom:4px;">📊 DATABASE</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;color:var(--dim);">'+
+            '<div>● ACTIVE: <span class="green">'+counts.ACTIVE+'</span></div>'+
+            '<div>● PENDING: <span class="yellow">'+counts.PENDING+'</span></div>'+
+            '<div>● DONE: <span class="blue">'+counts.DONE+'</span></div>'+
+            '<div>● COLD: <span class="dim">'+counts.COLD+'</span></div>'+
+          '</div>'+
+          '<div style="margin-top:6px;color:var(--cyan);">TOTAL: <b class="yellow">'+arr.length+'</b> clients</div>'+
+        '</div>'+
+      '</div>';
+    return;
+  }
+
+  // FILTERED — actually do the search
   var rows=arr.filter(c=>{
     if(fs && c.status!==fs) return false;
     if(!q) return true;
@@ -3325,14 +3463,12 @@ function renderClients(){
         || (c.pcode||'').toUpperCase().indexOf(q)>=0
         || (c.email||'').toUpperCase().indexOf(q)>=0;
   }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  var el=document.getElementById('pc-list-rows');
   if(!rows.length){
-    el.innerHTML='<div class="card" style="padding:14px;text-align:center;color:var(--dim);">'+(arr.length?'No matches for "'+esc(q||'')+'".':'No clients yet — tap Tools → Import from CSV, or Add Client.')+'</div>';
+    el.innerHTML='<div class="card" style="padding:14px;text-align:center;color:var(--dim);">No matches for "'+esc(q||'(filter)')+'".</div>';
     return;
   }
   var shown=rows.slice(0,_pcShowCount);
   var hasMore=rows.length>_pcShowCount;
-  // Quick "select all visible" toolbar
   var allVisChecked=shown.every(c=>_pcChecked.has(c.id));
   var head=
     '<div style="font-size:13px;color:var(--cyan);padding:4px 0 6px;">'+
@@ -3499,16 +3635,24 @@ function renderFindClients(){
   var fs=document.getElementById('pc-find-status').value;
   var fp=document.getElementById('pc-find-pcode').value;
   var fj=document.getElementById('pc-find-jobtype').value;
+  var el=document.getElementById('pc-find-rows');
+  if(!fs && !fp && !fj){
+    el.innerHTML='<div style="text-align:center;padding:18px;color:var(--dim);">'+
+      '<div style="font-size:34px;margin-bottom:6px;">🔍</div>'+
+      '<div style="color:var(--yellow);font-weight:700;">Pick a filter above to begin</div>'+
+      '<div style="font-size:13px;margin-top:4px;">Status · PCODE · Job Type</div>'+
+      '</div>';
+    return;
+  }
   var rows=arr.filter(c=>(!fs||c.status===fs)&&(!fp||c.pcode===fp)&&(!fj||c.jobtype===fj))
     .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  var el=document.getElementById('pc-find-rows');
   if(!rows.length){
     el.innerHTML='<div style="color:var(--dim);padding:10px 0;">No matches for current filters.</div>';
     return;
   }
   var shown=rows.slice(0,_pcShowCount);
   var hasMore=rows.length>_pcShowCount;
-  var more=hasMore?'<button class="btn btn-blue" style="margin-top:8px;" onclick="pcShowMore()">▼ Load 100 more ('+(rows.length-_pcShowCount)+' remaining)</button>':'';
+  var more=hasMore?'<button class="btn btn-blue" style="margin-top:8px;" onclick="pcShowMore()">▼ Load 200 more ('+(rows.length-_pcShowCount)+' remaining)</button>':'';
   el.innerHTML='<div style="color:var(--dim);font-size:13px;padding:4px 0 6px;">Showing '+shown.length+' of '+rows.length+'</div>'+
     shown.map(c=>pcRowHTML(c,c.id===_pcExpanded)).join('')+more;
 }
