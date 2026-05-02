@@ -339,6 +339,17 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
+    <div class="menu-item" onclick="doFullSync()" style="background:#003322;border:2px solid #00ff88;">
+      <div class="menu-num">📧</div><div class="menu-icon">⬆</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;">SYNC OUT — Email Everything</div><div class="ms">Ledger · Clients · Masters · One file</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
+    <div class="menu-item" onclick="doFullRestore()" style="background:#332200;border:2px solid #ffaa00;">
+      <div class="menu-num">📥</div><div class="menu-icon">⬇</div>
+      <div class="menu-label"><div class="ml" style="color:#ffaa00;">SYNC IN — Restore from File</div><div class="ms">Replace ALL data with backup file</div></div>
+      <div class="menu-arrow" style="color:#ffaa00;">›</div>
+    </div>
+    <input type="file" id="full-restore-input" accept=".json" style="display:none" onchange="fullRestoreFromFile(event)">
     <div class="menu-item" onclick="showMfsUpdate()">
       <div class="menu-num">1</div><div class="menu-icon">🔄</div>
       <div class="menu-label"><div class="ml" style="color:#00ff88;">MFS Update</div><div class="ms">Push new code to GitHub · Go live</div></div>
@@ -383,6 +394,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-num">10</div><div class="menu-icon">🔍</div>
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">Find Duplicates</div><div class="ms">Check · Select · Delete dupes</div></div>
       <div class="menu-arrow" style="color:#ff88ff;">›</div>
+    </div>
+    <div class="menu-item" onclick="doFixCreditSigns()">
+      <div class="menu-num">11</div><div class="menu-icon">±</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;">Fix Credit Signs</div><div class="ms">CREDIT/REFUND should be + not −</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
   </div>
   </div>
@@ -1510,117 +1526,19 @@ function fuelShow(sub) {
   if(sub==='log'){document.getElementById('fuel-date').value=today();}
 }
 
-function renderDayByDay(){
+function getFuelEntries(){
   loadLog();
-  var gasEntries=LOG.filter(function(e){
+  return LOG.filter(function(e){
     return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;
   }).sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+}
 
-  var old=document.getElementById('daybyday-overlay');if(old)old.remove();
-  var overlay=document.createElement('div');
-  overlay.id='daybyday-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:#1a1aff;z-index:9000;overflow-y:auto;';
-
-  // calc stats
-  var total=gasEntries.reduce(function(s,e){return s+Math.abs(e.amt);},0);
-  var allDates=gasEntries.map(function(e){return e.date||'';}).filter(Boolean).sort();
-  var spanDays=allDates.length>=2?Math.max(1,Math.round((new Date(allDates[allDates.length-1])-new Date(allDates[0]))/(1000*60*60*24))):30;
-  var perDay=total/spanDays;
-  var per30=perDay*30;
-  var perWeek=perDay*7;
-
-  // 4-week moving average — group by week
-  var byWeek={};
-  gasEntries.forEach(function(e){
-    var d=new Date(e.date||'');
-    var jan1=new Date(d.getFullYear(),0,1);
-    var wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
-    var key=d.getFullYear()+'-W'+('0'+wk).slice(-2);
-    byWeek[key]=(byWeek[key]||0)+Math.abs(e.amt);
-  });
-  var wkKeys=Object.keys(byWeek).sort().reverse();
-  var movAvg=[];
-  wkKeys.forEach(function(wk,i){
-    var slice=wkKeys.slice(Math.max(0,i-3),i+1);
-    var avg=slice.reduce(function(s,k){return s+byWeek[k];},0)/slice.length;
-    // build readable MM/DD label from week key
-    var yr=parseInt(wk.slice(0,4));
-    var wkNum=parseInt(wk.slice(6));
-    var jan1=new Date(yr,0,1);
-    var wkStart=new Date(jan1.getTime()+(wkNum-1)*7*86400000);
-    var mm=('0'+(wkStart.getMonth()+1)).slice(-2);
-    var dd=('0'+wkStart.getDate()).slice(-2);
-    var label=mm+'/'+dd+'/'+yr;
-    movAvg.push({wk:wk,label:label,val:byWeek[wk],avg:avg});
-  });
-
-  var show=gasEntries.slice().reverse();
-  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
-    +'<button onclick="document.getElementById(\'daybyday-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">⛽ Gas Day by Day</span>'
-    +'</div>'
-    // summary cards
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px;font-family:Courier New,monospace;">'
-    +'<div style="background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:11px;">$/DAY AVG</div>'
-    +'<div style="color:#ffaa00;font-weight:700;font-size:15px;">$'+perDay.toFixed(2)+'</div></div>'
-    +'<div style="background:#000044;border:2px solid #00ff88;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:11px;">30-DAY AVG</div>'
-    +'<div style="color:#00ff88;font-weight:700;font-size:15px;">$'+per30.toFixed(2)+'</div></div>'
-    +'<div style="background:#000044;border:2px solid #ff6666;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:11px;">$/WEEK AVG</div>'
-    +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+perWeek.toFixed(2)+'</div></div>'
-    +'</div>'
-    // 4-week moving average chart
-    +'<div style="background:#ffffff;border-radius:4px;margin:0 8px 8px;padding:10px;font-family:Courier New,monospace;">'
-    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;">4-WEEK MOVING AVERAGE</div>';
-
-  var maxWk=Math.max.apply(null,movAvg.map(function(w){return w.val;}))||1;
-  // cap bar at 95% so nothing goes off screen
-  var capVal=maxWk;
-  movAvg.forEach(function(w){
-    var barPct=Math.min(95,Math.round((w.val/maxWk)*100));
-    var avgPct=Math.round((w.avg/maxWk)*100);
-    var barColor=w.val>w.avg*1.2?'#cc0000':w.val>w.avg?'#cc6600':'#006600';
-    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-      +'<div style="color:#000066;font-size:10px;width:58px;text-align:right;">'+w.label+'</div>'
-      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:14px;position:relative;">'
-      +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
-      +'<div style="position:absolute;top:0;left:'+avgPct+'%;width:2px;height:100%;background:#000066;"></div>'
-      +'<span style="position:absolute;right:3px;top:0;font-size:10px;color:#000;font-weight:700;">$'+w.val.toFixed(0)+'</span>'
-      +'</div></div>';
-  });
-  h+='<div style="font-size:10px;color:#666;margin-top:4px;">▌ blue line = 4-wk moving avg &nbsp; 🟢=below 🟠=above 🔴=high</div>'
-    +'</div>'
-    // day by day table
-    +'<div style="padding:0 8px 8px;font-family:Courier New,monospace;">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:14px;">'
-    +'<tr style="background:#000080;">'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">DATE</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:left;">STATION</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">AMT</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">DAYS</th>'
-    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
-    +'</tr>';
-
-  show.forEach(function(e,i){
-    var next=show[i+1];
-    var days=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
-    var cpd=Math.abs(e.amt)/days;
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
-    var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
-    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
-    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+'</td>'
-      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
-      +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days+'</td>'
-      +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
-      +'</tr>';
-  });
-  h+='</table></div>';
-  overlay.innerHTML=h;
-  document.body.appendChild(overlay);
+function renderDayByDay(){
+  // Fuel/Gas — uses the shared upgraded overlay (same as grocery/restaurant)
+  if(_dbdActive!=='fuel') window._dbdShowAll=false;
+  _dbdActive='fuel';
+  var entries=getFuelEntries().slice().reverse();
+  renderDayByDayOverlay(entries,'⛽ Gas Day by Day');
 }
 
 function renderCombinedCosts(){
@@ -2156,9 +2074,11 @@ function renderDayByDayOverlay(entries,title){
   });
   h+='</table>';
   if(!window._dbdShowAll && totalEntries>30){
-    h+='<button onclick="window._dbdShowAll=true;'+(_dbdActive==='rest'?'renderRestDayByDay()':'renderGrocDayByDay()')+';document.getElementById(\'dbd-overlay\').scrollTop=99999;" style="width:100%;background:#0066cc;color:#fff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:12px;border:none;border-radius:5px;margin-top:10px;cursor:pointer;">▼ SHOW ALL '+totalEntries+' ENTRIES</button>';
+    var rerender=_dbdActive==='rest'?'renderRestDayByDay()':_dbdActive==='fuel'?'renderDayByDay()':'renderGrocDayByDay()';
+    h+='<button onclick="window._dbdShowAll=true;'+rerender+';document.getElementById(\'dbd-overlay\').scrollTop=99999;" style="width:100%;background:#0066cc;color:#fff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:12px;border:none;border-radius:5px;margin-top:10px;cursor:pointer;">▼ SHOW ALL '+totalEntries+' ENTRIES</button>';
   } else if(window._dbdShowAll){
-    h+='<button onclick="window._dbdShowAll=false;'+(_dbdActive==='rest'?'renderRestDayByDay()':'renderGrocDayByDay()')+';" style="width:100%;background:#666;color:#fff;font-family:Courier New,monospace;font-size:14px;padding:10px;border:none;border-radius:5px;margin-top:10px;cursor:pointer;">▲ SHOW JUST LATEST 30</button>';
+    var rerender2=_dbdActive==='rest'?'renderRestDayByDay()':_dbdActive==='fuel'?'renderDayByDay()':'renderGrocDayByDay()';
+    h+='<button onclick="window._dbdShowAll=false;'+rerender2+';" style="width:100%;background:#666;color:#fff;font-family:Courier New,monospace;font-size:14px;padding:10px;border:none;border-radius:5px;margin-top:10px;cursor:pointer;">▲ SHOW JUST LATEST 30</button>';
   }
   h+='<div style="background:#fff8d8;color:#000;font-size:14px;padding:10px;margin-top:10px;border:1px solid #cc6600;border-radius:5px;">⚠ <b>YELLOW ROWS</b> = same date + same amount (likely dup) · Tap any row to delete.</div>';
   h+='</div>';
@@ -2169,7 +2089,10 @@ function renderDayByDayOverlay(entries,title){
 // Tap row in day-by-day to delete from mx_log
 // Auto-delete all same-date+same-amount dups across the active view (Grocery or Restaurant)
 function dbdAutoDeleteDups(){
-  var entries=_dbdActive==='rest'?getRestEntries():getGrocEntries();
+  var entries;
+  if(_dbdActive==='rest') entries=getRestEntries();
+  else if(_dbdActive==='fuel') entries=getFuelEntries();
+  else entries=getGrocEntries();
   // Group by date + amount-in-cents
   var groups={};
   entries.forEach(function(e){
@@ -2208,6 +2131,7 @@ function dbdAutoDeleteDups(){
   var overlay=document.getElementById('dbd-overlay');
   if(overlay) overlay.remove();
   if(_dbdActive==='rest') renderRestDayByDay();
+  else if(_dbdActive==='fuel') renderDayByDay();
   else renderGrocDayByDay();
 }
 
@@ -2230,6 +2154,7 @@ function dbdConfirmDel(id, rowEl){
   var overlay=document.getElementById('dbd-overlay');
   if(overlay) overlay.remove();
   if(_dbdActive==='rest') renderRestDayByDay();
+  else if(_dbdActive==='fuel') renderDayByDay();
   else renderGrocDayByDay();
 }
 
@@ -4742,6 +4667,95 @@ function dupDeleteSelected(){
   doFindDups();
 }
 
+function doFixCreditSigns(){
+  loadLog();
+  // Find entries where desc says income/credit/refund/etc but amt is negative
+  var wrong=LOG.filter(function(e){
+    return isIncomeDesc(e.desc) && (parseFloat(e.amt)||0) < 0;
+  });
+  if(!wrong.length){
+    toast('No credit-sign issues found! ✓ Data clean',true);
+    return;
+  }
+
+  // sort newest-first
+  wrong.sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
+
+  var old=document.getElementById('fixcredit-overlay');if(old)old.remove();
+  var overlay=document.createElement('div');
+  overlay.id='fixcredit-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#000033;z-index:9000;overflow-y:auto;font-family:Courier New,monospace;';
+
+  var totalWrong=wrong.reduce(function(s,e){return s+Math.abs(parseFloat(e.amt)||0);},0);
+
+  var h='<div style="background:#0000cc;border-bottom:2px solid #00ff88;padding:10px 12px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;">'
+    +'<button onclick="document.getElementById(\'fixcredit-overlay\').remove();goMain();" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ DONE</button>'
+    +'<span style="color:#00ff88;font-weight:700;font-size:14px;flex:1;">± '+wrong.length+' WRONG-SIGN CREDITS</span>'
+    +'<button onclick="fcSelectAll()" style="background:#ffaa00;border:none;color:#000;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 12px;border-radius:4px;cursor:pointer;">ALL</button>'
+    +'<button onclick="fcFlipSelected()" style="background:#00aa00;border:none;color:#fff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 12px;border-radius:4px;cursor:pointer;">↑ FLIP TO +</button>'
+    +'</div>'
+    +'<div style="padding:10px;color:#ccccff;font-size:13px;">'
+    +'These entries have <span class="green">CREDIT/REFUND/INCOME/DIVIDEND/REBATE</span> in DESC but stored as <span class="red">NEGATIVE</span> (expense). Check the ones to flip to <span class="green">POSITIVE</span> (income).'
+    +'<br>Total amount: <b style="color:#ffff00;">$'+totalWrong.toFixed(2)+'</b>'
+    +'</div>'
+    +'<div style="padding:0 8px 8px;">'
+    +'<table style="width:100%;border-collapse:collapse;background:#fff;color:#000;font-size:14px;border-radius:4px;overflow:hidden;">'
+    +'<tr style="background:#dddddd;">'
+    +'<th style="padding:6px 4px;text-align:center;width:30px;"><input type="checkbox" onclick="fcToggleAll(this)" style="width:18px;height:18px;"></th>'
+    +'<th style="padding:6px 4px;text-align:left;font-size:12px;">DATE</th>'
+    +'<th style="padding:6px 4px;text-align:left;font-size:12px;">PAYEE</th>'
+    +'<th style="padding:6px 4px;text-align:left;font-size:12px;">DESC</th>'
+    +'<th style="padding:6px 4px;text-align:right;font-size:12px;">AMT</th>'
+    +'<th style="padding:6px 4px;text-align:center;font-size:12px;">→ NEW</th>'
+    +'</tr>';
+
+  wrong.forEach(function(e,i){
+    var bg=i%2===0?'background:#fff':'background:#f5f5f5';
+    var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
+    var amt=parseFloat(e.amt)||0;
+    h+='<tr style="'+bg+';border-bottom:1px solid #ddd;">'
+      +'<td style="padding:6px 4px;text-align:center;"><input type="checkbox" class="fc-chk" data-id="'+JSON.stringify(e.id||0)+'" checked style="width:18px;height:18px;"></td>'
+      +'<td style="padding:6px 4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+'</td>'
+      +'<td style="padding:6px 4px;color:#000;font-weight:700;font-size:13px;">'+trunc(e.payee||'',16)+'</td>'
+      +'<td style="padding:6px 4px;color:#0066cc;font-size:13px;">'+trunc(e.desc||'',14)+'</td>'
+      +'<td style="padding:6px 4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">-$'+Math.abs(amt).toFixed(2)+'</td>'
+      +'<td style="padding:6px 4px;text-align:right;color:#006600;font-weight:700;font-size:13px;">+$'+Math.abs(amt).toFixed(2)+'</td>'
+      +'</tr>';
+  });
+  h+='</table></div>';
+  overlay.innerHTML=h;
+  document.body.appendChild(overlay);
+}
+
+function fcToggleAll(masterCheckbox){
+  document.querySelectorAll('.fc-chk').forEach(function(c){c.checked=masterCheckbox.checked;});
+}
+
+function fcSelectAll(){
+  document.querySelectorAll('.fc-chk').forEach(function(c){c.checked=true;});
+}
+
+function fcFlipSelected(){
+  var ids=new Set();
+  document.querySelectorAll('.fc-chk:checked').forEach(function(c){
+    ids.add(JSON.parse(c.getAttribute('data-id')));
+  });
+  if(!ids.size){toast('Check some entries first',false);return;}
+  if(!confirm('Flip '+ids.size+' entries from − to + (expense to income)?\n\nThis cannot be undone (but you can flip them back).')) return;
+  loadLog();
+  var flipped=0;
+  LOG.forEach(function(e){
+    if(ids.has(e.id||0)){
+      e.amt=Math.abs(parseFloat(e.amt)||0);
+      flipped++;
+    }
+  });
+  saveLog();
+  toast('✓ Flipped '+flipped+' entries to +',true);
+  var o=document.getElementById('fixcredit-overlay');if(o)o.remove();
+  doFixCreditSigns();  // re-run to show what's left (if any)
+}
+
 function doCheatSheet(){
   loadLog();
   var expEntries=LOG.filter(function(e){
@@ -5004,7 +5018,13 @@ function cleanPayeeName(s){
 }
 function isIncomeDesc(desc){
   var d=(desc||'').toUpperCase();
-  return d.indexOf('INCOME')>=0||d.indexOf('CREDIT INVOICE')>=0;
+  // CLIENT REFUND is an exception — money paid OUT to refund a client → expense
+  if(d.indexOf('CLIENT REFUND')>=0) return false;
+  return d.indexOf('INCOME')>=0
+      || d.indexOf('CREDIT')>=0      // CREDIT REFUND, CREDIT INVOICE, CREDIT INTEREST, etc.
+      || d.indexOf('REFUND')>=0      // FEDERAL TAXES REFUND, vendor refunds
+      || d.indexOf('DIVIDEND')>=0    // DIVIDENDS, QUALIFIED DIVIDEND, etc.
+      || d.indexOf('REBATE')>=0;
 }
 
 function doBankCSVPreview(file){
@@ -5237,6 +5257,159 @@ function doBackup() {
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('✓ '+filename+' saved to Downloads · '+mxLog.length+' entries',true);
+}
+
+// ═══════════════════════════════════════════════
+//  FULL SYNC — Daily Android ↔ ThinkPad workflow
+// ═══════════════════════════════════════════════
+function buildFullSyncBundle(){
+  var safeLoad=function(key,def){
+    try{ return JSON.parse(localStorage.getItem(key)||def); }catch(e){ return JSON.parse(def); }
+  };
+  var bundle={
+    type:'mfs-full-sync',
+    version:1,
+    exported:new Date().toISOString(),
+    data:{
+      mfs:        safeLoad('mfs','null'),
+      mx_log:     safeLoad('mx_log','[]'),
+      mfs_clients:safeLoad('mfs_clients','[]'),
+      mx_pcodes:  safeLoad('mx_pcodes','[]'),
+      mx_descs:   safeLoad('mx_descs','[]'),
+      mx_custom:  safeLoad('mx_custom','[]'),
+      mx_dt:      localStorage.getItem('mx_dt')||''
+    }
+  };
+  bundle.stats={
+    ledger_entries:(bundle.data.mx_log||[]).length,
+    clients:(bundle.data.mfs_clients||[]).length,
+    pcodes:(bundle.data.mx_pcodes||[]).length,
+    descs:(bundle.data.mx_descs||[]).length,
+    custom_combos:(bundle.data.mx_custom||[]).length
+  };
+  return bundle;
+}
+
+async function doFullSync(){
+  var bundle=buildFullSyncBundle();
+  var json=JSON.stringify(bundle);
+  var dateStr=today().replace(/-/g,'');
+  var filename='mfs-sync-'+dateStr+'.json';
+  var sizeKB=(json.length/1024).toFixed(0);
+  var summary='📧 SYNC OUT — '+filename+'\n\n'+
+    '📊 Ledger entries: '+bundle.stats.ledger_entries+'\n'+
+    '📱 Phone clients: '+bundle.stats.clients+'\n'+
+    '🏷  PCODEs: '+bundle.stats.pcodes+'\n'+
+    '🏷  DESCs: '+bundle.stats.descs+'\n'+
+    '⚡ Custom combos: '+bundle.stats.custom_combos+'\n'+
+    '📦 Size: '+sizeKB+' KB\n\n'+
+    'OK = Email/Share via Android share sheet\n'+
+    'Cancel = Just download to Downloads folder';
+  var doShare=confirm(summary);
+  var blob=new Blob([json],{type:'application/json'});
+  // Always make a copy in Downloads as a safety net
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  if(!doShare){
+    toast('✓ Saved to Downloads: '+filename,true);
+    return;
+  }
+  // Try Web Share API with file (modern Android)
+  try{
+    var file=new File([blob],filename,{type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({
+        files:[file],
+        title:'MFS Sync '+today(),
+        text:'MFS Sync\n'+
+             'Ledger: '+bundle.stats.ledger_entries+' · Clients: '+bundle.stats.clients+'\n'+
+             'Open in MFS → System Utilities → SYNC IN'
+      });
+      toast('✓ Shared',true);
+      return;
+    }
+  }catch(e){
+    if(e.name==='AbortError'){ toast('Share cancelled — file is in Downloads',true); return; }
+  }
+  // Fallback: open Gmail composer + remind user to attach
+  var subj='MFS Sync '+today()+' — '+bundle.stats.ledger_entries+' entries';
+  var body='MFS Daily Sync — '+today()+'\n\n'+
+    'Ledger: '+bundle.stats.ledger_entries+' entries\n'+
+    'Phone Clients: '+bundle.stats.clients+'\n'+
+    'PCODEs: '+bundle.stats.pcodes+' · DESCs: '+bundle.stats.descs+'\n\n'+
+    '⚠ ATTACH THE FILE: Downloads/'+filename+'\n\n'+
+    'On the other device:\n'+
+    'MFS → System Utilities → SYNC IN → pick this file';
+  setTimeout(function(){
+    window.location.href='mailto:?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  },800);
+  toast('File saved to Downloads — attach it to the email',true);
+}
+
+function doFullRestore(){
+  if(!confirm(
+    '⚠ SYNC IN — Restore from File\n\n'+
+    'This will REPLACE all current data:\n'+
+    '• Ledger (mx_log)\n'+
+    '• Phone Clients\n'+
+    '• Masters (PCODE/DESC/payees)\n'+
+    '• Settings\n\n'+
+    'Make sure you SYNC OUT first if you have unsaved changes!\n\n'+
+    'Continue?'
+  )) return;
+  document.getElementById('full-restore-input').click();
+}
+
+function fullRestoreFromFile(evt){
+  var file=evt.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var bundle=JSON.parse(e.target.result);
+      // Sanity check
+      if(bundle.type!=='mfs-full-sync' || !bundle.data){
+        if(!confirm('This file is not a full MFS sync (might be old format).\n\nTry to restore anyway?')) {
+          evt.target.value=''; return;
+        }
+      }
+      var d=bundle.data||{};
+      var summary='📥 RESTORE PREVIEW\n\n'+
+        'Exported: '+(bundle.exported||'unknown').slice(0,16).replace('T',' ')+'\n\n'+
+        '📊 Ledger entries: '+((d.mx_log||[]).length)+'\n'+
+        '📱 Phone clients: '+((d.mfs_clients||[]).length)+'\n'+
+        '🏷  PCODEs: '+((d.mx_pcodes||[]).length)+'\n'+
+        '🏷  DESCs: '+((d.mx_descs||[]).length)+'\n\n'+
+        'REPLACE all data with this? FINAL CONFIRM.';
+      if(!confirm(summary)){ evt.target.value=''; return; }
+      // Apply each key (only if present in bundle)
+      if(d.mfs!==undefined && d.mfs!==null) localStorage.setItem('mfs',JSON.stringify(d.mfs));
+      if(d.mx_log) localStorage.setItem('mx_log',JSON.stringify(d.mx_log));
+      if(d.mfs_clients) localStorage.setItem('mfs_clients',JSON.stringify(d.mfs_clients));
+      if(d.mx_pcodes) localStorage.setItem('mx_pcodes',JSON.stringify(d.mx_pcodes));
+      if(d.mx_descs) localStorage.setItem('mx_descs',JSON.stringify(d.mx_descs));
+      if(d.mx_custom) localStorage.setItem('mx_custom',JSON.stringify(d.mx_custom));
+      if(d.mx_dt) localStorage.setItem('mx_dt',d.mx_dt);
+      // refresh in-memory caches
+      try{ loadLog(); }catch(e){}
+      try{ refreshDL(); }catch(e){}
+      toast('✓ Restored — '+((d.mx_log||[]).length)+' entries · '+((d.mfs_clients||[]).length)+' clients',true);
+      // Show success screen
+      setTimeout(function(){
+        alert('✓ SYNC IN COMPLETE\n\n'+
+          'Ledger: '+((d.mx_log||[]).length)+'\n'+
+          'Clients: '+((d.mfs_clients||[]).length)+'\n\n'+
+          'Returning to main menu.');
+        goMain();
+      },300);
+    }catch(err){
+      alert('✗ Restore failed: '+err.message+'\n\nFile may be corrupt or wrong format.');
+    }
+    evt.target.value='';
+  };
+  reader.readAsText(file);
 }
 async function doShareBackup(){
   document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
@@ -6593,9 +6766,7 @@ function doSave(){
   var amt=parseFloat(document.getElementById('p-amt').value);
   if(!payee){alert('Select a row first');return;}
   if(!amt||isNaN(amt)){alert('Enter amount');return;}
-  var incWords=['INCOME','CREDIT INVOICE'];
-  var isIncome=false;for(var w=0;w<incWords.length;w++){if(desc.toUpperCase().indexOf(incWords[w])>=0){isIncome=true;break;}}
-  amt=isIncome?Math.abs(amt):-Math.abs(amt);
+  amt=isIncomeDesc(desc)?Math.abs(amt):-Math.abs(amt);
   var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt};
   if(_editId!==null){
     // get original payee BEFORE overwriting
@@ -6656,9 +6827,7 @@ function doCopy(){
   var amt=parseFloat(document.getElementById('p-amt').value);
   if(!payee){alert('Select a row first');return;}
   if(!amt||isNaN(amt)){alert('Enter amount');return;}
-  var incWords=['INCOME','CREDIT INVOICE'];
-  var isIncome=false;for(var w=0;w<incWords.length;w++){if(desc.toUpperCase().indexOf(incWords[w])>=0){isIncome=true;break;}}
-  amt=isIncome?Math.abs(amt):-Math.abs(amt);
+  amt=isIncomeDesc(desc)?Math.abs(amt):-Math.abs(amt);
   var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt};
   LOG.unshift(entry);
   saveLog();saveDatePref();
