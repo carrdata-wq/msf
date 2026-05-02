@@ -456,6 +456,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div style="color:#ff88ff;font-weight:700;margin-top:8px;">⚠ Always SEND from the device with newer changes.</div>
       <div style="margin-left:12px;">LOAD replaces all data. Don't load stale data over fresh edits — send first if uncertain.</div>
     </div>
+    <!-- BACK BUTTON AT BOTTOM -->
+    <div style="margin-top:16px;padding-bottom:10px;">
+      <button onclick="goMain()" style="width:100%;background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:16px;border-radius:6px;cursor:pointer;">◀ MAIN MENU</button>
+    </div>
   </div>
 </div>
 
@@ -4663,6 +4667,7 @@ function doFindDups(){
     +'<span style="color:#ff88ff;font-weight:700;font-size:13px;flex:1;">🔍 '+dups.length+' POSSIBLE DUPES</span>'
     +'<button onclick="dupSelectAll()" style="background:#ffaa00;border:none;color:#000;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:6px 10px;border-radius:4px;cursor:pointer;">SELECT ALL</button>'
     +'<button onclick="dupDeleteSelected()" style="background:#cc0000;border:none;color:#fff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:6px 10px;border-radius:4px;cursor:pointer;">🗑 DELETE</button>'
+    +'<button onclick="if(confirm(\'DELETE ALL \'+document.querySelectorAll(\'.dup-chk\').length+\' duplicates at once?\'))dupDeleteAll();" style="background:#880000;border:2px solid #ff4444;color:#ffff00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:6px 10px;border-radius:4px;cursor:pointer;">🗑 ALL</button>'
     +'</div>'
     +'<div style="color:#ccccff;font-size:11px;padding:6px 8px;">Check the ones to DELETE then tap 🗑 DELETE</div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:13px;">'
@@ -4702,15 +4707,39 @@ function dupSelectAll(){
 function dupDeleteSelected(){
   var toDelete=new Set();
   document.querySelectorAll('.dup-chk:checked').forEach(function(c){
-    toDelete.add(parseFloat(c.getAttribute('data-id')));
+    toDelete.add(String(c.getAttribute('data-id')));
   });
   if(!toDelete.size){toast('Check some items first',false);return;}
+  var count=toDelete.size;
   loadLog();
-  LOG=LOG.filter(function(e){return!toDelete.has(e.id);});
+  LOG=LOG.filter(function(e){return!toDelete.has(String(e.id));});
   saveLog();
-  toast('✓ '+toDelete.size+' duplicates deleted',true);
   var o=document.getElementById('dups-overlay');if(o)o.remove();
-  doFindDups();
+  toast('✓ '+count+' duplicates deleted — rescanning...',true);
+  setTimeout(doFindDups,400);
+}
+
+function dupDeleteAll(){
+  loadLog();
+  var normPayee=function(p){ return (p||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12); };
+  var seen={};var toDeleteIds=new Set();
+  LOG.forEach(function(e){
+    var amt=Math.round((parseFloat(e.amt)||0)*100)/100;
+    var key=(e.date||'').trim()+'|'+amt+'|'+normPayee(e.payee);
+    if(!seen[key])seen[key]=[];
+    seen[key].push(e);
+  });
+  Object.keys(seen).forEach(function(k){
+    if(seen[k].length>1){
+      seen[k].slice(1).forEach(function(e){toDeleteIds.add(String(e.id));});
+    }
+  });
+  if(!toDeleteIds.size){toast('No duplicates found! ✓ Data is clean',true);var o=document.getElementById('dups-overlay');if(o)o.remove();goMain();return;}
+  LOG=LOG.filter(function(e){return!toDeleteIds.has(String(e.id));});
+  saveLog();
+  var o=document.getElementById('dups-overlay');if(o)o.remove();
+  toast('✓ ALL '+toDeleteIds.size+' duplicates deleted — data is clean!',true);
+  setTimeout(doFindDups,500);
 }
 
 function doFixCreditSigns(){
