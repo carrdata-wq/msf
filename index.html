@@ -1622,37 +1622,37 @@ function renderFuelChart(){
     +'</div>':'')
     +'</div>';
 
-  // monthly bar chart
-  h+='<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:10px;">MONTHLY GAS COST — 🏁=Indiana 🏠=Illinois</div>';
+  // vertical mountain chart — newest LEFT, oldest RIGHT
+  var chartH=180;
+  h+='<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;margin-top:10px;">'
+    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:6px;">⛽ GAS — NEWEST LEFT · OLDEST RIGHT</div>'
+    +'<div style="font-size:10px;color:#666;margin-bottom:4px;">— avg $'+avgVal.toFixed(0)+'/mo &nbsp; 🏁=Indiana 🏠=Illinois</div>'
+    +'<div style="position:relative;overflow-x:auto;">'
+    +'<div style="display:flex;align-items:flex-end;gap:2px;height:'+chartH+'px;border-bottom:2px solid #000066;border-left:2px solid #000066;padding:0 4px;min-width:'+(months.length*32)+'px;position:relative;">'
+    +'<div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;bottom:'+(Math.round((avgVal/maxVal)*chartH))+'px;z-index:1;opacity:0.4;"></div>';
 
   months.forEach(function(m){
     var v=byMonth[m];
     var inV=byMonthIN[m]||0;
     var ilV=byMonthIL[m]||0;
-    var barPct=Math.round((v/maxVal)*100);
-    var inPct=Math.round((inV/maxVal)*100);
-    var ilPct=Math.round((ilV/maxVal)*100);
+    var barH=Math.min(chartH-4,Math.round((v/maxVal)*chartH));
     var barColor=v>avgVal*1.3?'#cc0000':v>avgVal?'#cc6600':'#006600';
     var mo=m.slice(5,7)+'/'+m.slice(2,4);
-    var flag=inV>0&&ilV>0?'🏁🏠':inV>0?'🏁':'🏠';
-    h+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">'
-      +'<div style="color:#000066;font-size:13px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
-      +'<div style="font-size:14px;width:20px;">'+flag+'</div>'
-      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
-      // Indiana portion green
-      +(inPct>0?'<div style="background:#006600;height:100%;border-radius:3px 0 0 3px;width:'+inPct+'%;position:absolute;left:0;"></div>':'')
-      // Illinois portion red (stacked)
-      +(ilPct>0?'<div style="background:#cc6600;height:100%;border-radius:'+(inPct===0?'3px':'0')+' 3px 3px '+(inPct===0?'3px':'0')+';width:'+ilPct+'%;position:absolute;left:'+inPct+'%;opacity:0.85;"></div>':'')
-      +'<span style="position:absolute;right:3px;top:1px;font-size:13px;color:#000000;font-weight:700;">$'+v.toFixed(0)+'</span>'
-      +'</div></div>';
+    var flag=inV>0&&ilV>0?'🏁':'';
+    h+='<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;">'
+      +'<div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$'+v.toFixed(0)+'</div>'
+      +'<div style="width:22px;height:'+barH+'px;background:'+barColor+';border-radius:3px 3px 0 0;position:relative;">'
+      +(flag?'<div style="position:absolute;top:-12px;left:0;font-size:9px;">🏁</div>':'')
+      +'</div>'
+      +'<div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">'+mo+'</div>'
+      +'</div>';
   });
 
-  h+='<div style="border-top:1px solid #cccccc;margin-top:8px;padding-top:6px;font-size:14px;color:#333333;">'
+  h+='</div></div>'
+    +'<div style="font-size:11px;color:#333;margin-top:28px;">'
     +'<span style="color:#006600;font-weight:700;">■ Indiana</span> &nbsp; '
     +'<span style="color:#cc6600;font-weight:700;">■ Illinois</span> &nbsp; '
-    +'🟢=below avg 🟠=above avg 🔴=high'
-    +'</div></div></div>';
+    +'🟢=below avg 🟠=above avg 🔴=high</div></div></div>';
 
   document.getElementById('fuel-chart-content').innerHTML=h;
 }
@@ -1817,35 +1817,49 @@ function renderTrackerChart(entries,contentId,color,label){
     var m=(e.date||'').slice(0,7);
     byMonth[m]=(byMonth[m]||0)+Math.abs(e.amt);
   });
+  // newest LEFT, oldest RIGHT
   var months=Object.keys(byMonth).sort().reverse();
-  var maxVal=Math.max.apply(null,Object.values(byMonth));
+  var maxVal=Math.max.apply(null,Object.values(byMonth))||1;
   var avgVal=Object.values(byMonth).reduce(function(s,v){return s+v;},0)/months.length;
+  var chartH=180;
 
-  var h='<div style="font-family:Courier New,monospace;">'
-    +'<div style="display:flex;gap:8px;margin-bottom:10px;">'
-    +'<div style="flex:1;background:#000044;border:2px solid #ffff00;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:13px;">AVG/MONTH</div>'
-    +'<div style="flex:1;background:#000044;border:2px solid #ff4444;border-radius:4px;padding:8px;text-align:center;">'
-    +'<div style="color:#ccccff;font-size:13px;">HIGHEST MONTH</div>'
-    +'<div style="color:#ff4444;font-weight:700;font-size:14px;">$'+maxVal.toFixed(2)+'</div></div>'
+  var h='<div style="font-family:Courier New,monospace;background:#ffffff;border-radius:6px;padding:10px;">'
+    // summary
+    +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
+    +'<div style="flex:1;background:#000066;border-radius:4px;padding:6px;text-align:center;">'
+    +'<div style="color:#ccccff;font-size:11px;">AVG/MONTH</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;">$'+avgVal.toFixed(0)+'</div></div>'
+    +'<div style="flex:1;background:#cc0000;border-radius:4px;padding:6px;text-align:center;">'
+    +'<div style="color:#ffcccc;font-size:11px;">HIGHEST</div>'
+    +'<div style="color:#ffffff;font-weight:700;font-size:14px;">$'+maxVal.toFixed(0)+'</div></div>'
+    +'<div style="flex:1;background:#006600;border-radius:4px;padding:6px;text-align:center;">'
+    +'<div style="color:#ccffcc;font-size:11px;">MONTHS</div>'
+    +'<div style="color:#ffffff;font-weight:700;font-size:14px;">'+months.length+'</div></div>'
     +'</div>'
-    +'<div style="background:#ffffff;border:1px solid #cccccc;border-radius:4px;padding:12px;">'
-    +'<div style="color:#000066;font-weight:700;font-size:13px;margin-bottom:10px;">'+label+' — MONTHLY COST</div>';
+    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;">'+label+' — NEWEST LEFT · OLDEST RIGHT</div>'
+    // avg line label
+    +'<div style="font-size:10px;color:#666;margin-bottom:4px;">— avg $'+avgVal.toFixed(0)+'/mo</div>'
+    // chart area
+    +'<div style="position:relative;overflow-x:auto;">'
+    +'<div style="display:flex;align-items:flex-end;gap:2px;height:'+chartH+'px;border-bottom:2px solid #000066;border-left:2px solid #000066;padding:0 4px;min-width:'+(months.length*32)+'px;position:relative;">'
+    // avg line
+    +'<div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;bottom:'+(Math.round((avgVal/maxVal)*chartH))+'px;z-index:1;opacity:0.5;"></div>';
 
   months.forEach(function(m){
     var v=byMonth[m];
-    var barPct=Math.round((v/maxVal)*100);
+    var barH=Math.min(chartH-4,Math.round((v/maxVal)*chartH));
     var barColor=v>avgVal*1.3?'#cc0000':v>avgVal?'#cc6600':color;
     var mo=m.slice(5,7)+'/'+m.slice(2,4);
-    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
-      +'<div style="color:#000066;font-size:14px;width:36px;text-align:right;font-weight:700;">'+mo+'</div>'
-      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:16px;position:relative;">'
-      +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
-      +'<span style="position:absolute;right:3px;top:1px;font-size:13px;color:#000;font-weight:700;">$'+v.toFixed(0)+'</span>'
-      +'</div></div>';
+    h+='<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;">'
+      +'<div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$'+v.toFixed(0)+'</div>'
+      +'<div style="width:22px;height:'+barH+'px;background:'+barColor+';border-radius:3px 3px 0 0;"></div>'
+      +'<div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">'+mo+'</div>'
+      +'</div>';
   });
-  h+='<div style="border-top:1px solid #ccc;margin-top:8px;padding-top:6px;font-size:14px;color:#666;">'
-    +'🟢=below avg &nbsp; 🟠=above avg &nbsp; 🔴=high</div></div></div>';
+
+  h+='</div></div>'
+    +'<div style="font-size:11px;color:#666;margin-top:28px;">🟢=below avg &nbsp; 🟠=above avg &nbsp; 🔴=high</div>'
+    +'</div>';
   document.getElementById(contentId).innerHTML=h;
 }
 
@@ -3785,12 +3799,12 @@ function doFindDups(){
     +'<div style="color:#ccccff;font-size:11px;padding:6px 8px;">Check the ones to DELETE then tap 🗑 DELETE</div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:13px;">'
     +'<tr style="background:#000080;">'
-    +'<th style="color:#fff;padding:6px 4px;width:30px;">✓</th>'
     +'<th style="color:#ffff00;padding:6px 4px;text-align:left;">DATE</th>'
     +'<th style="color:#ffff00;padding:6px 4px;text-align:left;">PAYEE</th>'
     +'<th style="color:#ffff00;padding:6px 4px;text-align:left;">DESC</th>'
     +'<th style="color:#ffff00;padding:6px 4px;text-align:left;">PCO</th>'
     +'<th style="color:#ffff00;padding:6px 4px;text-align:right;">AMT</th>'
+    +'<th style="color:#fff;padding:6px 4px;width:30px;text-align:center;">✓</th>'
     +'</tr>';
 
   dups.forEach(function(e,i){
@@ -3798,14 +3812,14 @@ function doFindDups(){
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3/$1');
     var ac=e.amt>=0?'#00ffff':'#ff6666';
     h+='<tr style="'+bg+';border-bottom:1px solid #222266;">'
-      +'<td style="padding:6px 4px;text-align:center;">'
-      +'<input type="checkbox" class="dup-chk" data-id="'+e.id+'" style="width:18px;height:18px;cursor:pointer;">'
-      +'</td>'
       +'<td style="padding:6px 4px;color:#ccccff;font-size:12px;white-space:nowrap;">'+dt+'</td>'
       +'<td style="padding:6px 4px;color:#ffff00;font-size:12px;">'+trunc(e.payee||'',14)+'</td>'
       +'<td style="padding:6px 4px;color:#aaaacc;font-size:11px;">'+trunc(e.desc||'',10)+'</td>'
       +'<td style="padding:6px 4px;color:#00ffff;font-size:11px;">'+trunc(e.pcode||'',6)+'</td>'
       +'<td style="padding:6px 4px;text-align:right;font-weight:700;font-size:13px;color:'+ac+';">$'+Math.abs(e.amt).toFixed(2)+'</td>'
+      +'<td style="padding:6px 4px;text-align:center;">'
+      +'<input type="checkbox" class="dup-chk" data-id="'+e.id+'" style="width:18px;height:18px;cursor:pointer;">'
+      +'</td>'
       +'</tr>';
   });
   h+='</table>';
