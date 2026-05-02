@@ -216,6 +216,26 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .add-row input:focus{border-color:var(--blue);}
 .add-row button{background:#005a4e;border:1px solid var(--green);color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:8px 13px;border-radius:4px;cursor:pointer;white-space:nowrap;}
 
+/* ── PHONE CLIENTS WHITE LOCATE TABLE ── */
+.pc-tbl{background:#ffffff;color:#000000;border:1px solid #888;border-radius:4px;overflow:hidden;margin-bottom:8px;}
+.pc-tbl-head{background:#dddddd;color:#000;font-weight:700;font-size:11px;padding:6px 8px;border-bottom:2px solid #888;display:grid;grid-template-columns:24px 1fr 70px 32px 32px 24px;gap:4px;align-items:center;text-transform:uppercase;letter-spacing:.5px;}
+.pc-tbl-row{padding:6px 8px;border-bottom:1px solid #ddd;display:grid;grid-template-columns:24px 1fr 70px 32px 32px 24px;gap:4px;align-items:center;font-size:13px;color:#000;}
+.pc-tbl-row:nth-child(even){background:#f5f5f5;}
+.pc-tbl-row.checked{background:#fff3a8;}
+.pc-tbl-row .pcr-name{font-weight:700;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pc-tbl-row .pcr-sub{font-size:11px;color:#444;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pc-tbl-row .pcr-status{font-size:11px;font-weight:700;text-align:center;padding:2px 0;border-radius:2px;}
+.pcr-status-ACTIVE{background:#c8f7c5;color:#0a5e1a;}
+.pcr-status-PENDING{background:#fff3a8;color:#7a5c00;}
+.pcr-status-DONE{background:#cfe7ff;color:#003c80;}
+.pcr-status-COLD{background:#e8e8e8;color:#555;}
+.pc-tbl-row .pcr-act{background:none;border:none;color:#000;font-size:14px;cursor:pointer;padding:2px 4px;border-radius:3px;}
+.pc-tbl-row .pcr-act:active{background:#ddd;}
+.pc-tbl-row input[type=checkbox]{width:18px;height:18px;accent-color:#0066cc;cursor:pointer;}
+.pc-tbl-row .pcr-arrow{color:#666;font-size:12px;text-align:center;}
+.pc-tbl-row.expanded{background:#fffced;border-bottom:2px solid #888;}
+.pc-detail{background:#1a1aff;color:#fff;padding:10px;border-bottom:1px solid #888;}
+
 /* ── TOAST ── */
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 18px;border-radius:16px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999;white-space:nowrap;}
 #toast.show{opacity:1;}
@@ -289,7 +309,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml">Worker Hours</div><div class="ms">Time logs · Pay · Job/Property</div></div>
       <div class="menu-arrow">›</div>
     </div>
-    <div class="menu-item" onclick="toast('Phone Client Database — coming soon',true)">
+    <div class="menu-item" onclick="openModule('phoneclients')">
       <div class="menu-num">7</div><div class="menu-icon">📱</div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">Phone Clients</div><div class="ms">Client Database · Contacts · Jobs</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
@@ -941,6 +961,120 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
+<!-- ████████████████████ PHONE CLIENTS ████████████████████ -->
+<div id="screen-phoneclients" class="screen">
+  <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title" style="color:#00ffff;">📱 Phone Clients</div></div>
+  <div id="pc-menu" class="mod-menu">
+    <div class="mod-menu-grid">
+      <div class="mod-btn" onclick="pcShow('add')"><div class="mb-icon green">+</div><div class="mb-label">Add Client</div><div class="mb-sub">Name · Phone · Address</div></div>
+      <div class="mod-btn" onclick="pcShow('list')"><div class="mb-icon blue">🔎</div><div class="mb-label">Locate</div><div class="mb-sub">'FOX'$PAYEE · Edit · Dupe Del</div></div>
+      <div class="mod-btn" onclick="pcShow('find')"><div class="mb-icon yellow">🔍</div><div class="mb-label">Find by Job</div><div class="mb-sub">Status · PCODE · Type</div></div>
+      <div class="mod-btn" onclick="pcShow('tools')"><div class="mb-icon purple">⚙</div><div class="mb-label">Tools</div><div class="mb-sub">Export · Import · Stats</div></div>
+    </div>
+    <div class="card" style="margin:8px;">
+      <div class="card-title cyan">📊 Quick Stats</div>
+      <div id="pc-quickstats"></div>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT CLIENT -->
+  <div id="pc-add" class="fpage" style="display:none">
+    <div class="card">
+      <div class="card-title green" id="pc-form-title">+ NEW CLIENT</div>
+      <input type="hidden" id="pc-id">
+      <div class="field"><label>Name *</label><input type="text" id="pc-name" placeholder="JOHN SMITH" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field-row">
+        <div class="field"><label>Phone (mobile) *</label><input type="tel" id="pc-phone" placeholder="219-555-1234" inputmode="tel"></div>
+        <div class="field"><label>Phone 2</label><input type="tel" id="pc-phone2" placeholder="alt" inputmode="tel"></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="pc-email" placeholder="name@example.com" autocapitalize="off"></div>
+      <div class="field"><label>Address</label><input type="text" id="pc-address" placeholder="123 MAIN ST" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field-row3">
+        <div class="field"><label>City</label><input type="text" id="pc-city" placeholder="MICHIGAN CITY" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="field"><label>State</label><input type="text" id="pc-state" placeholder="IN" maxlength="2" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="field"><label>Zip</label><input type="text" id="pc-zip" placeholder="46360" inputmode="numeric"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>PCODE (property)</label><input type="text" id="pc-pcode" list="pcode-dl" placeholder="UNIT1" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="field"><label>Job Type</label><input type="text" id="pc-jobtype" list="pc-jobtype-dl" placeholder="ROOF" oninput="this.value=this.value.toUpperCase()"></div>
+      </div>
+      <datalist id="pc-jobtype-dl">
+        <option value="ROOF"><option value="REPAIR"><option value="GUTTER"><option value="SIDING"><option value="WINDOW"><option value="PAINT"><option value="MASONRY"><option value="OTHER">
+      </datalist>
+      <div class="field"><label>Status</label>
+        <select id="pc-status">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="PENDING">PENDING (lead / quote sent)</option>
+          <option value="DONE">DONE (job complete)</option>
+          <option value="COLD">COLD (lost / no response)</option>
+        </select>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="pc-notes" rows="3" placeholder="Last contact, quote amount, special instructions..."></textarea></div>
+      <button class="btn btn-green" onclick="pcSave()">✓ SAVE CLIENT</button>
+      <button class="btn btn-dim" onclick="pcShow('')">◀ Back</button>
+    </div>
+  </div>
+
+  <!-- LOCATE (white-table search) -->
+  <div id="pc-list" class="fpage" style="display:none">
+    <div class="card" style="padding:8px;">
+      <div style="font-size:13px;color:var(--cyan);margin-bottom:5px;">🔎 LOCATE — type partial name (FoxBase: 'FOX'$PAYEE)</div>
+      <div class="fbar" style="margin-bottom:6px;">
+        <input type="text" id="pc-search" placeholder="e.g. FOX → FOX LUMBER, FOX PIZZA..." oninput="_pcShowCount=200;renderClients()" style="flex:2 1 200px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px 9px;border-radius:4px;outline:none;">
+        <select id="pc-filter-status" onchange="_pcShowCount=200;renderClients()">
+          <option value="">All Status</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="PENDING">PENDING</option>
+          <option value="DONE">DONE</option>
+          <option value="COLD">COLD</option>
+        </select>
+      </div>
+      <div id="pc-bulk-bar" style="display:none;background:#3a2e00;border:1px solid var(--yellow);border-radius:4px;padding:6px 8px;margin-bottom:6px;font-size:13px;">
+        <span id="pc-checked-count" class="yellow" style="font-weight:700;"></span>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:6px;">
+          <button class="btn btn-red"    style="margin:0;padding:7px;font-size:13px;" onclick="pcDeleteChecked()">🗑 DELETE</button>
+          <button class="btn btn-blue"   style="margin:0;padding:7px;font-size:13px;" onclick="pcEmailChecked()">✉ EMAIL</button>
+          <button class="btn btn-dim"    style="margin:0;padding:7px;font-size:13px;" onclick="pcClearChecks()">✕ CLEAR</button>
+        </div>
+      </div>
+    </div>
+    <div id="pc-list-rows"></div>
+    <button class="btn btn-dim" onclick="pcShow('')">◀ Back</button>
+  </div>
+
+  <!-- FIND BY JOB -->
+  <div id="pc-find" class="fpage" style="display:none">
+    <div class="fbar">
+      <select id="pc-find-status" onchange="renderFindClients()">
+        <option value="">All Status</option>
+        <option value="ACTIVE">ACTIVE</option>
+        <option value="PENDING">PENDING</option>
+        <option value="DONE">DONE</option>
+        <option value="COLD">COLD</option>
+      </select>
+      <select id="pc-find-pcode" onchange="renderFindClients()"><option value="">All PCODE</option></select>
+      <select id="pc-find-jobtype" onchange="renderFindClients()"><option value="">All Jobs</option></select>
+    </div>
+    <div class="card" style="padding:6px 12px;"><div id="pc-find-rows"></div></div>
+    <button class="btn btn-dim" onclick="pcShow('')">◀ Back</button>
+  </div>
+
+  <!-- TOOLS -->
+  <div id="pc-tools" class="fpage" style="display:none">
+    <div class="card">
+      <div class="card-title purple">⚙ CLIENT DATABASE TOOLS</div>
+      <button class="btn btn-blue" onclick="pcExportCSV()">📤 Export to CSV</button>
+      <button class="btn btn-green" onclick="document.getElementById('pc-import-file').click()">📥 Import from CSV</button>
+      <input type="file" id="pc-import-file" accept=".csv,.txt" style="display:none" onchange="pcImportCSV(event)">
+      <button class="btn btn-yellow" onclick="pcExportFoxBaseDBF()">💾 Export FoxBase Format</button>
+      <button class="btn btn-dim" onclick="pcShowStats()">📊 Detail Stats</button>
+      <button class="btn btn-red" onclick="pcClearAll()">🗑 Clear All Clients</button>
+      <div id="pc-tools-output" style="margin-top:10px;font-size:13px;color:var(--dim);"></div>
+    </div>
+    <button class="btn btn-dim" onclick="pcShow('')">◀ Back</button>
+  </div>
+</div>
+
 <!-- ████████████████████ GROCERY ████████████████████ -->
 <div id="screen-grocery" class="screen">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🛒 Grocery Tracker</div></div>
@@ -1330,6 +1464,7 @@ function openModule(mod) {
   if(mod==='inventory')  { }
   if(mod==='portfolio')  { }
   if(mod==='workers')    { populateWorkerSelect(); }
+  if(mod==='phoneclients'){ pcShow(''); }
   if(mod==='grocery')    { buildGrocDL(); }
   if(mod==='restaurant') { buildRestDL(); }
   if(mod==='scanner')    { renderStoreRoutes(); }
@@ -1870,11 +2005,14 @@ function renderRestChart(){
   renderTrackerChart(getRestEntries(),'rest-chart-content','#cc6600','🍽️ RESTAURANT');
 }
 
+var _dbdActive='groc'; // 'groc' or 'rest'
 function renderGrocDayByDay(){
+  _dbdActive='groc';
   var entries=getGrocEntries().slice().reverse();
   renderDayByDayOverlay(entries,'🛒 Grocery Day by Day');
 }
 function renderRestDayByDay(){
+  _dbdActive='rest';
   var entries=getRestEntries().slice().reverse();
   renderDayByDayOverlay(entries,'🍽️ Restaurant Day by Day');
 }
@@ -1972,17 +2110,47 @@ function renderDayByDayOverlay(entries,title){
     var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
     var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
-    h+='<tr style="'+bg+';border-bottom:1px solid #ccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+'</td>'
-      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
+    // flag same-date+same-amt as likely dup
+    var isDup=next && next.date===e.date && Math.abs(Math.abs(next.amt)-Math.abs(e.amt))<0.01;
+    var prev=entries[i-1];
+    var isDup2=prev && prev.date===e.date && Math.abs(Math.abs(prev.amt)-Math.abs(e.amt))<0.01;
+    var dupFlag=(isDup||isDup2)?'background:#fff3a8;':bg;
+    h+='<tr style="'+dupFlag+';border-bottom:1px solid #ccc;cursor:pointer;" onclick="dbdConfirmDel('+JSON.stringify(e.id||0)+',this)">'
+      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+(isDup||isDup2?' <span style="color:#cc6600;font-weight:700;">⚠</span>':'')+'</td>'
+      +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;" title="'+esc(e.payee||'')+'">'+trunc(e.payee||'',12)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days2+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
       +'</tr>';
   });
-  h+='</table></div>';
+  h+='</table>';
+  h+='<div style="background:#fff8d8;color:#000;font-size:12px;padding:8px 10px;margin-top:6px;border:1px solid #cc6600;border-radius:4px;">⚠ <b>YELLOW ROWS</b> = same date + same amount as adjacent row (likely duplicate). Tap any row to delete.</div>';
+  h+='</div>';
   overlay.innerHTML=h;
   document.body.appendChild(overlay);
+}
+
+// Tap row in day-by-day to delete from mx_log
+function dbdConfirmDel(id, rowEl){
+  if(!id){ toast('Entry has no ID — cannot delete',false); return; }
+  var payee=rowEl?rowEl.querySelector('td:nth-child(2)').textContent:'';
+  var dt   =rowEl?rowEl.querySelector('td:nth-child(1)').textContent.replace(/[⚠ ]+$/,''):'';
+  var amt  =rowEl?rowEl.querySelector('td:nth-child(3)').textContent:'';
+  if(!confirm('DELETE this entry?\n\n'+dt+' · '+payee+' · '+amt+'\n\nThis removes it from mx_log permanently.')) return;
+  loadLog();
+  var before=LOG.length;
+  LOG=LOG.filter(function(e){ return (e.id||0)!==id; });
+  if(LOG.length===before){
+    toast('Could not find entry — ID mismatch',false);
+    return;
+  }
+  saveLog();
+  toast('✓ Deleted from ledger',true);
+  // Re-render whichever day-by-day was active
+  var overlay=document.getElementById('dbd-overlay');
+  if(overlay) overlay.remove();
+  if(_dbdActive==='rest') renderRestDayByDay();
+  else renderGrocDayByDay();
 }
 
 
@@ -2955,6 +3123,588 @@ function renderWorkReport() {
 }
 
 // ═══════════════════════════════════════════════
+//  PHONE CLIENTS
+// ═══════════════════════════════════════════════
+// localStorage key: mfs_clients (separate from main mfs object)
+function pcLoad(){
+  try{ return JSON.parse(localStorage.getItem('mfs_clients')||'[]'); }
+  catch(e){ return []; }
+}
+function pcSaveAll(arr){
+  try{ localStorage.setItem('mfs_clients', JSON.stringify(arr)); }
+  catch(e){ toast('Save failed: storage full?',false); }
+}
+function pcNextId(arr){ return arr.length ? Math.max.apply(null,arr.map(c=>c.id||0))+1 : 1; }
+
+function pcShow(sub){
+  ['add','list','find','tools'].forEach(s=>{
+    var el=document.getElementById('pc-'+s);
+    if(el) el.style.display = s===sub ? 'block':'none';
+  });
+  document.getElementById('pc-menu').style.display = sub?'none':'block';
+  if(!sub){ pcQuickStats(); }
+  if(sub==='add')  { pcResetForm(); }
+  if(sub==='list') { _pcShowCount=200; _pcChecked.clear(); pcUpdateBulkBar(); renderClients(); }
+  if(sub==='find') { _pcShowCount=200; pcBuildFindFilters(); renderFindClients(); }
+  if(sub==='tools'){ document.getElementById('pc-tools-output').innerHTML=''; }
+}
+
+function pcQuickStats(){
+  var arr=pcLoad();
+  var counts={ACTIVE:0,PENDING:0,DONE:0,COLD:0};
+  arr.forEach(c=>{ if(counts[c.status]!=null) counts[c.status]++; });
+  var el=document.getElementById('pc-quickstats');
+  if(!el) return;
+  if(!arr.length){
+    el.innerHTML='<div style="color:var(--dim);font-size:13px;padding:4px 0;">No clients yet — tap <span class="green">Add Client</span> to start.</div>';
+    return;
+  }
+  el.innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;">'+
+    '<div style="color:var(--green);">● ACTIVE: <b>'+counts.ACTIVE+'</b></div>'+
+    '<div style="color:var(--yellow);">● PENDING: <b>'+counts.PENDING+'</b></div>'+
+    '<div style="color:var(--blue);">● DONE: <b>'+counts.DONE+'</b></div>'+
+    '<div style="color:var(--dim);">● COLD: <b>'+counts.COLD+'</b></div>'+
+    '<div style="grid-column:1/-1;color:var(--cyan);border-top:1px solid var(--border);padding-top:6px;margin-top:2px;">TOTAL: <b>'+arr.length+' clients</b></div>'+
+    '</div>';
+}
+
+function pcResetForm(){
+  ['pc-id','pc-name','pc-phone','pc-phone2','pc-email','pc-address','pc-city','pc-state','pc-zip','pc-pcode','pc-jobtype','pc-notes']
+    .forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('pc-status').value='ACTIVE';
+  document.getElementById('pc-form-title').textContent='+ NEW CLIENT';
+}
+
+function pcSave(){
+  var name=document.getElementById('pc-name').value.trim();
+  var phone=document.getElementById('pc-phone').value.trim();
+  if(!name){ toast('Name required',false); return; }
+  if(!phone){ toast('Phone required',false); return; }
+  var arr=pcLoad();
+  var idVal=document.getElementById('pc-id').value;
+  var rec={
+    name:name,
+    phone:phone,
+    phone2:document.getElementById('pc-phone2').value.trim(),
+    email:document.getElementById('pc-email').value.trim(),
+    address:document.getElementById('pc-address').value.trim(),
+    city:document.getElementById('pc-city').value.trim(),
+    state:document.getElementById('pc-state').value.trim(),
+    zip:document.getElementById('pc-zip').value.trim(),
+    pcode:document.getElementById('pc-pcode').value.trim().toUpperCase(),
+    jobtype:document.getElementById('pc-jobtype').value.trim().toUpperCase(),
+    status:document.getElementById('pc-status').value,
+    notes:document.getElementById('pc-notes').value.trim(),
+    contact:today()
+  };
+  if(idVal){
+    var id=parseInt(idVal,10);
+    var i=arr.findIndex(c=>c.id===id);
+    if(i>=0){ rec.id=id; rec.added=arr[i].added||today(); arr[i]=rec; }
+  } else {
+    // dup check
+    if(arr.some(c=>c.name===name && c.phone===phone)){
+      if(!confirm('Client with same name + phone exists. Add anyway?')) return;
+    }
+    rec.id=pcNextId(arr);
+    rec.added=today();
+    arr.push(rec);
+  }
+  pcSaveAll(arr);
+  toast(name+(idVal?' updated':' added'));
+  pcShow('list');
+}
+
+function pcEdit(id){
+  var arr=pcLoad();
+  var c=arr.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('pc-id').value=c.id;
+  document.getElementById('pc-name').value=c.name||'';
+  document.getElementById('pc-phone').value=c.phone||'';
+  document.getElementById('pc-phone2').value=c.phone2||'';
+  document.getElementById('pc-email').value=c.email||'';
+  document.getElementById('pc-address').value=c.address||'';
+  document.getElementById('pc-city').value=c.city||'';
+  document.getElementById('pc-state').value=c.state||'';
+  document.getElementById('pc-zip').value=c.zip||'';
+  document.getElementById('pc-pcode').value=c.pcode||'';
+  document.getElementById('pc-jobtype').value=c.jobtype||'';
+  document.getElementById('pc-status').value=c.status||'ACTIVE';
+  document.getElementById('pc-notes').value=c.notes||'';
+  document.getElementById('pc-form-title').textContent='✎ EDIT CLIENT #'+c.id;
+  pcShow('add');
+}
+
+function pcDelete(id){
+  var arr=pcLoad();
+  var c=arr.find(x=>x.id===id);
+  if(!c) return;
+  if(!confirm('Delete '+c.name+' permanently?')) return;
+  arr=arr.filter(x=>x.id!==id);
+  pcSaveAll(arr);
+  toast(c.name+' deleted');
+  renderClients();
+}
+
+function statusColor(s){
+  return s==='ACTIVE' ?'var(--green)':
+         s==='PENDING'?'var(--yellow)':
+         s==='DONE'   ?'var(--blue)':'var(--dim)';
+}
+
+function pcDetailHTML(c){
+  var tel=(c.phone||'').replace(/[^0-9+]/g,'');
+  var tel2=(c.phone2||'').replace(/[^0-9+]/g,'');
+  var addr=[c.address,c.city,c.state,c.zip].filter(Boolean).join(', ');
+  var mapHref=addr?'https://maps.google.com/?q='+encodeURIComponent(addr):'';
+  return '<div class="pc-detail">'+
+    (c.email?'<div style="font-size:13px;color:var(--dim);margin-bottom:4px;">📧 '+esc(c.email)+'</div>':'')+
+    (addr?'<div style="font-size:13px;color:var(--dim);margin-bottom:4px;">📍 '+esc(addr)+'</div>':'')+
+    (c.notes?'<div style="font-size:13px;color:#fff;margin:6px 0;padding:6px;background:var(--surface);border-radius:3px;white-space:pre-wrap;">'+esc(c.notes)+'</div>':'')+
+    '<div style="font-size:13px;color:var(--dim);margin-top:4px;">ID: '+c.id+' · Added: '+esc(c.added||'')+(c.contact?' · Last: '+esc(c.contact):'')+(c.pcode?' · PCODE: '+esc(c.pcode):'')+(c.jobtype?' · JOB: '+esc(c.jobtype):'')+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;">'+
+      (tel?'<a href="tel:'+tel+'" onclick="event.stopPropagation()" class="btn btn-green" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">📞 CALL</a>':'')+
+      (tel2?'<a href="tel:'+tel2+'" onclick="event.stopPropagation()" class="btn btn-blue" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">📞 CALL 2</a>':'')+
+      (c.email?'<a href="mailto:'+esc(c.email)+'" onclick="event.stopPropagation()" class="btn btn-blue" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">✉ EMAIL</a>':'')+
+      (mapHref?'<a href="'+mapHref+'" target="_blank" onclick="event.stopPropagation()" class="btn btn-yellow" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">🗺 MAP</a>':'')+
+      (tel?'<a href="sms:'+tel+'" onclick="event.stopPropagation()" class="btn btn-purple" style="text-decoration:none;text-align:center;margin:0;padding:8px;font-size:13px;">💬 TEXT</a>':'')+
+      (c.pcode?'<button class="btn btn-orange" style="margin:0;padding:8px;font-size:13px;" onclick="event.stopPropagation();pcShowJobs('+c.id+')">💼 JOBS</button>':'')+
+      '<button class="btn btn-blue" style="margin:0;padding:8px;font-size:13px;" onclick="event.stopPropagation();pcEdit('+c.id+')">✎ EDIT</button>'+
+      '<button class="btn btn-purple" style="margin:0;padding:8px;font-size:13px;" onclick="event.stopPropagation();pcCopyClient('+c.id+')">📋 COPY</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function pcRowHTML(c,expanded){
+  var checked=_pcChecked.has(c.id);
+  var sub=[c.phone,c.city].filter(Boolean).join(' · ');
+  if(c.state) sub += (sub?', ':'')+esc(c.state);
+  var row='<div class="pc-tbl-row'+(checked?' checked':'')+(expanded?' expanded':'')+'" onclick="pcToggleRow('+c.id+')">'+
+    '<input type="checkbox" '+(checked?'checked':'')+' onclick="pcToggleCheck('+c.id+',event)">'+
+    '<div>'+
+      '<div class="pcr-name">'+esc(c.name)+'</div>'+
+      (sub?'<div class="pcr-sub">'+esc(c.phone||'')+(c.city?' · '+esc(c.city):'')+(c.state?', '+esc(c.state):'')+'</div>':'')+
+    '</div>'+
+    '<div class="pcr-status pcr-status-'+esc(c.status||'ACTIVE')+'">'+esc((c.status||'ACTIVE').substring(0,4))+'</div>'+
+    '<button class="pcr-act" onclick="event.stopPropagation();pcEdit('+c.id+')" title="Edit">✎</button>'+
+    '<button class="pcr-act" onclick="event.stopPropagation();pcQuickDelete('+c.id+')" title="Delete">🗑</button>'+
+    '<div class="pcr-arrow">'+(expanded?'▾':'▸')+'</div>'+
+  '</div>';
+  if(expanded) row+=pcDetailHTML(c);
+  return row;
+}
+
+function pcQuickDelete(id){
+  var arr=pcLoad();
+  var c=arr.find(x=>x.id===id);
+  if(!c) return;
+  if(!confirm('Delete '+c.name+'?')) return;
+  arr=arr.filter(x=>x.id!==id);
+  pcSaveAll(arr);
+  _pcChecked.delete(id);
+  pcUpdateBulkBar();
+  toast(c.name+' deleted');
+  renderClients();
+}
+
+function renderClients(){
+  var arr=pcLoad();
+  var q=(document.getElementById('pc-search').value||'').trim().toUpperCase();
+  var fs=document.getElementById('pc-filter-status').value;
+  // FoxBase 'FOX'$PAYEE behavior: substring match in NAME first, then fallback to other fields
+  var rows=arr.filter(c=>{
+    if(fs && c.status!==fs) return false;
+    if(!q) return true;
+    return (c.name||'').toUpperCase().indexOf(q)>=0
+        || (c.phone||'').indexOf(q)>=0
+        || (c.phone2||'').indexOf(q)>=0
+        || (c.city||'').toUpperCase().indexOf(q)>=0
+        || (c.address||'').toUpperCase().indexOf(q)>=0
+        || (c.pcode||'').toUpperCase().indexOf(q)>=0
+        || (c.email||'').toUpperCase().indexOf(q)>=0;
+  }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  var el=document.getElementById('pc-list-rows');
+  if(!rows.length){
+    el.innerHTML='<div class="card" style="padding:14px;text-align:center;color:var(--dim);">'+(arr.length?'No matches for "'+esc(q||'')+'".':'No clients yet — tap Tools → Import from CSV, or Add Client.')+'</div>';
+    return;
+  }
+  var shown=rows.slice(0,_pcShowCount);
+  var hasMore=rows.length>_pcShowCount;
+  // Quick "select all visible" toolbar
+  var allVisChecked=shown.every(c=>_pcChecked.has(c.id));
+  var head=
+    '<div style="font-size:13px;color:var(--cyan);padding:4px 0 6px;">'+
+      '<b>'+rows.length+'</b> match'+(rows.length===1?'':'es')+
+      (arr.length!==rows.length?' <span style="color:var(--dim);">(of '+arr.length+')</span>':'')+
+      ' · showing '+shown.length+
+    '</div>'+
+    '<div class="pc-tbl">'+
+      '<div class="pc-tbl-head">'+
+        '<input type="checkbox" '+(allVisChecked?'checked':'')+' onclick="pcSelectAllVisible(event)" title="Check all visible">'+
+        '<div>NAME / CONTACT</div>'+
+        '<div style="text-align:center;">STATUS</div>'+
+        '<div style="text-align:center;">EDIT</div>'+
+        '<div style="text-align:center;">DEL</div>'+
+        '<div></div>'+
+      '</div>'+
+      shown.map(c=>pcRowHTML(c,c.id===_pcExpanded)).join('')+
+    '</div>';
+  var more=hasMore?'<button class="btn btn-blue" style="margin-top:4px;" onclick="pcShowMore()">▼ Load 200 more ('+(rows.length-_pcShowCount)+' remaining)</button>':'';
+  el.innerHTML=head+more;
+  pcUpdateBulkBar();
+}
+
+function pcSelectAllVisible(ev){
+  if(ev) ev.stopPropagation();
+  var arr=pcLoad();
+  var q=(document.getElementById('pc-search').value||'').trim().toUpperCase();
+  var fs=document.getElementById('pc-filter-status').value;
+  var rows=arr.filter(c=>{
+    if(fs && c.status!==fs) return false;
+    if(!q) return true;
+    return (c.name||'').toUpperCase().indexOf(q)>=0
+        || (c.phone||'').indexOf(q)>=0
+        || (c.city||'').toUpperCase().indexOf(q)>=0
+        || (c.address||'').toUpperCase().indexOf(q)>=0
+        || (c.pcode||'').toUpperCase().indexOf(q)>=0
+        || (c.email||'').toUpperCase().indexOf(q)>=0;
+  }).sort((a,b)=>(a.name||'').localeCompare(b.name||'')).slice(0,_pcShowCount);
+  var allChecked=rows.every(c=>_pcChecked.has(c.id));
+  if(allChecked){
+    rows.forEach(c=>_pcChecked.delete(c.id));
+  } else {
+    rows.forEach(c=>_pcChecked.add(c.id));
+  }
+  renderClients();
+}
+
+function pcShowMore(){
+  _pcShowCount+=200;
+  renderClients();
+}
+
+var _pcExpanded=null;
+var _pcShowCount=200;  // pagination: rows shown at once
+var _pcChecked=new Set();
+function pcToggleRow(id){
+  _pcExpanded=(_pcExpanded===id)?null:id;
+  if(document.getElementById('pc-list').style.display!=='none') renderClients();
+  else if(document.getElementById('pc-find').style.display!=='none') renderFindClients();
+}
+function pcToggleCheck(id,ev){
+  if(ev) ev.stopPropagation();
+  if(_pcChecked.has(id)) _pcChecked.delete(id);
+  else _pcChecked.add(id);
+  pcUpdateBulkBar();
+  // re-render to update row class
+  if(document.getElementById('pc-list').style.display!=='none') renderClients();
+}
+function pcUpdateBulkBar(){
+  var bar=document.getElementById('pc-bulk-bar');
+  if(!bar) return;
+  if(_pcChecked.size===0){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  document.getElementById('pc-checked-count').textContent='☑ '+_pcChecked.size+' checked';
+}
+function pcClearChecks(){
+  _pcChecked.clear();
+  pcUpdateBulkBar();
+  if(document.getElementById('pc-list').style.display!=='none') renderClients();
+}
+function pcDeleteChecked(){
+  if(_pcChecked.size===0) return;
+  if(!confirm('Delete '+_pcChecked.size+' checked client(s)? Cannot be undone.')) return;
+  var arr=pcLoad();
+  arr=arr.filter(c=>!_pcChecked.has(c.id));
+  pcSaveAll(arr);
+  var n=_pcChecked.size;
+  _pcChecked.clear();
+  pcUpdateBulkBar();
+  toast('Deleted '+n+' clients');
+  renderClients();
+}
+function pcEmailChecked(){
+  if(_pcChecked.size===0) return;
+  var arr=pcLoad();
+  var picks=arr.filter(c=>_pcChecked.has(c.id));
+  // Build plain-text table for email body
+  var lines=['MFS PHONE CLIENT EXPORT — '+today(),'='.repeat(60),''];
+  picks.forEach((c,i)=>{
+    lines.push((i+1)+'. '+c.name);
+    if(c.phone)   lines.push('   PHONE:  '+c.phone);
+    if(c.phone2)  lines.push('   PHONE2: '+c.phone2);
+    if(c.email)   lines.push('   EMAIL:  '+c.email);
+    var addr=[c.address,c.city,c.state,c.zip].filter(Boolean).join(', ');
+    if(addr)      lines.push('   ADDR:   '+addr);
+    if(c.pcode)   lines.push('   PCODE:  '+c.pcode);
+    if(c.jobtype) lines.push('   JOB:    '+c.jobtype);
+    if(c.status)  lines.push('   STATUS: '+c.status);
+    if(c.notes)   lines.push('   NOTES:  '+c.notes);
+    lines.push('');
+  });
+  lines.push('--- Total: '+picks.length+' clients ---');
+  var body=lines.join('\n');
+  var subj='MFS Phone Client Export ('+picks.length+' contacts) '+today();
+  // mailto has size limits ~2KB. If big, also offer download
+  if(body.length>1800){
+    if(!confirm('Email body is large ('+(body.length/1024).toFixed(1)+' KB). Some email apps may truncate.\n\nOK = open email anyway\nCancel = download as text file instead')){
+      // download fallback
+      var blob=new Blob([body],{type:'text/plain'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url; a.download='mfs_clients_'+today()+'.txt'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),500);
+      toast('Saved '+picks.length+' clients as text file');
+      return;
+    }
+  }
+  window.location.href='mailto:?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  toast('Opening email...');
+}
+function pcCopyClient(id,ev){
+  if(ev) ev.stopPropagation();
+  var arr=pcLoad();
+  var c=arr.find(x=>x.id===id);
+  if(!c) return;
+  // Open form pre-filled but with NEW id (blank)
+  document.getElementById('pc-id').value='';
+  document.getElementById('pc-name').value=(c.name||'')+' (COPY)';
+  document.getElementById('pc-phone').value=c.phone||'';
+  document.getElementById('pc-phone2').value=c.phone2||'';
+  document.getElementById('pc-email').value=c.email||'';
+  document.getElementById('pc-address').value=c.address||'';
+  document.getElementById('pc-city').value=c.city||'';
+  document.getElementById('pc-state').value=c.state||'';
+  document.getElementById('pc-zip').value=c.zip||'';
+  document.getElementById('pc-pcode').value=c.pcode||'';
+  document.getElementById('pc-jobtype').value=c.jobtype||'';
+  document.getElementById('pc-status').value=c.status||'ACTIVE';
+  document.getElementById('pc-notes').value=c.notes||'';
+  document.getElementById('pc-form-title').textContent='+ COPY OF CLIENT (edit name → SAVE as new)';
+  pcShow('add');
+}
+
+function pcBuildFindFilters(){
+  var arr=pcLoad();
+  var pcodes=[...new Set(arr.map(c=>c.pcode).filter(Boolean))].sort();
+  var jobs=[...new Set(arr.map(c=>c.jobtype).filter(Boolean))].sort();
+  document.getElementById('pc-find-pcode').innerHTML='<option value="">All PCODE</option>'+pcodes.map(p=>'<option>'+esc(p)+'</option>').join('');
+  document.getElementById('pc-find-jobtype').innerHTML='<option value="">All Jobs</option>'+jobs.map(j=>'<option>'+esc(j)+'</option>').join('');
+}
+
+function renderFindClients(){
+  var arr=pcLoad();
+  var fs=document.getElementById('pc-find-status').value;
+  var fp=document.getElementById('pc-find-pcode').value;
+  var fj=document.getElementById('pc-find-jobtype').value;
+  var rows=arr.filter(c=>(!fs||c.status===fs)&&(!fp||c.pcode===fp)&&(!fj||c.jobtype===fj))
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  var el=document.getElementById('pc-find-rows');
+  if(!rows.length){
+    el.innerHTML='<div style="color:var(--dim);padding:10px 0;">No matches for current filters.</div>';
+    return;
+  }
+  var shown=rows.slice(0,_pcShowCount);
+  var hasMore=rows.length>_pcShowCount;
+  var more=hasMore?'<button class="btn btn-blue" style="margin-top:8px;" onclick="pcShowMore()">▼ Load 100 more ('+(rows.length-_pcShowCount)+' remaining)</button>':'';
+  el.innerHTML='<div style="color:var(--dim);font-size:13px;padding:4px 0 6px;">Showing '+shown.length+' of '+rows.length+'</div>'+
+    shown.map(c=>pcRowHTML(c,c.id===_pcExpanded)).join('')+more;
+}
+
+// Show ledger entries linked to this client's pcode
+function pcShowJobs(id){
+  var arr=pcLoad();
+  var c=arr.find(x=>x.id===id);
+  if(!c||!c.pcode){ toast('No PCODE on this client',false); return; }
+  var log=[];
+  try{ log=JSON.parse(localStorage.getItem('mx_log')||'[]'); }catch(e){}
+  var hits=log.filter(e=>(e.pcode||'').toUpperCase()===c.pcode);
+  var income=hits.filter(e=>(e.amt||0)>0).reduce((s,e)=>s+Math.abs(e.amt||0),0);
+  var expense=hits.filter(e=>(e.amt||0)<0).reduce((s,e)=>s+Math.abs(e.amt||0),0);
+  var net=income-expense;
+  var html='<div id="pc-jobs-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9100;overflow-y:auto;padding:12px;" onclick="if(event.target===this)this.remove()">'+
+    '<div style="background:var(--surface);border:1px solid var(--cyan);border-radius:6px;padding:14px;max-width:480px;margin:0 auto;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
+        '<div style="color:var(--cyan);font-weight:700;">💼 '+esc(c.name)+' / '+esc(c.pcode)+'</div>'+
+        '<button onclick="document.getElementById(\'pc-jobs-modal\').remove()" style="background:none;border:1px solid var(--border);color:var(--dim);padding:4px 8px;border-radius:3px;cursor:pointer;">✕</button>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">'+
+        '<div class="stat"><div class="stat-label">INCOME</div><div class="stat-val green">'+fmt(income)+'</div></div>'+
+        '<div class="stat"><div class="stat-label">EXPENSE</div><div class="stat-val red">'+fmt(expense)+'</div></div>'+
+        '<div class="stat"><div class="stat-label">NET</div><div class="stat-val '+(net>=0?'green':'red')+'">'+fmt(net)+'</div></div>'+
+      '</div>';
+  if(!hits.length){
+    html+='<div style="color:var(--dim);padding:10px 0;">No ledger entries for PCODE '+esc(c.pcode)+'.</div>';
+  } else {
+    html+='<div style="max-height:60vh;overflow-y:auto;">';
+    hits.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(e=>{
+      var amt=e.amt||0;
+      html+='<div style="border-bottom:1px solid var(--border);padding:6px 0;">'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;">'+
+          '<span>'+esc(e.date||'')+' · '+esc(e.payee||'')+'</span>'+
+          '<span style="color:'+(amt>=0?'var(--green)':'var(--red)')+';font-weight:700;">'+fmt(amt)+'</span>'+
+        '</div>'+
+        '<div style="font-size:13px;color:var(--dim);">'+esc(e.desc||'')+'</div>'+
+      '</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div></div>';
+  var div=document.createElement('div');
+  div.innerHTML=html;
+  document.body.appendChild(div.firstChild);
+}
+
+// ── EXPORT / IMPORT ──
+function pcExportCSV(){
+  var arr=pcLoad();
+  if(!arr.length){ toast('No clients to export',false); return; }
+  var hdr=['ID','NAME','PHONE','PHONE2','EMAIL','ADDRESS','CITY','STATE','ZIP','PCODE','JOBTYPE','STATUS','NOTES','ADDED','CONTACT'];
+  var csvLine=function(arr){
+    return arr.map(v=>{
+      v=(v==null?'':String(v));
+      if(v.indexOf(',')>=0||v.indexOf('"')>=0||v.indexOf('\n')>=0) return '"'+v.replace(/"/g,'""')+'"';
+      return v;
+    }).join(',');
+  };
+  var lines=[csvLine(hdr)];
+  arr.forEach(c=>lines.push(csvLine([c.id,c.name,c.phone,c.phone2,c.email,c.address,c.city,c.state,c.zip,c.pcode,c.jobtype,c.status,c.notes,c.added,c.contact])));
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='mfs_clients_'+today()+'.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+  document.getElementById('pc-tools-output').innerHTML='<span class="green">✓ Exported '+arr.length+' clients to CSV</span>';
+  toast('Exported '+arr.length+' clients');
+}
+
+function pcExportFoxBaseDBF(){
+  // FoxBase-style fixed-width text export, similar to old XCCLIENT.DBF dump
+  var arr=pcLoad();
+  if(!arr.length){ toast('No clients to export',false); return; }
+  var pad=(s,n)=>String(s||'').substring(0,n).padEnd(n,' ');
+  var lines=[];
+  lines.push(pad('NAME',30)+pad('PHONE',14)+pad('CITY',20)+pad('PCODE',8)+pad('STATUS',8));
+  lines.push('-'.repeat(80));
+  arr.forEach(c=>lines.push(pad(c.name,30)+pad(c.phone,14)+pad(c.city,20)+pad(c.pcode,8)+pad(c.status,8)));
+  var blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='XCCLIENT_'+today()+'.txt'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+  document.getElementById('pc-tools-output').innerHTML='<span class="yellow">✓ FoxBase format saved</span>';
+  toast('FoxBase-style export saved');
+}
+
+function pcImportCSV(ev){
+  var f=ev.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var text=e.target.result;
+    var lines=text.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){ toast('Empty file',false); return; }
+    // detect header
+    var first=lines[0].toUpperCase();
+    var hasHeader=first.indexOf('NAME')>=0 && first.indexOf('PHONE')>=0;
+    var startIdx=hasHeader?1:0;
+    var arr=pcLoad();
+    var added=0, dups=0;
+    var parseRow=function(line){
+      var out=[],cur='',inQ=false;
+      for(var i=0;i<line.length;i++){
+        var ch=line[i];
+        if(inQ){
+          if(ch==='"' && line[i+1]==='"'){ cur+='"'; i++; }
+          else if(ch==='"'){ inQ=false; }
+          else cur+=ch;
+        } else {
+          if(ch===','){ out.push(cur); cur=''; }
+          else if(ch==='"'){ inQ=true; }
+          else cur+=ch;
+        }
+      }
+      out.push(cur);
+      return out;
+    };
+    for(var i=startIdx;i<lines.length;i++){
+      var cols=parseRow(lines[i]);
+      // expected: ID,NAME,PHONE,PHONE2,EMAIL,ADDR,CITY,ST,ZIP,PCODE,JOBTYPE,STATUS,NOTES,ADDED,CONTACT
+      // also accept just NAME,PHONE,... if no ID
+      var off=hasHeader && first.indexOf('ID')===0 ? 1 : 0;
+      var name=(cols[off]||'').trim();
+      var phone=(cols[off+1]||'').trim();
+      if(!name||!phone) continue;
+      if(arr.some(c=>c.name===name && c.phone===phone)){ dups++; continue; }
+      arr.push({
+        id:pcNextId(arr),
+        name:name, phone:phone,
+        phone2:(cols[off+2]||'').trim(),
+        email:(cols[off+3]||'').trim(),
+        address:(cols[off+4]||'').trim(),
+        city:(cols[off+5]||'').trim(),
+        state:(cols[off+6]||'').trim(),
+        zip:(cols[off+7]||'').trim(),
+        pcode:(cols[off+8]||'').trim().toUpperCase(),
+        jobtype:(cols[off+9]||'').trim().toUpperCase(),
+        status:(cols[off+10]||'ACTIVE').trim()||'ACTIVE',
+        notes:(cols[off+11]||'').trim(),
+        added:(cols[off+12]||today()).trim()||today(),
+        contact:(cols[off+13]||'').trim()
+      });
+      added++;
+    }
+    pcSaveAll(arr);
+    document.getElementById('pc-tools-output').innerHTML=
+      '<span class="green">✓ Imported '+added+' clients</span>'+
+      (dups?' <span class="yellow">('+dups+' duplicates skipped)</span>':'');
+    toast('Imported '+added+' clients');
+    ev.target.value='';
+  };
+  r.readAsText(f);
+}
+
+function pcShowStats(){
+  var arr=pcLoad();
+  var byStatus={ACTIVE:0,PENDING:0,DONE:0,COLD:0};
+  var byJob={};
+  var byPcode={};
+  var byCity={};
+  arr.forEach(c=>{
+    if(byStatus[c.status]!=null) byStatus[c.status]++;
+    if(c.jobtype){ byJob[c.jobtype]=(byJob[c.jobtype]||0)+1; }
+    if(c.pcode){ byPcode[c.pcode]=(byPcode[c.pcode]||0)+1; }
+    if(c.city){ byCity[c.city]=(byCity[c.city]||0)+1; }
+  });
+  var sect=function(title,obj){
+    var keys=Object.keys(obj).sort((a,b)=>obj[b]-obj[a]);
+    if(!keys.length) return '';
+    return '<div style="margin-top:8px;"><div style="color:var(--cyan);font-size:13px;font-weight:700;">'+title+'</div>'+
+      keys.map(k=>'<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--dim);"><span>'+esc(k)+'</span><span class="yellow">'+obj[k]+'</span></div>').join('')+'</div>';
+  };
+  var html='<div style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:13px;">'+
+    '<div style="color:var(--cyan);font-weight:700;">📊 CLIENT DATABASE STATS</div>'+
+    '<div style="margin-top:6px;color:var(--text);">Total: <b class="yellow">'+arr.length+'</b></div>'+
+    sect('BY STATUS',byStatus)+
+    sect('BY JOB TYPE',byJob)+
+    sect('BY PCODE',byPcode)+
+    sect('BY CITY',byCity)+
+  '</div>';
+  document.getElementById('pc-tools-output').innerHTML=html;
+}
+
+function pcClearAll(){
+  var arr=pcLoad();
+  if(!arr.length){ toast('Already empty',false); return; }
+  if(!confirm('Delete ALL '+arr.length+' clients? This cannot be undone.')) return;
+  if(!confirm('REALLY DELETE ALL CLIENTS? Last chance.')) return;
+  localStorage.removeItem('mfs_clients');
+  document.getElementById('pc-tools-output').innerHTML='<span class="red">✓ All cleared</span>';
+  toast('Cleared '+arr.length+' clients');
+}
+
+// ═══════════════════════════════════════════════
 //  GROCERY TRACKER
 // ═══════════════════════════════════════════════
 function buildGrocDL() {
@@ -3769,10 +4519,13 @@ function confirmClearAll(){
 
 function doFindDups(){
   loadLog();
-  // find duplicates by date+amt+payee key
+  // find duplicates by date+amt+normalized payee
+  // Normalization catches: whitespace differences, punctuation, case, near-truncation
+  var normPayee=function(p){ return (p||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12); };
   var seen={};var dups=[];
   LOG.forEach(function(e){
-    var key=(e.date||'')+'|'+(e.amt||0)+'|'+(e.payee||'').toUpperCase().slice(0,15);
+    var amt=Math.round((parseFloat(e.amt)||0)*100)/100; // round to cents
+    var key=(e.date||'').trim()+'|'+amt+'|'+normPayee(e.payee);
     if(!seen[key])seen[key]=[];
     seen[key].push(e);
   });
