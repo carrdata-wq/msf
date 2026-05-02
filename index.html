@@ -421,17 +421,17 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <!-- ─── SEND OUT SECTION ─── -->
     <div style="background:#003322;border:2px solid #00ff88;border-radius:6px;padding:10px;margin-bottom:12px;">
       <div style="color:#00ff88;font-size:14px;font-weight:700;margin-bottom:4px;">📤 SEND OUT — From This Device to Email</div>
-      <div style="color:#ccccff;font-size:13px;margin-bottom:8px;">Each button makes a file, then opens email so you can attach it.</div>
-      <button class="btn" onclick="emailAccountingOut()" style="background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:14px;font-size:15px;font-weight:700;margin-bottom:6px;">📤 EMAIL MY ACCOUNTING</button>
-      <div style="color:#ccccff;font-size:12px;margin:-4px 4px 8px;font-style:italic;">All ledger entries (mx_log) → mfs-accounting-DATE.json</div>
-      <button class="btn" onclick="emailClientsOut()" style="background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:14px;font-size:15px;font-weight:700;margin-bottom:6px;">📤 EMAIL MY PHONE CLIENTS</button>
-      <div style="color:#ccccff;font-size:12px;margin:-4px 4px 0;font-style:italic;">All contacts → mfs-clients-DATE.json</div>
+      <div style="color:#ccccff;font-size:13px;margin-bottom:8px;">🔒 Each tap creates <b>TWO COPIES</b> (named -A and -B) for safety. Both attach to one email.</div>
+      <button class="btn" onclick="emailAccountingOut()" style="background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:14px;font-size:15px;font-weight:700;margin-bottom:6px;">📤 EMAIL MY ACCOUNTING (×2)</button>
+      <div style="color:#ccccff;font-size:12px;margin:-4px 4px 8px;font-style:italic;">All ledger entries → mfs-accounting-DATE-A.json + -B.json</div>
+      <button class="btn" onclick="emailClientsOut()" style="background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:14px;font-size:15px;font-weight:700;margin-bottom:6px;">📤 EMAIL MY PHONE CLIENTS (×2)</button>
+      <div style="color:#ccccff;font-size:12px;margin:-4px 4px 0;font-style:italic;">All contacts → mfs-clients-DATE-A.json + -B.json</div>
     </div>
 
     <!-- ─── BRING IN SECTION ─── -->
     <div style="background:#332200;border:2px solid #ffaa00;border-radius:6px;padding:10px;margin-bottom:12px;">
       <div style="color:#ffaa00;font-size:14px;font-weight:700;margin-bottom:4px;">📥 BRING IN — From Email File to This Device</div>
-      <div style="color:#ccccff;font-size:13px;margin-bottom:8px;">Save the file from email first (Downloads folder), then tap a button below.</div>
+      <div style="color:#ccccff;font-size:13px;margin-bottom:8px;">Save EITHER copy (-A or -B, identical content) from email, then tap a button below.</div>
       <button class="btn" onclick="loadAccountingPick()" style="background:#3a2e00;color:#ffaa00;border:1px solid #ffaa00;padding:14px;font-size:15px;font-weight:700;margin-bottom:6px;">📥 LOAD ACCOUNTING FROM FILE</button>
       <div style="color:#ccccff;font-size:12px;margin:-4px 4px 8px;font-style:italic;">⚠ REPLACES all current ledger entries with the file's contents</div>
       <button class="btn" onclick="loadClientsPick()" style="background:#3a2e00;color:#ffaa00;border:1px solid #ffaa00;padding:14px;font-size:15px;font-weight:700;margin-bottom:6px;">📥 LOAD PHONE CLIENTS FROM FILE</button>
@@ -442,14 +442,17 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div style="background:#000044;border:1px solid #6666ff;border-radius:6px;padding:12px;font-size:13px;color:#ccccff;line-height:1.5;">
       <div style="color:#00ffff;font-weight:700;margin-bottom:6px;">📖 HOW TO SYNC THINKPAD ↔ ANDROID</div>
       <div style="color:#ffff00;font-weight:700;margin-top:6px;">▶ Step 1 — On the SOURCE device:</div>
-      <div style="margin-left:12px;">Tap <span style="color:#00ff88;">📤 EMAIL MY ACCOUNTING</span><br>
-      Tap <span style="color:#00ff88;">📤 EMAIL MY PHONE CLIENTS</span><br>
-      Both files arrive in your inbox.</div>
+      <div style="margin-left:12px;">Tap <span style="color:#00ff88;">📤 EMAIL MY ACCOUNTING (×2)</span><br>
+      Tap <span style="color:#00ff88;">📤 EMAIL MY PHONE CLIENTS (×2)</span><br>
+      Each sends an email with <b>TWO copies</b> attached (-A and -B versions).<br>
+      → 4 files total in your inbox.</div>
       <div style="color:#ffff00;font-weight:700;margin-top:8px;">▶ Step 2 — On the TARGET device:</div>
-      <div style="margin-left:12px;">Open Gmail. Tap each email. Save attachment to Downloads.<br>
+      <div style="margin-left:12px;">Open Gmail. Open each email. Save EITHER attachment (A or B is fine — they're identical) to Downloads.<br>
       Come back to MFS → System Utilities → Email Sync.<br>
       Tap <span style="color:#ffaa00;">📥 LOAD ACCOUNTING FROM FILE</span> → pick the .json → confirm.<br>
       Tap <span style="color:#ffaa00;">📥 LOAD PHONE CLIENTS FROM FILE</span> → pick the .json → confirm.</div>
+      <div style="color:#00ff88;font-weight:700;margin-top:8px;">🔒 WHY TWO COPIES?</div>
+      <div style="margin-left:12px;">Gmail = free cloud. If you accidentally delete an email or the -A copy gets corrupted, the -B copy is your spare. Two copies in Gmail + two on each device = belt and suspenders.</div>
       <div style="color:#ff88ff;font-weight:700;margin-top:8px;">⚠ Always SEND from the device with newer changes.</div>
       <div style="margin-left:12px;">LOAD replaces all data. Don't load stale data over fresh edits — send first if uncertain.</div>
     </div>
@@ -5457,57 +5460,74 @@ function fullRestoreFromFile(evt){
 
 // ═══════════════════════════════════════════════
 //  EMAIL SYNC — Two files (accounting + clients), two directions
+//  Each SEND creates TWO copies (slight name change) for backup safety
+//  → Gmail as free cloud storage; if one copy gets lost the other is the spare
 // ═══════════════════════════════════════════════
 
-// Generic helper: download a JSON file + try to share / open email composer
-async function emailSyncShare(filename, jsonText, label, count){
-  var blob=new Blob([jsonText],{type:'application/json'});
-  // Always download to Downloads as a safety net
+// Download a blob with a given filename (helper)
+function _dlBlob(blob, filename){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url; a.download=filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(function(){URL.revokeObjectURL(url);},2000);
-  // Try Web Share API with file attachment (works on Android Chrome)
+  setTimeout(function(){URL.revokeObjectURL(url);}, 2000);
+}
+
+// Generic helper: download TWO copies + try to share both / open email composer
+async function emailSyncShareDual(nameA, nameB, jsonText, label, count){
+  var blob=new Blob([jsonText],{type:'application/json'});
+  // Always download BOTH copies to Downloads as a safety net
+  _dlBlob(blob, nameA);
+  setTimeout(function(){ _dlBlob(blob, nameB); }, 500);
+  // Try Web Share API with BOTH files attached (works on Android Chrome)
   try{
-    var file=new File([blob],filename,{type:'application/json'});
-    if(navigator.canShare && navigator.canShare({files:[file]})){
+    var file1=new File([blob], nameA, {type:'application/json'});
+    var file2=new File([blob], nameB, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file1, file2]})){
       await navigator.share({
-        files:[file],
-        title:label+' '+today(),
-        text:label+' from MFS — '+count+' records\n\nOn the other device: MFS → System Utilities → Email Sync → LOAD '+(label.indexOf('Accounting')>=0?'ACCOUNTING':'CLIENTS')+' FROM FILE → pick this file.'
+        files:[file1, file2],
+        title:label+' '+today()+' (2 copies)',
+        text:'🔒 BACKUP — TWO COPIES\n\n'+label+' — '+count+' records\n\n'+
+          'Two attached files (identical content, two names):\n'+
+          '  • '+nameA+'\n'+
+          '  • '+nameB+'\n\n'+
+          'Send to yourself → both stored in Gmail. If one copy gets lost, the other is your spare.\n\n'+
+          'On the other device: MFS → Email Sync → LOAD → pick either file.'
       });
-      toast('✓ Shared — '+filename,true);
+      toast('✓ Shared 2 backup copies',true);
       return;
     }
   }catch(e){
     if(e.name==='AbortError'){
-      toast('Cancelled — file is in Downloads',true);
+      toast('Cancelled — both copies are in Downloads',true);
       return;
     }
   }
-  // Fallback: file is downloaded; open mailto: composer with attach reminder
-  var subj=label+' '+today()+' — '+count+' records';
-  var body=label+'\n'+
+  // Fallback: 2 files downloaded; open mailto: with attach reminder
+  var subj=label+' '+today()+' — '+count+' records (2 copies)';
+  var body='🔒 BACKUP — TWO COPIES\n\n'+label+'\n'+
     'Date: '+today()+'\n'+
     'Records: '+count+'\n\n'+
-    '⚠ ATTACH THE FILE: Downloads/'+filename+'\n\n'+
+    '⚠ ATTACH BOTH FILES from Downloads (belt + suspenders):\n'+
+    '  1. '+nameA+'\n'+
+    '  2. '+nameB+'\n\n'+
+    'Two copies in Gmail = if one ever gets lost, the other is your spare.\n\n'+
     'On the other device:\n'+
     'MFS → System Utilities → Email Sync → LOAD '+(label.indexOf('Accounting')>=0?'ACCOUNTING':'CLIENTS')+' FROM FILE\n'+
-    '→ pick '+filename+' → confirm.';
+    '→ pick either file → confirm.';
   setTimeout(function(){
     window.location.href='mailto:?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
   },800);
-  alert('✓ FILE DOWNLOADED\n\n'+filename+'\n('+count+' records)\n\n'+
-    'Now:\n'+
-    '1. Compose new email (the email app is opening)\n'+
-    '2. ATTACH the file from your Downloads folder\n'+
-    '3. Send to yourself\n\n'+
-    'On the other device, open Gmail, save the attachment, then\n'+
-    'come back here and tap LOAD '+(label.indexOf('Accounting')>=0?'ACCOUNTING':'CLIENTS')+' FROM FILE.');
+  alert('🔒 TWO BACKUP COPIES DOWNLOADED\n\n'+
+    '  1. '+nameA+'\n'+
+    '  2. '+nameB+'\n\n'+
+    '('+count+' records each — identical content)\n\n'+
+    'Email composer is opening now.\n\n'+
+    'IMPORTANT: ATTACH BOTH FILES from Downloads.\n\n'+
+    'Two copies in Gmail = if one accidentally gets deleted, the other is safe.');
 }
 
-// ─── OUT: Email Accounting ───
+// ─── OUT: Email Accounting (TWO COPIES) ───
 async function emailAccountingOut(){
   var mxLog=[];
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
@@ -5516,8 +5536,8 @@ async function emailAccountingOut(){
     return;
   }
   var dateStr=today();
-  var filename='mfs-accounting-'+dateStr+'.json';
-  // Wrap with metadata so the receiver knows what it is
+  var nameA='mfs-accounting-'+dateStr+'-A.json';
+  var nameB='mfs-accounting-'+dateStr+'-B.json';
   var wrapper={
     type:'mfs-accounting',
     version:1,
@@ -5526,10 +5546,10 @@ async function emailAccountingOut(){
     entries:mxLog
   };
   var json=JSON.stringify(wrapper);
-  await emailSyncShare(filename, json, 'MFS Accounting Database', mxLog.length);
+  await emailSyncShareDual(nameA, nameB, json, 'MFS Accounting Database', mxLog.length);
 }
 
-// ─── OUT: Email Phone Clients ───
+// ─── OUT: Email Phone Clients (TWO COPIES) ───
 async function emailClientsOut(){
   var clients=[];
   try{clients=JSON.parse(localStorage.getItem('mfs_clients')||'[]');}catch(e){}
@@ -5537,7 +5557,9 @@ async function emailClientsOut(){
     alert('Nothing to send — your phone clients list is empty.');
     return;
   }
-  var filename='mfs-clients-'+today()+'.json';
+  var dateStr=today();
+  var nameA='mfs-clients-'+dateStr+'-A.json';
+  var nameB='mfs-clients-'+dateStr+'-B.json';
   var wrapper={
     type:'mfs-clients',
     version:1,
@@ -5546,7 +5568,7 @@ async function emailClientsOut(){
     clients:clients
   };
   var json=JSON.stringify(wrapper);
-  await emailSyncShare(filename, json, 'MFS Phone Clients', clients.length);
+  await emailSyncShareDual(nameA, nameB, json, 'MFS Phone Clients', clients.length);
 }
 
 // ─── IN: Pick Accounting File ───
