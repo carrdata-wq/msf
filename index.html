@@ -666,6 +666,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <div id="fuel-chart-content" style="padding:8px;"></div>
   </div>
+  <!-- Stats & Budget -->
+  <div id="fuel-stats" class="fpage" style="display:none">
     <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
       <button onclick="fuelShow('')" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
       <span style="color:#ffff00;font-weight:700;font-size:13px;flex:1;">⛽ Gas Stats</span>
@@ -673,6 +675,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div id="fuel-stat-cards" style="padding:8px;"></div>
     <div id="fuel-history"></div>
   </div>
+</div>
 
 
 <!-- ████████████████████ UTILITIES ████████████████████ -->
@@ -1433,26 +1436,29 @@ function renderDayByDay(){
     +'<div style="color:#ccccff;font-size:11px;">$/WEEK AVG</div>'
     +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+perWeek.toFixed(2)+'</div></div>'
     +'</div>'
-    // 4-week moving average chart
+    // 4-week moving average chart — vertical bars (mountains UP), newest LEFT
     +'<div style="background:#ffffff;border-radius:4px;margin:0 8px 8px;padding:10px;font-family:Courier New,monospace;">'
-    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;">4-WEEK MOVING AVERAGE</div>';
+    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;">4-WEEK MOVING AVERAGE — NEWEST LEFT · OLDEST RIGHT</div>';
 
   var maxWk=Math.max.apply(null,movAvg.map(function(w){return w.val;}))||1;
-  // cap bar at 95% so nothing goes off screen
-  var capVal=maxWk;
+  var avgWk=movAvg.reduce(function(s,w){return s+w.val;},0)/(movAvg.length||1);
+  var chartH=180;
+  h+='<div style="font-size:10px;color:#666;margin-bottom:4px;">— avg $'+avgWk.toFixed(0)+'/wk</div>'
+    +'<div style="position:relative;overflow-x:auto;">'
+    +'<div style="display:flex;align-items:flex-end;gap:2px;height:'+chartH+'px;border-bottom:2px solid #000066;border-left:2px solid #000066;padding:0 4px;min-width:'+(movAvg.length*32)+'px;position:relative;">'
+    +'<div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;bottom:'+(Math.round((avgWk/maxWk)*chartH))+'px;z-index:1;opacity:0.5;"></div>';
   movAvg.forEach(function(w){
-    var barPct=Math.min(95,Math.round((w.val/maxWk)*100));
-    var avgPct=Math.round((w.avg/maxWk)*100);
+    var barH=Math.min(chartH-4,Math.round((w.val/maxWk)*chartH));
     var barColor=w.val>w.avg*1.2?'#cc0000':w.val>w.avg?'#cc6600':'#006600';
-    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-      +'<div style="color:#000066;font-size:10px;width:58px;text-align:right;">'+w.label+'</div>'
-      +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:14px;position:relative;">'
-      +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
-      +'<div style="position:absolute;top:0;left:'+avgPct+'%;width:2px;height:100%;background:#000066;"></div>'
-      +'<span style="position:absolute;right:3px;top:0;font-size:10px;color:#000;font-weight:700;">$'+w.val.toFixed(0)+'</span>'
-      +'</div></div>';
+    var shortLbl=w.label.length>=5?w.label.slice(0,5):w.label;
+    h+='<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;">'
+      +'<div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$'+w.val.toFixed(0)+'</div>'
+      +'<div style="width:22px;height:'+barH+'px;background:'+barColor+';border-radius:3px 3px 0 0;"></div>'
+      +'<div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">'+shortLbl+'</div>'
+      +'</div>';
   });
-  h+='<div style="font-size:10px;color:#666;margin-top:4px;">▌ blue line = 4-wk moving avg &nbsp; 🟢=below 🟠=above 🔴=high</div>'
+  h+='</div></div>'
+    +'<div style="font-size:10px;color:#666;margin-top:28px;">🟢=below avg &nbsp; 🟠=above avg &nbsp; 🔴=high</div>'
     +'</div>'
     // day by day table
     +'<div style="padding:0 8px 8px;font-family:Courier New,monospace;">'
@@ -1817,7 +1823,7 @@ function renderRestStats(){
   renderTrackerStats(getRestEntries(),'rest-stat-content','#ffaa00','JOB FOOD COST');
 }
 
-function renderTrackerChart(entries,contentId,color,label){
+function renderTrackerChart(entries,contentId,color,label,inverted){
   if(!entries.length){
     document.getElementById(contentId).innerHTML='<div style="color:#ffff00;font-family:Courier New,monospace;padding:20px;text-align:center;">No entries found.</div>';
     return;
@@ -1832,6 +1838,10 @@ function renderTrackerChart(entries,contentId,color,label){
   var maxVal=Math.max.apply(null,Object.values(byMonth))||1;
   var avgVal=Object.values(byMonth).reduce(function(s,v){return s+v;},0)/months.length;
   var chartH=180;
+  var alignItems=inverted?'flex-start':'flex-end';
+  var barRadius=inverted?'0 0 3px 3px':'3px 3px 0 0';
+  var topBorder=inverted?'2px solid #000066':'none';
+  var bottomBorder=inverted?'none':'2px solid #000066';
 
   var h='<div style="font-family:Courier New,monospace;background:#ffffff;border-radius:6px;padding:10px;">'
     // summary
@@ -1846,25 +1856,39 @@ function renderTrackerChart(entries,contentId,color,label){
     +'<div style="color:#ccffcc;font-size:11px;">MONTHS</div>'
     +'<div style="color:#ffffff;font-weight:700;font-size:14px;">'+months.length+'</div></div>'
     +'</div>'
-    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;">'+label+' — NEWEST LEFT · OLDEST RIGHT</div>'
+    +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;">'+label+' — NEWEST LEFT · OLDEST RIGHT'+(inverted?' · BOTTOM MOUNTAIN':'')+'</div>'
     // avg line label
     +'<div style="font-size:10px;color:#666;margin-bottom:4px;">— avg $'+avgVal.toFixed(0)+'/mo</div>'
     // chart area
     +'<div style="position:relative;overflow-x:auto;">'
-    +'<div style="display:flex;align-items:flex-end;gap:2px;height:'+chartH+'px;border-bottom:2px solid #000066;border-left:2px solid #000066;padding:0 4px;min-width:'+(months.length*32)+'px;position:relative;">'
-    // avg line
-    +'<div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;bottom:'+(Math.round((avgVal/maxVal)*chartH))+'px;z-index:1;opacity:0.5;"></div>';
+    +'<div style="display:flex;align-items:'+alignItems+';gap:2px;height:'+chartH+'px;border-top:'+topBorder+';border-bottom:'+bottomBorder+';border-left:2px solid #000066;padding:0 4px;min-width:'+(months.length*32)+'px;position:relative;">';
+  // avg line — positioned from top if inverted, from bottom otherwise
+  if(inverted){
+    h+='<div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;top:'+(Math.round((avgVal/maxVal)*chartH))+'px;z-index:1;opacity:0.5;"></div>';
+  } else {
+    h+='<div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;bottom:'+(Math.round((avgVal/maxVal)*chartH))+'px;z-index:1;opacity:0.5;"></div>';
+  }
 
   months.forEach(function(m){
     var v=byMonth[m];
     var barH=Math.min(chartH-4,Math.round((v/maxVal)*chartH));
     var barColor=v>avgVal*1.3?'#cc0000':v>avgVal?'#cc6600':color;
     var mo=m.slice(5,7)+'/'+m.slice(2,4);
-    h+='<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;">'
-      +'<div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$'+v.toFixed(0)+'</div>'
-      +'<div style="width:22px;height:'+barH+'px;background:'+barColor+';border-radius:3px 3px 0 0;"></div>'
-      +'<div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">'+mo+'</div>'
-      +'</div>';
+    if(inverted){
+      // mountain pointing DOWN — month label on top, bar hangs down, value label at the tip (below)
+      h+='<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;">'
+        +'<div style="font-size:9px;color:#333;margin-bottom:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:bottom left;margin-left:8px;">'+mo+'</div>'
+        +'<div style="width:22px;height:'+barH+'px;background:'+barColor+';border-radius:'+barRadius+';"></div>'
+        +'<div style="font-size:9px;color:#000066;font-weight:700;margin-top:2px;">$'+v.toFixed(0)+'</div>'
+        +'</div>';
+    } else {
+      // mountain pointing UP — value on top, bar grows up, month label below
+      h+='<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;">'
+        +'<div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$'+v.toFixed(0)+'</div>'
+        +'<div style="width:22px;height:'+barH+'px;background:'+barColor+';border-radius:'+barRadius+';"></div>'
+        +'<div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">'+mo+'</div>'
+        +'</div>';
+    }
   });
 
   h+='</div></div>'
@@ -1944,26 +1968,31 @@ function renderDayByDayOverlay(entries,title){
     +'<div style="color:#ff6666;font-weight:700;font-size:15px;">$'+perWeek.toFixed(2)+'</div></div>'
     +'</div>';
 
-  // 4-week moving avg chart
+  // 4-week moving avg chart — vertical bars (mountains UP), newest LEFT
   if(movAvg.length){
     var maxWk=Math.max.apply(null,movAvg.map(function(w){return w.val;}))||1;
-  // cap bar at 95% so nothing goes off screen
-  var capVal=maxWk;
+    var avgWk=movAvg.reduce(function(s,w){return s+w.val;},0)/movAvg.length;
+    var chartH=180;
     h+='<div style="background:#ffffff;border-radius:4px;margin:0 8px 8px;padding:10px;font-family:Courier New,monospace;">'
-      +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:8px;">4-WEEK MOVING AVERAGE</div>';
+      +'<div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;">4-WEEK MOVING AVERAGE — NEWEST LEFT · OLDEST RIGHT</div>'
+      +'<div style="font-size:10px;color:#666;margin-bottom:4px;">— avg $'+avgWk.toFixed(0)+'/wk</div>'
+      +'<div style="position:relative;overflow-x:auto;">'
+      +'<div style="display:flex;align-items:flex-end;gap:2px;height:'+chartH+'px;border-bottom:2px solid #000066;border-left:2px solid #000066;padding:0 4px;min-width:'+(movAvg.length*32)+'px;position:relative;">'
+      // avg dashed line
+      +'<div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;bottom:'+(Math.round((avgWk/maxWk)*chartH))+'px;z-index:1;opacity:0.5;"></div>';
     movAvg.forEach(function(w){
-      var barPct=Math.min(95,Math.round((w.val/maxWk)*100));
-      var avgPct=Math.round((w.avg/maxWk)*100);
+      var barH=Math.min(chartH-4,Math.round((w.val/maxWk)*chartH));
       var barColor=w.val>w.avg*1.2?'#cc0000':w.val>w.avg?'#cc6600':'#006600';
-      h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-        +'<div style="color:#000066;font-size:10px;width:58px;text-align:right;">'+w.label+'</div>'
-        +'<div style="flex:1;background:#eeeeee;border-radius:3px;height:14px;position:relative;">'
-        +'<div style="background:'+barColor+';height:100%;border-radius:3px;width:'+barPct+'%;"></div>'
-        +'<div style="position:absolute;top:0;left:'+avgPct+'%;width:2px;height:100%;background:#000066;"></div>'
-        +'<span style="position:absolute;right:3px;top:0;font-size:10px;color:#000;font-weight:700;">$'+w.val.toFixed(0)+'</span>'
-        +'</div></div>';
+      // shorten label e.g. 04/23/2026 -> 04/23
+      var shortLbl=w.label.length>=5?w.label.slice(0,5):w.label;
+      h+='<div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;">'
+        +'<div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$'+w.val.toFixed(0)+'</div>'
+        +'<div style="width:22px;height:'+barH+'px;background:'+barColor+';border-radius:3px 3px 0 0;"></div>'
+        +'<div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">'+shortLbl+'</div>'
+        +'</div>';
     });
-    h+='<div style="font-size:10px;color:#666;margin-top:4px;">▌ blue = 4-wk avg &nbsp; 🟢=below 🟠=above 🔴=high</div></div>';
+    h+='</div></div>'
+      +'<div style="font-size:10px;color:#666;margin-top:28px;">🟢=below avg &nbsp; 🟠=above avg &nbsp; 🔴=high</div></div>';
   }
 
   h+='<div style="padding:0 8px 8px;font-family:Courier New,monospace;">'
@@ -3539,18 +3568,44 @@ function exportMasters(){
     mx_custom : JSON.parse(localStorage.getItem('mx_custom') ||'[]')
   };
   var txt=JSON.stringify(masters,null,2);
-  var ta=document.createElement('textarea');
-  ta.value=txt;
-  ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';
-  document.body.appendChild(ta);
+  var dateStr=today();
+  var subject='MFS Shared Lists — '+dateStr+' ('+masters.mx_pcodes.length+' pcodes · '+masters.mx_descs.length+' descs · '+masters.mx_custom.length+' combos)';
+  var toEmail='tristancarrington1@gmail.com';
+  var popupHTML='<div style="background:#0000cc;border:2px solid #ffaa00;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+    +'<div style="color:#ffaa00;font-size:13px;font-weight:700;margin-bottom:6px;">🔄 SHARED LISTS · '+dateStr+'</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">'+masters.mx_pcodes.length+' pcodes · '+masters.mx_descs.length+' descs · '+masters.mx_custom.length+' combos</div>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address · paste body</div>'
+    +'<textarea id="lists-share-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #ffaa00;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+txt+'</textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:8px;">'
+    +'<button onclick="shareListsText()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE</button>'
+    +'<button onclick="copyListsText()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📋 COPY</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
+    +'</div></div>';
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
+  overlay.innerHTML=popupHTML;
+  overlay.dataset.subject=subject;
+  overlay.dataset.toEmail=toEmail;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var ta=document.getElementById('lists-share-text');if(ta){ta.focus();ta.select();}},400);
+}
+function copyListsText(){
+  var ta=document.getElementById('lists-share-text');if(!ta)return;
   ta.focus();ta.select();
-  try{
-    document.execCommand('copy');
-    toast('Lists copied — paste into Gmail ✓',true);
-  }catch(e){
-    toast('Open Gmail → paste lists data',false);
-  }
-  document.body.removeChild(ta);
+  try{document.execCommand('copy');toast('Lists copied — paste into Gmail ✓',true);}
+  catch(e){toast('Text selected — long-press and tap COPY',true);}
+}
+function shareListsText(){
+  var ta=document.getElementById('lists-share-text');if(!ta){toast('No data to share',false);return;}
+  var overlay=ta.closest('.modal-overlay');
+  var subject=(overlay&&overlay.dataset.subject)||'MFS Shared Lists';
+  var toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
+  ta.focus();ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  var mail='mailto:'+toEmail+'?subject='+encodeURIComponent(subject);
+  window.location.href=mail;
+  toast('📋 Copied · Email opened to '+toEmail+' — paste into body',true);
 }
 
 function importMasters(evt){
