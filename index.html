@@ -302,6 +302,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <button class="foot-btn" onclick="doBackup()">⬇ Backup</button>
     <button class="foot-btn" onclick="doExportCSV()" style="color:#00ff88;border-color:#00ff88;">📄 CSV</button>
     <button class="foot-btn" onclick="exportMasters()" style="color:#ffaa00;border-color:#ffaa00;">🔄 SHARE LISTS</button>
+    <button class="foot-btn" onclick="universalLoad()" style="color:#00ffff;border-color:#00ffff;">📥 LOAD</button>
     <button class="foot-btn" onclick="window.close()" style="color:#ff6666;border-color:#ff6666;">✕ EXIT</button>
   </div>
   <div style="padding:6px 10px;">
@@ -3673,12 +3674,17 @@ function doExportCSV(){
   var mxLog=[];
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
   if(!mxLog.length){toast('No entries to export',false);return;}
-  const backupText=JSON.stringify(mxLog,null,2);
-  const dateStr=today().replace(/-/g,'');
-  const filename='mfs-data-'+dateStr+'.json';
+  // Build REAL CSV — round-trips cleanly (signed amount, no separate TYPE column)
+  function q(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"';}
+  var lines=['"ID","DATE","PAYEE","PCODE","DESC","AMT"'];
+  mxLog.forEach(function(e){
+    lines.push(q(e.id)+','+q(e.date)+','+q(e.payee)+','+q(e.pcode)+','+q(e.desc)+','+(typeof e.amt==='number'?e.amt.toFixed(2):'0.00'));
+  });
+  var backupText=lines.join('\r\n');
+  const filename='NOWACC.CSV';
   const popupHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
-    +'<div style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:6px;">📤 '+filename+' — '+mxLog.length+' entries</div>'
-    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address · paste body</div>'
+    +'<div style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:6px;">📤 '+filename+' — '+mxLog.length+' entries — '+today()+'</div>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address</div>'
     +'<textarea id="backup-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #ffff00;color:#ffffff;font-family:Courier New,monospace;font-size:14px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+backupText+'</textarea>'
     +'<div style="display:flex;gap:8px;margin-top:8px;">'
     +'<button onclick="shareCSVData()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE</button>'
@@ -3689,6 +3695,10 @@ function doExportCSV(){
   overlay.className='modal-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
   overlay.innerHTML=popupHTML;
+  // store filename + email on overlay so share fn can use them
+  overlay.dataset.subject='NOWACC.CSV — '+today()+' ('+mxLog.length+' entries)';
+  overlay.dataset.toEmail='tristancarrington1@gmail.com';
+  overlay.dataset.filename=filename;
   document.body.appendChild(overlay);
   setTimeout(function(){
     const ta=document.getElementById('backup-text');
@@ -3706,16 +3716,25 @@ async function shareCSVData(){
   const ta=document.getElementById('backup-text');
   if(!ta){toast('No data to share',false);return;}
   const txt=ta.value;
-  const dateStr=today();
-  const subject='MFS Data — '+dateStr;
-  const toEmail='tristancarrington1@gmail.com';
-  // 1. copy data to clipboard so paste works in Gmail body
+  const overlay=ta.closest('.modal-overlay');
+  const subject=(overlay&&overlay.dataset.subject)||('NOWACC.CSV — '+today());
+  const toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
+  // copy to clipboard as backup
   ta.focus();ta.select();
   try{document.execCommand('copy');}catch(e){}
-  // 2. open email composer with TO pre-filled (body too big for URL — paste it)
-  var mail='mailto:'+toEmail+'?subject='+encodeURIComponent(subject);
-  window.location.href=mail;
-  toast('📋 Copied · Email opened to '+toEmail+' — paste into body',true);
+  // Try Gmail compose URL with body included
+  var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(txt);
+  if(gmailUrl.length<7800){
+    var win=window.open(gmailUrl,'_blank');
+    if(!win)window.location.href=gmailUrl;
+    toast('✓ Gmail opened with NOWACC.CSV — tap Send',true);
+  } else {
+    // body too big — Gmail with subject only, body in clipboard
+    var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject);
+    var win=window.open(u,'_blank');
+    if(!win)window.location.href=u;
+    toast('📋 Copied · Gmail opened — paste body & Send',true);
+  }
 }
 function copyBackupManual(){
   const ta=document.getElementById('backup-text');
@@ -6436,12 +6455,12 @@ function emailClientsCSV(){
   });
   var csv=lines.join('\r\n');
   var dateStr=today();
-  var subject='MFS Phone Clients — '+dateStr+' ('+rows.length+')';
+  var subject='NOWPHON.CSV — '+dateStr+' ('+rows.length+' clients)';
   var toEmail='tristancarrington1@gmail.com';
   // open popup with COPY/SHARE buttons (same pattern as data CSV)
   var popupHTML='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
-    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">📞 '+rows.length+' clients · '+dateStr+'</div>'
-    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address · paste body</div>'
+    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">📞 NOWPHON.CSV — '+rows.length+' clients · '+dateStr+'</div>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address</div>'
     +'<textarea id="cli-csv-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+csv+'</textarea>'
     +'<div style="display:flex;gap:8px;margin-top:8px;">'
     +'<button onclick="shareClientsCSV()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE</button>'
@@ -6467,15 +6486,24 @@ function copyClientsCSV(){
 function shareClientsCSV(){
   var ta=document.getElementById('cli-csv-text');if(!ta){toast('No data to share',false);return;}
   var overlay=ta.closest('.modal-overlay');
-  var subject=(overlay&&overlay.dataset.subject)||'MFS Phone Clients';
+  var subject=(overlay&&overlay.dataset.subject)||'NOWPHON.CSV — '+today();
   var toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
-  // copy to clipboard so user can paste in body
+  var body=ta.value;
+  // copy as backup
   ta.focus();ta.select();
   try{document.execCommand('copy');}catch(e){}
-  // open mailto with TO + subject pre-filled (body too big for URL)
-  var mail='mailto:'+toEmail+'?subject='+encodeURIComponent(subject);
-  window.location.href=mail;
-  toast('📋 Copied · Email opened to '+toEmail+' — paste into body',true);
+  // Gmail compose URL with body
+  var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  if(gmailUrl.length<7800){
+    var win=window.open(gmailUrl,'_blank');
+    if(!win)window.location.href=gmailUrl;
+    toast('✓ Gmail opened with NOWPHON.CSV — tap Send',true);
+  } else {
+    var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject);
+    var win=window.open(u,'_blank');
+    if(!win)window.location.href=u;
+    toast('📋 Copied · Gmail opened — paste body & Send',true);
+  }
 }
 
 // ── IMPORT / RECOVER ──
@@ -6529,6 +6557,204 @@ function phoneImportTool(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto;';
   overlay.innerHTML=html;
   document.body.appendChild(overlay);
+}
+
+// ═══════════════════════════════════════════════
+//  UNIVERSAL LOAD — paste from Gmail, auto-detect, restore
+// ═══════════════════════════════════════════════
+function universalLoad(){
+  var html='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:14px;width:100%;max-width:440px;font-family:Courier New,monospace;color:#ffffff;max-height:90vh;overflow-y:auto;">'
+    +'<div style="color:#00ffff;font-size:14px;font-weight:700;margin-bottom:8px;text-align:center;">📥 LOAD FROM EMAIL</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:8px;background:#000044;padding:8px;border-radius:4px;line-height:1.4;">'
+    +'1. Open Gmail → tap an MFS email<br>'
+    +'2. Long-press the data → Select All → Copy<br>'
+    +'3. Come back here and paste below<br>'
+    +'4. Tap 📥 LOAD — I figure out what it is'
+    +'</div>'
+    +'<textarea id="universal-paste" placeholder="Paste anything from your MFS emails here…" style="width:100%;height:160px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;"></textarea>'
+    +'<div id="universal-detect" style="color:#ffaa00;font-size:12px;margin-top:6px;min-height:18px;"></div>'
+    +'<div style="display:flex;gap:6px;margin-top:8px;">'
+    +'<button onclick="universalLoadGo()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:4px;cursor:pointer;">📥 LOAD</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:4px;cursor:pointer;">CLOSE</button>'
+    +'</div></div>';
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto;';
+  overlay.innerHTML=html;
+  document.body.appendChild(overlay);
+  // live detection as user pastes/types
+  setTimeout(function(){
+    var ta=document.getElementById('universal-paste');
+    if(!ta)return;
+    ta.focus();
+    ta.addEventListener('input',universalDetect);
+  },200);
+}
+function universalDetect(){
+  var ta=document.getElementById('universal-paste');
+  var msg=document.getElementById('universal-detect');
+  if(!ta||!msg)return;
+  var txt=(ta.value||'').trim();
+  if(!txt){msg.textContent='';msg.style.color='#ffaa00';return;}
+  var kind=universalSniff(txt);
+  if(kind==='backup')          {msg.style.color='#00ff88';msg.textContent='✓ Detected: ACCOUNTING (JSON) — will restore your ledger';}
+  else if(kind==='backup-csv') {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWACC.CSV — will restore your ledger';}
+  else if(kind==='lists')      {msg.style.color='#00ff88';msg.textContent='✓ Detected: SHARED LISTS — will merge pcodes/descs/combos';}
+  else if(kind==='clients')    {msg.style.color='#00ff88';msg.textContent='✓ Detected: PHONE CLIENTS (JSON) — will merge contacts';}
+  else if(kind==='csv')        {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWPHON.CSV — will merge contacts';}
+  else                         {msg.style.color='#ff6666';msg.textContent='⚠ Cannot detect format — paste full email body, JSON or CSV';}
+}
+function universalSniff(txt){
+  // Try JSON first
+  try{
+    var j=JSON.parse(txt);
+    if(Array.isArray(j) && j.length){
+      var first=j[0];
+      if(first && typeof first==='object'){
+        // ledger entry has payee + amt + date
+        if('payee' in first && 'amt' in first) return 'backup';
+        // client has name field
+        if('name' in first || 'phone' in first) return 'clients';
+      }
+    }
+    if(j && typeof j==='object' && !Array.isArray(j)){
+      if('mx_pcodes' in j || 'mx_descs' in j || 'mx_custom' in j) return 'lists';
+    }
+  }catch(e){}
+  // CSV check — first line has known headers
+  var firstLine=(txt.split(/\r?\n/)[0]||'').toLowerCase();
+  // accounting CSV: ID, DATE, PAYEE, ..., AMT
+  if(firstLine.indexOf('payee')>=0 && firstLine.indexOf('amt')>=0 && firstLine.indexOf('date')>=0) return 'backup-csv';
+  if(firstLine.indexOf('name')>=0 && (firstLine.indexOf('phone')>=0||firstLine.indexOf('email')>=0)) return 'csv';
+  return 'unknown';
+}
+function universalLoadGo(){
+  var ta=document.getElementById('universal-paste');
+  if(!ta)return;
+  var txt=(ta.value||'').trim();
+  if(!txt){toast('Paste something first',false);return;}
+  var kind=universalSniff(txt);
+  if(kind==='backup')          universalLoadBackup(txt);
+  else if(kind==='backup-csv') universalLoadBackupCSV(txt);
+  else if(kind==='lists')      universalLoadLists(txt);
+  else if(kind==='clients')    universalLoadClients(txt,'json');
+  else if(kind==='csv')        universalLoadClients(txt,'csv');
+  else toast('Cannot detect format — check that you pasted the full email body',false);
+}
+function universalLoadBackupCSV(txt){
+  // parse CSV to ledger array
+  function splitRow(s){
+    var out=[],cur='',inq=false;
+    for(var i=0;i<s.length;i++){
+      var ch=s[i];
+      if(inq){
+        if(ch==='"'&&s[i+1]==='"'){cur+='"';i++;}
+        else if(ch==='"'){inq=false;}
+        else cur+=ch;
+      } else {
+        if(ch==='"')inq=true;
+        else if(ch===','){out.push(cur);cur='';}
+        else cur+=ch;
+      }
+    }
+    out.push(cur);
+    return out;
+  }
+  var lines=txt.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(lines.length<2){toast('CSV has no data rows',false);return;}
+  var hdr=splitRow(lines[0]).map(function(h){return h.trim().toLowerCase();});
+  var idx={
+    id:    hdr.indexOf('id'),
+    date:  hdr.indexOf('date'),
+    payee: hdr.indexOf('payee'),
+    pcode: hdr.indexOf('pcode'),
+    desc:  hdr.indexOf('desc'),
+    amt:   hdr.indexOf('amt')>=0 ? hdr.indexOf('amt') : hdr.indexOf('amount'),
+    type:  hdr.indexOf('type')
+  };
+  if(idx.payee<0||idx.amt<0){toast('CSV missing PAYEE or AMT column',false);return;}
+  var arr=[];
+  for(var i=1;i<lines.length;i++){
+    var c=splitRow(lines[i]);
+    var amt=parseFloat(c[idx.amt])||0;
+    // if there's a TYPE column with EXPENSE, ensure amt is negative
+    if(idx.type>=0 && c[idx.type]){
+      var t=(c[idx.type]||'').toUpperCase();
+      if(t==='EXPENSE' && amt>0) amt=-amt;
+      if(t==='INCOME' && amt<0) amt=Math.abs(amt);
+    }
+    arr.push({
+      id: idx.id>=0 ? (parseInt(c[idx.id],10)||(i)) : i,
+      date: idx.date>=0?(c[idx.date]||''):'',
+      payee:(c[idx.payee]||'').trim(),
+      pcode:idx.pcode>=0?(c[idx.pcode]||'').trim():'',
+      desc: idx.desc >=0?(c[idx.desc] ||'').trim():'',
+      amt:  amt
+    });
+  }
+  if(!arr.length){toast('No usable rows',false);return;}
+  if(!confirm('RESTORE ACCOUNTING — '+arr.length+' entries from CSV?\nThis REPLACES your current ledger.\nTap Cancel to abort.'))return;
+  localStorage.setItem('mx_log',JSON.stringify(arr));
+  LOG=arr;
+  document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+  try{renderLog();}catch(e){}
+  toast('✓ Ledger restored — '+arr.length+' entries (CSV)',true);
+}
+function universalLoadBackup(txt){
+  try{
+    var arr=JSON.parse(txt);
+    if(!Array.isArray(arr)){toast('Not a valid backup',false);return;}
+    if(!confirm('RESTORE ACCOUNTING — '+arr.length+' entries?\nThis REPLACES your current ledger.\nTap Cancel to abort.'))return;
+    localStorage.setItem('mx_log',JSON.stringify(arr));
+    LOG=arr;
+    document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+    try{renderLog();}catch(e){}
+    toast('✓ Ledger restored — '+arr.length+' entries',true);
+  }catch(e){toast('Invalid backup JSON: '+e.message,false);}
+}
+function universalLoadLists(txt){
+  try{
+    var m=JSON.parse(txt);
+    var added={pcodes:0,descs:0,combos:0};
+    if(m.mx_pcodes){
+      var ep=JSON.parse(localStorage.getItem('mx_pcodes')||'[]');
+      m.mx_pcodes.forEach(function(v){if(ep.indexOf(v)<0){ep.push(v);added.pcodes++;}});
+      localStorage.setItem('mx_pcodes',JSON.stringify(ep));
+    }
+    if(m.mx_descs){
+      var ed=JSON.parse(localStorage.getItem('mx_descs')||'[]');
+      m.mx_descs.forEach(function(v){if(ed.indexOf(v)<0){ed.push(v);added.descs++;}});
+      localStorage.setItem('mx_descs',JSON.stringify(ed));
+    }
+    if(m.mx_custom){
+      var ec=JSON.parse(localStorage.getItem('mx_custom')||'[]');
+      m.mx_custom.forEach(function(v){
+        var found=ec.find(function(x){return x.payee===v.payee&&x.pcode===v.pcode&&x.desc===v.desc;});
+        if(!found){ec.push(v);added.combos++;}
+      });
+      localStorage.setItem('mx_custom',JSON.stringify(ec));
+    }
+    try{mxReloadData();}catch(e){}
+    document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+    toast('✓ Lists merged — '+added.combos+' combos, '+added.pcodes+' pcodes, '+added.descs+' descs',true);
+  }catch(e){toast('Invalid lists JSON: '+e.message,false);}
+}
+function universalLoadClients(txt,format){
+  var converted=[];
+  if(format==='csv'){
+    converted=parseClientsCSV(txt);
+  } else {
+    try{
+      var j=JSON.parse(txt);
+      if(Array.isArray(j)) converted=j.map(function(r){return normalizeClient(r);}).filter(function(c){return c.name;});
+    }catch(e){}
+  }
+  if(!converted.length){toast('No usable client records',false);return;}
+  if(!confirm('Import '+converted.length+' clients?\nMerged with existing — duplicates by name+phone skipped.'))return;
+  mergeClients(converted);
+  document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+  try{phoneShowList();}catch(e){}
+  toast('✓ '+converted.length+' clients merged',true);
 }
 
 function phoneEmailFoundList(key){
