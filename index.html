@@ -301,7 +301,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="main-footer">
     <button class="foot-btn" onclick="doBackup()">⬇ Backup</button>
     <button class="foot-btn" onclick="doExportCSV()" style="color:#00ff88;border-color:#00ff88;">📄 CSV</button>
-    <button class="foot-btn" onclick="exportMasters()" style="color:#ffaa00;border-color:#ffaa00;">⬇ Masters</button>
+    <button class="foot-btn" onclick="exportMasters()" style="color:#ffaa00;border-color:#ffaa00;">🔄 SHARE LISTS</button>
     <button class="foot-btn" onclick="window.close()" style="color:#ff6666;border-color:#ff6666;">✕ EXIT</button>
   </div>
   <div style="padding:6px 10px;">
@@ -3552,9 +3552,9 @@ function exportMasters(){
   ta.focus();ta.select();
   try{
     document.execCommand('copy');
-    toast('Masters copied — paste into Gmail ✓',true);
+    toast('Lists copied — paste into Gmail ✓',true);
   }catch(e){
-    toast('Open Gmail → paste masters data',false);
+    toast('Open Gmail → paste lists data',false);
   }
   document.body.removeChild(ta);
 }
@@ -3591,8 +3591,8 @@ function importMasters(evt){
       if(m.mfs_payees) m.mfs_payees.forEach(function(v){if((d.acct.payees||[]).indexOf(v)<0){if(!d.acct.payees)d.acct.payees=[];d.acct.payees.push(v);}});
       save(d);
       mxReloadData();
-      toast('Masters merged ✓ — '+((m.mx_custom||[]).length)+' combos, '+((m.mx_pcodes||[]).length)+' pcodes, '+((m.mx_descs||[]).length)+' descs');
-    }catch(e){toast('Invalid masters file',false);}
+      toast('Lists merged ✓ — '+((m.mx_custom||[]).length)+' combos, '+((m.mx_pcodes||[]).length)+' pcodes, '+((m.mx_descs||[]).length)+' descs');
+    }catch(e){toast('Invalid lists file',false);}
   };
   reader.readAsText(file);
   evt.target.value='';
@@ -3688,7 +3688,7 @@ function doViewData(){
   }
   // masters summary
   html+='<div style="background:#000044;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:8px;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">MASTERS</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;">🔄 SHARE LISTS (dropdown options)</div>'
     +'<div style="color:#ccccff;font-size:13px;">PAYEES: <span style="color:#ffff00;">'+((d.acct.payees||[]).length)+'</span></div>'
     +'<div style="color:#ccccff;font-size:13px;">PCODES: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_pcodes')||'[]').length+12)+'</span></div>'
     +'<div style="color:#ccccff;font-size:13px;">DESCS: <span style="color:#ffff00;">'+(JSON.parse(localStorage.getItem('mx_descs')||'[]').length+35)+'</span></div>'
@@ -5299,7 +5299,7 @@ function rptShow(type){
   var map={};
   for(var i=0;i<LOG.length;i++){
     var e=LOG[i];
-    var key=type==='pcode'?(e.pcode||'?').slice(0,3)
+    var key=type==='pcode'?(e.pcode||'?')
            :type==='desc' ?(e.desc ||'?')
            :type==='yr'   ?(e.date ||'?').slice(0,4)
            :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -5313,7 +5313,19 @@ function rptShow(type){
     map[key].rows.push(e);
   }
   _rptArr=Object.keys(map).map(function(k){return{key:k,total:map[k].total,count:map[k].count,rows:map[k].rows};});
-  _rptArr.sort(function(a,b){return a.total-b.total;});
+  // sort by type — first to last as user requested
+  _rptArr.sort(function(a,b){
+    if(type==='pcode'||type==='desc'||type==='type'){
+      return a.key.localeCompare(b.key);  // ABC
+    } else if(type==='yr'||type==='mon'||type==='date'){
+      return a.key.localeCompare(b.key);  // chronological (string sort works for YYYY / YYYY-MM / YYYY-MM-DD)
+    } else if(type==='amt'){
+      var aA=a.rows&&a.rows[0]?a.rows[0].amt:0;
+      var bA=b.rows&&b.rows[0]?b.rows[0].amt:0;
+      return aA-bA;  // smallest to largest
+    }
+    return a.total-b.total;
+  });
   rptRender();
 }
 
@@ -5462,69 +5474,65 @@ function rptRender(){
   var type=_rptType;
   var arr=_rptArr;
   if(!arr.length){
-    document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;font-size:14px;padding:20px;text-align:center;">NO DATA FOUND</div>';
+    document.getElementById('rpt-content').innerHTML='<div style="background:#ffffff;color:#cc0000;font-family:Courier New,monospace;font-size:14px;padding:20px;text-align:center;border:2px solid #6666ff;border-radius:6px;">NO DATA FOUND</div>';
     return;
   }
-  var label=type==='pcode'?'PCO':type==='desc'?'DESCRIPTION':type==='yr'?'YEAR':type==='mon'?'MONTH':type==='type'?'TYPE':type==='date'?'DATE':type==='amt'?'AMOUNT':'PAYEE';
+  var label=type==='pcode'?'PCODE':type==='desc'?'DESCRIPTION':type==='yr'?'YEAR':type==='mon'?'MONTH':type==='type'?'TYPE':type==='date'?'DATE':type==='amt'?'AMOUNT':'PAYEE';
   var grand=arr.reduce(function(s,r){return s+r.total;},0);
-  var totalPages=Math.ceil(arr.length/_pageSize);
-  if(_rptPage>=totalPages)_rptPage=0;
-  var start=_rptPage*_pageSize;
-  var pageArr=arr.slice(start,start+_pageSize);
-  var html='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
-    +'<tr style="background:#0000cc;">'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:14px;">'+label+'</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:14px;">'+(type==='pcode'?'PAYEE':'DESC')+'</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:14px;">'+(type==='pcode'?'DESC':'PCO')+'</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:14px;">#</th>'
-    +'<th style="color:#ffff00;padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:14px;">AMT</th>'
-    +'</tr>';
-  for(var j=0;j<pageArr.length;j++){
-    var r=pageArr[j];
-    var col=r.total>=0?'#00ffff':'#ff6666';
-    var bg=j%2===0?'background:#00008a':'background:#000077';
-    var mainKey=trunc(r.key,20);
-    var col2,col3;
-    if(type==='pcode'){
-      // pcode summary — show count of unique payees
-      var uniquePayees=[];
-      if(r.rows)r.rows.forEach(function(e){if(uniquePayees.indexOf(e.payee)<0)uniquePayees.push(e.payee);});
-      col2=uniquePayees.length+' payees';
-      col3=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',15):'—';
-    } else if(type==='desc'){
-      col2=r.rows&&r.rows[0]?trunc(r.rows[0].payee||'',20):'—';
-      col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
-    } else if(type==='amt'){
-      mainKey=r.rows&&r.rows[0]?trunc(r.rows[0].payee||'',20):'—';
-      col2=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',15):'—';
-      col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
-    } else {
-      col2=r.rows&&r.rows[0]?trunc(r.rows[0].desc||'',20):'—';
-      col3=r.rows&&r.rows[0]?(r.rows[0].pcode||'').slice(0,3):'—';
+
+  // helper for displaying month keys nicely
+  function dispKey(k){
+    if(type==='mon'){
+      var yr=k.slice(0,4), mo=parseInt(k.slice(5,7),10)-1;
+      if(!isNaN(mo)&&mo>=0&&mo<12) return MONTHS[mo]+' '+yr;
     }
-    html+='<tr onclick="rptDrill(\''+type+'\',\''+r.key.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="'+bg+';border-bottom:1px solid #333388;cursor:pointer;">'
-      +'<td style="padding:5px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+mainKey+' <span style="color:#6666ff;font-size:14px;">›</span></td>'
-      +'<td style="padding:5px 3px;color:#ffffff;font-size:14px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col2+'</td>'
-      +'<td style="padding:5px 3px;color:#00ffff;font-size:14px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+col3+'</td>'
-      +'<td style="padding:5px 3px;color:#ccccff;text-align:center;font-size:13px;">'+r.count+'</td>'
-      +'<td style="padding:5px 3px;font-weight:700;text-align:right;white-space:nowrap;font-size:13px;color:'+col+';">'+(r.total>=0?'+':'-')+'$'+Math.abs(r.total).toFixed(2)+'</td>'
-      +'</tr>';
+    return k;
   }
-  var gc=grand>=0?'#00ffff':'#ff6666';
-  html+='<tr style="background:#0000cc;border-top:2px solid #ffff00;">'
-    +'<td colspan="3" style="padding:7px 4px;color:#ffff00;font-weight:700;font-size:13px;">TOTAL</td>'
-    +'<td style="padding:7px 4px;color:#ccccff;text-align:center;font-size:13px;">'+LOG.length+'</td>'
-    +'<td style="padding:7px 4px;font-weight:700;text-align:right;white-space:nowrap;color:'+gc+';font-size:13px;">'+(grand>=0?'+':'-')+'$'+Math.abs(grand).toFixed(2)+'</td>'
-    +'</tr></table>';
-  // pagination
-  if(totalPages>1){
-    html+='<div style="display:flex;gap:6px;margin-top:8px;justify-content:center;align-items:center;">'
-      +'<button onclick="rptPage('+(Math.max(0,_rptPage-1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀</button>'
-      +'<span style="color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:0 10px;">'+(_rptPage+1)+' / '+totalPages+'</span>'
-      +'<button onclick="rptPage('+(Math.min(totalPages-1,_rptPage+1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">▶</button>'
-      +'</div>';
-  }
+  function escAttr(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+
+  // ===== WHITE CARD WITH PULLDOWN =====
+  var html='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:12px;margin-top:6px;font-family:Courier New,monospace;">';
+  // Title bar
+  html+='<div style="font-weight:700;font-size:14px;color:#000080;text-align:center;margin-bottom:10px;border-bottom:2px solid #000080;padding-bottom:6px;">📊 BY '+label+' &nbsp;·&nbsp; '+arr.length+' ITEM'+(arr.length===1?'':'S')+'</div>';
+  // PULLDOWN
+  html+='<label style="display:block;color:#000080;font-weight:700;font-size:13px;margin-bottom:4px;">SELECT '+label+' (sorted '+(type==='pcode'||type==='desc'||type==='type'?'A→Z':type==='amt'?'low→high':'first→last')+'):</label>';
+  html+='<select onchange="if(this.value)rptDrill(\''+type+'\',this.value);this.selectedIndex=0;" style="width:100%;background:#ffffff;color:#000000;border:1px solid #6666ff;font-family:Courier New,monospace;font-size:14px;padding:8px;border-radius:4px;outline:none;margin-bottom:10px;">';
+  html+='<option value="">— TAP TO PICK —</option>';
+  arr.forEach(function(r,idx){
+    var amtTxt=(r.total>=0?'+$':'-$')+Math.abs(r.total).toFixed(2);
+    var optTxt=(idx+1)+'. '+dispKey(r.key)+'  ['+r.count+']  '+amtTxt;
+    html+='<option value="'+escAttr(r.key)+'">'+optTxt+'</option>';
+  });
+  html+='</select>';
+
+  // ===== SUMMARY TABLE (white, clickable) =====
+  html+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;background:#ffffff;color:#000000;border:1px solid #6666ff;">';
+  html+='<tr style="background:#000080;color:#ffffff;">'
+       +'<th style="padding:5px 4px;text-align:center;border:1px solid #6666ff;font-size:13px;width:32px;">#</th>'
+       +'<th style="padding:5px 4px;text-align:left;border:1px solid #6666ff;font-size:13px;">'+label+'</th>'
+       +'<th style="padding:5px 4px;text-align:center;border:1px solid #6666ff;font-size:13px;width:46px;">CNT</th>'
+       +'<th style="padding:5px 4px;text-align:right;border:1px solid #6666ff;font-size:13px;">AMT</th>'
+       +'</tr>';
+  arr.forEach(function(r,idx){
+    var col=r.total>=0?'#006600':'#cc0000';
+    var bg=idx%2===0?'background:#ffffff':'background:#eef2ff';
+    html+='<tr onclick="rptDrill(\''+type+'\',\''+escAttr(r.key)+'\')" style="'+bg+';cursor:pointer;border-bottom:1px solid #ccd;">'
+         +'<td style="padding:5px 4px;text-align:center;border:1px solid #ccd;color:#666;">'+(idx+1)+'</td>'
+         +'<td style="padding:5px 4px;color:#000080;font-weight:700;border:1px solid #ccd;">'+dispKey(r.key)+' <span style="color:#6666ff;">›</span></td>'
+         +'<td style="padding:5px 4px;text-align:center;border:1px solid #ccd;">'+r.count+'</td>'
+         +'<td style="padding:5px 4px;text-align:right;border:1px solid #ccd;color:'+col+';font-weight:700;white-space:nowrap;">'+(r.total>=0?'+$':'-$')+Math.abs(r.total).toFixed(2)+'</td>'
+         +'</tr>';
+  });
+  // grand total row
+  var gc=grand>=0?'#006600':'#cc0000';
+  html+='<tr style="background:#ffff80;border-top:2px solid #000080;">'
+       +'<td colspan="2" style="padding:6px 4px;font-weight:700;border:1px solid #6666ff;color:#000080;">TOTAL</td>'
+       +'<td style="padding:6px 4px;text-align:center;border:1px solid #6666ff;font-weight:700;">'+LOG.length+'</td>'
+       +'<td style="padding:6px 4px;text-align:right;border:1px solid #6666ff;color:'+gc+';font-weight:700;white-space:nowrap;">'+(grand>=0?'+$':'-$')+Math.abs(grand).toFixed(2)+'</td>'
+       +'</tr>';
+  html+='</table></div>';
   document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
 }
 function rptPage(p){_rptPage=p;rptRender();document.getElementById('screen-reports').scrollTop=0;}
 
@@ -5533,7 +5541,7 @@ var MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','D
 function rptDrill(type,key){
   loadLog();
   var rows=LOG.filter(function(e){
-    var k=type==='pcode'?(e.pcode||'?').slice(0,3)
+    var k=type==='pcode'?(e.pcode||'?')
          :type==='desc' ?(e.desc ||'?')
          :type==='yr'   ?(e.date ||'?').slice(0,4)
          :type==='mon'  ?(e.date ||'?').slice(0,7)
@@ -5554,34 +5562,42 @@ function rptDrill(type,key){
   });
   var monKeys=Object.keys(monMap).sort();
   var total=rows.reduce(function(s,e){return s+e.amt;},0);
-  var tc=total>=0?'#00ffff':'#ff6666';
+  var tc=total>=0?'#006600':'#cc0000';
 
-  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+key+'</span>'
-    +'<button onclick="rptShow(\''+type+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+  function escAttr(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+
+  var dispKey=key;
+  if(type==='mon'){var mYr=key.slice(0,4),mMo=parseInt(key.slice(5,7),10)-1;if(!isNaN(mMo)&&mMo>=0&&mMo<12)dispKey=MONTHS[mMo]+' '+mYr;}
+
+  var html='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:12px;margin-top:6px;font-family:Courier New,monospace;">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:2px solid #000080;padding-bottom:6px;">'
+    +'<span style="color:#000080;font-weight:700;font-size:14px;">📋 '+dispKey+'</span>'
+    +'<button onclick="rptShow(\''+type+'\')" style="background:#000080;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:5px 12px;border:none;border-radius:3px;cursor:pointer;">◀ BACK</button>'
     +'</div>';
 
   // month breakdown rows — tap to expand
-  monKeys.forEach(function(m){
+  monKeys.forEach(function(m,idx){
     var mon=monMap[m];
-    var mc=mon.total>=0?'#00ffff':'#ff6666';
+    var mc=mon.total>=0?'#006600':'#cc0000';
     var yr=m.slice(0,4);
     var mo=parseInt(m.slice(5,7),10)-1;
-    var monLabel=MONTHS[mo]+' '+yr;
-    html+='<div style="background:#000055;border:1px solid #3333aa;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+key+'\',\''+m+'\')">'
+    var monLabel=(!isNaN(mo)&&mo>=0&&mo<12)?(MONTHS[mo]+' '+yr):m;
+    var bg=idx%2===0?'background:#ffffff':'background:#eef2ff';
+    html+='<div style="'+bg+';border:1px solid #aaaadd;border-radius:4px;padding:8px;margin-bottom:4px;cursor:pointer;" onclick="rptDrillMonth(\''+type+'\',\''+escAttr(key)+'\',\''+m+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+monLabel+'</span>'
-      +'<span style="color:'+mc+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(mon.total>=0?'+':'-')+'$'+Math.abs(mon.total).toFixed(2)+'</span>'
+      +'<span style="color:#000080;font-weight:700;font-size:14px;">'+monLabel+'</span>'
+      +'<span style="color:'+mc+';font-weight:700;font-size:13px;">'+(mon.total>=0?'+$':'-$')+Math.abs(mon.total).toFixed(2)+'</span>'
       +'</div>'
-      +'<div style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap to see detail</div>'
+      +'<div style="color:#444;font-size:13px;margin-top:2px;">'+mon.count+' entries &nbsp;›&nbsp; tap for detail</div>'
       +'</div>';
   });
 
   // grand total
-  html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' months)</span>'
-    +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
+  html+='<div style="background:#ffff80;border:2px solid #000080;border-radius:4px;padding:8px;margin-top:8px;display:flex;justify-content:space-between;">'
+    +'<span style="color:#000080;font-weight:700;font-size:13px;">TOTAL ('+rows.length+' entries / '+monKeys.length+' month'+(monKeys.length===1?'':'s')+')</span>'
+    +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+$':'-$')+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
+  html+='</div>';
 
   document.getElementById('rpt-content').innerHTML=html;
   document.getElementById('screen-reports').scrollTop=0;
@@ -5590,44 +5606,54 @@ function rptDrill(type,key){
 function rptDrillMonth(type,key,mon){
   loadLog();
   var rows=LOG.filter(function(e){
-    var k=type==='pcode'?(e.pcode||'?').slice(0,3)
+    var k=type==='pcode'?(e.pcode||'?')
          :type==='desc' ?(e.desc ||'?')
          :type==='yr'   ?(e.date ||'?').slice(0,4)
          :type==='mon'  ?(e.date ||'?').slice(0,7)
          :type==='type' ?(e.amt>=0?'+ INCOME':'- EXPENSE')
+         :type==='date' ?(e.date ||'?')
+         :type==='amt'  ?(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)
          :(e.payee||'?');
     return k===key && (e.date||'').slice(0,7)===mon;
   });
   var total=rows.reduce(function(s,e){return s+e.amt;},0);
-  var tc=total>=0?'#00ffff':'#ff6666';
+  var tc=total>=0?'#006600':'#cc0000';
   var yr=mon.slice(0,4);
   var mo=parseInt(mon.slice(5,7),10)-1;
-  var monLabel=MONTHS[mo]+' '+yr;
+  var monLabel=(!isNaN(mo)&&mo>=0&&mo<12)?(MONTHS[mo]+' '+yr):mon;
+  function escAttr(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 
-  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+key+' — '+monLabel+'</span>'
-    +'<button onclick="rptDrill(\''+type+'\',\''+key+'\')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:13px;padding:5px 10px;border:1px solid #6666ff;border-radius:3px;cursor:pointer;">◀ BACK</button>'
+  var dispKey=key;
+  if(type==='mon'){var dY=key.slice(0,4),dMo=parseInt(key.slice(5,7),10)-1;if(!isNaN(dMo)&&dMo>=0&&dMo<12)dispKey=MONTHS[dMo]+' '+dY;}
+
+  var html='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:12px;margin-top:6px;font-family:Courier New,monospace;">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:2px solid #000080;padding-bottom:6px;">'
+    +'<span style="color:#000080;font-weight:700;font-size:13px;">📋 '+dispKey+' — '+monLabel+'</span>'
+    +'<button onclick="rptDrill(\''+type+'\',\''+escAttr(key)+'\')" style="background:#000080;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:5px 12px;border:none;border-radius:3px;cursor:pointer;">◀ BACK</button>'
     +'</div>';
 
-  rows.forEach(function(e){
-    var ac=e.amt>=0?'#00ffff':'#ff6666';
-    html+='<div style="background:#0000cc;border:1px solid #5555ee;border-radius:4px;padding:8px;margin-bottom:5px;">'
+  rows.sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+  rows.forEach(function(e,idx){
+    var ac=e.amt>=0?'#006600':'#cc0000';
+    var bg=idx%2===0?'background:#ffffff':'background:#eef2ff';
+    html+='<div style="'+bg+';border:1px solid #aaaadd;border-radius:4px;padding:8px;margin-bottom:5px;">'
       +'<div style="display:flex;justify-content:space-between;">'
-      +'<span style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'+trunc(e.payee,20)+'</span>'
-      +'<span style="color:'+ac+';font-weight:700;font-size:13px;font-family:Courier New,monospace;">'+(e.amt>=0?'+':'-')+'$'+Math.abs(e.amt).toFixed(2)+'</span>'
+      +'<span style="color:#000080;font-weight:700;font-size:14px;">'+trunc(e.payee||'',20)+'</span>'
+      +'<span style="color:'+ac+';font-weight:700;font-size:13px;">'+(e.amt>=0?'+$':'-$')+Math.abs(e.amt).toFixed(2)+'</span>'
       +'</div>'
       +'<div style="display:flex;justify-content:space-between;margin-top:3px;">'
-      +'<span style="color:#ccccff;font-size:14px;font-family:Courier New,monospace;">'+fmtDate(e.date)+'</span>'
-      +'<span style="color:#00ffff;font-size:14px;font-family:Courier New,monospace;">PCO: '+(e.pcode||'—')+'</span>'
+      +'<span style="color:#444;font-size:13px;">'+fmtDate(e.date)+'</span>'
+      +'<span style="color:#000080;font-size:13px;font-weight:700;">PCO: '+(e.pcode||'—')+'</span>'
       +'</div>'
-      +'<div style="color:#ffffff;font-size:14px;font-family:Courier New,monospace;margin-top:2px;">'+trunc(e.desc,30)+'</div>'
+      +'<div style="color:#222;font-size:13px;margin-top:2px;">'+trunc(e.desc||'',30)+'</div>'
       +'</div>';
   });
 
-  html+='<div style="background:#0000aa;border:2px solid #ffff00;border-radius:4px;padding:8px;margin-top:4px;display:flex;justify-content:space-between;font-family:Courier New,monospace;">'
-    +'<span style="color:#ffff00;font-weight:700;font-size:13px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
-    +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'</span>'
+  html+='<div style="background:#ffff80;border:2px solid #000080;border-radius:4px;padding:8px;margin-top:6px;display:flex;justify-content:space-between;">'
+    +'<span style="color:#000080;font-weight:700;font-size:13px;">'+monLabel+' TOTAL ('+rows.length+')</span>'
+    +'<span style="color:'+tc+';font-weight:700;font-size:13px;">'+(total>=0?'+$':'-$')+Math.abs(total).toFixed(2)+'</span>'
     +'</div>';
+  html+='</div>';
 
   document.getElementById('rpt-content').innerHTML=html;
   document.getElementById('screen-reports').scrollTop=0;
