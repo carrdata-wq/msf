@@ -931,13 +931,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📞 Phone Clients</div></div>
   <div id="phone-list-page" class="fpage">
     <div class="card" style="padding:8px;">
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button class="btn btn-green" style="margin:0;flex:2;" onclick="phoneShowForm(null)">+ ADD CLIENT</button>
-        <button class="btn btn-yellow" style="margin:0;flex:2;" onclick="emailClientsCSV()">📧 EMAIL CSV</button>
-        <button class="btn btn-blue" style="margin:0;flex:2;" onclick="phoneImportTool()">🔍 IMPORT</button>
+      <input type="text" id="phone-search" placeholder="🔍 Search clients…" oninput="renderClientList()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
+      <div style="display:flex;gap:4px;margin-bottom:8px;font-size:12px;">
+        <button onclick="phoneShowForm(null)" title="Add client" style="flex:1;background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">➕ ADD</button>
+        <button onclick="emailClientsCSV()" title="Email all clients" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📧 EMAIL</button>
+        <button onclick="phoneImportTool()" title="Import clients" style="flex:1;background:#00304a;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📥 IMPORT</button>
       </div>
-      <input type="text" id="phone-search" placeholder="🔍 Search name / phone / notes" oninput="renderClientList()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px 9px;border-radius:4px;outline:none;margin-bottom:6px;">
-      <div id="phone-count" style="font-size:13px;color:var(--dim);margin-bottom:6px;"></div>
       <div id="phone-list"></div>
     </div>
   </div>
@@ -6160,7 +6159,6 @@ function renderClientList(){
   if(q) rows=rows.filter(function(c){
     return ((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')).toLowerCase().indexOf(q)>=0;
   });
-  document.getElementById('phone-count').textContent=rows.length+' / '+CLIENTS.length+' client'+(CLIENTS.length===1?'':'s');
   if(!rows.length){
     document.getElementById('phone-list').innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">'+(CLIENTS.length?'No matches':'No clients yet — tap + ADD CLIENT')+'</div>';
     return;
