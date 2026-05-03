@@ -929,9 +929,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📞 Phone Clients</div></div>
   <div id="phone-list-page" class="fpage">
     <div class="card" style="padding:8px;">
-      <input type="text" id="phone-search" placeholder="🔍 Search clients…" oninput="renderClientList()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
+      <select id="phone-picker" onchange="phonePickClient(this.value);this.selectedIndex=0;" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
+        <option value="">— PICK A CLIENT —</option>
+      </select>
+      <input type="text" id="phone-search" placeholder="🔍 Or type to search…" oninput="renderClientList()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
       <div style="display:flex;gap:4px;margin-bottom:8px;font-size:12px;">
         <button onclick="phoneShowForm(null)" title="Add client" style="flex:1;background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">➕ ADD</button>
+        <button onclick="phoneShowAll()" title="Show all clients" style="flex:1;background:#3a1a4a;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📋 SHOW ALL</button>
         <button onclick="emailClientsCSV()" title="Email all clients" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📧 EMAIL</button>
         <button onclick="phoneImportTool()" title="Import clients" style="flex:1;background:#00304a;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📥 IMPORT</button>
       </div>
@@ -3601,11 +3605,29 @@ function shareListsText(){
   var overlay=ta.closest('.modal-overlay');
   var subject=(overlay&&overlay.dataset.subject)||'MFS Shared Lists';
   var toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
+  var body=ta.value;
+  // copy to clipboard as backup
   ta.focus();ta.select();
   try{document.execCommand('copy');}catch(e){}
-  var mail='mailto:'+toEmail+'?subject='+encodeURIComponent(subject);
-  window.location.href=mail;
-  toast('📋 Copied · Email opened to '+toEmail+' — paste into body',true);
+  // Build Gmail compose URL with body pre-filled
+  var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1'
+    +'&to='+encodeURIComponent(toEmail)
+    +'&su='+encodeURIComponent(subject)
+    +'&body='+encodeURIComponent(body);
+  if(gmailUrl.length<7800){
+    // body fits — open Gmail compose with everything pre-filled
+    var win=window.open(gmailUrl,'_blank');
+    if(win){
+      toast('✓ Gmail opened with lists pre-filled — tap Send',true);
+    } else {
+      // popup blocked — try same-tab navigation
+      window.location.href=gmailUrl;
+    }
+  } else {
+    // too big for URL — fall back to mailto + clipboard
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject),'_blank');
+    toast('📋 Copied · Gmail opened — paste body & Send',true);
+  }
 }
 
 function importMasters(evt){
@@ -6270,7 +6292,60 @@ function phoneShowList(){
   document.getElementById('phone-list-page').style.display='block';
   document.getElementById('phone-form-page').style.display='none';
   loadClients();
-  renderClientList();
+  // populate the picker with all client names, sorted A-Z
+  var picker=document.getElementById('phone-picker');
+  if(picker){
+    var sorted=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+    picker.innerHTML='<option value="">— PICK A CLIENT ('+CLIENTS.length+') —</option>'
+      +sorted.map(function(c){return '<option value="'+c.id+'">'+escClient(c.name)+'</option>';}).join('');
+  }
+  // clear search and list — empty state until user picks/searches/SHOW ALL
+  var s=document.getElementById('phone-search');if(s)s.value='';
+  var list=document.getElementById('phone-list');
+  if(list){
+    list.innerHTML=CLIENTS.length
+      ? '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">Pick a client above · type to search · or tap 📋 SHOW ALL</div>'
+      : '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
+  }
+}
+
+function phonePickClient(id){
+  if(!id)return;
+  loadClients();
+  var c=null;for(var i=0;i<CLIENTS.length;i++)if(String(CLIENTS[i].id)===String(id)){c=CLIENTS[i];break;}
+  if(!c)return;
+  // render only this one client
+  document.getElementById('phone-list').innerHTML=clientCardHtml(c);
+  // also clear search so it doesn't override on next type
+  var s=document.getElementById('phone-search');if(s)s.value='';
+}
+
+function phoneShowAll(){
+  loadClients();
+  var s=document.getElementById('phone-search');if(s)s.value='';
+  renderAllClients();
+}
+
+function clientCardHtml(c){
+  var h='<div style="background:#000080;border:1px solid #6666ff;border-radius:4px;padding:8px;margin-bottom:6px;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:4px;">'+escClient(c.name)+'</div>';
+  if(c.phone) h+='<div style="margin:3px 0;"><a href="tel:'+escClient(telLink(c.phone))+'" style="color:#00ff88;text-decoration:none;font-size:13px;">📞 '+escClient(c.phone)+'</a></div>';
+  if(c.email) h+='<div style="margin:3px 0;"><a href="mailto:'+escClient(c.email)+'" style="color:#00ffff;text-decoration:none;font-size:13px;">✉ '+escClient(c.email)+'</a></div>';
+  if(c.addr)  h+='<div style="color:#ccccff;font-size:13px;margin:3px 0;">📍 '+escClient(c.addr)+'</div>';
+  if(c.notes) h+='<div style="color:#ce93d8;font-size:13px;margin:3px 0;">📝 '+escClient(c.notes)+'</div>';
+  h+='<div style="display:flex;gap:6px;margin-top:6px;">'
+    +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
+    +'<button onclick="delClient('+c.id+')" style="flex:1;background:#4a0000;color:#ff4444;border:1px solid #ff4444;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">DEL</button>'
+    +'</div></div>';
+  return h;
+}
+
+function renderAllClients(){
+  loadClients();
+  var rows=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  var list=document.getElementById('phone-list');
+  if(!rows.length){list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';return;}
+  list.innerHTML=rows.map(clientCardHtml).join('');
 }
 function phoneShowForm(id){
   document.getElementById('phone-list-page').style.display='none';
@@ -6328,29 +6403,25 @@ function escClient(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&
 function telLink(p){return (p||'').replace(/[^\d+]/g,'');}
 function renderClientList(){
   loadClients();
-  var q=(document.getElementById('phone-search').value||'').toLowerCase();
+  var q=(document.getElementById('phone-search').value||'').toLowerCase().trim();
+  var list=document.getElementById('phone-list');
+  if(!list)return;
+  // empty search → show hint, NOT the full list
+  if(!q){
+    list.innerHTML=CLIENTS.length
+      ? '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">Pick a client above · type to search · or tap 📋 SHOW ALL</div>'
+      : '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
+    return;
+  }
   var rows=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
-  if(q) rows=rows.filter(function(c){
+  rows=rows.filter(function(c){
     return ((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')).toLowerCase().indexOf(q)>=0;
   });
   if(!rows.length){
-    document.getElementById('phone-list').innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">'+(CLIENTS.length?'No matches':'No clients yet — tap + ADD CLIENT')+'</div>';
+    list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No matches for "'+escClient(q)+'"</div>';
     return;
   }
-  var h='';
-  rows.forEach(function(c){
-    h+='<div style="background:#000080;border:1px solid #6666ff;border-radius:4px;padding:8px;margin-bottom:6px;">'
-      +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:4px;">'+escClient(c.name)+'</div>';
-    if(c.phone) h+='<div style="margin:3px 0;"><a href="tel:'+escClient(telLink(c.phone))+'" style="color:#00ff88;text-decoration:none;font-size:13px;">📞 '+escClient(c.phone)+'</a></div>';
-    if(c.email) h+='<div style="margin:3px 0;"><a href="mailto:'+escClient(c.email)+'" style="color:#00ffff;text-decoration:none;font-size:13px;">✉ '+escClient(c.email)+'</a></div>';
-    if(c.addr)  h+='<div style="color:#ccccff;font-size:13px;margin:3px 0;">📍 '+escClient(c.addr)+'</div>';
-    if(c.notes) h+='<div style="color:#ce93d8;font-size:13px;margin:3px 0;">📝 '+escClient(c.notes)+'</div>';
-    h+='<div style="display:flex;gap:6px;margin-top:6px;">'
-      +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
-      +'<button onclick="delClient('+c.id+')" style="flex:1;background:#4a0000;color:#ff4444;border:1px solid #ff4444;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">DEL</button>'
-      +'</div></div>';
-  });
-  document.getElementById('phone-list').innerHTML=h;
+  list.innerHTML=rows.map(clientCardHtml).join('');
 }
 
 function emailClientsCSV(){
