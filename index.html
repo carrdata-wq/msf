@@ -248,7 +248,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 <body>
 
 <!-- ████████████████████ MAIN MENU ████████████████████ -->
-<div id="screen-main" class="screen" style="display: none;">
+<div id="screen-main" class="screen active" style="display: flex;">
   <div class="main-header">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
@@ -310,7 +310,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <!-- ████████████████████ SYSTEM UTILITIES SUBMENU ████████████████████ -->
-<div id="screen-sysutil-sub" class="screen active" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: block;">
+<div id="screen-sysutil-sub" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
@@ -6512,6 +6512,8 @@ mxReloadData();
 if(!LOG.length){LOG=[{id:3,payee:'ACE HARDWARE',pcode:'ROOF',desc:'ROOFING SUPPLIES',date:'2026-04-11',amt:-142.50},{id:2,payee:'SHELL GAS STATION',pcode:'ROOF',desc:'TRUCK GAS',date:'2026-04-10',amt:-68.00},{id:1,payee:'MENARDS STORE',pcode:'10735',desc:'HARDWARE EXPENSE',date:'2026-04-09',amt:-234.75}];saveLog();}
 try{var _c=JSON.parse(localStorage.getItem('mx_custom')||'[]');for(var _i=0;_i<_c.length;_i++)MX.push(_c[_i]);}catch(e){}
 buildDays();buildYears();loadDatePref();doFilter('');renderLog();
+// always boot to main menu, no matter what state the file was saved in
+try{showScreen('main');}catch(e){}
 </script>
 <div id="bkp-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#0000cc;border:3px solid #ffff00;border-radius:8px;padding:24px;width:100%;max-width:340px;text-align:center;font-family:Courier New,monospace;">
