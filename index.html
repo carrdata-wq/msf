@@ -6528,7 +6528,12 @@ function phoneImportTool(){
   }
   // build popup
   var html='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:12px;width:100%;max-width:440px;font-family:Courier New,monospace;color:#ffffff;max-height:90vh;overflow-y:auto;">'
-    +'<div style="color:#00ffff;font-size:14px;font-weight:700;margin-bottom:8px;text-align:center;">🔍 IMPORT / RECOVER CLIENTS</div>';
+    +'<div style="color:#00ffff;font-size:14px;font-weight:700;margin-bottom:8px;text-align:center;">🔍 IMPORT / RECOVER CLIENTS</div>'
+    +'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;margin-bottom:10px;">'
+    +'<div style="color:#00ffff;font-size:12px;font-weight:700;margin-bottom:4px;">📂 GET FROM YOUR GMAIL</div>'
+    +'<div style="color:#ccccff;font-size:12px;margin-bottom:6px;line-height:1.4;">Opens Gmail searched for your saved client emails — find one, Select All in body, Copy, come back, paste below.</div>'
+    +'<button onclick="openGmailSearch(\'CLIENTUPDATES OR NOWPHON.CSV OR \\\'MFS Phone Clients\\\'\')" style="width:100%;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:8px;border-radius:3px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">📂 OPEN GMAIL → CLIENTUPDATES</button>'
+    +'</div>';
   if(found.length){
     html+='<div style="color:#00ff88;font-size:13px;margin-bottom:6px;">FOUND '+found.length+' POSSIBLE LIST'+(found.length===1?'':'S')+' IN STORAGE:</div>';
     found.forEach(function(f,idx){
@@ -6562,9 +6567,24 @@ function phoneImportTool(){
 // ═══════════════════════════════════════════════
 //  UNIVERSAL LOAD — paste from Gmail, auto-detect, restore
 // ═══════════════════════════════════════════════
+function openGmailSearch(query){
+  var url='https://mail.google.com/mail/u/0/#search/'+encodeURIComponent(query);
+  var win=window.open(url,'_blank');
+  if(!win){toast('Pop-up blocked — go to Gmail manually',false);return;}
+  toast('Gmail opened — find email, Select All, Copy, come back & paste',true);
+}
+
 function universalLoad(){
   var html='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:14px;width:100%;max-width:440px;font-family:Courier New,monospace;color:#ffffff;max-height:90vh;overflow-y:auto;">'
     +'<div style="color:#00ffff;font-size:14px;font-weight:700;margin-bottom:8px;text-align:center;">📥 LOAD TO ANDROID — FROM EMAIL</div>'
+    +'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;margin-bottom:8px;">'
+    +'<div style="color:#00ffff;font-size:12px;font-weight:700;margin-bottom:4px;">📂 OPEN GMAIL — find your data</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">'
+    +'<button onclick="openGmailSearch(\'NOWACC.CSV\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 NOWACC.CSV</button>'
+    +'<button onclick="openGmailSearch(\'NOWPHON.CSV OR CLIENTUPDATES\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 NOWPHON / CLIENTS</button>'
+    +'<button onclick="openGmailSearch(\'MFS Backup\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 BACKUP</button>'
+    +'<button onclick="openGmailSearch(\'MFS Shared Lists\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 LISTS</button>'
+    +'</div></div>'
     +'<div style="color:#ccccff;font-size:13px;margin-bottom:8px;background:#000044;padding:8px;border-radius:4px;line-height:1.4;">'
     +'1. Open Gmail → tap an MFS email<br>'
     +'2. Long-press the data → Select All → Copy<br>'
