@@ -618,6 +618,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="fuelShow('stats')"><div class="mb-icon blue">📊</div><div class="mb-label">Stats &amp; Budget</div><div class="mb-sub">Cost/mile · 12-mo forecast</div></div>
       <div class="mod-btn" onclick="renderDayByDay()"><div class="mb-icon yellow">📋</div><div class="mb-label">Day by Day</div><div class="mb-sub">Each purchase · $/day cost</div></div>
       <div class="mod-btn" onclick="fuelShow('chart')"><div class="mb-icon yellow">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · Cost trend</div></div>
+      <div class="mod-btn" onclick="dupCheckCategory('fuel')"><div class="mb-icon orange">🟡</div><div class="mb-label">Dup Check</div><div class="mb-sub">Find &amp; delete duplicate entries</div></div>
       <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
     <div style="font-family:Courier New,monospace;font-size:14px;color:#ccccff;text-align:center;padding:8px;">⛽ Gas costs auto-pulled from Accounting · DESC=TRUCK GAS</div>
@@ -966,6 +967,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="grocShow('stats')"><div class="mb-icon green">📊</div><div class="mb-label">Stats &amp; Cost</div><div class="mb-sub">Cost/day · Store breakdown</div></div>
       <div class="mod-btn" onclick="renderGrocDayByDay()"><div class="mb-icon yellow">📋</div><div class="mb-label">Day by Day</div><div class="mb-sub">Each purchase · $/day</div></div>
       <div class="mod-btn" onclick="grocShow('chart')"><div class="mb-icon blue">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · Store comparison</div></div>
+      <div class="mod-btn" onclick="dupCheckCategory('groc')"><div class="mb-icon orange">🟡</div><div class="mb-label">Dup Check</div><div class="mb-sub">Find &amp; delete duplicate entries</div></div>
       <div class="mod-btn" onclick="grocShow('log')"><div class="mb-icon cyan">+</div><div class="mb-label">Add Item Detail</div><div class="mb-sub">Nutrition · Size · Notes</div></div>
       <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
@@ -1023,6 +1025,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="restShow('stats')"><div class="mb-icon orange">📊</div><div class="mb-label">Stats &amp; Cost</div><div class="mb-sub">Cost/day · Per visit avg</div></div>
       <div class="mod-btn" onclick="renderRestDayByDay()"><div class="mb-icon yellow">📋</div><div class="mb-label">Day by Day</div><div class="mb-sub">Each visit · $/day</div></div>
       <div class="mod-btn" onclick="restShow('chart')"><div class="mb-icon blue">📈</div><div class="mb-label">Monthly Chart</div><div class="mb-sub">Bar graph · By restaurant</div></div>
+      <div class="mod-btn" onclick="dupCheckCategory('rest')"><div class="mb-icon orange">🟡</div><div class="mb-label">Dup Check</div><div class="mb-sub">Find &amp; delete duplicate entries</div></div>
       <div class="mod-btn" onclick="restShow('log')"><div class="mb-icon cyan">+</div><div class="mb-label">Add Visit Detail</div><div class="mb-sub">Items · Notes · Rating</div></div>
       <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
     </div>
@@ -1928,6 +1931,37 @@ function renderGrocChart(){
 }
 function renderRestChart(){
   renderTrackerChart(getRestEntries(),'rest-chart-content','#cc6600','🍽️ RESTAURANT');
+}
+
+function dupCheckCategory(cat){
+  var entries=[];
+  if(cat==='groc') entries=getGrocEntries();
+  else if(cat==='rest') entries=getRestEntries();
+  else if(cat==='fuel'){
+    loadLog();
+    entries=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;});
+  }
+  if(!entries.length){toast('No entries to scan',false);return;}
+  // Count dups
+  var seen={};
+  entries.forEach(function(e){
+    var amt=Math.round((parseFloat(e.amt)||0)*100);
+    var k=(e.date||'')+'|'+amt;
+    seen[k]=(seen[k]||0)+1;
+  });
+  var dupCount=0,groups=0;
+  Object.keys(seen).forEach(function(k){if(seen[k]>1){dupCount+=(seen[k]-1);groups++;}});
+  if(!dupCount){
+    toast('✓ No duplicates found — '+entries.length+' clean entries',true);
+    return;
+  }
+  // Open Day-by-Day where the AUTO-DELETE banner already shows up
+  toast('Found '+dupCount+' duplicate'+(dupCount===1?'':'s')+' in '+groups+' group'+(groups===1?'':'s')+' — opening Day by Day…',true);
+  setTimeout(function(){
+    if(cat==='groc') renderGrocDayByDay();
+    else if(cat==='rest') renderRestDayByDay();
+    else if(cat==='fuel') renderDayByDay();
+  },600);
 }
 
 var _dbdActive='';
@@ -5542,36 +5576,40 @@ function rptPayeeSearch(){
     payeeMap[p].amt+=e.amt;
     if(!payeeMap[p].last||(e.date||'')>payeeMap[p].last)payeeMap[p].last=e.date||'';
   });
-  // sort newest first
-  var allPayees=Object.keys(payeeMap).sort(function(a,b){
-    return payeeMap[b].last.localeCompare(payeeMap[a].last);
-  });
+  // sort A-Z for the dropdown
+  var allPayees=Object.keys(payeeMap).sort();
   window._payeeMap=payeeMap;
   window._allPayees=allPayees;
 
   var rptContent=document.getElementById('rpt-content');
+  // BUILD: clean dropdown picker + search box, NO automatic listing
+  var opts='<option value="">— PICK A PAYEE ('+allPayees.length+') —</option>'
+    +allPayees.map(function(p){
+      var d=payeeMap[p];
+      var sign=d.amt>=0?'+':'-';
+      return '<option value="'+p.replace(/"/g,'&quot;')+'">'+trunc(p,20)+' · '+d.cnt+'x · '+sign+'$'+Math.abs(d.amt).toFixed(0)+'</option>';
+    }).join('');
   rptContent.innerHTML='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:12px;margin-top:6px;font-family:Courier New,monospace;">'
-    +'<div style="font-weight:700;font-size:14px;color:#000080;text-align:center;margin-bottom:10px;border-bottom:2px solid #000080;padding-bottom:6px;">📊 BY PAYEE &nbsp;·&nbsp; '+allPayees.length+' PAYEES</div>'
-    +'<input type="text" id="payee-search-input" placeholder="🔍 Type payee name…" '
-    +'style="width:100%;box-sizing:border-box;background:#ffffff;border:2px solid #6666ff;color:#000080;'
-    +'font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:10px;" '
+    +'<div style="font-weight:700;font-size:14px;color:#000080;text-align:center;margin-bottom:10px;border-bottom:2px solid #000080;padding-bottom:6px;">📊 BY PAYEE</div>'
+    +'<select id="payee-picker" onchange="if(this.value){rptPayeeSelect(this.value);}" style="width:100%;box-sizing:border-box;background:#ffffff;border:2px solid #6666ff;color:#000080;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">'+opts+'</select>'
+    +'<input type="text" id="payee-search-input" placeholder="🔍 Or type to search…" '
+    +'style="width:100%;box-sizing:border-box;background:#ffffff;border:2px solid #6666ff;color:#000080;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;" '
     +'oninput="rptPayeeFilter(this.value)" autocomplete="off">'
-    +'<div id="payee-search-results"></div>'
+    +'<div id="payee-search-results" style="color:#888;text-align:center;padding:12px;font-size:13px;">Pick a payee from the dropdown · type to search</div>'
     +'</div>';
   document.getElementById('screen-reports').scrollTop=0;
-  setTimeout(function(){
-    var el=document.getElementById('payee-search-input');
-    if(el)el.focus();
-    rptPayeeFilter('');
-  },100);
 }
 
 function rptPayeeFilter(val){
   var payeeMap=window._payeeMap||{};
   var allPayees=window._allPayees||[];
   var v=val.toUpperCase().trim();
-  var matches=v?allPayees.filter(function(p){return p.toUpperCase().indexOf(v)>=0;}):allPayees;
-  var h='<div style="color:#444;font-size:12px;margin-bottom:4px;">'+matches.length+' payee'+(matches.length===1?'':'s')+' — tap to view report</div>'
+  var el=document.getElementById('payee-search-results');
+  if(!el)return;
+  if(!v){el.innerHTML='<div style="color:#888;text-align:center;padding:12px;font-size:13px;">Pick a payee from the dropdown · type to search</div>';return;}
+  var matches=allPayees.filter(function(p){return p.toUpperCase().indexOf(v)>=0;});
+  if(!matches.length){el.innerHTML='<div style="color:#888;text-align:center;padding:12px;font-size:13px;">No matches for "'+v+'"</div>';return;}
+  var h='<div style="color:#444;font-size:12px;margin-bottom:4px;">'+matches.length+' match'+(matches.length===1?'':'es')+' — tap to view</div>'
     +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;background:#ffffff;color:#000000;border:1px solid #6666ff;">'
     +'<tr style="background:#000080;color:#ffffff;">'
     +'<th style="padding:5px 4px;text-align:left;border:1px solid #6666ff;font-size:13px;">PAYEE</th>'
@@ -5595,8 +5633,7 @@ function rptPayeeFilter(val){
     h+='<tr><td colspan="4" style="color:#444;font-size:12px;text-align:center;padding:6px;background:#f0f4ff;border:1px solid #ccd;">…'+(matches.length-50)+' more — type to narrow</td></tr>';
   }
   h+='</table>';
-  var el=document.getElementById('payee-search-results');
-  if(el)el.innerHTML=h;
+  el.innerHTML=h;
 }
 
 function rptPayeeSelect(payee){
@@ -5640,28 +5677,39 @@ function rptPayeeSelect(payee){
   years.forEach(function(yr){
     var yrRows=byYear[yr];
     var yrTotal=yrRows.reduce(function(s,e){return s+e.amt;},0);
+    var yrAvg=yrTotal/yrRows.length;
     var yc=yrTotal>=0?'#006600':'#cc0000';
+    var ac=yrAvg>=0?'#006600':'#cc0000';
 
-    h+='<tr style="background:#cce0ff;">'
-      +'<td colspan="3" style="padding:5px 4px;color:#000080;font-weight:700;border:1px solid #6666ff;font-size:13px;">▶ '+yr+' &nbsp;·&nbsp; ['+yrRows.length+']</td>'
-      +'<td style="padding:5px 4px;text-align:right;font-weight:700;color:'+yc+';border:1px solid #6666ff;">'+(yrTotal>=0?'+$':'-$')+Math.abs(yrTotal).toFixed(2)+'</td>'
+    // FoxBase-style year banner: YEAR='2026' · N entries · TOTAL · AVG
+    h+='<tr style="background:#cce0ff;border-top:2px solid #000080;">'
+      +'<td colspan="4" style="padding:6px 4px;border:1px solid #6666ff;">'
+        +'<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;font-size:13px;">'
+        +'<span style="color:#000080;font-weight:700;">YEAR=\''+yr+'\' &nbsp;·&nbsp; ['+yrRows.length+' entries]</span>'
+        +'<span style="color:#000080;font-weight:700;">TOTAL <span style="color:'+yc+';">'+(yrTotal>=0?'+$':'-$')+Math.abs(yrTotal).toFixed(2)+'</span> &nbsp;·&nbsp; AVG <span style="color:'+ac+';">'+(yrAvg>=0?'+$':'-$')+Math.abs(yrAvg).toFixed(2)+'</span></span>'
+        +'</div></td>'
       +'</tr>';
 
     yrRows.forEach(function(e,i){
-      var ac=e.amt>=0?'#006600':'#cc0000';
+      var ac2=e.amt>=0?'#006600':'#cc0000';
       var bg=i%2===0?'background:#ffffff':'background:#eef2ff';
       h+='<tr style="'+bg+';">'
         +'<td style="padding:4px;color:#444;border:1px solid #ccd;white-space:nowrap;">'+fmtDate(e.date)+'</td>'
         +'<td style="padding:4px;color:#222;border:1px solid #ccd;">'+trunc(e.desc||'',16)+'</td>'
         +'<td style="padding:4px;color:#666;border:1px solid #ccd;">'+(e.pcode||'')+'</td>'
-        +'<td style="padding:4px;text-align:right;color:'+ac+';font-weight:700;border:1px solid #ccd;white-space:nowrap;">'+(e.amt>=0?'+$':'-$')+Math.abs(e.amt).toFixed(2)+'</td>'
+        +'<td style="padding:4px;text-align:right;color:'+ac2+';font-weight:700;border:1px solid #ccd;white-space:nowrap;">'+(e.amt>=0?'+$':'-$')+Math.abs(e.amt).toFixed(2)+'</td>'
         +'</tr>';
     });
   });
 
+  var grandAvg=grandTotal/rows.length;
+  var gac=grandAvg>=0?'#006600':'#cc0000';
   h+='<tr style="background:#ffff80;border-top:2px solid #000080;">'
-    +'<td colspan="3" style="padding:6px 4px;font-weight:700;color:#000080;border:1px solid #6666ff;">GRAND TOTAL ('+rows.length+')</td>'
-    +'<td style="padding:6px 4px;text-align:right;font-weight:700;color:'+gc+';border:1px solid #6666ff;">'+(grandTotal>=0?'+$':'-$')+Math.abs(grandTotal).toFixed(2)+'</td>'
+    +'<td colspan="4" style="padding:6px 4px;border:1px solid #6666ff;">'
+      +'<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;font-size:13px;">'
+      +'<span style="font-weight:700;color:#000080;">GRAND TOTAL ('+rows.length+' entries · '+years.length+' year'+(years.length===1?'':'s')+')</span>'
+      +'<span style="font-weight:700;color:#000080;">TOTAL <span style="color:'+gc+';">'+(grandTotal>=0?'+$':'-$')+Math.abs(grandTotal).toFixed(2)+'</span> &nbsp;·&nbsp; AVG <span style="color:'+gac+';">'+(grandAvg>=0?'+$':'-$')+Math.abs(grandAvg).toFixed(2)+'</span></span>'
+      +'</div></td>'
     +'</tr></table></div>';
 
   document.getElementById('rpt-content').innerHTML=h;
