@@ -1381,6 +1381,7 @@ function fuelShow(sub) {
 }
 
 function renderDayByDay(){
+  _dbdActive='fuel';
   loadLog();
   var gasEntries=LOG.filter(function(e){
     return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;
@@ -1476,22 +1477,42 @@ function renderDayByDay(){
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
     +'</tr>';
 
+  // Dup detection for fuel
+  var fDupKeys={};
+  show.forEach(function(e){
+    var amt=Math.round((parseFloat(e.amt)||0)*100);
+    fDupKeys[(e.date||'')+'|'+amt]=(fDupKeys[(e.date||'')+'|'+amt]||0)+1;
+  });
+  var fDupCount=0;
+  Object.keys(fDupKeys).forEach(function(k){if(fDupKeys[k]>1)fDupCount+=(fDupKeys[k]-1);});
   show.forEach(function(e,i){
     var next=show[i+1];
     var days=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
     var cpd=Math.abs(e.amt)/days;
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var amtCents=Math.round((parseFloat(e.amt)||0)*100);
+    var isDup=fDupKeys[(e.date||'')+'|'+amtCents]>1;
+    var bg=isDup?'background:#fff3a0':(i%2===0?'background:#ffffff':'background:#f0f4ff');
     var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
-    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+'</td>'
+    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;cursor:pointer;" onclick="dbdConfirmDel('+(e.id||0)+',this)" title="Tap to delete">'
+      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+(isDup?' 🟡':'')+'</td>'
       +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
       +'</tr>';
   });
-  h+='</table></div>';
+  h+='</table>';
+  if(fDupCount>0){
+    h+='<div style="background:#fff3a0;border:1px solid #cc6600;border-radius:4px;padding:8px;margin-top:8px;font-size:12px;color:#663300;">'
+      +'⚠ <b>'+fDupCount+' duplicate '+(fDupCount===1?'row':'rows')+'</b> detected (yellow 🟡 — same date + same amount). Tap any row to delete it, or use AUTO-DELETE above.'
+      +'</div>';
+  }
+  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">Tap any row to delete it from your ledger</div></div>';
+  if(fDupCount>0){
+    var fbanner='<div style="margin:8px;"><button onclick="dbdAutoDeleteDups()" style="width:100%;background:#cc0000;color:#fff;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-size:16px;font-weight:700;cursor:pointer;">🗑 AUTO-DELETE '+fDupCount+' DUPLICATE'+(fDupCount===1?'':'S')+'</button></div>';
+    h=h.replace('<div style="padding:0 8px 8px;font-family:Courier New,monospace;">',fbanner+'<div style="padding:0 8px 8px;font-family:Courier New,monospace;">');
+  }
   overlay.innerHTML=h;
   document.body.appendChild(overlay);
 }
@@ -1909,11 +1930,14 @@ function renderRestChart(){
   renderTrackerChart(getRestEntries(),'rest-chart-content','#cc6600','🍽️ RESTAURANT');
 }
 
+var _dbdActive='';
 function renderGrocDayByDay(){
+  _dbdActive='groc';
   var entries=getGrocEntries().slice().reverse();
   renderDayByDayOverlay(entries,'🛒 Grocery Day by Day');
 }
 function renderRestDayByDay(){
+  _dbdActive='rest';
   var entries=getRestEntries().slice().reverse();
   renderDayByDayOverlay(entries,'🍽️ Restaurant Day by Day');
 }
@@ -2009,24 +2033,105 @@ function renderDayByDayOverlay(entries,title){
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">DAYS</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">$/DAY</th>'
     +'</tr>';
+  // ── DUP DETECTION: same date+amount within entries shown ──
+  var dupKeys={};
+  entries.forEach(function(e){
+    var amt=Math.round((parseFloat(e.amt)||0)*100);
+    var k=(e.date||'')+'|'+amt;
+    dupKeys[k]=(dupKeys[k]||0)+1;
+  });
+  var dupCount=0;
+  Object.keys(dupKeys).forEach(function(k){if(dupKeys[k]>1)dupCount+=(dupKeys[k]-1);});
   entries.forEach(function(e,i){
     var next=entries[i+1];
     var days2=next?Math.max(1,Math.round((new Date(e.date)-new Date(next.date))/(1000*60*60*24))):1;
     var cpd=Math.abs(e.amt)/days2;
-    var bg=i%2===0?'background:#ffffff':'background:#f0f4ff';
+    var amtCents=Math.round((parseFloat(e.amt)||0)*100);
+    var dupKey=(e.date||'')+'|'+amtCents;
+    var isDup=dupKeys[dupKey]>1;
+    var bg=isDup?'background:#fff3a0':(i%2===0?'background:#ffffff':'background:#f0f4ff');
     var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
-    h+='<tr style="'+bg+';border-bottom:1px solid #ccc;">'
-      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+'</td>'
+    h+='<tr style="'+bg+';border-bottom:1px solid #ccc;cursor:pointer;" onclick="dbdConfirmDel('+(e.id||0)+',this)" title="Tap to delete">'
+      +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+(isDup?' 🟡':'')+'</td>'
       +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days2+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
       +'</tr>';
   });
-  h+='</table></div>';
+  h+='</table>';
+  if(dupCount>0){
+    h+='<div style="background:#fff3a0;border:1px solid #cc6600;border-radius:4px;padding:8px;margin-top:8px;font-size:12px;color:#663300;">'
+      +'⚠ <b>'+dupCount+' duplicate '+(dupCount===1?'row':'rows')+'</b> detected (yellow 🟡 — same date + same amount). Tap any row to delete it, or use AUTO-DELETE above.'
+      +'</div>';
+  }
+  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">Tap any row to delete it from your ledger</div></div>';
+  // Insert AUTO-DELETE banner at the very top if dups found
+  if(dupCount>0){
+    var banner='<div style="margin:8px;"><button onclick="dbdAutoDeleteDups()" style="width:100%;background:#cc0000;color:#fff;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-size:16px;font-weight:700;cursor:pointer;">🗑 AUTO-DELETE '+dupCount+' DUPLICATE'+(dupCount===1?'':'S')+'</button></div>';
+    h=h.replace('</table></div>','</table></div>')
+       .replace('<div style="padding:0 8px 8px;font-family:Courier New,monospace;">',banner+'<div style="padding:0 8px 8px;font-family:Courier New,monospace;">');
+  }
   overlay.innerHTML=h;
   document.body.appendChild(overlay);
+}
+
+function dbdConfirmDel(id,rowEl){
+  if(!id)return;
+  if(!confirm('Delete this entry from the ledger?\nThis cannot be undone.'))return;
+  loadLog();
+  LOG=LOG.filter(function(e){return String(e.id)!==String(id);});
+  saveLog();
+  toast('✓ Entry deleted',true);
+  // refresh whichever view is active
+  var ov=document.getElementById('dbd-overlay');if(ov)ov.remove();
+  var ov2=document.getElementById('daybyday-overlay');if(ov2)ov2.remove();
+  if(_dbdActive==='groc') renderGrocDayByDay();
+  else if(_dbdActive==='rest') renderRestDayByDay();
+  else if(_dbdActive==='fuel') renderDayByDay();
+}
+
+function dbdAutoDeleteDups(){
+  // get the entries for whichever view is active
+  var entries=[];
+  if(_dbdActive==='groc') entries=getGrocEntries();
+  else if(_dbdActive==='rest') entries=getRestEntries();
+  else if(_dbdActive==='fuel'){
+    loadLog();
+    entries=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;});
+  }
+  if(!entries.length){toast('No entries to scan',false);return;}
+  // Group by date+amount-cents; keep oldest, delete the rest
+  var groups={};
+  entries.forEach(function(e){
+    var amt=Math.round((parseFloat(e.amt)||0)*100);
+    var k=(e.date||'')+'|'+amt;
+    if(!groups[k])groups[k]=[];
+    groups[k].push(e);
+  });
+  var idsToDelete=[];
+  Object.keys(groups).forEach(function(k){
+    var grp=groups[k];
+    if(grp.length<2)return;
+    // sort by id ascending — keep first (oldest), delete rest
+    grp.sort(function(a,b){return (a.id||0)-(b.id||0);});
+    grp.slice(1).forEach(function(e){idsToDelete.push(String(e.id));});
+  });
+  if(!idsToDelete.length){toast('No duplicates found ✓',true);return;}
+  if(!confirm('Found '+idsToDelete.length+' extra duplicate '+(idsToDelete.length===1?'entry':'entries')+'.\n\nKeep the oldest of each, delete the rest.\nThis cannot be undone.'))return;
+  var idSet={};idsToDelete.forEach(function(i){idSet[i]=1;});
+  loadLog();
+  var before=LOG.length;
+  LOG=LOG.filter(function(e){return !idSet[String(e.id)];});
+  saveLog();
+  var deleted=before-LOG.length;
+  var ov=document.getElementById('dbd-overlay');if(ov)ov.remove();
+  var ov2=document.getElementById('daybyday-overlay');if(ov2)ov2.remove();
+  toast('✓ '+deleted+' duplicate'+(deleted===1?'':'s')+' deleted',true);
+  if(_dbdActive==='groc') renderGrocDayByDay();
+  else if(_dbdActive==='rest') renderRestDayByDay();
+  else if(_dbdActive==='fuel') renderDayByDay();
 }
 
 
