@@ -6617,12 +6617,13 @@ function universalDetect(){
   var txt=(ta.value||'').trim();
   if(!txt){msg.textContent='';msg.style.color='#ffaa00';return;}
   var kind=universalSniff(txt);
-  if(kind==='backup')          {msg.style.color='#00ff88';msg.textContent='✓ Detected: ACCOUNTING (JSON) — will restore your ledger';}
-  else if(kind==='backup-csv') {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWACC.CSV — will restore your ledger';}
-  else if(kind==='lists')      {msg.style.color='#00ff88';msg.textContent='✓ Detected: SHARED LISTS — will merge pcodes/descs/combos';}
-  else if(kind==='clients')    {msg.style.color='#00ff88';msg.textContent='✓ Detected: PHONE CLIENTS (JSON) — will merge contacts';}
-  else if(kind==='csv')        {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWPHON.CSV — will merge contacts';}
-  else                         {msg.style.color='#ff6666';msg.textContent='⚠ Cannot detect format — paste full email body, JSON or CSV';}
+  if(kind==='backup')              {msg.style.color='#00ff88';msg.textContent='✓ Detected: ACCOUNTING (JSON) — will restore your ledger';}
+  else if(kind==='backup-csv')     {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWACC.CSV — will restore your ledger';}
+  else if(kind==='lists')          {msg.style.color='#00ff88';msg.textContent='✓ Detected: SHARED LISTS — will merge pcodes/descs/combos';}
+  else if(kind==='clients')        {msg.style.color='#00ff88';msg.textContent='✓ Detected: PHONE CLIENTS (JSON) — will merge contacts';}
+  else if(kind==='csv')            {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWPHON.CSV — will merge contacts';}
+  else if(kind==='prose-contacts') {msg.style.color='#00ff88';msg.textContent='✓ Detected: CONTACTS in plain text — will extract names + phones';}
+  else                             {msg.style.color='#ff6666';msg.textContent='⚠ Cannot detect format — paste full email body, JSON or CSV';}
 }
 function universalSniff(txt){
   // Try JSON first
@@ -6646,6 +6647,9 @@ function universalSniff(txt){
   // accounting CSV: ID, DATE, PAYEE, ..., AMT
   if(firstLine.indexOf('payee')>=0 && firstLine.indexOf('amt')>=0 && firstLine.indexOf('date')>=0) return 'backup-csv';
   if(firstLine.indexOf('name')>=0 && (firstLine.indexOf('phone')>=0||firstLine.indexOf('email')>=0)) return 'csv';
+  // Prose contacts: text with 2+ US phone numbers and not JSON/CSV
+  var phoneCount=(txt.match(/(?:\(\d{3}\)\s*|\d{3}[\s.-])\d{3}[\s.-]?\d{4}/g)||[]).length;
+  if(phoneCount>=2) return 'prose-contacts';
   return 'unknown';
 }
 function universalLoadGo(){
@@ -6654,12 +6658,104 @@ function universalLoadGo(){
   var txt=(ta.value||'').trim();
   if(!txt){toast('Paste something first',false);return;}
   var kind=universalSniff(txt);
-  if(kind==='backup')          universalLoadBackup(txt);
-  else if(kind==='backup-csv') universalLoadBackupCSV(txt);
-  else if(kind==='lists')      universalLoadLists(txt);
-  else if(kind==='clients')    universalLoadClients(txt,'json');
-  else if(kind==='csv')        universalLoadClients(txt,'csv');
+  if(kind==='backup')              universalLoadBackup(txt);
+  else if(kind==='backup-csv')     universalLoadBackupCSV(txt);
+  else if(kind==='lists')          universalLoadLists(txt);
+  else if(kind==='clients')        universalLoadClients(txt,'json');
+  else if(kind==='csv')            universalLoadClients(txt,'csv');
+  else if(kind==='prose-contacts') universalLoadProseContacts(txt);
   else toast('Cannot detect format — check that you pasted the full email body',false);
+}
+// Parse a prose-style contact list (names, phones, addresses, emails written out)
+function parseProseContacts(txt){
+  // Strip Gmail UI cruft if present
+  var clean=txt
+    .replace(/^(From|To|Subject|Date|Sent|Reply-To|Cc|Bcc|Sender):.*$/gim,'')
+    .replace(/On\s+\w+,?\s+\w+\s+\d+.*?wrote:?/gi,'')
+    .replace(/^[>|].*$/gm,'')
+    .replace(/--\s*Sent from my .*$/gim,'')
+    .replace(/Get Outlook for.*$/gim,'')
+    .replace(/Show original message/gi,'');
+  function newPhoneRe(){return /(?:\(\d{3}\)\s*|\d{3}[\s.-])\d{3}[\s.-]?\d{4}/g;}
+  function newEmailRe(){return /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;}
+  // ─── TRY BLOCK FORMAT (blank line between contacts) ───
+  var blocks=clean.split(/\n\s*\n/).filter(function(b){return b.trim();});
+  var out=[];
+  blocks.forEach(function(block){
+    var phones=block.match(newPhoneRe())||[];
+    if(!phones.length) return;
+    var emails=block.match(newEmailRe())||[];
+    var lines=block.split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
+    var name='',addr='',notes=[];
+    lines.forEach(function(line){
+      var L=line.replace(/^[📞✉️📍📝🏠☎️📧]+\s*/u,'').trim();
+      var lp=newPhoneRe(),le=newEmailRe();
+      var lineHasPhone=lp.test(L);
+      var lineHasEmail=le.test(L);
+      var isAddr=/\b\d{5}(?:-\d{4})?\b/.test(L) || /\b(?:St\b|Ave\b|Rd\b|Dr\b|Blvd\b|Ln\b|Ct\b|Pl\b|Way\b|Place|Court|Street|Avenue|Drive|Boulevard|Lane|Highway|Hwy)\.?/i.test(L);
+      if(!name && !lineHasPhone && !lineHasEmail && !isAddr && /[A-Za-z]{2}/.test(L)){
+        name=L;
+      } else if(isAddr && !addr && !lineHasPhone){
+        addr=L.replace(/^📍\s*/,'');
+      } else if(lineHasPhone && !lineHasEmail){
+        var others=L.match(newPhoneRe())||[];
+        if(others.length>0 && others[0]!==phones[0]) notes.push('Alt: '+others.join(', '));
+      } else if(!lineHasPhone && !lineHasEmail && L && L!==name && L!==addr){
+        notes.push(L);
+      }
+    });
+    if(name) out.push({
+      name:name.toUpperCase().replace(/[📞✉️📍📝🏠]/gu,'').trim(),
+      phone:phones[0],
+      email:emails[0]||'',
+      addr:addr.toUpperCase(),
+      notes:notes.join(' · ').slice(0,200)
+    });
+  });
+  if(out.length>=2) return out;
+  // ─── FALLBACK: one contact per line (each line with a phone) ───
+  out=[];
+  var lines2=clean.split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
+  lines2.forEach(function(line){
+    var phones=line.match(newPhoneRe())||[];
+    if(!phones.length) return;
+    var emails=line.match(newEmailRe())||[];
+    // Remove emoji icons
+    var noIcon=line.replace(/[📞✉️📍📝🏠☎️📧]/gu,'').trim();
+    // Strip the phone(s) and email(s) to leave name + address
+    var rest=noIcon;
+    phones.forEach(function(p){rest=rest.replace(p,'').trim();});
+    emails.forEach(function(e){rest=rest.replace(e,'').trim();});
+    rest=rest.replace(/\s+/g,' ').replace(/^[\s,·.|-]+|[\s,·.|-]+$/g,'').trim();
+    // Try to split into [name] and [address]: address starts where we see a number or a street word
+    var name='',addr='';
+    var addrStart=rest.search(/\b\d+\s+\w/);
+    if(addrStart>0){
+      name=rest.slice(0,addrStart).replace(/[\s,·.|-]+$/g,'').trim();
+      addr=rest.slice(addrStart).trim();
+    } else {
+      // No clear address — whole rest is name
+      name=rest;
+    }
+    if(!name) return;
+    out.push({
+      name:name.toUpperCase(),
+      phone:phones[0],
+      email:emails[0]||'',
+      addr:addr.toUpperCase(),
+      notes:phones.length>1 ? 'Alt: '+phones.slice(1).join(', ') : ''
+    });
+  });
+  return out;
+}
+function universalLoadProseContacts(txt){
+  var contacts=parseProseContacts(txt);
+  if(!contacts.length){toast('Could not extract any contacts from that text',false);return;}
+  if(!confirm('Found '+contacts.length+' contacts in prose text.\nImport them as phone clients?\n(Duplicates by name+phone will be skipped.)'))return;
+  mergeClients(contacts);
+  document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+  try{phoneShowList();}catch(e){}
+  toast('✓ '+contacts.length+' contacts loaded from prose',true);
 }
 function universalLoadBackupCSV(txt){
   // parse CSV to ledger array
