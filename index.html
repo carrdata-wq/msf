@@ -6795,11 +6795,32 @@ function universalSniff(txt){
       if('mx_pcodes' in j || 'mx_descs' in j || 'mx_custom' in j) return 'lists';
     }
   }catch(e){}
-  // CSV check — first line has known headers
-  var firstLine=(txt.split(/\r?\n/)[0]||'').toLowerCase();
-  // accounting CSV: ID, DATE, PAYEE, ..., AMT
+  var lines=txt.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(!lines.length) return 'unknown';
+  var firstLine=lines[0].toLowerCase();
+  // accounting CSV WITH header (first line)
   if(firstLine.indexOf('payee')>=0 && firstLine.indexOf('amt')>=0 && firstLine.indexOf('date')>=0) return 'backup-csv';
-  if(firstLine.indexOf('name')>=0 && (firstLine.indexOf('phone')>=0||firstLine.indexOf('email')>=0)) return 'csv';
+  // accounting CSV header could appear AFTER preamble (signature etc)
+  var headerRe=/^"?(?:id|date|payee|pcode|desc|amt)"?,/i;
+  for(var hi=0;hi<lines.length;hi++){
+    var L=lines[hi].trim().toLowerCase();
+    if(L.indexOf('"id"')>=0 && L.indexOf('"payee"')>=0 && L.indexOf('"amt"')>=0) return 'backup-csv';
+  }
+  // accounting CSV by data shape (anywhere in body) — header optional
+  var dataLineRe=/^"[^"]*","(\d{4})-(\d{2})-(\d{2})","[^"]*","[^"]*","[^"]*",-?\d+(?:\.\d+)?\s*"?$/;
+  var matches=0;
+  for(var i=0;i<lines.length;i++){
+    if(dataLineRe.test(lines[i].trim())){
+      matches++;
+      if(matches>=2) return 'backup-csv';
+    }
+  }
+  if(matches===1 && lines.length<=3) return 'backup-csv';
+  // client CSV — scan all lines for a header containing NAME + PHONE/EMAIL
+  for(var ci=0;ci<lines.length;ci++){
+    var Lc=lines[ci].toLowerCase();
+    if(Lc.indexOf(',')>=0 && Lc.indexOf('name')>=0 && (Lc.indexOf('phone')>=0||Lc.indexOf('email')>=0)) return 'csv';
+  }
   // Prose contacts: text with 2+ US phone numbers and not JSON/CSV
   var phoneCount=(txt.match(/(?:\(\d{3}\)\s*|\d{3}[\s.-])\d{3}[\s.-]?\d{4}/g)||[]).length;
   if(phoneCount>=2) return 'prose-contacts';
@@ -6929,7 +6950,35 @@ function universalLoadBackupCSV(txt){
     out.push(cur);
     return out;
   }
-  var lines=txt.split(/\r?\n/).filter(function(l){return l.trim();});
+  var allLines=txt.split(/\r?\n/);
+  // Find where the CSV actually starts: header line OR first data-shaped line
+  var dataLineRe=/^"[^"]*","(\d{4})-(\d{2})-(\d{2})","[^"]*","[^"]*","[^"]*",-?\d+(?:\.\d+)?\s*"?$/;
+  var startIdx=-1, endIdx=-1;
+  for(var li=0;li<allLines.length;li++){
+    var ln=allLines[li].trim();
+    if(!ln) continue;
+    var lo=ln.toLowerCase();
+    var isHeader=(lo.indexOf('"id"')>=0 && lo.indexOf('"payee"')>=0 && lo.indexOf('"amt"')>=0)
+                 || (lo.indexOf('payee')>=0 && lo.indexOf('amt')>=0 && lo.indexOf('date')>=0 && lo.indexOf(',')>=0);
+    if(startIdx<0 && (isHeader || dataLineRe.test(ln))){
+      startIdx=li;
+    }
+    if(startIdx>=0 && dataLineRe.test(ln)){
+      endIdx=li;
+    }
+  }
+  if(startIdx<0){toast('No CSV data found in pasted text',false);return;}
+  // Slice out just the CSV section (skip signature above + anything below last data line)
+  var lines=allLines.slice(startIdx, (endIdx>=startIdx?endIdx+1:allLines.length))
+                    .filter(function(l){return l.trim();});
+  if(lines.length<1){toast('CSV is empty',false);return;}
+  // Check if first line is a header or data
+  var firstParts=splitRow(lines[0]);
+  var hasHeader=firstParts.some(function(p){return /^(id|date|payee|pcode|desc|amt|amount|type)$/i.test(p.trim());});
+  if(!hasHeader){
+    // Headerless: assume column order ID, DATE, PAYEE, PCODE, DESC, AMT
+    lines.unshift('"ID","DATE","PAYEE","PCODE","DESC","AMT"');
+  }
   if(lines.length<2){toast('CSV has no data rows',false);return;}
   var hdr=splitRow(lines[0]).map(function(h){return h.trim().toLowerCase();});
   var idx={
@@ -7115,8 +7164,6 @@ function normalizeClient(r){
 
 function parseClientsCSV(txt){
   // parse CSV with quoted fields
-  var lines=txt.split(/\r?\n/).filter(function(l){return l.trim();});
-  if(!lines.length)return [];
   function splitRow(s){
     var out=[],cur='',inq=false;
     for(var i=0;i<s.length;i++){
@@ -7134,6 +7181,40 @@ function parseClientsCSV(txt){
     out.push(cur);
     return out;
   }
+  var allLines=txt.split(/\r?\n/);
+  // Find where the client CSV actually starts: a header line OR a row with phone-shaped column
+  // Skip Gmail signatures, preambles, etc.
+  var phoneRe=/(?:\(\d{3}\)\s*|\d{3}[\s.-])\d{3}[\s.-]?\d{4}/;
+  var startIdx=-1, endIdx=-1;
+  for(var li=0;li<allLines.length;li++){
+    var ln=allLines[li].trim();
+    if(!ln) continue;
+    var lo=ln.toLowerCase();
+    // Header row signature: has multiple known field words AND a comma
+    var isHeader=lo.indexOf(',')>=0 && (
+      (lo.indexOf('name')>=0 && (lo.indexOf('phone')>=0||lo.indexOf('email')>=0)) ||
+      (lo.indexOf('"name"')>=0)
+    );
+    // Data row signature: quoted CSV with a phone number somewhere AND at least 2 commas
+    var commaCount=(ln.match(/,/g)||[]).length;
+    var isDataRow=commaCount>=2 && /^["A-Z0-9]/i.test(ln) && phoneRe.test(ln) && ln.indexOf('@')>=0
+                  || (commaCount>=2 && ln[0]==='"' && phoneRe.test(ln));
+    if(startIdx<0 && (isHeader || isDataRow)){
+      startIdx=li;
+    }
+    if(startIdx>=0 && (isHeader||isDataRow)){
+      endIdx=li;
+    }
+  }
+  // If we couldn't find clear CSV markers, fall back to whole text
+  var lines;
+  if(startIdx<0){
+    lines=allLines.filter(function(l){return l.trim();});
+  } else {
+    lines=allLines.slice(startIdx, (endIdx>=startIdx?endIdx+1:allLines.length))
+                   .filter(function(l){return l.trim();});
+  }
+  if(!lines.length)return [];
   var hdr=splitRow(lines[0]).map(function(h){return h.trim().toLowerCase();});
   // detect if first row is header (has 'name' or 'phone')
   var hasHeader=hdr.some(function(h){return /name|phone|email|client|contact/.test(h);});
