@@ -6508,7 +6508,10 @@ function phoneImportTool(){
       html+='<div style="background:#000080;border:1px solid #6666ff;border-radius:4px;padding:8px;margin-bottom:6px;">'
         +'<div style="color:#ffff00;font-size:13px;font-weight:700;">'+escClient(f.key)+' — '+f.count+' record'+(f.count===1?'':'s')+'</div>'
         +'<div style="color:#ccccff;font-size:12px;margin:4px 0;word-break:break-all;">'+escClient(preview)+(preview.length>=140?'…':'')+'</div>'
-        +'<button onclick="phoneImportFromKey(\''+f.key.replace(/'/g,"\\'")+'\')" style="width:100%;background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:7px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">📥 IMPORT THIS LIST</button>'
+        +'<div style="display:flex;gap:6px;">'
+        +'<button onclick="phoneImportFromKey(\''+f.key.replace(/'/g,"\\'")+'\')" style="flex:1;background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:7px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">📥 IMPORT</button>'
+        +'<button onclick="phoneEmailFoundList(\''+f.key.replace(/'/g,"\\'")+'\')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">📧 EMAIL TO ME</button>'
+        +'</div>'
         +'</div>';
     });
   } else {
@@ -6526,6 +6529,42 @@ function phoneImportTool(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto;';
   overlay.innerHTML=html;
   document.body.appendChild(overlay);
+}
+
+function phoneEmailFoundList(key){
+  try{
+    var raw=localStorage.getItem(key)||'[]';
+    var arr=JSON.parse(raw);
+    if(!Array.isArray(arr)||!arr.length){toast('Empty or invalid',false);return;}
+    // Build CSV from whatever fields exist (use normalizeClient to map)
+    var rows=arr.map(function(r){return normalizeClient(r);}).filter(function(c){return c.name;});
+    function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
+    var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES"'];
+    rows.forEach(function(c){lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes));});
+    var csv=lines.join('\r\n');
+    // also include the raw JSON below the CSV for reimport later
+    var body=csv+'\r\n\r\n--- RAW DATA (key: '+key+') ---\r\n'+raw;
+    var subject='MFS Recovered Clients — '+key+' ('+rows.length+' records) — '+today();
+    var toEmail='tristancarrington1@gmail.com';
+    // copy as backup
+    var ta=document.createElement('textarea');ta.value=body;ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);
+    // Build Gmail compose URL with body
+    var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    if(gmailUrl.length<7800){
+      var win=window.open(gmailUrl,'_blank');
+      if(!win)window.location.href=gmailUrl;
+      toast('✓ Gmail opened — tap Send',true);
+    } else {
+      // body too big — open Gmail with subject only, body in clipboard
+      var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject);
+      var win=window.open(u,'_blank');
+      if(!win)window.location.href=u;
+      toast('📋 Copied · Gmail opened — paste body & Send',true);
+    }
+  }catch(e){toast('Email failed: '+e.message,false);}
 }
 
 function phoneImportFromKey(key){
