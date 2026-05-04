@@ -6679,12 +6679,7 @@ function universalLoad(){
     +'3. Come back here and paste below<br>'
     +'4. Tap 📥 LOAD — I figure out what it is'
     +'</div>'
-    +'<div style="background:#003300;border:2px solid #00ff88;border-radius:6px;padding:12px;margin-bottom:10px;">'+
-+'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:6px;">FILE PICK FROM DOWNLOADS</div>'+
-+'<input type="file" id="universal-file" accept=".csv,.json,.eml,.txt" onchange="handleUniversalFile(event)" style="width:100%;background:#000033;border:2px solid #00ff88;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;box-sizing:border-box;">'+
-+'<div id="universal-file-status" style="font-size:12px;padding:6px;margin-top:6px;border-radius:3px;"></div>'+
-+'</div>'+
-++'<textarea id="universal-paste" placeholder="Paste anything from your MFS emails here…" style="width:100%;height:160px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;"></textarea>'
+    +'<textarea id="universal-paste" placeholder="Paste anything from your MFS emails here…" style="width:100%;height:160px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;"></textarea>'
     +'<div id="universal-detect" style="color:#ffaa00;font-size:12px;margin-top:6px;min-height:18px;"></div>'
     +'<div style="display:flex;gap:6px;margin-top:8px;">'
     +'<button onclick="universalLoadGo()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:4px;cursor:pointer;">📥 LOAD</button>'
@@ -6765,26 +6760,6 @@ function universalSniff(txt){
   var phoneCount=(txt.match(/(?:\(\d{3}\)\s*|\d{3}[\s.-])\d{3}[\s.-]?\d{4}/g)||[]).length;
   if(phoneCount>=2) return 'prose-contacts';
   return 'unknown';
-}
-
-function handleUniversalFile(evt){
-  var file=evt.target.files[0];
-  if(!file)return;
-  var r=new FileReader();
-  r.onload=function(e){
-    var ta=document.getElementById('universal-paste');
-    if(ta){
-      ta.value=e.target.result;
-      universalDetect();
-      setSt2('File loaded: '+file.name+' ('+Math.round(file.size/1024)+'KB) - tap LOAD',
-        '#003300','#00ff88');
-    }
-  };
-  r.readAsText(file);
-}
-function setSt2(msg,bg,color){
-  var el=document.getElementById('universal-file-status');
-  if(el){el.textContent=msg;el.style.background=bg;el.style.color=color;}
 }
 function universalLoadGo(){
   var ta=document.getElementById('universal-paste');
