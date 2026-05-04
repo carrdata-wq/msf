@@ -6678,6 +6678,11 @@ function universalLoad(){
     +'2. Long-press the data → Select All → Copy<br>'
     +'3. Come back here and paste below<br>'
     +'4. Tap 📥 LOAD — I figure out what it is'
+	+'<div style="background:#003300;border:2px solid #00ff88;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:6px;">📁 PICK FILE FROM DOWNLOADS — Android use this</div>'
+    +'<input type="file" id="universal-file" accept=".csv,.json,.eml,.txt" onchange="handleUniversalFile(event)" style="width:100%;background:#000033;border:2px solid #00ff88;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;box-sizing:border-box;">'
+    +'<div id="universal-file-status" style="font-size:12px;padding:6px;margin-top:4px;border-radius:3px;"></div>'
+    +'</div>'
     +'</div>'
     +'<textarea id="universal-paste" placeholder="Paste anything from your MFS emails here…" style="width:100%;height:160px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;"></textarea>'
     +'<div id="universal-detect" style="color:#ffaa00;font-size:12px;margin-top:6px;min-height:18px;"></div>'
@@ -6761,6 +6766,22 @@ function universalSniff(txt){
   if(phoneCount>=2) return 'prose-contacts';
   return 'unknown';
 }
+function handleUniversalFile(evt){
+  var file=evt.target.files[0];
+  if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var ta=document.getElementById('universal-paste');
+    if(ta){
+      ta.value=e.target.result;
+      universalDetect();
+      var st=document.getElementById('universal-file-status');
+      if(st){st.textContent='Loaded: '+file.name+' ('+Math.round(file.size/1024)+'KB) — tap LOAD';st.style.background='#003300';st.style.color='#00ff88';}
+    }
+  };
+  r.readAsText(file);
+}
+
 function universalLoadGo(){
   var ta=document.getElementById('universal-paste');
   if(!ta)return;
