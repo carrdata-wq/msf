@@ -23,9 +23,16 @@ function doInstallPWA(){
       if(r.outcome==='accepted')toast('MFS installed on home screen ✓',true);
 
 // ── SERVICE WORKER — offline mode ──
+      deferredPrompt=null;
+      var btn=document.getElementById('pwa-install-btn');
+      if(btn)btn.style.display='none';
+    });
+  } else {
+    toast('Tap 3 dots → Add to Home Screen',true);
+  }
+}
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    // inline service worker as blob — no separate sw.js file needed
     var swCode=[
       "var CACHE='mfs-v3';",
       "var URLS=['https://carrdata-wq.github.io/msf/'];",
@@ -54,18 +61,8 @@ if('serviceWorker' in navigator){
     var swUrl=URL.createObjectURL(blob);
     navigator.serviceWorker.register(swUrl,{scope:'/'}).then(function(reg){
       console.log('MFS offline ready');
-    }).catch(function(e){
-      console.log('SW:',e);
-    });
+    }).catch(function(e){ console.log('SW:',e); });
   });
-}
-      deferredPrompt=null;
-      var btn=document.getElementById('pwa-install-btn');
-      if(btn)btn.style.display='none';
-    });
-  } else {
-    toast('Tap 3 dots → Add to Home Screen',true);
-  }
 }
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
@@ -247,7 +244,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 <style id="ReanimatedPredefinedWebAnimationsStyle"></style><style id="ReanimatedCustomWebAnimationsStyle"></style><style id="ReanimatedCSSStyleTag"></style></head>
 <body>
 
-<!-- ████████████████████ MAIN MENU ████████████████████ -->
 <div id="screen-main" class="screen active" style="display: flex;">
   <div class="main-header">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -310,7 +306,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ SYSTEM UTILITIES SUBMENU ████████████████████ -->
 <div id="screen-sysutil-sub" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
@@ -376,7 +371,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ MORE ACCOUNTING TASKS SUBMENU ████████████████████ -->
 <div id="screen-accounting-sub" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
   <div style="background:#0000cc;border-bottom:2px solid #00ffff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
@@ -418,7 +412,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ ACCOUNTING / MATRIX ████████████████████ -->
 <div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
   <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
@@ -566,10 +559,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;text-align:center;">•••</th>
         <th style="background:#0000cc;color:#ff88ff;padding:5px 3px;border:1px solid #6666ff;font-size:14px;text-align:right;">#</th>
       </tr></thead>
-      <tbody id="loglist"><tr style="cursor:pointer;background:#0055ff;border:2px solid #00ffff;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">TRANSFER - DAN</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">SUBCONTR</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#00ffff;">+$1125.00</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.0532)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.0532)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.0532)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">1</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ABC SUPPLY</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ROOFING </td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$240.62</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.9836)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.9836)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.9836)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">2</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">MENARDS STORE</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HARDWARE</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">1073</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$133.25</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.3462)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.3462)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.3462)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">3</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">MENARDS STORE</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HARDWARE</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">1073</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$247.59</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.3325)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.3325)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.3325)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">4</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">AMAZON</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HARDWARE</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$43.74</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.0828)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.0828)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.0828)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">5</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ALDI GROCERY</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">FOOD GRO</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">1062</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$6.37</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.8633)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.8633)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.8633)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">6</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">MCDONALDS</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">JOB FOOD</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$2.75</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.6218)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.6218)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.6218)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">7</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HEALTH CARE SE</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">EXPENSE</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$2.48</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.4065)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.4065)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.4065)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">8</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">SCHWAB BROKERA</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">TRADE IN</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">TRAD</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$60.00</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.0007)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.0007)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.0007)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">9</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">043026</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">TRISTATE DISPO</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">TRASH EX</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">1073</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$90.00</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777664252470.7585)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777664252470.7585)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777664252470.7585)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">10</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042926</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">AMERICAN GUTTE</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">EXPENSE</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$155.04</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593547606.3037)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593547606.3037)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593547606.3037)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">11</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042926</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">AMAZON</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HARDWARE</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$2.87</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593547606.0146)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593547606.0146)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593547606.0146)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">12</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042926</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">MCDONALDS</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">JOB FOOD</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$5.99</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593547606.1367)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593547606.1367)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593547606.1367)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">13</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042926</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">SCHWAB BROKERA</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">TRADE IN</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">TRAD</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$236.00</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593547606.2424)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593547606.2424)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593547606.2424)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">14</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042926</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">SCHWAB BROKERA</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">TRADE IN</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">TRAD</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$400.00</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593547606.8096)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593547606.8096)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593547606.8096)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">15</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042826</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ORIGINAL PANCA</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">JOB FOOD</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$26.42</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593552839.182)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593552839.182)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593552839.182)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">16</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042826</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">STATE FARM</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">EXPENSE</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$29.54</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593552551.254)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593552551.254)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593552551.254)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">17</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042826</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">ALDI GROCERY</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">FOOD GRO</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">1062</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$48.14</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593550957.7327)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593550957.7327)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593550957.7327)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">18</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042826</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">MCDONALDS</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">JOB FOOD</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$1.74</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593550663.1924)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593550663.1924)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593550663.1924)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">19</td></tr><tr style="cursor:pointer;background:#00008a;border-bottom:1px solid #5555ee;"><td style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">042826</td><td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">MCDONALDS</td><td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">JOB FOOD</td><td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">ROOF</td><td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:#ff6666;">-$3.48</td><td style="padding:3px 2px;text-align:center;white-space:nowrap;"><button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog(1777593550186.8337)">DEL</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog(1777593550186.8337)">CPY</button> <button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog(1777593550186.8337)">EDT</button></td><td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">20</td></tr></tbody>
+      <tbody id="loglist"></tbody>
     </table>
     <!-- PAGINATION -->
-    <div id="led-pages" style="display:flex;gap:6px;margin-top:8px;justify-content:center;align-items:center;"><button onclick="ledPage(0)" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀</button><span style="color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:0 10px;">1 / 132</span><button onclick="ledPage(1)" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">▶</button></div>
+    <div id="led-pages" style="display:flex;gap:6px;margin-top:8px;justify-content:center;align-items:center;"></div>
     <div style="margin-top:10px;padding-bottom:30px;">
       <button onclick="doExit()" style="width:100%;background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀ BACK TO MENU</button>
     </div>
@@ -577,8 +570,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div><!-- end padding div -->
 </div>
 
-
-<!-- ████████████████████ REPORTS ████████████████████ -->
 <div id="screen-reports" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
   <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
@@ -609,7 +600,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ FUEL & GAS ████████████████████ -->
 <div id="screen-fuel" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">⛽ Fuel &amp; Gas Tracker</div></div>
   <div id="fuel-menu" class="mod-menu">
@@ -679,8 +669,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-
-<!-- ████████████████████ UTILITIES ████████████████████ -->
 <div id="screen-utilities" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">⚡ Utility Tracker</div></div>
   <div id="util-menu" class="mod-menu">
@@ -748,7 +736,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ INVENTORY ████████████████████ -->
 <div id="screen-inventory" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📦 Inventory</div></div>
   <div id="inv-menu" class="mod-menu">
@@ -806,7 +793,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ PORTFOLIO ████████████████████ -->
 <div id="screen-portfolio" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📈 Portfolio</div></div>
   <div id="port-menu" class="mod-menu">
@@ -867,7 +853,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ WORKERS ████████████████████ -->
 <div id="screen-workers" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">👷 Worker Hours</div></div>
   <div id="work-menu" class="mod-menu">
@@ -926,7 +911,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ PHONE CLIENTS ████████████████████ -->
 <div id="screen-phone" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📞 Phone Clients</div></div>
   <div id="phone-list-page" class="fpage">
@@ -959,7 +943,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ GROCERY ████████████████████ -->
 <div id="screen-grocery" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🛒 Grocery Tracker</div></div>
   <div id="groc-menu" class="mod-menu" style="display: block;">
@@ -989,7 +972,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="grocShow('')" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
       <span style="color:#00ff88;font-weight:700;font-size:13px;flex:1;">📈 Monthly Grocery Cost</span>
     </div>
-    <div id="groc-chart-content" style="padding:8px;"><div style="font-family:Courier New,monospace;background:#ffffff;border-radius:6px;padding:10px;"><div style="display:flex;gap:6px;margin-bottom:10px;"><div style="flex:1;background:#000066;border-radius:4px;padding:6px;text-align:center;"><div style="color:#ccccff;font-size:11px;">AVG/MONTH</div><div style="color:#ffff00;font-weight:700;font-size:14px;">$119</div></div><div style="flex:1;background:#cc0000;border-radius:4px;padding:6px;text-align:center;"><div style="color:#ffcccc;font-size:11px;">HIGHEST</div><div style="color:#ffffff;font-weight:700;font-size:14px;">$273</div></div><div style="flex:1;background:#006600;border-radius:4px;padding:6px;text-align:center;"><div style="color:#ccffcc;font-size:11px;">MONTHS</div><div style="color:#ffffff;font-weight:700;font-size:14px;">19</div></div></div><div style="color:#000066;font-weight:700;font-size:12px;margin-bottom:6px;">🛒 GROCERY — NEWEST LEFT · OLDEST RIGHT</div><div style="font-size:10px;color:#666;margin-bottom:4px;">— avg $119/mo</div><div style="position:relative;overflow-x:auto;"><div style="display:flex;align-items:flex-end;gap:2px;height:180px;border-bottom:2px solid #000066;border-left:2px solid #000066;padding:0 4px;min-width:608px;position:relative;"><div style="position:absolute;left:0;right:0;border-top:2px dashed #000066;bottom:79px;z-index:1;opacity:0.5;"></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$273</div><div style="width:22px;height:176px;background:#cc0000;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">04/26</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$88</div><div style="width:22px;height:58px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">03/26</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$89</div><div style="width:22px;height:59px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">02/26</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$114</div><div style="width:22px;height:75px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">01/26</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$136</div><div style="width:22px;height:90px;background:#cc6600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">12/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$105</div><div style="width:22px;height:69px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">11/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$112</div><div style="width:22px;height:74px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">10/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$116</div><div style="width:22px;height:77px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">09/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$75</div><div style="width:22px;height:50px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">08/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$85</div><div style="width:22px;height:56px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">07/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$80</div><div style="width:22px;height:53px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">06/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$79</div><div style="width:22px;height:52px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">05/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$120</div><div style="width:22px;height:79px;background:#cc6600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">04/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$134</div><div style="width:22px;height:88px;background:#cc6600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">03/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$172</div><div style="width:22px;height:114px;background:#cc0000;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">02/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$126</div><div style="width:22px;height:83px;background:#cc6600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">01/25</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$111</div><div style="width:22px;height:73px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">12/24</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$117</div><div style="width:22px;height:77px;background:#006600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">11/24</div></div><div style="display:flex;flex-direction:column;align-items:center;flex:0 0 30px;position:relative;"><div style="font-size:9px;color:#000066;font-weight:700;margin-bottom:2px;">$135</div><div style="width:22px;height:89px;background:#cc6600;border-radius:3px 3px 0 0;"></div><div style="font-size:9px;color:#333;margin-top:3px;transform:rotate(-45deg);white-space:nowrap;transform-origin:top left;margin-left:8px;">10/24</div></div></div></div><div style="font-size:11px;color:#666;margin-top:28px;">🟢=below avg &nbsp; 🟠=above avg &nbsp; 🔴=high</div></div></div>
+    <div id="groc-chart-content" style="padding:8px;"></div>
   </div>
 
   <!-- Add Item Detail -->
@@ -1017,7 +1000,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ RESTAURANT ████████████████████ -->
 <div id="screen-restaurant" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🍽️ Restaurant Tracker</div></div>
   <div id="rest-menu" class="mod-menu">
@@ -1071,7 +1053,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<!-- ████████████████████ SCANNER ████████████████████ -->
 <div id="screen-scanner" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📷 Scan Receipt</div></div>
   <div id="scan-menu" class="mod-menu">
@@ -1250,9 +1231,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 <input type="file" id="restore-input" accept=".json" style="display:none" onchange="restoreFromFile(event)">
 
 <script>
-// ═══════════════════════════════════════════════
 //  DATA LAYER
-// ═══════════════════════════════════════════════
 const ASSETS      = new Set(["Cash","Accounts Receivable","Inventory","Equipment","Other Assets"]);
 const LIABILITIES = new Set(["Accounts Payable","Loans Payable","Credit Card","Other Liabilities"]);
 
@@ -1286,9 +1265,7 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function today() { return new Date().toISOString().slice(0,10); }
 function thisMonth() { return new Date().toISOString().slice(0,7); }
 
-// ═══════════════════════════════════════════════
 //  TOAST
-// ═══════════════════════════════════════════════
 let _tt;
 function toast(msg,ok=true) {
   const el=document.getElementById('toast');
@@ -1296,9 +1273,7 @@ function toast(msg,ok=true) {
   clearTimeout(_tt); _tt=setTimeout(()=>el.className='',2200);
 }
 
-// ═══════════════════════════════════════════════
 //  NAVIGATION
-// ═══════════════════════════════════════════════
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>{
     s.classList.remove('active');
@@ -2168,10 +2143,7 @@ function dbdAutoDeleteDups(){
   else if(_dbdActive==='fuel') renderDayByDay();
 }
 
-
-// ═══════════════════════════════════════════════
 //  DATALISTS
-// ═══════════════════════════════════════════════
 function refreshDL() {
   try{
     const d=load();
@@ -2182,9 +2154,7 @@ function refreshDL() {
   }catch(e){}
 }
 
-// ═══════════════════════════════════════════════
 //  SUGGESTIONS
-// ═══════════════════════════════════════════════
 let _st;
 function onSug(pfx) { clearTimeout(_st); _st=setTimeout(()=>doSug(pfx),320); }
 function doSug(pfx) {
@@ -2211,9 +2181,7 @@ function applySug(pfx,i) {
   box.innerHTML=''; toast('Template applied');
 }
 
-// ═══════════════════════════════════════════════
 //  ACCOUNTING
-// ═══════════════════════════════════════════════
 function ensureM(d,field,val) {
   if(!val)return; const v=field==='payees'?val.trim():val.trim().toUpperCase(); if(!v)return;
   if(!d.acct[field])d.acct[field]=[];
@@ -2389,9 +2357,7 @@ function renderML(elId,items,field,cc) {
   el.innerHTML=items.map(v=>`<div class="master-row"><span class="master-name ${cc}">${esc(v)}</span><button class="del-btn" onclick="delM('${field}','${esc(v)}')">×</button></div>`).join('');
 }
 
-// ═══════════════════════════════════════════════
 //  FUEL & GAS
-// ═══════════════════════════════════════════════
 function addFuel() {
   const d=load();
   const date=document.getElementById('fuel-date').value||today();
@@ -2742,9 +2708,7 @@ function delFuel(id) {
   save(d);renderFuelStats();toast('Deleted');
 }
 
-// ═══════════════════════════════════════════════
 //  UTILITIES
-// ═══════════════════════════════════════════════
 function addUtil(type) {
   const d=load();
   let entry={id:nextId(d.util.logs),type};
@@ -2831,9 +2795,7 @@ function delUtil(id) {
   save(d);renderUtilStats();toast('Deleted');
 }
 
-// ═══════════════════════════════════════════════
 //  INVENTORY
-// ═══════════════════════════════════════════════
 function addInvItem() {
   const d=load();
   const name=document.getElementById('inv-name').value.trim();
@@ -2924,9 +2886,7 @@ function renderInvReport() {
   document.getElementById('inv-report-content').innerHTML=h;
 }
 
-// ═══════════════════════════════════════════════
 //  PORTFOLIO
-// ═══════════════════════════════════════════════
 function addHolding() {
   const d=load();
   const ticker=document.getElementById('port-ticker').value.trim().toUpperCase();
@@ -3025,9 +2985,7 @@ function calcPL() {
     </div>`;
 }
 
-// ═══════════════════════════════════════════════
 //  WORKERS
-// ═══════════════════════════════════════════════
 function addWorker() {
   const d=load();
   const name=document.getElementById('new-worker-name').value.trim();
@@ -3137,9 +3095,7 @@ function renderWorkReport() {
   document.getElementById('work-report-content').innerHTML=h;
 }
 
-// ═══════════════════════════════════════════════
 //  GROCERY TRACKER
-// ═══════════════════════════════════════════════
 function buildGrocDL() {
   const d=load();
   document.getElementById('groc-store-dl').innerHTML=(d.groc.stores||[]).map(s=>`<option value="${esc(s)}">`).join('');
@@ -3177,9 +3133,7 @@ function renderGrocView(){}
 function buildGrocNutrFilters() {}
 function renderGrocNutrition(){}
 
-// ═══════════════════════════════════════════════
 //  RESTAURANT TRACKER
-// ═══════════════════════════════════════════════
 function buildRestDL() {
   const d=load();
   document.getElementById('rest-store-dl').innerHTML=(d.rest.stores||[]).map(s=>`<option value="${esc(s)}">`).join('');
@@ -3215,9 +3169,7 @@ function buildRestStatsFilters(){}
 function buildRestNutrFilters() {}
 function renderRestNutrition(){}
 
-// ═══════════════════════════════════════════════
 //  RECEIPT SCANNER
-// ═══════════════════════════════════════════════
 
 // Known store routing (built-in defaults)
 const BUILTIN_GROCERY  = ['ALDI','WALMART','WAL-MART','SAMS CLUB','SAM\'S CLUB','KROGER','MARIANO','JEWEL','MEIJER','TARGET','COSTCO','WHOLE FOODS','TRADER JOE','FRESH MARKET','FOOD LION','PUBLIX','HEB','SAFEWAY','ALBERTSONS','SPROUTS','WINCO','SAVE-A-LOT','SAVE A LOT','FAMILY DOLLAR','DOLLAR GENERAL','DOLLAR TREE'];
@@ -3702,9 +3654,7 @@ function renderStoreRoutes() {
     </div>`).join(''):'<div style="color:var(--dim);font-size:13px;padding:4px 0;">No custom rules yet. Built-in: Menards→Accounting, Aldi→Grocery, etc.</div>';
 }
 
-// ═══════════════════════════════════════════════
 //  BACKUP / RESTORE
-// ═══════════════════════════════════════════════
 function exportMasters(){
   var masters={
     mx_pcodes : JSON.parse(localStorage.getItem('mx_pcodes') ||'[]'),
@@ -4685,9 +4635,7 @@ function restoreFromFile(evt) {
   reader.readAsText(file);evt.target.value='';
 }
 
-// ═══════════════════════════════════════════════
 //  INIT
-// ═══════════════════════════════════════════════
 (function(){
   const t=today();
   const incDate=document.getElementById('inc-date'); if(incDate) incDate.value=t;
@@ -4696,9 +4644,7 @@ function restoreFromFile(evt) {
   refreshDL();
 })();
 
-// ═══════════════════════════════════════════════
 //  MATRIX — PAYEE ENTRY SYSTEM (#1 Accounting)
-// ═══════════════════════════════════════════════
 var PA=['ROOF','BART','NORD','TOMM','TOUT','10629','10735','2760','3120','5481','OIL','TRADE'];
 var PP=['10629','10735','2760','3120','5481','TRADE'];
 var GRP=[
@@ -5740,7 +5686,6 @@ function rptRender(){
   }
   function escAttr(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 
-  // ===== WHITE CARD WITH PULLDOWN =====
   var html='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:12px;margin-top:6px;font-family:Courier New,monospace;">';
   // Title bar with sort toggle
   var asc=_rptSortAsc[type]!==false;
@@ -5764,7 +5709,6 @@ function rptRender(){
   });
   html+='</select>';
 
-  // ===== SUMMARY TABLE (white, clickable) =====
   html+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;background:#ffffff;color:#000000;border:1px solid #6666ff;">';
   html+='<tr style="background:#000080;color:#ffffff;">'
        +'<th style="padding:5px 4px;text-align:center;border:1px solid #6666ff;font-size:13px;width:32px;">#</th>'
@@ -5848,7 +5792,6 @@ function rptDrill(type,key){
 
   function escAttr(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 
-  // ===== HEADER =====
   var html='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:10px;margin-top:6px;font-family:Courier New,monospace;">';
   html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:2px solid #000080;padding-bottom:6px;flex-wrap:wrap;gap:6px;">'
        +'<span style="color:#000080;font-weight:700;font-size:14px;">📋 '+dispKey+' &nbsp;·&nbsp; '+rows.length+' entries</span>'
@@ -5857,7 +5800,6 @@ function rptDrill(type,key){
        +'<button onclick="rptShow(\''+type+'\')" style="background:#666;color:#ffffff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 8px;border:none;border-radius:3px;cursor:pointer;">◀ BACK</button>'
        +'</div></div>';
 
-  // ===== BY MONTH: prev/next nav =====
   if(type==='mon'){
     var allMonths={};
     LOG.forEach(function(e){var m=(e.date||'').slice(0,7);if(m)allMonths[m]=true;});
@@ -5872,7 +5814,6 @@ function rptDrill(type,key){
     html+='</div>';
   }
 
-  // ===== BY YEAR: indexed/grouped by DESC =====
   if(type==='yr'){
     var descMap={};
     rows.forEach(function(e){
@@ -5915,7 +5856,6 @@ function rptDrill(type,key){
          +'</tr>';
     html+='</table>';
   } else if(type==='pcode'){
-    // ===== BY PCODE: hierarchical YEAR ▸ MONTH ▸ entries with subtotals =====
     var yMap={};
     rows.forEach(function(e){
       var yr=(e.date||'').slice(0,4)||'????';
@@ -5991,7 +5931,6 @@ function rptDrill(type,key){
          +'</tr>';
     html+='</table>';
   } else {
-    // ===== STANDARD FLAT TABLE for pcode/desc/mon/date/amt/type =====
     html+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:12px;background:#ffffff;color:#000000;border:1px solid #6666ff;">'
        +'<tr style="background:#000080;color:#ffffff;">'
        +'<th style="padding:4px;text-align:left;border:1px solid #6666ff;">DATE</th>'
@@ -6452,9 +6391,7 @@ function delLog(id){
   var n=[];for(var i=0;i<LOG.length;i++){if(LOG[i].id!==id)n.push(LOG[i]);}
   LOG=n;saveLog();renderLog();
 }
-// ═══════════════════════════════════════════════
 //  PHONE CLIENTS MODULE
-// ═══════════════════════════════════════════════
 var CLIENTS=[];
 function loadClients(){try{var s=localStorage.getItem('mx_clients');CLIENTS=s?JSON.parse(s):[];}catch(e){CLIENTS=[];}}
 function saveClients(){try{localStorage.setItem('mx_clients',JSON.stringify(CLIENTS));}catch(e){}}
@@ -6717,9 +6654,7 @@ function phoneImportTool(){
   document.body.appendChild(overlay);
 }
 
-// ═══════════════════════════════════════════════
 //  UNIVERSAL LOAD — paste from Gmail, auto-detect, restore
-// ═══════════════════════════════════════════════
 function openGmailSearch(query){
   var url='https://mail.google.com/mail/u/0/#search/'+encodeURIComponent(query);
   var win=window.open(url,'_blank');
@@ -6744,7 +6679,12 @@ function universalLoad(){
     +'3. Come back here and paste below<br>'
     +'4. Tap 📥 LOAD — I figure out what it is'
     +'</div>'
-    +'<textarea id="universal-paste" placeholder="Paste anything from your MFS emails here…" style="width:100%;height:160px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;"></textarea>'
+    +'<div style="background:#003300;border:2px solid #00ff88;border-radius:6px;padding:12px;margin-bottom:10px;">'+
++'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:6px;">FILE PICK FROM DOWNLOADS</div>'+
++'<input type="file" id="universal-file" accept=".csv,.json,.eml,.txt" onchange="handleUniversalFile(event)" style="width:100%;background:#000033;border:2px solid #00ff88;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;box-sizing:border-box;">'+
++'<div id="universal-file-status" style="font-size:12px;padding:6px;margin-top:6px;border-radius:3px;"></div>'+
++'</div>'+
+++'<textarea id="universal-paste" placeholder="Paste anything from your MFS emails here…" style="width:100%;height:160px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;"></textarea>'
     +'<div id="universal-detect" style="color:#ffaa00;font-size:12px;margin-top:6px;min-height:18px;"></div>'
     +'<div style="display:flex;gap:6px;margin-top:8px;">'
     +'<button onclick="universalLoadGo()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:4px;cursor:pointer;">📥 LOAD</button>'
@@ -6826,6 +6766,26 @@ function universalSniff(txt){
   if(phoneCount>=2) return 'prose-contacts';
   return 'unknown';
 }
+
+function handleUniversalFile(evt){
+  var file=evt.target.files[0];
+  if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var ta=document.getElementById('universal-paste');
+    if(ta){
+      ta.value=e.target.result;
+      universalDetect();
+      setSt2('File loaded: '+file.name+' ('+Math.round(file.size/1024)+'KB) - tap LOAD',
+        '#003300','#00ff88');
+    }
+  };
+  r.readAsText(file);
+}
+function setSt2(msg,bg,color){
+  var el=document.getElementById('universal-file-status');
+  if(el){el.textContent=msg;el.style.background=bg;el.style.color=color;}
+}
 function universalLoadGo(){
   var ta=document.getElementById('universal-paste');
   if(!ta)return;
@@ -6852,7 +6812,6 @@ function parseProseContacts(txt){
     .replace(/Show original message/gi,'');
   function newPhoneRe(){return /(?:\(\d{3}\)\s*|\d{3}[\s.-])\d{3}[\s.-]?\d{4}/g;}
   function newEmailRe(){return /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;}
-  // ─── TRY BLOCK FORMAT (blank line between contacts) ───
   var blocks=clean.split(/\n\s*\n/).filter(function(b){return b.trim();});
   var out=[];
   blocks.forEach(function(block){
@@ -6887,7 +6846,6 @@ function parseProseContacts(txt){
     });
   });
   if(out.length>=2) return out;
-  // ─── FALLBACK: one contact per line (each line with a phone) ───
   out=[];
   var lines2=clean.split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
   lines2.forEach(function(line){
@@ -7311,7 +7269,5 @@ try{showScreen('main');}catch(e){}
     <div id="view-content"></div>
   </div>
 </div>
-
-
 
 <div class="cgw-ext" data-ext-id="pdnenlnelpdomajfejgapbdpmjkfpjkp"></div><iframe id="rokt-controller-frame" data-core-type="controller" aria-hidden="true" tabindex="-1" sandbox="allow-scripts allow-same-origin allow-popups" src="https://apps.rokt.com/wsdk/controller/index.2.7233.0.html" name="d67d3266-918a-43c3-9e47-af0c2013dbcc" style="width: 0px !important; height: 0px !important; border-width: 0px !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; position: absolute !important; z-index: -1 !important;"></iframe><iframe name="integration_type=preload_persistent&amp;init_timestamp=1777739147805&amp;plugin_name=dcui" src="https://apps.rokt.com/wsdk/plugins/dcui/index.html" id="dcui" style="display: none;"></iframe><cgw-writer-modal data-wxt-shadow-root="" class="cgw_main_container" id="jw-main-container-id"></cgw-writer-modal><button id="cgw_action_btn" tabindex="-1" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></button></body><div data-klarna-plugin-views-container=""></div></html>
