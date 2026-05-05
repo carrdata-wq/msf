@@ -3770,7 +3770,7 @@ function doExportCSV(){
     lines.push(q(e.id)+','+q(e.date)+','+q(e.payee)+','+q(e.pcode)+','+q(e.desc)+','+(typeof e.amt==='number'?e.amt.toFixed(2):'0.00'));
   });
   var backupText=lines.join('\r\n');
-  const filename='NOWACC.CSV';
+  const filename='NOWACC.TXT';
   const popupHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
     +'<div style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:6px;">📤 '+filename+' — '+mxLog.length+' entries — '+today()+'</div>'
     +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address</div>'
@@ -3785,7 +3785,7 @@ function doExportCSV(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
   overlay.innerHTML=popupHTML;
   // store filename + email on overlay so share fn can use them
-  overlay.dataset.subject='NOWACC.CSV — '+today()+' ('+mxLog.length+' entries)';
+  overlay.dataset.subject='NOWACC.TXT — '+today()+' ('+mxLog.length+' entries)';
   overlay.dataset.toEmail='tristancarrington1@gmail.com';
   overlay.dataset.filename=filename;
   document.body.appendChild(overlay);
@@ -3806,7 +3806,7 @@ async function shareCSVData(){
   if(!ta){toast('No data to share',false);return;}
   const txt=ta.value;
   const overlay=ta.closest('.modal-overlay');
-  const subject=(overlay&&overlay.dataset.subject)||('NOWACC.CSV — '+today());
+  const subject=(overlay&&overlay.dataset.subject)||('NOWACC.TXT — '+today());
   const toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
   // copy to clipboard as backup
   ta.focus();ta.select();
@@ -3816,7 +3816,7 @@ async function shareCSVData(){
   if(gmailUrl.length<7800){
     var win=window.open(gmailUrl,'_blank');
     if(!win)window.location.href=gmailUrl;
-    toast('✓ Gmail opened with NOWACC.CSV — tap Send',true);
+    toast('✓ Gmail opened with NOWACC.TXT — tap Send',true);
   } else {
     // body too big — Gmail with subject only, body in clipboard
     var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject);
@@ -6549,7 +6549,7 @@ function emailClientsCSV(){
   var toEmail='tristancarrington1@gmail.com';
   // open popup with COPY/SHARE buttons (same pattern as data CSV)
   var popupHTML='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
-    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">📞 NOWPHON.CSV — '+rows.length+' clients · '+dateStr+'</div>'
+    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">📞 NOWPHON.TXT — '+rows.length+' clients · '+dateStr+'</div>'
     +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address</div>'
     +'<textarea id="cli-csv-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+csv+'</textarea>'
     +'<div style="display:flex;gap:8px;margin-top:8px;">'
@@ -6622,7 +6622,7 @@ function phoneImportTool(){
     +'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;margin-bottom:10px;">'
     +'<div style="color:#00ffff;font-size:12px;font-weight:700;margin-bottom:4px;">📂 GET FROM YOUR GMAIL</div>'
     +'<div style="color:#ccccff;font-size:12px;margin-bottom:6px;line-height:1.4;">Opens Gmail searched for your saved client emails — find one, Select All in body, Copy, come back, paste below.</div>'
-    +'<button onclick="openGmailSearch(\'CLIENTUPDATES OR NOWPHON.CSV OR \\\'MFS Phone Clients\\\'\')" style="width:100%;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:8px;border-radius:3px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">📂 OPEN GMAIL → CLIENTUPDATES</button>'
+    +'<button onclick="openGmailSearch(\'CLIENTUPDATES OR NOWPHON.TXT OR \\\'MFS Phone Clients\\\'\')" style="width:100%;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:8px;border-radius:3px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">📂 OPEN GMAIL → CLIENTUPDATES</button>'
     +'</div>';
   if(found.length){
     html+='<div style="color:#00ff88;font-size:13px;margin-bottom:6px;">FOUND '+found.length+' POSSIBLE LIST'+(found.length===1?'':'S')+' IN STORAGE:</div>';
@@ -6668,8 +6668,8 @@ function universalLoad(){
     +'<div style="background:#000044;border:1px solid #00ffff;border-radius:4px;padding:8px;margin-bottom:8px;">'
     +'<div style="color:#00ffff;font-size:12px;font-weight:700;margin-bottom:4px;">📂 OPEN GMAIL — find your data</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">'
-    +'<button onclick="openGmailSearch(\'NOWACC.CSV\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 NOWACC.CSV</button>'
-    +'<button onclick="openGmailSearch(\'NOWPHON.CSV OR CLIENTUPDATES\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 NOWPHON / CLIENTS</button>'
+    +'<button onclick="openGmailSearch(\'NOWACC.TXT\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 NOWACC.TXT</button>'
+    +'<button onclick="openGmailSearch(\'NOWPHON.TXT OR CLIENTUPDATES\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 NOWPHON / CLIENTS</button>'
     +'<button onclick="openGmailSearch(\'MFS Backup\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 BACKUP</button>'
     +'<button onclick="openGmailSearch(\'MFS Shared Lists\')" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 4px;border-radius:3px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📂 LISTS</button>'
     +'</div></div>'
@@ -6680,7 +6680,7 @@ function universalLoad(){
     +'4. Tap 📥 LOAD — I figure out what it is'
 	+'<div style="background:#003300;border:2px solid #00ff88;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:6px;">📁 PICK FILE FROM DOWNLOADS — Android use this</div>'
-    +'<input type="file" id="universal-file" accept=".csv,.json,.eml,.txt" onchange="handleUniversalFile(event)" style="width:100%;background:#000033;border:2px solid #00ff88;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;box-sizing:border-box;">'
+    +'<input type="file" id="universal-file" accept=".txt,.csv,.json,.eml" onchange="handleUniversalFile(event)" style="width:100%;background:#000033;border:2px solid #00ff88;color:#ffff00;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;box-sizing:border-box;">'
     +'<div id="universal-file-status" style="font-size:12px;padding:6px;margin-top:4px;border-radius:3px;"></div>'
     +'</div>'
     +'</div>'
@@ -6711,10 +6711,10 @@ function universalDetect(){
   if(!txt){msg.textContent='';msg.style.color='#ffaa00';return;}
   var kind=universalSniff(txt);
   if(kind==='backup')              {msg.style.color='#00ff88';msg.textContent='✓ Detected: ACCOUNTING (JSON) — will restore your ledger';}
-  else if(kind==='backup-csv')     {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWACC.CSV — will restore your ledger';}
+  else if(kind==='backup-csv')     {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWACC.TXT — will restore your ledger';}
   else if(kind==='lists')          {msg.style.color='#00ff88';msg.textContent='✓ Detected: SHARED LISTS — will merge pcodes/descs/combos';}
   else if(kind==='clients')        {msg.style.color='#00ff88';msg.textContent='✓ Detected: PHONE CLIENTS (JSON) — will merge contacts';}
-  else if(kind==='csv')            {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWPHON.CSV — will merge contacts';}
+  else if(kind==='csv')            {msg.style.color='#00ff88';msg.textContent='✓ Detected: NOWPHON.TXT — will merge contacts';}
   else if(kind==='prose-contacts') {msg.style.color='#00ff88';msg.textContent='✓ Detected: CONTACTS in plain text — will extract names + phones';}
   else                             {msg.style.color='#ff6666';msg.textContent='⚠ Cannot detect format — paste full email body, JSON or CSV';}
 }
