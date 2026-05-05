@@ -6545,7 +6545,7 @@ function emailClientsCSV(){
   function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
   var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES"'];
   rows.forEach(function(c){
-    lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+'+q(c.notes)+','+q(c.contacted));
+  lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes)+','+q(c.contacted));
   });
   var csv=lines.join('\r\n');
   var dateStr=today();
@@ -7058,7 +7058,7 @@ function phoneEmailFoundList(key){
     var rows=arr.map(function(r){return normalizeClient(r);}).filter(function(c){return c.name;});
     function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
 	var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES","CONTACTED"'];
-    rows.forEach(function(c){lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+'+q(c.notes)+','+q(c.contacted));});
+    rows.forEach(function(c){lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes)+','+q(c.contacted));
     var csv=lines.join('\r\n');
     // also include the raw JSON below the CSV for reimport later
     var body=csv+'\r\n\r\n--- RAW DATA (key: '+key+') ---\r\n'+raw;
