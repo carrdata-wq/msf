@@ -4258,9 +4258,9 @@ function showFileManager(){
   var dd=('0'+t.getDate()).slice(-2);
   var yy=(''+t.getFullYear()).slice(-2);
   var files=[
-    {name:'mfs-backup-'+today()+'.json', desc:'FULL BACKUP — '+mxLog.length+' entries', color:'#00ffff', fn:'doBackup'},
+    {name:'NOWACC.TXT', desc:'FULL BACKUP — '+mxLog.length+' entries', color:'#00ffff', fn:'doBackup'},
     {name:'mf'+mm+dd+yy+'.csv', desc:'FoxBase CSV — '+mxLog.length+' entries', color:'#00ff88', fn:'doExportCSV'},
-    {name:'mfs-masters-'+today()+'.json', desc:'MASTERS — pcodes/payees/descs', color:'#ffaa00', fn:'exportMasters'}
+    {name:'MASTER.TXT', desc:'MASTERS — pcodes/payees/descs', color:'#ffaa00', fn:'exportMasters'}
   ];
   var html='';
   files.forEach(function(f){
@@ -6576,7 +6576,7 @@ function copyClientsCSV(){
 function shareClientsCSV(){
   var ta=document.getElementById('cli-csv-text');if(!ta){toast('No data to share',false);return;}
   var overlay=ta.closest('.modal-overlay');
-  var subject=(overlay&&overlay.dataset.subject)||'NOWPHON.CSV — '+today();
+  var subject=(overlay&&overlay.dataset.subject)||'NOWPHON.TXT — '+today();
   var toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
   var body=ta.value;
   // copy as backup
@@ -6587,7 +6587,7 @@ function shareClientsCSV(){
   if(gmailUrl.length<7800){
     var win=window.open(gmailUrl,'_blank');
     if(!win)window.location.href=gmailUrl;
-    toast('✓ Gmail opened with NOWPHON.CSV — tap Send',true);
+    toast('✓ Gmail opened with NOWPHON.TXT` — tap Send',true);
   } else {
     var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject);
     var win=window.open(u,'_blank');
