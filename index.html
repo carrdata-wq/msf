@@ -936,7 +936,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="field"><label>Email</label><input type="email" id="cli-email" placeholder="name@example.com" inputmode="email"></div>
       <div class="field"><label>Address</label><input type="text" id="cli-addr" placeholder="123 MAIN ST CHICAGO IL" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field"><label>Notes / Job</label><input type="text" id="cli-notes" placeholder="ROOF REPLACE · 2 STORY"></div>
-      <input type="hidden" id="cli-id">
+      <div class="field"><label>Last Contact Date</label><input type="date" id="cli-contacted" placeholder="YYYY-MM-DD"></div>
+	  <input type="hidden" id="cli-id">
       <button class="btn btn-green" onclick="saveClient()">✓ SAVE</button>
       <button class="btn btn-dim" onclick="phoneShowList()">◀ Back</button>
     </div>
@@ -6442,6 +6443,7 @@ function clientCardHtml(c){
   if(c.email) h+='<div style="margin:3px 0;"><a href="mailto:'+escClient(c.email)+'" style="color:#00ffff;text-decoration:none;font-size:13px;">✉ '+escClient(c.email)+'</a></div>';
   if(c.addr)  h+='<div style="color:#ccccff;font-size:13px;margin:3px 0;">📍 '+escClient(c.addr)+'</div>';
   if(c.notes) h+='<div style="color:#ce93d8;font-size:13px;margin:3px 0;">📝 '+escClient(c.notes)+'</div>';
+  if(c.contacted) h+='<div style="color:#ffff00;font-size:13px;margin:3px 0;">📅 LAST CONTACT: '+escClient(c.contacted)+'</div>';
   h+='<div style="display:flex;gap:6px;margin-top:6px;">'
     +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
     +'<button onclick="delClient('+c.id+')" style="flex:1;background:#4a0000;color:#ff4444;border:1px solid #ff4444;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">DEL</button>'
@@ -6451,7 +6453,7 @@ function clientCardHtml(c){
 
 function renderAllClients(){
   loadClients();
-  var rows=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
   var list=document.getElementById('phone-list');
   if(!rows.length){list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';return;}
   list.innerHTML=rows.map(clientCardHtml).join('');
@@ -6459,7 +6461,7 @@ function renderAllClients(){
 function phoneShowForm(id){
   document.getElementById('phone-list-page').style.display='none';
   document.getElementById('phone-form-page').style.display='block';
-  ['cli-name','cli-phone','cli-email','cli-addr','cli-notes','cli-id'].forEach(function(f){document.getElementById(f).value='';});
+  ['cli-name','cli-phone','cli-email','cli-addr','cli-notes','cli-contacted','cli-id'].forEach(function(f){document.getElementById(f).value='';});
   if(id){
     var c=null;for(var i=0;i<CLIENTS.length;i++)if(CLIENTS[i].id===id){c=CLIENTS[i];break;}
     if(c){
@@ -6469,6 +6471,7 @@ function phoneShowForm(id){
       document.getElementById('cli-email').value=c.email||'';
       document.getElementById('cli-addr').value=c.addr||'';
       document.getElementById('cli-notes').value=c.notes||'';
+	  document.getElementById('cli-contacted').value=c.contacted||'';
       document.getElementById('phone-form-title').textContent='EDIT CLIENT';
     }
   } else {
@@ -6484,7 +6487,8 @@ function saveClient(){
     phone:(document.getElementById('cli-phone').value||'').trim(),
     email:(document.getElementById('cli-email').value||'').trim(),
     addr:(document.getElementById('cli-addr').value||'').trim(),
-    notes:(document.getElementById('cli-notes').value||'').trim()
+    notes:(document.getElementById('cli-notes').value||'').trim(),
+	contacted:(document.getElementById('cli-contacted').value||'').trim()
   };
   var existingId=parseInt(document.getElementById('cli-id').value||'0',10);
   loadClients();
@@ -6522,7 +6526,7 @@ function renderClientList(){
       : '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     return;
   }
-  var rows=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
   rows=rows.filter(function(c){
     return ((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')).toLowerCase().indexOf(q)>=0;
   });
@@ -6537,7 +6541,7 @@ function emailClientsCSV(){
   loadClients();
   if(!CLIENTS.length){toast('No clients to email',false);return;}
   // build CSV
-  var rows=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
   function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
   var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES"'];
   rows.forEach(function(c){
