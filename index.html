@@ -3905,8 +3905,8 @@ function doEmailData(){
 function doOpenFiles(){
   var files=[
     {name:'mf'+('0'+(new Date().getMonth()+1)).slice(-2)+('0'+new Date().getDate()).slice(-2)+(''+new Date().getFullYear()).slice(-2)+'.csv', desc:'CSV EXPORT — FoxBase import', fn:'doExportCSV'},
-    {name:'mfs-backup-'+today()+'.json', desc:'FULL BACKUP — all data', fn:'doBackup'},
-    {name:'mfs-masters-'+today()+'.json', desc:'MASTERS — pcodes/payees/descs', fn:'exportMasters'}
+    {name:'NOWACC.TXT', desc:'FULL BACKUP — all data', fn:'doBackup'},
+    {name:'MASTER.TXT', desc:'MASTERS — pcodes/payees/descs', fn:'exportMasters'}
   ];
   var html='<div style="color:#ffff00;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:10px;">📁 MFS FILES — TAP TO DOWNLOAD</div>';
   files.forEach(function(f){
@@ -6543,7 +6543,7 @@ function emailClientsCSV(){
   // build CSV
   var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
   function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
-  var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES"'];
+  var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES","CONTACTED"'];
   rows.forEach(function(c){
   lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes)+','+q(c.contacted));
   });
@@ -7058,9 +7058,9 @@ function phoneEmailFoundList(key){
     var rows=arr.map(function(r){return normalizeClient(r);}).filter(function(c){return c.name;});
     function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
 	var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES","CONTACTED"'];
-    rows.forEach(function(c){lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes)+','+q(c.contacted));
+    rows.forEach(function(c){lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes)+','+q(c.contacted));});
     var csv=lines.join('\r\n');
-    // also include the raw JSON below the CSV for reimport later
+	// also include the raw JSON below the CSV for reimport later
     var body=csv+'\r\n\r\n--- RAW DATA (key: '+key+') ---\r\n'+raw;
     var subject='MFS Recovered Clients — '+key+' ('+rows.length+' records) — '+today();
     var toEmail='tristancarrington1@gmail.com';
