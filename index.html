@@ -804,7 +804,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <button onclick="phoneImportTool()" title="Import clients" style="flex:1;background:#00304a;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📥 IMPORT</button>
         <button onclick="phoneLoadFile()" title="Load clients from JSON file" style="flex:1;background:#1a0044;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📂 LOAD FILE</button>
       </div>
-      <input type="file" id="phone-file-input" accept=".json" style="display:none" onchange="phoneReadFile(this)">
+      <input type="file" id="phone-file-input" accept=".json,.csv" style="display:none" onchange="phoneReadFile(this)">
       <div id="phone-list"></div>
     </div>
   </div>
@@ -6071,46 +6071,84 @@ function phoneReadFile(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-      var data=JSON.parse(e.target.result);
+      var text=e.target.result;
       var raw=[];
-      // Handle phonok_clients.json wrapper format
-      if(data && data.clients && Array.isArray(data.clients)) raw=data.clients;
-      // Handle plain array
-      else if(Array.isArray(data)) raw=data;
-      else { toast('Unrecognized file format',false); return; }
 
-      if(!raw.length){ toast('No clients found in file',false); return; }
+      // ── CSV detection ──
+      if(file.name.toLowerCase().endsWith('.csv') || text.trimLeft().indexOf('{')!==0){
+        var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+        if(!lines.length){toast('Empty file',false);return;}
+        // parse header
+        var hdrs=lines[0].split(',').map(function(h){return h.replace(/"/g,'').trim().toUpperCase();});
+        for(var i=1;i<lines.length;i++){
+          var cols=[];
+          var cur=''; var inq=false;
+          for(var ci=0;ci<lines[i].length;ci++){
+            var ch=lines[i][ci];
+            if(ch==='"'){inq=!inq;}
+            else if(ch===',' && !inq){cols.push(cur);cur='';}
+            else cur+=ch;
+          }
+          cols.push(cur);
+          var obj={};
+          hdrs.forEach(function(h,idx){obj[h]=cols[idx]?cols[idx].trim():''});
+          raw.push(obj);
+        }
+      } else {
+        // ── JSON detection ──
+        var data=JSON.parse(text);
+        if(data && data.clients && Array.isArray(data.clients)) raw=data.clients;
+        else if(Array.isArray(data)) raw=data;
+        else{toast('Unrecognized file format',false);return;}
+      }
 
-      // Convert phonok format → mfs1 format
+      if(!raw.length){toast('No records found in file',false);return;}
+
+      // ── Convert any format → mfs1 client fields ──
       var converted=raw.map(function(c,i){
-        // Build addr from separate fields if needed
-        var addr=c.addr||'';
+        var addr=c.addr||c.ADDRESS||c.address||'';
         if(!addr){
-          var parts=[c.address,c.city,c.state,c.zip].filter(function(x){return x&&String(x).trim();});
+          var parts=[c.address||c.ADDRESS,c.city||c.CITY,c.state||c.STATE,c.zip||c.ZIP].filter(function(x){return x&&String(x).trim();});
           addr=parts.join(', ');
         }
-        // Extra info into notes if fields exist
-        var notes=c.notes||'';
-        if(c.jobtype && notes.indexOf(c.jobtype)<0) notes=(c.jobtype+(notes?' | '+notes:'')).trim();
-        if(c.status && c.status!=='COLD') notes=(c.status+(notes?' | '+notes:'')).trim();
+        var notes=c.notes||c.NOTES||'';
+        var jobtype=c.jobtype||c.JOBTYPE||'';
+        if(jobtype && notes.indexOf(jobtype)<0) notes=(jobtype+(notes?' | '+notes:'')).trim();
         return {
-          id:     c.id || (i+1),
-          name:   c.name||'',
-          phone:  c.phone||'',
-          email:  c.email||'',
-          addr:   addr,
-          notes:  notes,
-          contacted: c.contacted||c.contact||'',
-          adate:  c.adate||''
+          name:      c.name||c.NAME||'',
+          phone:     c.phone||c.PHONE||'',
+          email:     c.email||c.EMAIL||'',
+          addr:      addr,
+          notes:     notes,
+          contacted: c.contacted||c.CONTACTED||c.DATE||c.date||c.contact||c.CONTACT||'',
+          adate:     c.adate||c.ADATE||'',
+          modified:  today()
         };
-      });
+      }).filter(function(c){return c.name;});
 
-      var msg='Load '+converted.length+' clients from "'+file.name+'"?\n\nThis will REPLACE all existing clients.';
-      if(!confirm(msg)) return;
+      if(!converted.length){toast('No valid records found',false);return;}
 
-      CLIENTS=converted;
+      // ── Ask ADD or REPLACE ──
+      var choice=confirm(
+        'Found '+converted.length+' records in "'+file.name+'".\n\n'+
+        'OK  = ADD to existing clients\n'+
+        'Cancel = REPLACE all clients'
+      );
+
+      loadClients();
+      if(choice){
+        // ADD / MERGE — assign new IDs starting after current max
+        var maxId=CLIENTS.length?Math.max.apply(null,CLIENTS.map(function(c){return c.id||0;})):0;
+        converted.forEach(function(c,i){c.id=maxId+i+1;});
+        CLIENTS=CLIENTS.concat(converted);
+        toast('✓ Added '+converted.length+' clients (total: '+CLIENTS.length+')',true);
+      } else {
+        // REPLACE
+        converted.forEach(function(c,i){if(!c.id)c.id=i+1;});
+        CLIENTS=converted;
+        toast('✓ Loaded '+converted.length+' clients (replaced)',true);
+      }
       saveClients();
-      toast('✓ Loaded '+converted.length+' clients',true);
       phoneShowList();
     } catch(ex){
       toast('File read error: '+ex.message, false);
@@ -6130,13 +6168,19 @@ function phoneShowList(){
     picker.innerHTML='<option value="">— PICK A CLIENT ('+CLIENTS.length+') —</option>'
       +sorted.map(function(c){return '<option value="'+c.id+'">'+escClient(c.name)+'</option>';}).join('');
   }
-  // clear search and list — empty state until user picks/searches/SHOW ALL
+  // clear search then show last 30 most recently touched
   var s=document.getElementById('phone-search');if(s)s.value='';
   var list=document.getElementById('phone-list');
   if(list){
-    list.innerHTML=CLIENTS.length
-      ? '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">Pick a client above · type to search · or tap 📋 SHOW ALL</div>'
-      : '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
+    if(!CLIENTS.length){
+      list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
+    } else {
+      var recent=CLIENTS.slice().sort(function(a,b){
+        return (b.modified||b.contacted||'').localeCompare(a.modified||a.contacted||'');
+      }).slice(0,30);
+      list.innerHTML='<div style="color:#00ffff;font-size:12px;font-weight:700;padding:4px 2px 6px;">📋 LAST 30 ACTIVITY</div>'
+        +recent.map(clientCardHtml).join('');
+    }
   }
 }
 
@@ -6168,6 +6212,7 @@ function clientCardHtml(c){
   if(c.adate)     h+='<div style="font-size:13px;font-weight:700;margin:3px 0;background:#330000;padding:4px 7px;border-radius:3px;color:#ffff00;">📅 JOB DATE: '+escClient(fmtADate(c.adate))+'</div>';
   h+='<div style="display:flex;gap:6px;margin-top:6px;">'
     +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
+    +'<button onclick="copyClient('+c.id+')" style="flex:1;background:#002244;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">COPY</button>'
     +'<button onclick="delClient('+c.id+')" style="flex:1;background:#4a0000;color:#ff4444;border:1px solid #ff4444;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">DEL</button>'
     +'</div></div>';
   return h;
@@ -6212,7 +6257,8 @@ function saveClient(){
     addr:(document.getElementById('cli-addr').value||'').trim(),
     notes:(document.getElementById('cli-notes').value||'').trim(),
 	contacted:(document.getElementById('cli-contacted').value||'').trim(),
-    adate:(document.getElementById('cli-adate').value||'').trim()
+    adate:(document.getElementById('cli-adate').value||'').trim(),
+    modified:today()
   };
   var existingId=parseInt(document.getElementById('cli-id').value||'0',10);
   loadClients();
@@ -6235,6 +6281,25 @@ function delClient(id){
   saveClients();
   renderClientList();
   toast('Deleted',true);
+}
+function copyClient(id){
+  loadClients();
+  var c=null;
+  for(var i=0;i<CLIENTS.length;i++)if(CLIENTS[i].id===id){c=CLIENTS[i];break;}
+  if(!c)return;
+  // Open form pre-filled but NO id — saves as brand new record
+  document.getElementById('phone-list-page').style.display='none';
+  document.getElementById('phone-form-page').style.display='block';
+  document.getElementById('cli-id').value='';  // blank = new record
+  document.getElementById('cli-name').value=c.name||'';
+  document.getElementById('cli-phone').value=c.phone||'';
+  document.getElementById('cli-email').value=c.email||'';
+  document.getElementById('cli-addr').value=c.addr||'';
+  document.getElementById('cli-notes').value=c.notes||'';
+  document.getElementById('cli-contacted').value=today();  // today's date
+  document.getElementById('cli-adate').value=c.adate||'';
+  document.getElementById('phone-form-title').textContent='COPY CLIENT — EDIT & SAVE';
+  setTimeout(function(){document.getElementById('cli-name').focus();},150);
 }
 function escClient(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function fmtADate(d){
