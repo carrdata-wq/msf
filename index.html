@@ -6176,7 +6176,10 @@ function phoneShowList(){
       list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     } else {
       var recent=CLIENTS.slice().sort(function(a,b){
-        return (b.modified||b.contacted||'').localeCompare(a.modified||a.contacted||'');
+        // Sort by modified desc, then id desc (newest added = highest id first)
+        var ma=a.modified||'', mb=b.modified||'';
+        if(mb!==ma) return mb.localeCompare(ma);
+        return (b.id||0)-(a.id||0);
       }).slice(0,30);
       list.innerHTML='<div style="color:#00ffff;font-size:12px;font-weight:700;padding:4px 2px 6px;">📋 LAST 30 ACTIVITY</div>'
         +recent.map(clientCardHtml).join('');
@@ -6208,8 +6211,8 @@ function clientCardHtml(c){
   if(c.email) h+='<div style="margin:3px 0;"><a href="mailto:'+escClient(c.email)+'" style="color:#00ffff;text-decoration:none;font-size:13px;">✉ '+escClient(c.email)+'</a></div>';
   if(c.addr)  h+='<div style="color:#ccccff;font-size:13px;margin:3px 0;">📍 '+escClient(c.addr)+'</div>';
   if(c.notes) h+='<div style="color:#ce93d8;font-size:13px;margin:3px 0;">📝 '+escClient(c.notes)+'</div>';
-  if(c.contacted) h+='<div style="color:#ffff00;font-size:13px;margin:3px 0;">📅 LAST CONTACT: '+escClient(c.contacted)+'</div>';
   if(c.adate)     h+='<div style="font-size:13px;font-weight:700;margin:3px 0;background:#330000;padding:4px 7px;border-radius:3px;color:#ffff00;">📅 JOB DATE: '+escClient(fmtADate(c.adate))+'</div>';
+  else if(c.contacted) h+='<div style="color:#ffff00;font-size:13px;margin:3px 0;">📅 DATE: '+escClient(c.contacted)+'</div>';
   h+='<div style="display:flex;gap:6px;margin-top:6px;">'
     +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
     +'<button onclick="copyClient('+c.id+')" style="flex:1;background:#002244;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">COPY</button>'
