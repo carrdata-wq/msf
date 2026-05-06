@@ -273,23 +273,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml">Utility Tracker</div><div class="ms">KWH Electric · CF Gas · Cost/unit</div></div>
       <div class="menu-arrow">›</div>
     </div>
-    <div class="menu-item" onclick="openModule('inventory')">
-      <div class="menu-num">5</div><div class="menu-icon">📦</div>
-      <div class="menu-label"><div class="ml">Inventory</div><div class="ms">Box · Oz · Units · Qty × Cost</div></div>
-      <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="openModule('workers')">
-      <div class="menu-num">6</div><div class="menu-icon">👷</div>
-      <div class="menu-label"><div class="ml">Worker Hours</div><div class="ms">Time logs · Pay · Job/Property</div></div>
-      <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="openModule('phone')">
-      <div class="menu-num">7</div><div class="menu-icon">📱</div>
+
+        <div class="menu-item" onclick="openModule('phone')">
+      <div class="menu-num">5</div><div class="menu-icon">📱</div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">Phone Clients</div><div class="ms">Client Database · Contacts · Jobs</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
     <div class="menu-item" onclick="showSubMenu('sysutil')">
-      <div class="menu-num">8</div><div class="menu-icon">⚙️</div>
+      <div class="menu-num">6</div><div class="menu-icon">⚙️</div>
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">System Utilities</div><div class="ms">MFS Update · File Manager · Drive</div></div>
       <div class="menu-arrow" style="color:#ff88ff;">›</div>
     </div>
@@ -736,62 +727,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<div id="screen-inventory" class="screen" style="display: none;">
-  <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📦 Inventory</div></div>
-  <div id="inv-menu" class="mod-menu">
-    <div class="mod-menu-grid">
-      <div class="mod-btn" onclick="invShow('add')"><div class="mb-icon green">+</div><div class="mb-label">Add Item</div><div class="mb-sub">New inventory entry</div></div>
-      <div class="mod-btn" onclick="invShow('view')"><div class="mb-icon blue">≡</div><div class="mb-label">View All</div><div class="mb-sub">Current stock &amp; value</div></div>
-      <div class="mod-btn" onclick="invShow('adjust')"><div class="mb-icon orange">±</div><div class="mb-label">Adjust Stock</div><div class="mb-sub">Add or remove qty</div></div>
-      <div class="mod-btn" onclick="invShow('report')"><div class="mb-icon yellow">$</div><div class="mb-label">Value Report</div><div class="mb-sub">Total inventory value</div></div>
-    </div>
-  </div>
-  <div id="inv-add" class="fpage" style="display:none">
-    <div class="card">
-      <div class="card-title green">Add Inventory Item</div>
-      <div class="field"><label>Item Name</label><input type="text" id="inv-name" placeholder="e.g. 2x4 Lumber"></div>
-      <div class="field"><label>SKU / Code</label><input type="text" id="inv-sku" placeholder="e.g. LUM-2X4" oninput="this.value=this.value.toUpperCase()"></div>
-      <div class="field-row">
-        <div class="field"><label>Unit</label><select id="inv-unit"><option>Each</option><option>Box</option><option>Case</option><option>Oz</option><option>Lb</option><option>Kg</option><option>L</option><option>Gal</option><option>Ft</option><option>Sq Ft</option><option>Cu Ft</option><option>Roll</option><option>Pack</option><option>Pallet</option><option>Other</option></select></div>
-        <div class="field"><label>Qty on Hand</label><input type="number" id="inv-qty" inputmode="decimal" step="0.01" placeholder="0"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Cost / Unit ($)</label><input type="number" id="inv-cost" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-        <div class="field"><label>Sale Price / Unit ($)</label><input type="number" id="inv-price" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-      </div>
-      <div class="field"><label>Category</label><select id="inv-cat"><option>Materials</option><option>Food &amp; Beverage</option><option>Supplies</option><option>Equipment Parts</option><option>Finished Goods</option><option>Raw Materials</option><option>Packaging</option><option>Other</option></select></div>
-      <div class="field"><label>Location / Property</label><input type="text" id="inv-loc" list="pcode-dl" placeholder="e.g. WAREHOUSE" oninput="this.value=this.value.toUpperCase()"></div>
-      <button class="btn btn-green" onclick="addInvItem()">✓ ADD ITEM</button>
-      <button class="btn btn-dim" onclick="invShow('')">◀ Back</button>
-    </div>
-  </div>
-  <div id="inv-view" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="inv-fcat" onchange="renderInvView()"><option value="">All Categories</option></select>
-      <select id="inv-floc" onchange="renderInvView()"><option value="">All Locations</option></select>
-    </div>
-    <div class="card" style="padding:6px 12px;"><div id="inv-list"></div></div>
-    <button class="btn btn-dim" onclick="invShow('')">◀ Back</button>
-  </div>
-  <div id="inv-adjust" class="fpage" style="display:none">
-    <div class="card">
-      <div class="card-title orange">Adjust Stock</div>
-      <div class="field"><label>Item</label><select id="adj-item"></select></div>
-      <div class="field-row">
-        <div class="field"><label>Qty Change (+/-)</label><input type="number" id="adj-qty" inputmode="decimal" step="0.01" placeholder="e.g. -5 or +10"></div>
-        <div class="field"><label>New Cost/Unit ($)</label><input type="number" id="adj-cost" inputmode="decimal" step="0.01" placeholder="leave blank = same"></div>
-      </div>
-      <div class="field"><label>Reason</label><select id="adj-reason"><option>Purchase / Restock</option><option>Sale / Used</option><option>Damaged / Loss</option><option>Count Correction</option><option>Transfer</option></select></div>
-      <div class="field"><label>Date</label><input type="date" id="adj-date"></div>
-      <button class="btn btn-orange" onclick="adjustInv()">✓ ADJUST</button>
-      <button class="btn btn-dim" onclick="invShow('')">◀ Back</button>
-    </div>
-  </div>
-  <div id="inv-report" class="fpage" style="display:none">
-    <div id="inv-report-content"></div>
-    <button class="btn btn-dim" onclick="invShow('')">◀ Back</button>
-  </div>
-</div>
 
 <div id="screen-portfolio" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📈 Portfolio</div></div>
@@ -853,63 +788,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<div id="screen-workers" class="screen" style="display: none;">
-  <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">👷 Worker Hours</div></div>
-  <div id="work-menu" class="mod-menu">
-    <div class="mod-menu-grid">
-      <div class="mod-btn" onclick="workShow('log')"><div class="mb-icon green">+</div><div class="mb-label">Log Hours</div><div class="mb-sub">Date · Hours · Rate</div></div>
-      <div class="mod-btn" onclick="workShow('view')"><div class="mb-icon blue">≡</div><div class="mb-label">Time Ledger</div><div class="mb-sub">All entries</div></div>
-      <div class="mod-btn" onclick="workShow('report')"><div class="mb-icon yellow">$</div><div class="mb-label">Pay Report</div><div class="mb-sub">By worker / job</div></div>
-      <div class="mod-btn" onclick="workShow('workers')"><div class="mb-icon purple">👤</div><div class="mb-label">Manage Workers</div><div class="mb-sub">Names · Default rate</div></div>
-    </div>
-  </div>
-  <div id="work-log" class="fpage" style="display:none">
-    <div class="card">
-      <div class="card-title green">Log Hours</div>
-      <div class="field"><label>Worker</label><select id="wlog-worker"></select></div>
-      <div class="field"><label>Date</label><input type="date" id="wlog-date"></div>
-      <div class="field-row">
-        <div class="field"><label>Hours</label><input type="number" id="wlog-hrs" inputmode="decimal" step="0.25" placeholder="0.00"></div>
-        <div class="field"><label>Rate ($/hr)</label><input type="number" id="wlog-rate" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Job Code</label><input type="text" id="wlog-jcode" list="jcode-dl" placeholder="ROOF" autocomplete="off" oninput="this.value=this.value.toUpperCase()"></div>
-        <div class="field"><label>Property</label><input type="text" id="wlog-pcode" list="pcode-dl" placeholder="UNIT1" autocomplete="off" oninput="this.value=this.value.toUpperCase()"></div>
-      </div>
-      <div class="field"><label>Notes</label><input type="text" id="wlog-notes" placeholder="e.g. Tear-off complete"></div>
-      <button class="btn btn-green" onclick="addWorkLog()">✓ SAVE HOURS</button>
-      <button class="btn btn-dim" onclick="workShow('')">◀ Back</button>
-    </div>
-  </div>
-  <div id="work-view" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="wv-worker" onchange="renderWorkView()"><option value="">All Workers</option></select>
-      <select id="wv-yr" onchange="renderWorkView()"><option value="">All Years</option></select>
-      <select id="wv-jc" onchange="renderWorkView()"><option value="">All Jobs</option></select>
-    </div>
-    <div class="card" style="padding:6px 12px;"><div id="work-list"></div></div>
-    <button class="btn btn-dim" onclick="workShow('')">◀ Back</button>
-  </div>
-  <div id="work-report" class="fpage" style="display:none">
-    <div class="fbar">
-      <select id="wr-worker" onchange="renderWorkReport()"><option value="">All Workers</option></select>
-      <select id="wr-yr" onchange="renderWorkReport()"><option value="">All Years</option></select>
-    </div>
-    <div id="work-report-content"></div>
-    <button class="btn btn-dim" onclick="workShow('')">◀ Back</button>
-  </div>
-  <div id="work-workers" class="fpage" style="display:none">
-    <div class="card">
-      <div class="card-title purple">Workers</div>
-      <div id="worker-list"></div>
-      <div class="add-row">
-        <input type="text" id="new-worker-name" placeholder="Worker name">
-        <button onclick="addWorker()">+Add</button>
-      </div>
-    </div>
-    <button class="btn btn-dim" onclick="workShow('')">◀ Back</button>
-  </div>
-</div>
 
 <div id="screen-phone" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📞 Phone Clients</div></div>
@@ -924,7 +802,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <button onclick="phoneShowAll()" title="Show all clients" style="flex:1;background:#3a1a4a;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📋 SHOW ALL</button>
         <button onclick="emailClientsCSV()" title="Email all clients" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📧 EMAIL</button>
         <button onclick="phoneImportTool()" title="Import clients" style="flex:1;background:#00304a;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📥 IMPORT</button>
+        <button onclick="phoneLoadFile()" title="Load clients from JSON file" style="flex:1;background:#1a0044;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📂 LOAD FILE</button>
       </div>
+      <input type="file" id="phone-file-input" accept=".json" style="display:none" onchange="phoneReadFile(this)">
       <div id="phone-list"></div>
     </div>
   </div>
@@ -937,6 +817,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="field"><label>Address</label><input type="text" id="cli-addr" placeholder="123 MAIN ST CHICAGO IL" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field"><label>Notes / Job</label><input type="text" id="cli-notes" placeholder="ROOF REPLACE · 2 STORY"></div>
       <div class="field"><label>Last Contact Date</label><input type="date" id="cli-contacted" placeholder="YYYY-MM-DD"></div>
+      <div class="field"><label>Job Date (ADATE)</label><input type="date" id="cli-adate" placeholder="YYYY-MM-DD"></div>
 	  <input type="hidden" id="cli-id">
       <button class="btn btn-green" onclick="saveClient()">✓ SAVE</button>
       <button class="btn btn-dim" onclick="phoneShowList()">◀ Back</button>
@@ -1323,9 +1204,7 @@ function openModule(mod) {
   }
   if(mod==='fuel')       { }
   if(mod==='utilities')  { }
-  if(mod==='inventory')  { }
   if(mod==='portfolio')  { }
-  if(mod==='workers')    { populateWorkerSelect(); }
   if(mod==='grocery')    { buildGrocDL(); }
   if(mod==='restaurant') { buildRestDL(); }
   if(mod==='scanner')    { renderStoreRoutes(); }
@@ -1685,27 +1564,12 @@ function utilShow(sub) {
   if(sub==='log-gas')  { document.getElementById('gas-period').value=thisMonth(); }
   if(sub==='log-other'){ document.getElementById('other-period').value=thisMonth(); }
 }
-function invShow(sub) {
-  ['add','view','adjust','report'].forEach(s=>{ document.getElementById('inv-'+s).style.display=s===sub?'block':'none'; });
-  document.getElementById('inv-menu').style.display=sub?'none':'block';
-  if(sub==='view')   { buildInvFilters(); renderInvView(); }
-  if(sub==='adjust') { populateInvSelect(); document.getElementById('adj-date').value=today(); }
-  if(sub==='report') { renderInvReport(); }
-}
 function portShow(sub) {
   ['add','view','update','calc'].forEach(s=>{ document.getElementById('port-'+s).style.display=s===sub?'block':'none'; });
   document.getElementById('port-menu').style.display=sub?'none':'block';
   if(sub==='view')   { renderPortfolio(); }
   if(sub==='update') { renderPriceUpdate(); }
   if(sub==='add')    { document.getElementById('port-date').value=today(); }
-}
-function workShow(sub) {
-  ['log','view','report','workers'].forEach(s=>{ document.getElementById('work-'+s).style.display=s===sub?'block':'none'; });
-  document.getElementById('work-menu').style.display=sub?'none':'block';
-  if(sub==='log')     { populateWorkerSelect(); document.getElementById('wlog-date').value=today(); }
-  if(sub==='view')    { buildWorkFilters(); renderWorkView(); }
-  if(sub==='report')  { buildWorkReportFilters(); renderWorkReport(); }
-  if(sub==='workers') { renderWorkerList(); }
 }
 function grocShow(sub) {
   ['log','stats','chart'].forEach(function(s){
@@ -2796,97 +2660,6 @@ function delUtil(id) {
   save(d);renderUtilStats();toast('Deleted');
 }
 
-//  INVENTORY
-function addInvItem() {
-  const d=load();
-  const name=document.getElementById('inv-name').value.trim();
-  const sku=document.getElementById('inv-sku').value.trim().toUpperCase();
-  const unit=document.getElementById('inv-unit').value;
-  const qty=parseFloat(document.getElementById('inv-qty').value)||0;
-  const cost=parseFloat(document.getElementById('inv-cost').value)||0;
-  const price=parseFloat(document.getElementById('inv-price').value)||0;
-  const cat=document.getElementById('inv-cat').value;
-  const loc=document.getElementById('inv-loc').value.trim().toUpperCase();
-  if(!name){toast('Item name required',false);return;}
-  d.inv.items.push({id:nextId(d.inv.items),name,sku,unit,qty,cost,price,cat,loc});
-  save(d);
-  ['inv-name','inv-sku','inv-qty','inv-cost','inv-price','inv-loc'].forEach(id=>document.getElementById(id).value='');
-  toast('Item added');
-}
-function buildInvFilters() {
-  const d=load();
-  const cats=[...new Set(d.inv.items.map(i=>i.cat))];
-  const locs=[...new Set(d.inv.items.map(i=>i.loc).filter(Boolean))];
-  document.getElementById('inv-fcat').innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
-  document.getElementById('inv-floc').innerHTML='<option value="">All Locations</option>'+locs.map(l=>`<option>${esc(l)}</option>`).join('');
-}
-function renderInvView() {
-  const d=load();
-  const fc=document.getElementById('inv-fcat').value;
-  const fl=document.getElementById('inv-floc').value;
-  const items=d.inv.items.filter(i=>(!fc||i.cat===fc)&&(!fl||i.loc===fl)).sort((a,b)=>a.name.localeCompare(b.name));
-  if(!items.length){document.getElementById('inv-list').innerHTML='<div style="color:var(--dim);padding:10px 0;">No items.</div>';return;}
-  document.getElementById('inv-list').innerHTML=items.map(i=>{
-    const val=i.qty*i.cost;
-    return `<div class="list-row">
-      <div class="lr-dot" style="background:var(--blue)"></div>
-      <div class="lr-body">
-        <div class="lr-main">${esc(i.name)}${i.sku?' <span style="color:var(--dim);font-size:13px;">['+esc(i.sku)+']</span>':''}</div>
-        <div class="lr-sub">${i.cat}${i.loc?' · '+esc(i.loc):''} · ${fmtN(i.qty,2)} ${i.unit} @ ${fmt(i.cost)}/${i.unit}</div>
-      </div>
-      <div class="lr-right">
-        <div class="lr-amt blue">${fmt(val)}</div>
-        <button class="del-btn" onclick="delInvItem(${i.id})">×</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-function delInvItem(id) {
-  if(!confirm('Delete item?'))return;
-  const d=load();d.inv.items=d.inv.items.filter(x=>x.id!==id);
-  save(d);renderInvView();toast('Deleted');
-}
-function populateInvSelect() {
-  const d=load();
-  document.getElementById('adj-item').innerHTML=d.inv.items.map(i=>`<option value="${i.id}">${esc(i.name)} (${fmtN(i.qty,2)} ${i.unit})</option>`).join('');
-}
-function adjustInv() {
-  const d=load();
-  const id=parseInt(document.getElementById('adj-item').value);
-  const qtyChange=parseFloat(document.getElementById('adj-qty').value);
-  const newCost=parseFloat(document.getElementById('adj-cost').value);
-  const reason=document.getElementById('adj-reason').value;
-  const date=document.getElementById('adj-date').value;
-  const item=d.inv.items.find(i=>i.id===id);
-  if(!item){toast('Select an item',false);return;}
-  if(isNaN(qtyChange)){toast('Enter qty change',false);return;}
-  item.qty=parseFloat((item.qty+qtyChange).toFixed(4));
-  if(!isNaN(newCost)&&newCost>0) item.cost=newCost;
-  d.inv.logs.push({id:nextId(d.inv.logs),date,itemId:id,itemName:item.name,qtyChange,reason});
-  save(d);
-  document.getElementById('adj-qty').value='';document.getElementById('adj-cost').value='';
-  toast(`${item.name}: ${qtyChange>0?'+':''}${qtyChange} ${item.unit}`);
-}
-function renderInvReport() {
-  const d=load();
-  const items=d.inv.items.sort((a,b)=>a.cat.localeCompare(b.cat));
-  let totalVal=0;let totalCost=0;
-  const byCat={};
-  for(const i of items){
-    const v=i.qty*i.cost;totalVal+=v;
-    if(!byCat[i.cat])byCat[i.cat]=0;
-    byCat[i.cat]+=v;
-  }
-  let h=`<div class="stat-grid c2" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Total Items</div><div class="stat-val blue">${d.inv.items.length}</div></div>
-    <div class="stat"><div class="stat-label">Total Value</div><div class="stat-val green">${fmt(totalVal)}</div></div>
-  </div><div class="card"><div class="card-title blue">VALUE BY CATEGORY</div>`;
-  for(const[cat,val]of Object.entries(byCat).sort((a,b)=>b[1]-a[1]))
-    h+=`<div class="rep-row"><span class="rep-cat">${esc(cat)}</span><span class="rep-amt blue">${fmt(val)}</span></div>`;
-  h+=`<div class="rep-total"><span>Total Inventory Value</span><span class="green">${fmt(totalVal)}</span></div></div>`;
-  document.getElementById('inv-report-content').innerHTML=h;
-}
-
 //  PORTFOLIO
 function addHolding() {
   const d=load();
@@ -2984,116 +2757,6 @@ function calcPL() {
       <div class="stat"><div class="stat-label">% Return</div><div class="stat-val ${c}">${pct>=0?'+':''}${fmtN(pct,2)}%</div></div>
       <div class="stat"><div class="stat-label">Commission</div><div class="stat-val red">${fmt(comm)}</div></div>
     </div>`;
-}
-
-//  WORKERS
-function addWorker() {
-  const d=load();
-  const name=document.getElementById('new-worker-name').value.trim();
-  if(!name){toast('Enter worker name',false);return;}
-  if(d.work.workers.find(w=>w.name.toLowerCase()===name.toLowerCase())){toast('Already exists',false);return;}
-  d.work.workers.push({id:nextId(d.work.workers.map(w=>({id:w.id}))),name});
-  save(d);document.getElementById('new-worker-name').value='';
-  renderWorkerList();populateWorkerSelect();toast(name+' added');
-}
-function renderWorkerList() {
-  const d=load();
-  const el=document.getElementById('worker-list');
-  if(!d.work.workers.length){el.innerHTML='<div style="color:var(--dim);font-size:14px;">No workers yet.</div>';return;}
-  el.innerHTML=d.work.workers.map(w=>`<div class="master-row"><span class="master-name purple">${esc(w.name)}</span><button class="del-btn" onclick="delWorker(${w.id})">×</button></div>`).join('');
-}
-function delWorker(id) {
-  if(!confirm('Remove worker?'))return;
-  const d=load();d.work.workers=d.work.workers.filter(w=>w.id!==id);
-  save(d);renderWorkerList();populateWorkerSelect();toast('Removed');
-}
-function populateWorkerSelect() {
-  const d=load();
-  const sel=document.getElementById('wlog-worker');
-  sel.innerHTML=d.work.workers.length?d.work.workers.map(w=>`<option value="${esc(w.name)}">${esc(w.name)}</option>`).join(''):'<option value="">— Add workers first —</option>';
-}
-function addWorkLog() {
-  const d=load();
-  const worker=document.getElementById('wlog-worker').value;
-  const date=document.getElementById('wlog-date').value;
-  const hrs=parseFloat(document.getElementById('wlog-hrs').value);
-  const rate=parseFloat(document.getElementById('wlog-rate').value)||0;
-  const jcode=document.getElementById('wlog-jcode').value.trim().toUpperCase();
-  const pcode=document.getElementById('wlog-pcode').value.trim().toUpperCase();
-  const notes=document.getElementById('wlog-notes').value.trim();
-  if(!worker||!date||isNaN(hrs)||hrs<=0){toast('Worker, date & hours required',false);return;}
-  const pay=parseFloat((hrs*rate).toFixed(2));
-  d.work.logs.push({id:nextId(d.work.logs),worker,date,hrs,rate,pay,jcode,pcode,notes});
-  save(d);
-  document.getElementById('wlog-hrs').value='';document.getElementById('wlog-notes').value='';
-  toast(`${worker}: ${hrs}h = ${fmt(pay)}`);
-}
-function buildWorkFilters() {
-  const d=load();
-  const workers=[...new Set(d.work.logs.map(l=>l.worker))];
-  const yrs=[...new Set(d.work.logs.map(l=>l.date.slice(0,4)))].sort().reverse();
-  const jcs=[...new Set(d.work.logs.map(l=>l.jcode).filter(Boolean))];
-  document.getElementById('wv-worker').innerHTML='<option value="">All Workers</option>'+workers.map(w=>`<option>${esc(w)}</option>`).join('');
-  document.getElementById('wv-yr').innerHTML='<option value="">All Years</option>'+yrs.map(y=>`<option>${y}</option>`).join('');
-  document.getElementById('wv-jc').innerHTML='<option value="">All Jobs</option>'+jcs.map(c=>`<option>${esc(c)}</option>`).join('');
-}
-function renderWorkView() {
-  const d=load();
-  const fw=document.getElementById('wv-worker').value;
-  const fy=document.getElementById('wv-yr').value;
-  const fj=document.getElementById('wv-jc').value;
-  const logs=d.work.logs.filter(l=>(!fw||l.worker===fw)&&(!fy||l.date.startsWith(fy))&&(!fj||l.jcode===fj)).sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('work-list').innerHTML=logs.length?logs.map(l=>{
-    const tags=(l.jcode?`<span class="tag tag-p">JOB:${esc(l.jcode)}</span>`:'')+
-               (l.pcode?`<span class="tag tag-b">PROP:${esc(l.pcode)}</span>`:'');
-    return `<div class="list-row">
-      <div class="lr-dot" style="background:var(--purple)"></div>
-      <div class="lr-body">
-        <div class="lr-main">${esc(l.worker)} · ${l.hrs}h @ ${fmt(l.rate)}/hr</div>
-        <div class="lr-sub">${l.date}${l.notes?' · '+esc(l.notes):''}</div>
-        ${tags?`<div class="lr-tags">${tags}</div>`:''}
-      </div>
-      <div class="lr-right">
-        <div class="lr-amt purple">${fmt(l.pay)}</div>
-        <button class="del-btn" onclick="delWorkLog(${l.id})">×</button>
-      </div>
-    </div>`;
-  }).join(''):'<div style="color:var(--dim);padding:10px 0;">No entries.</div>';
-}
-function delWorkLog(id) {
-  if(!confirm('Delete?'))return;
-  const d=load();d.work.logs=d.work.logs.filter(x=>x.id!==id);
-  save(d);renderWorkView();toast('Deleted');
-}
-function buildWorkReportFilters() {
-  const d=load();
-  const workers=[...new Set(d.work.logs.map(l=>l.worker))];
-  const yrs=[...new Set(d.work.logs.map(l=>l.date.slice(0,4)))].sort().reverse();
-  document.getElementById('wr-worker').innerHTML='<option value="">All Workers</option>'+workers.map(w=>`<option>${esc(w)}</option>`).join('');
-  document.getElementById('wr-yr').innerHTML='<option value="">All Years</option>'+yrs.map(y=>`<option>${y}</option>`).join('');
-}
-function renderWorkReport() {
-  const d=load();
-  const fw=document.getElementById('wr-worker').value;
-  const fy=document.getElementById('wr-yr').value;
-  const logs=d.work.logs.filter(l=>(!fw||l.worker===fw)&&(!fy||l.date.startsWith(fy)));
-  const byWorker={};
-  for(const l of logs){
-    if(!byWorker[l.worker])byWorker[l.worker]={hrs:0,pay:0};
-    byWorker[l.worker].hrs+=l.hrs;
-    byWorker[l.worker].pay+=l.pay;
-  }
-  const totHrs=logs.reduce((s,l)=>s+l.hrs,0);
-  const totPay=logs.reduce((s,l)=>s+l.pay,0);
-  let h=`<div class="stat-grid c2" style="margin-bottom:10px;">
-    <div class="stat"><div class="stat-label">Total Hours</div><div class="stat-val purple">${fmtN(totHrs,2)}</div></div>
-    <div class="stat"><div class="stat-label">Total Pay</div><div class="stat-val red">${fmt(totPay)}</div></div>
-  </div><div class="card"><div class="card-title purple">BY WORKER</div>`;
-  for(const[w,v]of Object.entries(byWorker).sort((a,b)=>b[1].pay-a[1].pay))
-    h+=`<div class="rep-row"><span class="rep-cat">${esc(w)} · ${fmtN(v.hrs,2)}h</span><span class="rep-amt purple">${fmt(v.pay)}</span></div>`;
-  if(!Object.keys(byWorker).length)h+=`<div style="color:var(--dim);font-size:14px;padding:4px 0;">No data.</div>`;
-  h+=`<div class="rep-total"><span>Total</span><span class="red">${fmt(totPay)}</span></div></div>`;
-  document.getElementById('work-report-content').innerHTML=h;
 }
 
 //  GROCERY TRACKER
@@ -6398,6 +6061,64 @@ function loadClients(){try{var s=localStorage.getItem('mx_clients');CLIENTS=s?JS
 function saveClients(){try{localStorage.setItem('mx_clients',JSON.stringify(CLIENTS));}catch(e){}}
 function nextClientId(){return CLIENTS.length?Math.max.apply(null,CLIENTS.map(function(c){return c.id||0;}))+1:1;}
 
+function phoneLoadFile(){
+  var inp=document.getElementById('phone-file-input');
+  if(inp){ inp.value=''; inp.click(); }
+}
+function phoneReadFile(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      var raw=[];
+      // Handle phonok_clients.json wrapper format
+      if(data && data.clients && Array.isArray(data.clients)) raw=data.clients;
+      // Handle plain array
+      else if(Array.isArray(data)) raw=data;
+      else { toast('Unrecognized file format',false); return; }
+
+      if(!raw.length){ toast('No clients found in file',false); return; }
+
+      // Convert phonok format → mfs1 format
+      var converted=raw.map(function(c,i){
+        // Build addr from separate fields if needed
+        var addr=c.addr||'';
+        if(!addr){
+          var parts=[c.address,c.city,c.state,c.zip].filter(function(x){return x&&String(x).trim();});
+          addr=parts.join(', ');
+        }
+        // Extra info into notes if fields exist
+        var notes=c.notes||'';
+        if(c.jobtype && notes.indexOf(c.jobtype)<0) notes=(c.jobtype+(notes?' | '+notes:'')).trim();
+        if(c.status && c.status!=='COLD') notes=(c.status+(notes?' | '+notes:'')).trim();
+        return {
+          id:     c.id || (i+1),
+          name:   c.name||'',
+          phone:  c.phone||'',
+          email:  c.email||'',
+          addr:   addr,
+          notes:  notes,
+          contacted: c.contacted||c.contact||'',
+          adate:  c.adate||''
+        };
+      });
+
+      var msg='Load '+converted.length+' clients from "'+file.name+'"?\n\nThis will REPLACE all existing clients.';
+      if(!confirm(msg)) return;
+
+      CLIENTS=converted;
+      saveClients();
+      toast('✓ Loaded '+converted.length+' clients',true);
+      phoneShowList();
+    } catch(ex){
+      toast('File read error: '+ex.message, false);
+    }
+  };
+  reader.readAsText(file);
+}
+
 function phoneShowList(){
   document.getElementById('phone-list-page').style.display='block';
   document.getElementById('phone-form-page').style.display='none';
@@ -6444,6 +6165,7 @@ function clientCardHtml(c){
   if(c.addr)  h+='<div style="color:#ccccff;font-size:13px;margin:3px 0;">📍 '+escClient(c.addr)+'</div>';
   if(c.notes) h+='<div style="color:#ce93d8;font-size:13px;margin:3px 0;">📝 '+escClient(c.notes)+'</div>';
   if(c.contacted) h+='<div style="color:#ffff00;font-size:13px;margin:3px 0;">📅 LAST CONTACT: '+escClient(c.contacted)+'</div>';
+  if(c.adate)     h+='<div style="font-size:13px;font-weight:700;margin:3px 0;background:#330000;padding:4px 7px;border-radius:3px;color:#ffff00;">📅 JOB DATE: '+escClient(fmtADate(c.adate))+'</div>';
   h+='<div style="display:flex;gap:6px;margin-top:6px;">'
     +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
     +'<button onclick="delClient('+c.id+')" style="flex:1;background:#4a0000;color:#ff4444;border:1px solid #ff4444;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">DEL</button>'
@@ -6461,7 +6183,7 @@ function renderAllClients(){
 function phoneShowForm(id){
   document.getElementById('phone-list-page').style.display='none';
   document.getElementById('phone-form-page').style.display='block';
-  ['cli-name','cli-phone','cli-email','cli-addr','cli-notes','cli-contacted','cli-id'].forEach(function(f){document.getElementById(f).value='';});
+  ['cli-name','cli-phone','cli-email','cli-addr','cli-notes','cli-contacted','cli-adate','cli-id'].forEach(function(f){document.getElementById(f).value='';});
   if(id){
     var c=null;for(var i=0;i<CLIENTS.length;i++)if(CLIENTS[i].id===id){c=CLIENTS[i];break;}
     if(c){
@@ -6472,6 +6194,7 @@ function phoneShowForm(id){
       document.getElementById('cli-addr').value=c.addr||'';
       document.getElementById('cli-notes').value=c.notes||'';
 	  document.getElementById('cli-contacted').value=c.contacted||'';
+      document.getElementById('cli-adate').value=c.adate||'';
       document.getElementById('phone-form-title').textContent='EDIT CLIENT';
     }
   } else {
@@ -6488,7 +6211,8 @@ function saveClient(){
     email:(document.getElementById('cli-email').value||'').trim(),
     addr:(document.getElementById('cli-addr').value||'').trim(),
     notes:(document.getElementById('cli-notes').value||'').trim(),
-	contacted:(document.getElementById('cli-contacted').value||'').trim()
+	contacted:(document.getElementById('cli-contacted').value||'').trim(),
+    adate:(document.getElementById('cli-adate').value||'').trim()
   };
   var existingId=parseInt(document.getElementById('cli-id').value||'0',10);
   loadClients();
@@ -6513,6 +6237,13 @@ function delClient(id){
   toast('Deleted',true);
 }
 function escClient(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function fmtADate(d){
+  // Convert ISO YYYY-MM-DD → American MM/DD/YYYY for display
+  if(!d)return '';
+  var p=String(d).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(p)return p[2]+'/'+p[3]+'/'+p[1];
+  return d; // return as-is if not ISO format
+}
 function telLink(p){return (p||'').replace(/[^\d+]/g,'');}
 function renderClientList(){
   loadClients();
@@ -6528,7 +6259,7 @@ function renderClientList(){
   }
   var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
   rows=rows.filter(function(c){
-    return ((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')).toLowerCase().indexOf(q)>=0;
+    return ((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')+' '+(c.adate||'')).toLowerCase().indexOf(q)>=0;
   });
   if(!rows.length){
     list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No matches for "'+escClient(q)+'"</div>';
@@ -6543,9 +6274,9 @@ function emailClientsCSV(){
   // build CSV
   var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
   function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
-  var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES","CONTACTED"'];
+  var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES","CONTACTED","ADATE"'];
   rows.forEach(function(c){
-  lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes)+','+q(c.contacted));
+  lines.push(q(c.name)+','+q(c.phone)+','+q(c.email)+','+q(c.addr)+','+q(c.notes)+','+q(c.contacted)+','+q(c.adate));
   });
   var csv=lines.join('\r\n');
   var dateStr=today();
