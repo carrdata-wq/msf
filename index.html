@@ -4145,7 +4145,7 @@ function doBankImportConfirm(){
       var r=_bankRows[i];
       var key=(r.date||'')+'|'+(r.amt||0)+'|'+(r.payee||'').slice(0,10);
       if(existing.has(key)){_dupQueue.push(r);skipped++;}
-      else{LOG.unshift({id:Date.now()+Math.random(),payee:r.payee,pcode:r.pcode,desc:r.desc,date:r.date,amt:r.amt});existing.add(key);added++;}
+      else{LOG.unshift({id:Date.now()+Math.random(),payee:r.payee,pcode:r.pcode,desc:r.desc,date:r.date,amt:r.amt,x:'X',mtime:new Date().toISOString()});existing.add(key);added++;}
     }
     idx=end;
     var pct=Math.round((idx/total)*100);
@@ -4193,7 +4193,7 @@ function showDupReview(idx){
 
 function dupKeepBoth(idx){
   var r=_dupQueue[idx];loadLog();
-  LOG.unshift({id:Date.now()+Math.random(),payee:r.payee,pcode:r.pcode,desc:r.desc,date:r.date,amt:r.amt});
+  LOG.unshift({id:Date.now()+Math.random(),payee:r.payee,pcode:r.pcode,desc:r.desc,date:r.date,amt:r.amt,x:'X',mtime:new Date().toISOString()});
   saveLog();_dupAdded++;_dupSkipped--;
   var o=document.getElementById('dup-review-overlay');if(o)o.remove();
   showDupReview(idx+1);
