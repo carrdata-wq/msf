@@ -413,8 +413,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <input type="text" id="search" placeholder="TYPE PAYEE NAME..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#0000cc;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:10px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:4px;" oninput="doFilter(this.value);showCmdHint(this.value)" onkeyup="xExit(this.value)">
   <div id="hint" style="font-size:13px;color:#ccccff;margin-bottom:8px;">TYPE PAYEE NAME TO SEARCH</div>
-  <div style="font-size:14px;color:#ccccff;margin-bottom:3px;">ADD TO LISTS:</div>
-  <div style="display:flex;gap:6px;margin-bottom:8px;">
+  <div id="add-to-lists" style="font-size:14px;color:#ccccff;margin-bottom:3px;">ADD TO LISTS:</div>
+  <div id="add-to-lists-btns" style="display:flex;gap:6px;margin-bottom:8px;">
     <button onclick="showAdd('desc')" style="flex:1;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;border:1px solid #ffff00;border-radius:4px;cursor:pointer;">+ ADD DESC</button>
     <button onclick="showAdd('pcode')" style="flex:1;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;border:1px solid #ffff00;border-radius:4px;cursor:pointer;">+ ADD PCODE</button>
   </div>
@@ -441,7 +441,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </select>
   </div>
 
-  <table id="matrixtbl" style="width:100%;border-collapse:collapse;font-size:14px;display:none;">
+  <div id="notfound-prompt" style="display:none;background:#000080;border:2px solid #ffff00;border-radius:6px;padding:16px;margin-bottom:10px;text-align:center;">
+    <div id="notfound-msg" style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="showAddNew()" style="flex:2;background:#006600;color:#ffffff;border:none;padding:12px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✅ ADD AS NEW ENTRY</button>
+      <button onclick="clearNotFound()" style="flex:1;background:#660000;color:#ffffff;border:none;padding:12px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">❌ CANCEL</button>
+    </div>
+  </div> style="width:100%;border-collapse:collapse;font-size:14px;display:none;">
     <thead><tr>
       <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">PAYEE</th>
       <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">PCODE</th>
@@ -5693,11 +5699,28 @@ function checkAddDesc(sel){
   try{var saved=JSON.parse(localStorage.getItem('mx_descs')||'[]');if(saved.indexOf(nd)<0){saved.push(nd);localStorage.setItem('mx_descs',JSON.stringify(saved));}}catch(e){}
 }
 function autoDecimal(el){var raw=el.value.replace(/[^0-9]/g,'');if(!raw)return;el.value=(parseInt(raw,10)/100).toFixed(2);}
+function clearNotFound(){
+  var nf=document.getElementById('notfound-prompt'); if(nf)nf.style.display='none';
+  var al=document.getElementById('add-to-lists'); if(al)al.style.display='block';
+  var alb=document.getElementById('add-to-lists-btns'); if(alb)alb.style.display='flex';
+  var s=document.getElementById('search'); if(s)s.value='';
+  var h=document.getElementById('hint'); if(h)h.textContent='TYPE PAYEE NAME TO SEARCH';
+  var mt=document.getElementById('matrixtbl'); if(mt)mt.style.display='none';
+  var an=document.getElementById('addnew'); if(an)an.style.display='none';
+}
 function doFilter(val){
   var q=val.toUpperCase().replace(/[^A-Z0-9 ]/g,'').trim();
   var tbl=document.getElementById('matrixtbl');
   document.getElementById('addnew').style.display='none';
-  if(!q){_shown=[];tbl.style.display='none';document.getElementById('hint').textContent='TYPE PAYEE NAME TO SEARCH';return;}
+  document.getElementById('notfound-prompt').style.display='none';
+  if(!q){
+    _shown=[];tbl.style.display='none';
+    document.getElementById('hint').textContent='TYPE PAYEE NAME TO SEARCH';
+    var _al=document.getElementById('add-to-lists'); if(_al)_al.style.display='block';
+    var _alb=document.getElementById('add-to-lists-btns'); if(_alb)_alb.style.display='flex';
+    var _nf=document.getElementById('notfound-prompt'); if(_nf)_nf.style.display='none';
+    return;
+  }
   tbl.style.display='table';_shown=[];
   for(var i=0;i<MX.length;i++){
     var stripped=MX[i].payee.toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -5705,11 +5728,19 @@ function doFilter(val){
     if(stripped.indexOf(q)>=0||full.indexOf(q)>=0) _shown.push(MX[i]);
   }
   if(!_shown.length){
-    document.getElementById('tbody').innerHTML='<tr><td colspan="3" style="color:#888;padding:10px;">No match</td></tr>'
-      +'<tr onclick="showAddNew()" style="cursor:pointer;"><td colspan="3" style="color:#ffff00;font-weight:700;padding:10px;background:#0000aa;border:2px solid #ffff00;border-radius:4px;text-align:center;">+ ADD &quot;'+val.toUpperCase()+'&quot; AS NEW PAYEE</td></tr>';
-    document.getElementById('hint').textContent='No match -- tap below to add new';
-    document.getElementById('an-payee').value=val.toUpperCase();return;
+    // Clean not-found — hide noise, show simple prompt
+    tbl.style.display='none';
+    var al=document.getElementById('add-to-lists'); if(al)al.style.display='none';
+    var alb=document.getElementById('add-to-lists-btns'); if(alb)alb.style.display='none';
+    var nfm=document.getElementById('notfound-msg'); if(nfm)nfm.textContent='"'+val.toUpperCase()+'" — NOT FOUND';
+    var nf=document.getElementById('notfound-prompt'); if(nf)nf.style.display='block';
+    document.getElementById('hint').textContent='';
+    document.getElementById('an-payee').value=val.toUpperCase();
+    return;
   }
+  // Match found — show table normally
+  var al2=document.getElementById('add-to-lists'); if(al2)al2.style.display='block';
+  var alb2=document.getElementById('add-to-lists-btns'); if(alb2)alb2.style.display='flex';
   var html='';
   for(var j=0;j<_shown.length;j++){
     html+='<tr onclick="doPick('+j+')" style="cursor:pointer;">'
