@@ -5763,7 +5763,7 @@ function doSave(){
   var incWords=['INCOME','CREDIT INVOICE'];
   var isIncome=false;for(var w=0;w<incWords.length;w++){if(desc.toUpperCase().indexOf(incWords[w])>=0){isIncome=true;break;}}
   amt=isIncome?Math.abs(amt):-Math.abs(amt);
-  var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt};
+  var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt,x:'X',mtime:new Date().toISOString()};
   if(_editId!==null){
     // get original payee BEFORE overwriting
     var origPayee='';
@@ -5826,7 +5826,7 @@ function doCopy(){
   var incWords=['INCOME','CREDIT INVOICE'];
   var isIncome=false;for(var w=0;w<incWords.length;w++){if(desc.toUpperCase().indexOf(incWords[w])>=0){isIncome=true;break;}}
   amt=isIncome?Math.abs(amt):-Math.abs(amt);
-  var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt};
+  var entry={id:Date.now(),payee:payee,pcode:pcode,desc:desc,date:date,amt:amt,x:'X',mtime:new Date().toISOString()};
   LOG.unshift(entry);
   saveLog();saveDatePref();
   try{localStorage.setItem('mx_last_pcode',pcode);localStorage.setItem('mx_last_desc',desc);}catch(e){}
@@ -6261,7 +6261,9 @@ function saveClient(){
     notes:(document.getElementById('cli-notes').value||'').trim(),
 	contacted:(document.getElementById('cli-contacted').value||'').trim(),
     adate:(document.getElementById('cli-adate').value||'').trim(),
-    modified:today()
+    modified:today(),
+    x:'X',
+    mtime:new Date().toISOString()
   };
   var existingId=parseInt(document.getElementById('cli-id').value||'0',10);
   loadClients();
