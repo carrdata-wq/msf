@@ -441,13 +441,16 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </select>
   </div>
 
-  <div id="notfound-prompt" style="display:none;background:#000080;border:2px solid #ffff00;border-radius:6px;padding:16px;margin-bottom:10px;text-align:center;">
-    <div id="notfound-msg" style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:14px;"></div>
+  <div id="notfound-prompt" style="display:none;background:#000080;border:3px solid #ffff00;border-radius:6px;padding:16px;margin-bottom:10px;text-align:center;">
+    <div id="notfound-msg" style="color:#ff4444;font-weight:700;font-size:16px;margin-bottom:14px;letter-spacing:1px;">⚠️ PAYEE NOT FOUND</div>
+    <div id="notfound-name" style="color:#ffff00;font-weight:700;font-size:18px;margin-bottom:16px;"></div>
     <div style="display:flex;gap:8px;">
-      <button onclick="showAddNew()" style="flex:2;background:#006600;color:#ffffff;border:none;padding:12px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✅ ADD AS NEW ENTRY</button>
-      <button onclick="clearNotFound()" style="flex:1;background:#660000;color:#ffffff;border:none;padding:12px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">❌ CANCEL</button>
+      <button onclick="showAddNew()" style="flex:3;background:#ffff00;color:#000080;border:none;padding:16px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:16px;cursor:pointer;letter-spacing:1px;">➕ ADD AS NEW ENTRY</button>
+      <button onclick="clearNotFound()" style="flex:1;background:#660000;color:#ffffff;border:2px solid #ff4444;padding:16px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">❌ CANCEL</button>
     </div>
-  </div> style="width:100%;border-collapse:collapse;font-size:14px;display:none;">
+  </div>
+
+  <table id="matrixtbl" style="width:100%;border-collapse:collapse;font-size:14px;display:none;">
     <thead><tr>
       <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">PAYEE</th>
       <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:14px;">PCODE</th>
@@ -5712,7 +5715,7 @@ function doFilter(val){
   var q=val.toUpperCase().replace(/[^A-Z0-9 ]/g,'').trim();
   var tbl=document.getElementById('matrixtbl');
   document.getElementById('addnew').style.display='none';
-  document.getElementById('notfound-prompt').style.display='none';
+  var _nfp=document.getElementById('notfound-prompt'); if(_nfp)_nfp.style.display='none';
   if(!q){
     _shown=[];tbl.style.display='none';
     document.getElementById('hint').textContent='TYPE PAYEE NAME TO SEARCH';
@@ -5732,7 +5735,8 @@ function doFilter(val){
     tbl.style.display='none';
     var al=document.getElementById('add-to-lists'); if(al)al.style.display='none';
     var alb=document.getElementById('add-to-lists-btns'); if(alb)alb.style.display='none';
-    var nfm=document.getElementById('notfound-msg'); if(nfm)nfm.textContent='"'+val.toUpperCase()+'" — NOT FOUND';
+    var nfm=document.getElementById('notfound-msg'); if(nfm)nfm.textContent='⚠️ PAYEE NOT FOUND';
+    var nfn=document.getElementById('notfound-name'); if(nfn)nfn.textContent='"'+val.toUpperCase()+'"';
     var nf=document.getElementById('notfound-prompt'); if(nf)nf.style.display='block';
     document.getElementById('hint').textContent='';
     document.getElementById('an-payee').value=val.toUpperCase();
