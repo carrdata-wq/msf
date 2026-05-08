@@ -339,6 +339,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ff4444;">Clear All Data</div><div class="ms">Wipe ledger · Fresh start · Backup first!</div></div>
       <div class="menu-arrow" style="color:#ff4444;">›</div>
     </div>
+    <div class="menu-item" onclick="doClearPhoneClients()">
+      <div class="menu-num">8b</div><div class="menu-icon">📱</div>
+      <div class="menu-label"><div class="ml" style="color:#ff4444;">Clear Phone Clients</div><div class="ms">Wipe all phone clients · Fresh load</div></div>
+      <div class="menu-arrow" style="color:#ff4444;">›</div>
+    </div>
     <div class="menu-item" onclick="doCheatSheet()">
       <div class="menu-num">9</div><div class="menu-icon">📝</div>
       <div class="menu-label"><div class="ml" style="color:#ffff00;">DESC Cheat Sheet</div><div class="ms">Fix EXPENSE descs · Bulk assign PCODE/DESC</div></div>
@@ -3721,6 +3726,14 @@ function doReindex(){
   saveLog();
   renderLog();
   toast('REINDEX COMPLETE — '+fixed+' records fixed · '+LOG.length+' total ✓',true);
+  goMain();
+}
+
+function doClearPhoneClients(){
+  if(!confirm('CLEAR ALL PHONE CLIENTS?\n\nThis wipes the entire phone database.\nMake sure you have your P1-P26 files ready to reload!\n\nTap OK to confirm.'))return;
+  CLIENTS=[];
+  try{localStorage.removeItem('mx_clients');}catch(e){}
+  toast('✓ Phone clients cleared — reload your P1-P26 files',true);
   goMain();
 }
 
