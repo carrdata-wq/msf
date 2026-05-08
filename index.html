@@ -349,7 +349,23 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">Find Duplicates</div><div class="ms">Check · Select · Delete dupes</div></div>
       <div class="menu-arrow" style="color:#ff88ff;">›</div>
     </div>
+    <div class="menu-item" onclick="doSyncExport('android')">
+      <div class="menu-num">11</div><div class="menu-icon">📱</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;">ANDROID SYNC TO THINKPAD</div><div class="ms">Export changes · Send to ThinkPad</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
+    <div class="menu-item" onclick="doSyncExport('thinkpad')">
+      <div class="menu-num">12</div><div class="menu-icon">💻</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">THINKPAD TO ANDROID SYNC</div><div class="ms">Export changes · Send to Android</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    </div>
+    <div class="menu-item" onclick="doSyncImport()">
+      <div class="menu-num">13</div><div class="menu-icon">📥</div>
+      <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive · Merge · Update from other device</div></div>
+      <div class="menu-arrow" style="color:#ffaa00;">›</div>
+    </div>
   </div>
+  <input type="file" id="sync-file-input" accept=".json" style="display:none" onchange="doSyncRead(this)">
   </div>
 </div>
 <div id="filemgr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;align-items:flex-end;justify-content:center;padding:10px;">
@@ -3874,6 +3890,107 @@ function cheatSheetApply(payee,sid){
   toast('✓ '+fixed+' entries updated for '+payee,true);
   var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
   doCheatSheet();
+}
+
+function doSyncExport(source){
+  // Gather X-flagged accounting entries
+  var accChanges=LOG.filter(function(e){return e.x==='X';});
+  // Gather X-flagged phone clients
+  loadClients();
+  var cliChanges=CLIENTS.filter(function(c){return c.x==='X';});
+  if(!accChanges.length&&!cliChanges.length){
+    toast('No changes to sync — nothing flagged ✔',false);return;
+  }
+  var pkg={
+    type:'mfs-sync',
+    source:source,
+    exported:new Date().toISOString(),
+    accounting:accChanges,
+    clients:cliChanges
+  };
+  var fname=(source==='android'?'ANDROID_SYNC':'THINKPAD_SYNC')+'.json';
+  var blob=new Blob([JSON.stringify(pkg,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fname;
+  a.click();
+  toast('✓ Exported '+accChanges.length+' accounting + '+cliChanges.length+' client changes → '+fname,true);
+}
+
+function doSyncImport(){
+  var inp=document.getElementById('sync-file-input');
+  if(inp){inp.value='';inp.click();}
+}
+
+function doSyncRead(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var pkg=JSON.parse(e.target.result);
+      if(!pkg||pkg.type!=='mfs-sync'){toast('Not a valid sync file',false);return;}
+      var accMerged=0,accAdded=0,cliMerged=0,cliAdded=0;
+
+      // ── MERGE ACCOUNTING ──
+      if(pkg.accounting&&pkg.accounting.length){
+        pkg.accounting.forEach(function(incoming){
+          var idx=-1;
+          for(var i=0;i<LOG.length;i++){
+            if(LOG[i].id===incoming.id){idx=i;break;}
+          }
+          if(idx===-1){
+            // New record — add it, clear x flag
+            var rec=Object.assign({},incoming);rec.x='';
+            LOG.unshift(rec);accAdded++;
+          } else {
+            // Existing — compare mtime, keep newer
+            var localMtime=LOG[idx].mtime||'';
+            var incomingMtime=incoming.mtime||'';
+            if(incomingMtime>localMtime){
+              var merged=Object.assign({},incoming);merged.x='';
+              LOG[idx]=merged;accMerged++;
+            } else {
+              LOG[idx].x='';// clear flag even if local wins
+            }
+          }
+        });
+        try{localStorage.setItem('mx_log',JSON.stringify(LOG));}catch(ex){}
+      }
+
+      // ── MERGE PHONE CLIENTS ──
+      if(pkg.clients&&pkg.clients.length){
+        loadClients();
+        pkg.clients.forEach(function(incoming){
+          var idx=-1;
+          for(var i=0;i<CLIENTS.length;i++){
+            if(CLIENTS[i].id===incoming.id){idx=i;break;}
+          }
+          if(idx===-1){
+            var rec=Object.assign({},incoming);rec.x='';
+            CLIENTS.push(rec);cliAdded++;
+          } else {
+            var localMtime=CLIENTS[idx].mtime||'';
+            var incomingMtime=incoming.mtime||'';
+            if(incomingMtime>localMtime){
+              var merged=Object.assign({},incoming);merged.x='';
+              CLIENTS[idx]=merged;cliMerged++;
+            } else {
+              CLIENTS[idx].x='';
+            }
+          }
+        });
+        saveClients();
+      }
+
+      renderLog();
+      var msg='✓ SYNC COMPLETE\n'
+        +'Accounting: +'+accAdded+' new, '+accMerged+' updated\n'
+        +'Clients: +'+cliAdded+' new, '+cliMerged+' updated';
+      toast(msg,true);
+    }catch(ex){toast('Sync error: '+ex.message,false);}
+  };
+  reader.readAsText(file);
 }
 
 function doFixZelleNames(){
