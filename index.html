@@ -6020,6 +6020,7 @@ function renderLog(){
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')">DEL</button> '
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')">CPY</button> '
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog('+e.id+')">EDT</button>'
+      +(e.x?'<span title="New/Edited — pending sync" style="margin-left:4px;color:#00ff88;font-size:14px;font-weight:700;">✔</span>':'')
       +'</td>'
       +'<td style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">'+(start+i+1)+'</td>'
       +'</tr>';
@@ -6321,8 +6322,9 @@ function phoneShowAll(){
 }
 
 function clientCardHtml(c){
-  var h='<div style="background:#000080;border:1px solid #6666ff;border-radius:4px;padding:8px;margin-bottom:6px;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:4px;">'+escClient(c.name)+'</div>';
+  var xFlag=c.x?'<span title="New/Edited — pending sync" style="float:right;color:#00ff88;font-size:14px;font-weight:700;">✔ NEW</span>':'';
+  var h='<div style="background:#000080;border:1px solid '+(c.x?'#00ff88':'#6666ff')+';border-radius:4px;padding:8px;margin-bottom:6px;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:4px;">'+xFlag+escClient(c.name)+'</div>';
   if(c.phone) h+='<div style="margin:3px 0;"><a href="tel:'+escClient(telLink(c.phone))+'" style="color:#00ff88;text-decoration:none;font-size:13px;">📞 '+escClient(c.phone)+'</a></div>';
   if(c.email) h+='<div style="margin:3px 0;"><a href="mailto:'+escClient(c.email)+'" style="color:#00ffff;text-decoration:none;font-size:13px;">✉ '+escClient(c.email)+'</a></div>';
   if(c.addr)  h+='<div style="color:#ccccff;font-size:13px;margin:3px 0;">📍 '+escClient(c.addr)+'</div>';
