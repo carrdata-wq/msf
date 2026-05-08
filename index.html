@@ -369,8 +369,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive · Merge · Update from other device</div></div>
       <div class="menu-arrow" style="color:#ffaa00;">›</div>
     </div>
+    <div class="menu-item" onclick="bulkCsvImport()">
+      <div class="menu-num">14</div><div class="menu-icon">📦</div>
+      <div class="menu-label"><div class="ml" style="color:#ffff00;">BULK IMPORT</div><div class="ms">Load all P1-P26 files at once</div></div>
+      <div class="menu-arrow" style="color:#ffff00;">›</div>
+    </div>
   </div>
   <input type="file" id="sync-file-input" accept=".json" style="display:none" onchange="doSyncRead(this)">
+  <input type="file" id="bulk-import-input" accept=".json,.csv,.txt" multiple style="display:none" onchange="handleAndroidBulkImport(event)">
   </div>
 </div>
 <div id="filemgr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;align-items:flex-end;justify-content:center;padding:10px;">
@@ -3903,6 +3909,126 @@ function cheatSheetApply(payee,sid){
   toast('✓ '+fixed+' entries updated for '+payee,true);
   var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
   doCheatSheet();
+}
+
+function bulkCsvImport(){
+  var input=document.getElementById('bulk-import-input');
+  if(!input){
+    input=document.createElement('input');
+    input.type='file';
+    input.id='bulk-import-input';
+    input.accept='.json,.csv,.txt';
+    input.multiple=true;
+    input.style.display='none';
+    input.onchange=function(e){handleAndroidBulkImport(e);};
+    document.body.appendChild(input);
+  }
+  input.value='';
+  input.click();
+}
+
+function handleAndroidBulkImport(e){
+  var files=Array.from(e.target.files);
+  if(!files.length)return;
+  toast('Importing '+files.length+' files...',true);
+  var clientCount=0,accCount=0,newClients=[],newEntries=[],processed=0;
+  files.forEach(function(file){
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      processed++;
+      var result=parseBulkFile(ev.target.result,file.name);
+      if(result.type==='clients'){newClients=newClients.concat(result.data);clientCount+=result.data.length;}
+      else if(result.type==='accounting'){newEntries=newEntries.concat(result.data);accCount+=result.data.length;}
+      if(processed===files.length) finishBulkImport(newClients,newEntries,clientCount,accCount);
+    };
+    reader.readAsText(file);
+  });
+}
+
+function mergeClients(newClients){
+  loadClients();
+  var maxId=CLIENTS.length?Math.max.apply(null,CLIENTS.map(function(c){return c.id||0;})):0;
+  newClients.forEach(function(c,i){
+    if(!c.id)c.id=maxId+i+1;
+    CLIENTS.push(c);
+  });
+  saveClients();
+}
+
+function finishBulkImport(newClients,newEntries,clientCount,accCount){
+  var msg='';
+  if(clientCount>0){
+    mergeClients(newClients);
+    msg+='📱 '+clientCount+' Phone Clients imported\n';
+  }
+  if(accCount>0){
+    loadLog();
+    LOG=newEntries.concat(LOG);
+    saveLog();
+    msg+='💰 '+accCount+' Accounting entries imported\n';
+  }
+  if(msg){
+    toast('✅ SUCCESS!\n'+msg,true);
+    try{renderLog();phoneShowList();}catch(ex){}
+  } else {
+    toast('No valid data found in files',false);
+  }
+}
+
+function parseBulkFile(text,filename){
+  text=text.trim();
+  if(!text)return{type:'unknown',data:[]};
+  // JSON format
+  if(text[0]==='{'){
+    try{
+      var d=JSON.parse(text);
+      if(d.clients&&Array.isArray(d.clients)) return{type:'clients',data:d.clients};
+    }catch(e){}
+  }
+  if(text[0]==='['){
+    try{
+      var arr=JSON.parse(text);
+      if(arr[0]&&arr[0].name) return{type:'clients',data:arr};
+    }catch(e){}
+  }
+  // CSV format — NAME,PHONE header
+  if(text.toUpperCase().indexOf('NAME,PHONE')>=0){
+    var lines=text.split(/\r?\n/);
+    var hdrs=lines[0].split(',').map(function(h){return h.replace(/"/g,'').trim().toUpperCase();});
+    var rows=[];
+    for(var i=1;i<lines.length;i++){
+      if(!lines[i].trim())continue;
+      var cols=[];var cur='';var inq=false;
+      for(var ci=0;ci<lines[i].length;ci++){
+        var ch=lines[i][ci];
+        if(ch==='"'){inq=!inq;}
+        else if(ch===','&&!inq){cols.push(cur);cur='';}
+        else cur+=ch;
+      }
+      cols.push(cur);
+      var obj={};
+      hdrs.forEach(function(h,idx){obj[h]=(cols[idx]||'').trim();});
+      var addr=obj.ADDRESS||obj.ADDR||'';
+      if(!addr){
+        var parts=[obj.ADDRESS,obj.CITY,obj.STATE,obj.ZIP].filter(function(x){return x&&x.trim();});
+        addr=parts.join(', ');
+      }
+      rows.push({
+        name:obj.NAME||'',
+        phone:obj.PHONE||'',
+        email:obj.EMAIL||'',
+        addr:addr,
+        notes:obj.NOTES||'',
+        adate:obj.ADATE||'',
+        contacted:obj.CONTACTED||obj.DATE||'',
+        modified:today(),
+        x:'X',
+        mtime:new Date().toISOString()
+      });
+    }
+    return{type:'clients',data:rows.filter(function(r){return r.name;})};
+  }
+  return{type:'unknown',data:[]};
 }
 
 function doSyncExport(source){
