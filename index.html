@@ -284,6 +284,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">System Utilities</div><div class="ms">MFS Update · File Manager · Drive</div></div>
       <div class="menu-arrow" style="color:#ff88ff;">›</div>
     </div>
+    <div class="menu-item" onclick="openTransferMenu()">
+      <div class="menu-num">7</div><div class="menu-icon">🔄</div>
+      <div class="menu-label"><div class="ml" style="color:#ffff00;">IMPORT & TRANSFER</div><div class="ms">Backup · Bulk Import · Restore · Sync</div></div>
+      <div class="menu-arrow" style="color:#ffff00;">›</div>
+    </div>
   </div>
   <div class="main-footer">
     <button class="foot-btn" onclick="doBackup()">⬇ Backup</button>
@@ -294,6 +299,57 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div style="padding:6px 10px;">
     <button id="pwa-install-btn" onclick="doInstallPWA()" style="display:none;width:100%;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:none;border-radius:6px;cursor:pointer;">📱 INSTALL MFS ON HOME SCREEN</button>
+  </div>
+</div>
+
+<div id="screen-transfer" class="screen" style="display:none;background:#0000cc;font-family:Courier New,monospace;">
+  <div style="background:#000080;border-bottom:2px solid #ffff00;padding:10px;display:flex;align-items:center;gap:10px;">
+    <button onclick="goMain()" style="background:#ffff00;color:#000080;font-weight:700;padding:8px 12px;border:none;border-radius:4px;font-family:Courier New,monospace;cursor:pointer;">◀ MENU</button>
+    <span style="flex:1;text-align:center;color:#ffff00;font-weight:700;font-size:15px;">🔄 IMPORT & TRANSFER</span>
+  </div>
+  <div style="padding:10px;">
+    <div class="main-box">
+      <div class="menu-item" onclick="doBackup()">
+        <div class="menu-icon">⬇️</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">BACKUP EVERYTHING</div><div class="ms">Full backup to Downloads</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
+      </div>
+      <div class="menu-item" onclick="bulkCsvImport()">
+        <div class="menu-icon">📦</div>
+        <div class="menu-label"><div class="ml" style="color:#ffff00;">BULK IMPORT</div><div class="ms">Select all P1-P26 files at once</div></div>
+        <div class="menu-arrow" style="color:#ffff00;">›</div>
+      </div>
+      <div class="menu-item" onclick="universalLoad()">
+        <div class="menu-icon">📥</div>
+        <div class="menu-label"><div class="ml" style="color:#00ffff;">RESTORE / LOAD FILE</div><div class="ms">Load backup or pasted data</div></div>
+        <div class="menu-arrow" style="color:#00ffff;">›</div>
+      </div>
+      <div class="menu-item" onclick="doExportCSV()">
+        <div class="menu-icon">📄</div>
+        <div class="menu-label"><div class="ml" style="color:#ccccff;">EXPORT CSV</div><div class="ms">Accounting to Excel/CSV</div></div>
+        <div class="menu-arrow" style="color:#ccccff;">›</div>
+      </div>
+      <div class="menu-item" onclick="emailClientsCSV()">
+        <div class="menu-icon">✉️</div>
+        <div class="menu-label"><div class="ml" style="color:#ccccff;">EMAIL CLIENTS</div><div class="ms">Send phone clients list</div></div>
+        <div class="menu-arrow" style="color:#ccccff;">›</div>
+      </div>
+      <div class="menu-item" onclick="doSyncExport('android')">
+        <div class="menu-icon">📱</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">ANDROID → THINKPAD</div><div class="ms">Export ✔ changes to send to ThinkPad</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
+      </div>
+      <div class="menu-item" onclick="doSyncExport('thinkpad')">
+        <div class="menu-icon">💻</div>
+        <div class="menu-label"><div class="ml" style="color:#00ffff;">THINKPAD → ANDROID</div><div class="ms">Export ✔ changes to send to Android</div></div>
+        <div class="menu-arrow" style="color:#00ffff;">›</div>
+      </div>
+      <div class="menu-item" onclick="doSyncImport()">
+        <div class="menu-icon">🔁</div>
+        <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive & merge from other device</div></div>
+        <div class="menu-arrow" style="color:#ffaa00;">›</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3909,6 +3965,11 @@ function cheatSheetApply(payee,sid){
   toast('✓ '+fixed+' entries updated for '+payee,true);
   var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
   doCheatSheet();
+}
+
+function openTransferMenu(){
+  document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
+  document.getElementById('screen-transfer').style.display='block';
 }
 
 function bulkCsvImport(){
