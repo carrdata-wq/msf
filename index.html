@@ -289,6 +289,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffff00;">IMPORT & TRANSFER</div><div class="ms">Backup · Bulk Import · Restore · Sync</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
+    <div class="menu-item" onclick="openAndroidEasyImport()" style="background:#002200;border:3px solid #00ff88;margin:4px 0;">
+      <div class="menu-num">8</div><div class="menu-icon" style="font-size:28px;">📱</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;font-size:15px;">ANDROID EASY IMPORT</div><div class="ms">Copy from Gmail · Paste · Done</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
   </div>
   <div class="main-footer">
     <button class="foot-btn" onclick="doBackup()">⬇ Backup</button>
@@ -299,6 +304,24 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div style="padding:6px 10px;">
     <button id="pwa-install-btn" onclick="doInstallPWA()" style="display:none;width:100%;background:#ffff00;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:none;border-radius:6px;cursor:pointer;">📱 INSTALL MFS ON HOME SCREEN</button>
+  </div>
+</div>
+
+<div id="screen-android-easy" class="screen" style="display:none;background:#001a00;padding:15px;font-family:Courier New,monospace;">
+  <div style="text-align:center;margin-bottom:16px;">
+    <div style="font-size:42px;margin-bottom:8px;">📧</div>
+    <div style="color:#00ff88;font-weight:700;font-size:16px;">ANDROID EASY IMPORT</div>
+    <div style="color:#aaffaa;font-size:13px;margin-top:6px;">1. Gmail → open backup email<br>2. Select All → Copy<br>3. Paste below → Import</div>
+  </div>
+  <textarea id="easy-paste-area" placeholder="Paste your full MFS backup email or JSON here..."
+    style="width:100%;height:300px;background:#000022;color:#ffffff;border:3px solid #00ff88;padding:12px;font-family:Courier New,monospace;font-size:13px;border-radius:8px;outline:none;"></textarea>
+  <button onclick="processEasyPaste()" style="width:100%;padding:18px;margin:10px 0;font-size:16px;font-weight:700;border:none;border-radius:8px;background:#00ff88;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📥 IMPORT NOW</button>
+  <button onclick="goMain()" style="width:100%;padding:14px;margin-bottom:10px;font-size:15px;font-weight:700;border:none;border-radius:8px;background:#660000;color:#ffffff;font-family:Courier New,monospace;cursor:pointer;">❌ CANCEL</button>
+  <div id="import-progress" style="display:none;margin-top:12px;text-align:center;">
+    <div style="height:8px;background:#003300;border-radius:4px;overflow:hidden;">
+      <div id="progress-bar" style="height:100%;width:0%;background:#00ff88;transition:width 0.4s;"></div>
+    </div>
+    <div id="progress-text" style="margin-top:10px;color:#00ff88;font-weight:700;font-size:14px;">Processing...</div>
   </div>
 </div>
 
@@ -3965,6 +3988,44 @@ function cheatSheetApply(payee,sid){
   toast('✓ '+fixed+' entries updated for '+payee,true);
   var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
   doCheatSheet();
+}
+
+function openAndroidEasyImport(){
+  document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
+  document.getElementById('screen-android-easy').style.display='block';
+  document.getElementById('easy-paste-area').value='';
+  document.getElementById('import-progress').style.display='none';
+  setTimeout(function(){document.getElementById('easy-paste-area').focus();},300);
+}
+
+function processEasyPaste(){
+  var text=document.getElementById('easy-paste-area').value.trim();
+  if(!text){toast('Please paste the backup data first',false);return;}
+  var progress=document.getElementById('import-progress');
+  var bar=document.getElementById('progress-bar');
+  var textEl=document.getElementById('progress-text');
+  progress.style.display='block';
+  bar.style.width='30%';
+  textEl.textContent='Analyzing data...';
+  setTimeout(function(){
+    var result=parseBulkFile(text,'email-paste');
+    if(result.type==='accounting'&&result.data.length>0){
+      loadLog();
+      LOG=result.data.concat(LOG);
+      saveLog();
+      bar.style.width='100%';
+      textEl.textContent='✅ Imported '+result.data.length+' entries';
+      setTimeout(function(){goMain();toast('✓ '+result.data.length+' accounting entries imported',true);},1500);
+    } else if(result.type==='clients'&&result.data.length>0){
+      mergeClients(result.data);
+      bar.style.width='100%';
+      textEl.textContent='✅ Imported '+result.data.length+' clients';
+      setTimeout(function(){goMain();toast('✓ '+result.data.length+' clients imported',true);},1500);
+    } else {
+      bar.style.width='0%';
+      textEl.innerHTML='❌ Could not read data.<br>Try copying the entire email content.';
+    }
+  },400);
 }
 
 function openTransferMenu(){
