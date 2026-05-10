@@ -296,10 +296,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
   </div>
   <div class="main-footer">
-    <button class="foot-btn" onclick="doBackup()">⬇ Backup</button>
-    <button class="foot-btn" onclick="doExportCSV()" style="color:#00ff88;border-color:#00ff88;">📄 CSV</button>
-    <button class="foot-btn" onclick="exportMasters()" style="color:#ffaa00;border-color:#ffaa00;">🔄 SHARE LISTS</button>
-    <button class="foot-btn" onclick="universalLoad()" style="color:#00ffff;border-color:#00ffff;">📥 LOAD TO WHATEVER</button>
+    <button class="foot-btn" onclick="doBackup()" style="color:#00ffff;border-color:#00ffff;">⬇ BACKUP ACCOUNTING</button>
+    <button class="foot-btn" onclick="doPhoneBackup()" style="color:#00ff88;border-color:#00ff88;">📱 PHONE BACKUP</button>
     <button class="foot-btn" onclick="window.close()" style="color:#ff6666;border-color:#ff6666;">✕ EXIT</button>
   </div>
   <div style="padding:6px 10px;">
@@ -371,6 +369,21 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <div class="menu-icon">🔁</div>
         <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive & merge from other device</div></div>
         <div class="menu-arrow" style="color:#ffaa00;">›</div>
+      </div>
+      <div class="menu-item" onclick="doExportCSV()">
+        <div class="menu-icon">📄</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">EXPORT CSV</div><div class="ms">Accounting to Excel / FoxBase</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
+      </div>
+      <div class="menu-item" onclick="exportMasters()">
+        <div class="menu-icon">🔄</div>
+        <div class="menu-label"><div class="ml" style="color:#ffaa00;">SHARE LISTS</div><div class="ms">Share payee & desc master lists</div></div>
+        <div class="menu-arrow" style="color:#ffaa00;">›</div>
+      </div>
+      <div class="menu-item" onclick="universalLoad()">
+        <div class="menu-icon">📥</div>
+        <div class="menu-label"><div class="ml" style="color:#00ffff;">LOAD TO WHATEVER</div><div class="ms">Load any backup or data file</div></div>
+        <div class="menu-arrow" style="color:#00ffff;">›</div>
       </div>
     </div>
   </div>
@@ -4696,6 +4709,53 @@ function dupKeepBoth(idx){
 }
 function dupSkipIt(idx){var o=document.getElementById('dup-review-overlay');if(o)o.remove();showDupReview(idx+1);}
 function dupSkipAll(){var o=document.getElementById('dup-review-overlay');if(o)o.remove();showScreen('main');toast(_dupAdded+' new · '+_dupSkipped+' skipped ✓',true);}
+
+function doPhoneBackup(){
+  loadClients();
+  if(!CLIENTS.length){toast('No phone clients to backup',false);return;}
+  var CHUNK=Math.ceil(CLIENTS.length/5);
+  var dateStr=today().replace(/-/g,'');
+  var files=[];
+  function qc(s){
+    s=String(s||'').replace(/\n/g,' ').replace(/\r/g,' ').replace(/"/g,"'");
+    if(s.indexOf(',')>=0) s='"'+s+'"';
+    return s;
+  }
+  var header='NAME,PHONE,EMAIL,ADDR,NOTES,CONTACTED,ADATE,X,MTIME\n';
+  var mtime=new Date().toISOString();
+  for(var i=0;i<5;i++){
+    var chunk=CLIENTS.slice(i*CHUNK,(i+1)*CHUNK);
+    if(!chunk.length) break;
+    var lines=[header];
+    chunk.forEach(function(c){
+      lines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),'X',qc(c.mtime||mtime)].join(',')+'\n');
+    });
+    files.push({name:'PHONE_BACKUP_'+dateStr+'_'+(i+1)+'.csv',text:lines.join(''),count:chunk.length});
+  }
+  files.forEach(function(f){
+    var blob=new Blob([f.text],{type:'text/csv'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=f.name;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  });
+  var subject='PHONE BACKUP — '+today()+' ('+CLIENTS.length+' clients)';
+  var toEmail='tristancarrington1@gmail.com';
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">📱 PHONE BACKUP COMPLETE</div>'
+    +'<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+CLIENTS.length.toLocaleString()+' clients → '+files.length+' files downloaded</div>'
+    +'<div style="color:#ccccff;font-size:12px;margin-bottom:12px;">PHONE_BACKUP_'+dateStr+'_1 through _'+files.length+'.csv</div>'
+    +'<div style="color:#aaaacc;font-size:12px;margin-bottom:12px;">Email these files to:<br><span style="color:#ffff00;">'+toEmail+'</span></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="window.open(\'mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'\')" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 OPEN EMAIL</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#fff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
 function doBackup() {
   var mxLog=[];
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
