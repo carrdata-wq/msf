@@ -286,13 +286,24 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <div class="menu-item" onclick="openTransferMenu()">
       <div class="menu-num">7</div><div class="menu-icon">🔄</div>
-      <div class="menu-label"><div class="ml" style="color:#ffff00;">IMPORT & TRANSFER</div><div class="ms">Backup · Bulk Import · Restore · Sync</div></div>
+      <div class="menu-label"><div class="ml" style="color:#ffff00;">DATA MANAGER</div><div class="ms">Backup · Restore · Sync · Move Data</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
     <div class="menu-item" onclick="openAndroidEasyImport()" style="background:#002200;border:3px solid #00ff88;margin:4px 0;">
-      <div class="menu-num">8</div><div class="menu-icon" style="font-size:28px;">📱</div>
-      <div class="menu-label"><div class="ml" style="color:#00ff88;font-size:15px;">ANDROID EASY IMPORT</div><div class="ms">Copy from Gmail · Paste · Done</div></div>
+      <div class="menu-num">8</div><div class="menu-icon" style="font-size:28px;">💰</div>
+      <div class="menu-label">
+        <div class="ml" style="color:#00ff88;font-size:14px;">MOVE ACCOUNTING</div>
+        <div class="ms" style="color:#aaffaa;">ThinkPad ↔ Android · Paste or Download</div>
+      </div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
+    <div class="menu-item" onclick="openPhoneMoveMenu()" style="background:#002200;border:3px solid #00ffff;margin:4px 0;">
+      <div class="menu-num">9</div><div class="menu-icon" style="font-size:28px;">📱</div>
+      <div class="menu-label">
+        <div class="ml" style="color:#00ffff;font-size:14px;">MOVE PHONE LIST</div>
+        <div class="ms" style="color:#aaffff;">ThinkPad ↔ Android · Paste or Download</div>
+      </div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
   </div>
   <div class="main-footer">
@@ -307,14 +318,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
 <div id="screen-android-easy" class="screen" style="display:none;background:#001a00;padding:15px;font-family:Courier New,monospace;">
   <div style="text-align:center;margin-bottom:16px;">
-    <div style="font-size:42px;margin-bottom:8px;">📧</div>
-    <div style="color:#00ff88;font-weight:700;font-size:16px;">ANDROID EASY IMPORT</div>
-    <div style="color:#aaffaa;font-size:13px;margin-top:6px;">1. Gmail → open backup email<br>2. Select All → Copy<br>3. Paste below → Import</div>
+    <div style="font-size:42px;margin-bottom:8px;">💰</div>
+    <div style="color:#00ff88;font-weight:700;font-size:16px;">MOVE ACCOUNTING</div>
+    <div style="color:#aaffaa;font-size:13px;margin-top:6px;">ThinkPad → Android: Backup on ThinkPad · email to yourself · paste below<br>Android → ThinkPad: same steps in reverse</div>
   </div>
-  <textarea id="easy-paste-area" placeholder="Paste your full MFS backup email or JSON here..."
-    style="width:100%;height:300px;background:#000022;color:#ffffff;border:3px solid #00ff88;padding:12px;font-family:Courier New,monospace;font-size:13px;border-radius:8px;outline:none;"></textarea>
-  <button onclick="processEasyPaste()" style="width:100%;padding:18px;margin:10px 0;font-size:16px;font-weight:700;border:none;border-radius:8px;background:#00ff88;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📥 IMPORT NOW</button>
-  <button onclick="goMain()" style="width:100%;padding:14px;margin-bottom:10px;font-size:15px;font-weight:700;border:none;border-radius:8px;background:#660000;color:#ffffff;font-family:Courier New,monospace;cursor:pointer;">❌ CANCEL</button>
+  <button onclick="doBackup()" style="width:100%;padding:14px;margin-bottom:8px;font-size:14px;font-weight:700;border:none;border-radius:8px;background:#004400;color:#00ff88;border:2px solid #00ff88;font-family:Courier New,monospace;cursor:pointer;">⬇ STEP 1 — BACKUP ACCOUNTING NOW</button>
+  <textarea id="easy-paste-area" placeholder="STEP 2 — Paste your accounting backup CSV here from Gmail..."
+    style="width:100%;height:240px;background:#000022;color:#ffffff;border:3px solid #00ff88;padding:12px;font-family:Courier New,monospace;font-size:13px;border-radius:8px;outline:none;"></textarea>
+  <button onclick="processEasyPaste()" style="width:100%;padding:18px;margin:8px 0;font-size:16px;font-weight:700;border:none;border-radius:8px;background:#00ff88;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📥 STEP 3 — LOAD IT NOW</button>
+  <button onclick="goMain()" style="width:100%;padding:12px;font-size:14px;font-weight:700;border:none;border-radius:8px;background:#660000;color:#ffffff;font-family:Courier New,monospace;cursor:pointer;">❌ CANCEL</button>
   <div id="import-progress" style="display:none;margin-top:12px;text-align:center;">
     <div style="height:8px;background:#003300;border-radius:4px;overflow:hidden;">
       <div id="progress-bar" style="height:100%;width:0%;background:#00ff88;transition:width 0.4s;"></div>
@@ -323,10 +335,27 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
+<div id="screen-phone-move" class="screen" style="display:none;background:#001a22;padding:15px;font-family:Courier New,monospace;">
+  <div style="text-align:center;margin-bottom:16px;">
+    <div style="font-size:42px;margin-bottom:8px;">📱</div>
+    <div style="color:#00ffff;font-weight:700;font-size:16px;">MOVE PHONE LIST</div>
+    <div style="color:#aaffff;font-size:13px;margin-top:6px;">ThinkPad → Android: Phone Backup · email to yourself · load files on Android<br>Android → ThinkPad: same steps in reverse</div>
+  </div>
+  <button onclick="doPhoneBackup()" style="width:100%;padding:14px;margin-bottom:8px;font-size:14px;font-weight:700;border:none;border-radius:8px;background:#002244;color:#00ffff;border:2px solid #00ffff;font-family:Courier New,monospace;cursor:pointer;">⬇ STEP 1 — BACKUP PHONE LIST NOW</button>
+  <div style="background:#001133;border:2px solid #00ffff;border-radius:8px;padding:12px;margin-bottom:8px;color:#aaffff;font-size:13px;text-align:center;">
+    STEP 2 — Email the 5 files to yourself<br>
+    <span style="color:#ffff00;">tristancarrington1@gmail.com</span><br><br>
+    STEP 3 — On other device open Gmail<br>
+    download the files → BULK IMPORT
+  </div>
+  <button onclick="bulkCsvImport()" style="width:100%;padding:18px;margin-bottom:8px;font-size:16px;font-weight:700;border:none;border-radius:8px;background:#00ffff;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📦 BULK IMPORT PHONE FILES</button>
+  <button onclick="goMain()" style="width:100%;padding:12px;font-size:14px;font-weight:700;border:none;border-radius:8px;background:#660000;color:#ffffff;font-family:Courier New,monospace;cursor:pointer;">❌ CANCEL</button>
+</div>
+
 <div id="screen-transfer" class="screen" style="display:none;background:#0000cc;font-family:Courier New,monospace;">
   <div style="background:#000080;border-bottom:2px solid #ffff00;padding:10px;display:flex;align-items:center;gap:10px;">
     <button onclick="goMain()" style="background:#ffff00;color:#000080;font-weight:700;padding:8px 12px;border:none;border-radius:4px;font-family:Courier New,monospace;cursor:pointer;">◀ MENU</button>
-    <span style="flex:1;text-align:center;color:#ffff00;font-weight:700;font-size:15px;">🔄 IMPORT & TRANSFER</span>
+    <span style="flex:1;text-align:center;color:#ffff00;font-weight:700;font-size:15px;">📂 DATA MANAGER</span>
   </div>
   <div style="padding:10px;">
     <div class="main-box">
@@ -4001,6 +4030,11 @@ function cheatSheetApply(payee,sid){
   toast('✓ '+fixed+' entries updated for '+payee,true);
   var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
   doCheatSheet();
+}
+
+function openPhoneMoveMenu(){
+  document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
+  document.getElementById('screen-phone-move').style.display='block';
 }
 
 function openAndroidEasyImport(){
