@@ -307,8 +307,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
   </div>
   <!-- spacer so footer buttons don't cover menu items -->
-  <div style="height:80px;"></div>
-  </div>
+  <div style="height:16px;"></div>
   <div class="main-footer">
     <button class="foot-btn" onclick="doBackup()" style="color:#00ffff;border-color:#00ffff;">⬇ BACKUP ACCOUNTING</button>
     <button class="foot-btn" onclick="doPhoneBackup()" style="color:#00ff88;border-color:#00ff88;">📱 PHONE BACKUP</button>
@@ -360,8 +359,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <button onclick="goMain()" style="background:#ffff00;color:#000080;font-weight:700;padding:8px 12px;border:none;border-radius:4px;font-family:Courier New,monospace;cursor:pointer;">◀ MENU</button>
     <span style="flex:1;text-align:center;color:#ffff00;font-weight:700;font-size:15px;">📂 DATA MANAGER</span>
   </div>
-  <div style="padding:10px;">
-    <div class="main-box">
+  <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
+    <div class="main-box" style="margin-top:10px;">
       <div class="menu-item" onclick="doBackup()">
         <div class="menu-icon">⬇️</div>
         <div class="menu-label"><div class="ml" style="color:#00ff88;">BACKUP EVERYTHING</div><div class="ms">Full backup to Downloads</div></div>
