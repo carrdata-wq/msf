@@ -6708,7 +6708,9 @@ function phoneShowList(){
       list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     } else {
       var recent=CLIENTS.slice().sort(function(a,b){
-        // Sort by modified desc, then id desc (newest added = highest id first)
+        // Sort by adate desc first, then modified desc, then id desc
+        var aa=a.adate||'', ab=b.adate||'';
+        if(ab!==aa) return ab.localeCompare(aa);
         var ma=a.modified||'', mb=b.modified||'';
         if(mb!==ma) return mb.localeCompare(ma);
         return (b.id||0)-(a.id||0);
@@ -6756,7 +6758,11 @@ function clientCardHtml(c){
 
 function renderAllClients(){
   loadClients();
-  var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
+  var rows=CLIENTS.slice().sort(function(a,b){
+    var aa=a.adate||'',ab=b.adate||'';
+    if(ab!==aa) return ab.localeCompare(aa);
+    return (b.contacted||'').localeCompare(a.contacted||'');
+  });
   var list=document.getElementById('phone-list');
   if(!rows.length){list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';return;}
   list.innerHTML=rows.map(clientCardHtml).join('');
@@ -6860,7 +6866,11 @@ function renderClientList(){
       : '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     return;
   }
-  var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
+  var rows=CLIENTS.slice().sort(function(a,b){
+    var aa=a.adate||'',ab=b.adate||'';
+    if(ab!==aa) return ab.localeCompare(aa);
+    return (b.contacted||'').localeCompare(a.contacted||'');
+  });
   rows=rows.filter(function(c){
     return ((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')+' '+(c.adate||'')).toLowerCase().indexOf(q)>=0;
   });
@@ -6875,7 +6885,11 @@ function emailClientsCSV(){
   loadClients();
   if(!CLIENTS.length){toast('No clients to email',false);return;}
   // build CSV
-  var rows=CLIENTS.slice().sort(function(a,b){return (b.contacted||'').localeCompare(a.contacted||'');});
+  var rows=CLIENTS.slice().sort(function(a,b){
+    var aa=a.adate||'',ab=b.adate||'';
+    if(ab!==aa) return ab.localeCompare(aa);
+    return (b.contacted||'').localeCompare(a.contacted||'');
+  });
   function q(s){return '"'+String(s||'').replace(/"/g,'""')+'"';}
   var lines=['"NAME","PHONE","EMAIL","ADDRESS","NOTES","CONTACTED","ADATE"'];
   rows.forEach(function(c){
