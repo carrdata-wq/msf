@@ -414,6 +414,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <div class="menu-label"><div class="ml" style="color:#00ffff;">LOAD TO WHATEVER</div><div class="ms">Load any backup or data file</div></div>
         <div class="menu-arrow" style="color:#00ffff;">›</div>
       </div>
+      <div class="menu-item" onclick="openCleanDownloads()" style="background:#330000;border:2px solid #ff4444;margin:4px 0;">
+        <div class="menu-icon" style="font-size:26px;">🗑️</div>
+        <div class="menu-label"><div class="ml" style="color:#ff6666;font-size:15px;">CLEAN DOWNLOADS FOLDER</div><div class="ms" style="color:#ffaaaa;">Remove old backup files quickly</div></div>
+        <div class="menu-arrow" style="color:#ff6666;">›</div>
+      </div>
     </div>
   </div>
 </div>
@@ -4030,6 +4035,25 @@ function cheatSheetApply(payee,sid){
   toast('✓ '+fixed+' entries updated for '+payee,true);
   var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
   doCheatSheet();
+}
+
+function openCleanDownloads(){
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.innerHTML='<div style="padding:25px;background:#0000cc;border:3px solid #ff4444;border-radius:12px;max-width:440px;font-family:Courier New,monospace;">'
+    +'<div style="color:#ff6666;font-size:18px;font-weight:700;text-align:center;margin-bottom:16px;">🗑️ CLEAN DOWNLOADS FOLDER</div>'
+    +'<div style="background:#220000;padding:16px;border-radius:8px;color:#ffcccc;line-height:1.9;font-size:13px;">'
+    +'<strong style="color:#ffff00;">Fast steps on Android:</strong><br><br>'
+    +'1. Open <b>Files</b> or <b>My Files</b> app<br>'
+    +'2. Go to <b>Downloads</b><br>'
+    +'3. Tap ⋮ (3 dots) → <b>Select</b><br>'
+    +'4. Sort by <b>Date</b><br>'
+    +'5. Select old MFS backup files<br>'
+    +'6. Tap trash icon 🗑️ to delete'
+    +'</div>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="width:100%;margin-top:16px;padding:16px;background:#ff4444;color:#fff;font-weight:700;font-size:15px;border:none;border-radius:8px;cursor:pointer;font-family:Courier New,monospace;">✓ GOT IT</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
 }
 
 function openPhoneMoveMenu(){
