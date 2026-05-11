@@ -1523,7 +1523,7 @@ window.addEventListener('online',updateOnlineStatus);
 window.addEventListener('offline',updateOnlineStatus);
 window.addEventListener('load',updateOnlineStatus);
 
-function goMain() { showScreen('main'); }
+function goMain() { window._cleanExportAcc=false; window._cleanExportPhone=false; showScreen('main'); }
 function openModule(mod) {
   showScreen(mod);
   refreshDL();
@@ -4387,9 +4387,14 @@ function confirmMoveAccounting(){
     +'<div style="font-size:36px;margin-bottom:6px;">'+icon+'</div>'
     +'<div style="color:'+color+';font-weight:700;font-size:15px;margin-bottom:12px;letter-spacing:1px;">'+title+'</div>'
     +'<div style="color:#ccccff;font-size:13px;margin-bottom:10px;">Is this all the data you want to move at this time?</div>'
-    +'<div style="background:#000a22;border:1px solid #336699;border-radius:6px;padding:12px;margin-bottom:14px;font-size:14px;">'+bodyLine+(subLine?'<br>'+subLine:'')+'</div>'
+    +'<div style="background:#000a22;border:1px solid #336699;border-radius:6px;padding:12px;margin-bottom:10px;font-size:14px;">'+bodyLine+(subLine?'<br>'+subLine:'')+'</div>'
+    +'<label style="display:flex;align-items:center;gap:8px;background:#000a22;border:1px solid #ffaa00;border-radius:6px;padding:10px;margin-bottom:14px;cursor:pointer;text-align:left;">'
+    +'<input type="checkbox" id="clean-export-acc" checked style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">'
+    +'<span style="font-size:12px;color:#ffcc66;font-weight:700;">CLEAN IMPORT</span>'
+    +'<span style="font-size:11px;color:#ccccff;">— Destination won\'t see ✓ marks</span>'
+    +'</label>'
     +'<div style="display:flex;gap:8px;">'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove();openAndroidEasyImport();" style="flex:2;background:'+color+';color:#000080;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✓ YES — MOVE NOW</button>'
+    +'<button onclick="window._cleanExportAcc=document.getElementById(\'clean-export-acc\').checked;this.closest(\'.modal-overlay\').remove();openAndroidEasyImport();" style="flex:2;background:'+color+';color:#000080;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✓ YES — MOVE NOW</button>'
     +'<button onclick="this.closest(\'.modal-overlay\').remove();" style="flex:1;background:#660000;color:#fff;border:1px solid #ff6666;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;cursor:pointer;">CANCEL</button>'
     +'</div></div>';
   document.body.appendChild(overlay);
@@ -4411,9 +4416,14 @@ function confirmMovePhone(){
     +'<div style="font-size:36px;margin-bottom:6px;">'+icon+'</div>'
     +'<div style="color:'+color+';font-weight:700;font-size:15px;margin-bottom:12px;letter-spacing:1px;">'+title+'</div>'
     +'<div style="color:#ccccff;font-size:13px;margin-bottom:10px;">Is this all the data you want to move at this time?</div>'
-    +'<div style="background:#000a22;border:1px solid #336699;border-radius:6px;padding:12px;margin-bottom:14px;font-size:14px;">'+bodyLine+(subLine?'<br>'+subLine:'')+'</div>'
+    +'<div style="background:#000a22;border:1px solid #336699;border-radius:6px;padding:12px;margin-bottom:10px;font-size:14px;">'+bodyLine+(subLine?'<br>'+subLine:'')+'</div>'
+    +'<label style="display:flex;align-items:center;gap:8px;background:#000a22;border:1px solid #ffaa00;border-radius:6px;padding:10px;margin-bottom:14px;cursor:pointer;text-align:left;">'
+    +'<input type="checkbox" id="clean-export-phone" checked style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">'
+    +'<span style="font-size:12px;color:#ffcc66;font-weight:700;">CLEAN IMPORT</span>'
+    +'<span style="font-size:11px;color:#ccccff;">— Destination won\'t see ✓ marks</span>'
+    +'</label>'
     +'<div style="display:flex;gap:8px;">'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove();openPhoneMoveMenu();" style="flex:2;background:'+color+';color:#000080;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✓ YES — MOVE NOW</button>'
+    +'<button onclick="window._cleanExportPhone=document.getElementById(\'clean-export-phone\').checked;this.closest(\'.modal-overlay\').remove();openPhoneMoveMenu();" style="flex:2;background:'+color+';color:#000080;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✓ YES — MOVE NOW</button>'
     +'<button onclick="this.closest(\'.modal-overlay\').remove();" style="flex:1;background:#660000;color:#fff;border:1px solid #ff6666;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;cursor:pointer;">CANCEL</button>'
     +'</div></div>';
   document.body.appendChild(overlay);
@@ -4615,8 +4625,8 @@ function parseBulkFile(text,filename){
         adate:obj.ADATE||'',
         contacted:obj.CONTACTED||obj.DATE||'',
         modified:today(),
-        x:'X',
-        mtime:new Date().toISOString()
+        x:(obj.X||'').trim(),
+        mtime:obj.MTIME||new Date().toISOString()
       });
     }
     return{type:'clients',data:rows.filter(function(r){return r.name;})};
@@ -5190,6 +5200,8 @@ function promptClearCheckmarks(){
 function doPhoneBackup(){
   loadClients();
   if(!CLIENTS.length){toast('No phone clients to backup',false);return;}
+  // Clean-export flag (set in confirmMovePhone) — strip X marks so destination won't see them as new
+  var cleanExport = !!window._cleanExportPhone;
   var CHUNK=Math.ceil(CLIENTS.length/5);
   var dateStr=today().replace(/-/g,'');
   var files=[];
@@ -5205,9 +5217,10 @@ function doPhoneBackup(){
     if(!chunk.length) break;
     var lines=[header];
     chunk.forEach(function(c){
-      lines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),'X',qc(c.mtime||mtime)].join(',')+'\n');
+      var xVal = cleanExport ? '' : (c.x||'');
+      lines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',')+'\n');
     });
-    files.push({name:'PHONE_BACKUP_'+dateStr+'_'+(i+1)+'.csv',text:lines.join(''),count:chunk.length});
+    files.push({name:'PHONE_BACKUP_'+(cleanExport?'CLEAN_':'')+dateStr+'_'+(i+1)+'.csv',text:lines.join(''),count:chunk.length});
   }
   files.forEach(function(f){
     var blob=new Blob([f.text],{type:'text/csv'});
@@ -5239,15 +5252,20 @@ function doBackup() {
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
   if(!mxLog.length){toast('No entries to backup',false);return;}
 
+  // Clean-export flag (set in confirmMoveAccounting) — strip X marks so
+  // destination doesn't see records as new/edited
+  var cleanExport = !!window._cleanExportAcc;
+
   // Build CSV — Gmail friendly, no JSON
   function qc(s){s=String(s||'');if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)s='"'+s.replace(/"/g,'""')+'"';return s;}
   var lines=['ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME'];
   mxLog.forEach(function(e){
-    lines.push([qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(e.x||''),qc(e.mtime||'')].join(','));
+    var xVal = cleanExport ? '' : (e.x||'');
+    lines.push([qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(xVal),qc(e.mtime||'')].join(','));
   });
   var backupText=lines.join('\r\n');
   var dateStr=today().replace(/-/g,'');
-  var filename='mfs-backup-'+dateStr+'.csv';
+  var filename='mfs-backup-'+(cleanExport?'CLEAN-':'')+dateStr+'.csv';
 
   // Download as CSV file
   var blob=new Blob([backupText],{type:'text/csv'});
@@ -5258,9 +5276,13 @@ function doBackup() {
   URL.revokeObjectURL(url);
 
   // Popup with COPY/SHARE
-  var subject='MFS Backup — '+today()+' ('+mxLog.length+' entries)';
+  var subject='MFS Backup — '+today()+' ('+mxLog.length+' entries'+(cleanExport?' · CLEAN':'')+')';
   var toEmail='tristancarrington1@gmail.com';
+  var cleanBadge = cleanExport
+    ? '<div style="background:#332200;color:#ffcc66;border:1px solid #ffaa00;border-radius:4px;padding:5px 8px;margin-bottom:6px;font-size:11px;font-weight:700;">🧹 CLEAN EXPORT — destination will see no ✓ marks</div>'
+    : '';
   var popupHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+    +cleanBadge
     +'<div style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:6px;">💾 '+filename+' saved · '+mxLog.length+' entries</div>'
     +'<div style="color:#ccccff;font-size:12px;margin-bottom:6px;">CSV format — Gmail safe · paste to restore</div>'
     +'<textarea id="bkp-share-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #ffff00;color:#ffffff;font-family:Courier New,monospace;font-size:11px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+backupText+'</textarea>'
