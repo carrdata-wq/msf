@@ -7819,12 +7819,7 @@ function shareLog(id){
   var subject = 'Accounting: '+(e.payee||'Entry')+' '+(e.date||'');
   window._shareText = shareText;
   window._shareSubject = subject;
-  if(navigator.share){
-    navigator.share({title:subject, text:shareText}).catch(function(){
-      _shareShowModal(e.payee||'Entry');
-    });
-    return;
-  }
+  // Always use our own modal — Windows native share is useless
   _shareShowModal(e.payee||'Entry');
 }
 //  PHONE CLIENTS MODULE
@@ -8245,13 +8240,8 @@ function shareClient(id){
   window._shareText = shareText;
   window._shareSubject = subject;
 
-  // Try the native share sheet first (Android Chrome / iOS Safari)
-  if(navigator.share){
-    navigator.share({title:subject, text:shareText}).catch(function(){
-      _shareShowModal(c.name||'');
-    });
-    return;
-  }
+  // Always use our own modal — Windows native share is useless (only Nearby/Outlook)
+  // and we want EMAIL / TEXT / COPY choices consistently across all devices
   _shareShowModal(c.name||'');
 }
 
