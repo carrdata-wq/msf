@@ -1150,7 +1150,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <input type="text" id="phone-search" placeholder="🔍 Or type to search…" oninput="renderClientList()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
       <div style="display:flex;gap:4px;margin-bottom:8px;font-size:12px;">
         <button onclick="phoneShowForm(null)" title="Add client" style="flex:1;background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">➕ ADD</button>
-        <button onclick="phoneShowAll()" title="Show all clients" style="flex:1;background:#3a1a4a;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📋 SHOW ALL</button>
+        <button onclick="phoneUpdateIndex()" title="Rebuild sort index and show all" style="flex:1;background:#001a44;color:#00aaff;border:1px solid #00aaff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">🔄 UPDATE INDEX</button>
         <button onclick="emailClientsCSV()" title="Email all clients" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📧 EMAIL</button>
         <button onclick="phoneImportTool()" title="Import clients" style="flex:1;background:#00304a;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📥 IMPORT</button>
         <button onclick="phoneLoadFile()" title="Load clients from JSON file" style="flex:1;background:#1a0044;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📂 LOAD FILE</button>
@@ -8088,11 +8088,7 @@ function renderClientsTable(rows, total, showingAll){
       + '</div>';
   });
 
-  // Bottom button: when on top-100 view it offers to rebuild/show all;
-  // when already showing all it offers to re-run index repair
-  html += '<div style="text-align:center;margin-top:6px;padding:6px 0;">'
-    + '<button onclick="phoneUpdateIndex()" style="background:#000080;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 14px;border:none;border-radius:4px;cursor:pointer;">🔄 UPDATE INDEX'+(showingAll?'':' ('+total+')')+'</button>'
-    + '</div>';
+  // UPDATE INDEX is now in the top toolbar instead of here
   html += '</div>';
   return html;
 }
@@ -8243,7 +8239,7 @@ function renderClientList(){
   // empty search → show hint, NOT the full list
   if(!q){
     list.innerHTML=CLIENTS.length
-      ? '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">Pick a client above · type to search · or tap 📋 SHOW ALL</div>'
+      ? '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">Pick a client above · type to search · or tap 🔄 UPDATE INDEX below</div>'
       : '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     return;
   }
