@@ -106,7 +106,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .menu-label .ml{font-size:15px;font-weight:600;color:var(--hi);}
 .menu-label .ms{font-size:14px;color:var(--dim);margin-top:1px;}
 .menu-arrow{color:var(--dim);font-size:14px;}
-.main-footer{margin-top:10px;display:flex;gap:8px;width:100%;max-width:420px;}
+.main-footer{position:sticky;bottom:0;margin-top:10px;display:flex;gap:8px;width:100%;max-width:420px;background:#1a1aff;padding:6px 0;z-index:10;}
 .foot-btn{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px;border-radius:4px;cursor:pointer;text-align:center;}
 .foot-btn:active{background:var(--border);}
 
@@ -554,7 +554,170 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml">Portfolio</div><div class="ms">Stocks · ETFs · Bonds · P&amp;L</div></div>
       <div class="menu-arrow">›</div>
     </div>
+    <div class="menu-item" onclick="openBalance()" style="background:#002233;border:2px solid #00ffff;">
+      <div class="menu-num">7</div><div class="menu-icon">💼</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">Balance Sheet</div><div class="ms">Pending payables/receivables · Running total</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    </div>
   </div>
+  </div>
+</div>
+
+<!-- ── BALANCE SHEET (Receivables / Payables Pending) ── -->
+<div id="screen-balance" class="screen" style="background:#001a33;font-family:Courier New,monospace;display:none;">
+  <div style="background:#0000cc;border-bottom:2px solid #00ffff;padding:8px 10px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:50;">
+    <button onclick="showSubMenu('accounting')" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:4px;cursor:pointer;">◀ BACK</button>
+    <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">💼 Balance Sheet</span>
+    <button onclick="balSendAllChecked()" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;">✓→ SEND ALL</button>
+  </div>
+
+  <div style="padding:10px;">
+
+    <!-- Summary strip -->
+    <div id="bal-summary" style="background:#002244;border:1px solid #00ffff;border-radius:4px;padding:8px;margin-bottom:10px;color:#ffffff;font-size:13px;text-align:center;">
+      <span style="color:#ccccff;">Running:</span> <span id="bal-running-total" style="color:#ffff00;font-weight:700;">$0.00</span>
+      &nbsp;·&nbsp; <span style="color:#ccccff;">Items:</span> <span id="bal-count" style="color:#ffff00;font-weight:700;">0</span>
+      &nbsp;·&nbsp; <span style="color:#ccccff;">✓:</span> <span id="bal-checked-count" style="color:#00ff88;font-weight:700;">0</span>
+    </div>
+
+    <!-- Entry form: Menu #1 style search → pick → addnew → entry -->
+    <div style="background:#000a22;border:2px solid #ffff00;border-radius:6px;padding:10px;margin-bottom:10px;">
+      <div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;text-align:center;">➕ ADD ENTRY</div>
+
+      <!-- STAGE 1: PAYEE SEARCH -->
+      <div id="bal-search-section">
+        <input type="text" id="bal-search" placeholder="TYPE PAYEE NAME..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" oninput="balDoFilter(this.value)" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-bottom:4px;">
+        <div id="bal-hint" style="font-size:13px;color:#ccccff;margin-bottom:8px;">TYPE PAYEE NAME TO SEARCH</div>
+
+        <table id="bal-matrixtbl" style="width:100%;border-collapse:collapse;font-size:13px;display:none;margin-bottom:8px;">
+          <thead><tr>
+            <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:13px;">PAYEE</th>
+            <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:13px;">PCODE</th>
+            <th style="background:#0000cc;color:#ffff00;padding:6px 4px;text-align:left;border:1px solid #6666ff;font-size:13px;">DESC</th>
+          </tr></thead>
+          <tbody id="bal-tbody"></tbody>
+        </table>
+
+        <div id="bal-notfound" style="display:none;background:#000080;border:3px solid #ffff00;border-radius:6px;padding:14px;margin-bottom:8px;text-align:center;">
+          <div style="color:#ff4444;font-weight:700;font-size:15px;margin-bottom:6px;letter-spacing:1px;">⚠️ PAYEE NOT FOUND</div>
+          <div style="color:#ccccff;font-size:11px;margin-bottom:8px;">Checked 💰 Accounting · 📱 Phone Clients</div>
+          <div id="bal-notfound-name" style="color:#ffff00;font-weight:700;font-size:17px;margin-bottom:12px;"></div>
+          <div style="color:#aaccff;font-size:12px;margin-bottom:10px;">Make a new payee/vendor file or exit back to menu?</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="balShowAddNew()" style="flex:3;background:#ffff00;color:#000080;border:none;padding:14px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:1px;">➕ MAKE NEW</button>
+            <button onclick="balExitToMenu()" style="flex:2;background:#660000;color:#ffffff;border:2px solid #ff4444;padding:14px;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:13px;cursor:pointer;">✕ EXIT</button>
+          </div>
+        </div>
+
+        <div id="bal-addnew" style="display:none;background:#0000cc;border:2px solid #ffff00;border-radius:4px;padding:12px;margin-bottom:8px;">
+          <div style="color:#ffaa00;font-weight:700;font-size:13px;margin-bottom:6px;">+ ADD NEW PAYEE / COMBO</div>
+          <div style="font-size:13px;color:#ccccff;margin-top:6px;">PAYEE NAME</div>
+          <input type="text" id="bal-an-payee" placeholder="PAYEE NAME..." autocomplete="off" autocapitalize="characters" spellcheck="false" oninput="this.value=this.value.toUpperCase()" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
+          <div style="font-size:13px;color:#ccccff;margin-top:8px;">PCODE</div>
+          <select id="bal-an-pcode" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
+            <option value="ROOF">ROOF</option><option value="BART">BART</option><option value="NORD">NORD</option>
+            <option value="TOMM">TOMM</option><option value="TOUT">TOUT</option><option value="10629">10629</option>
+            <option value="10735">10735</option><option value="2760">2760</option><option value="3120">3120</option>
+            <option value="5481">5481</option><option value="OIL">OIL</option><option value="TRADE">TRADE</option>
+          </select>
+          <div style="font-size:13px;color:#ccccff;margin-top:8px;">DESCRIPTION</div>
+          <select id="bal-an-desc" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
+            <option>INCOME</option><option>RENT INCOME</option><option>SECURITY DEPOSIT</option><option>LATE FEE INCOME</option>
+            <option>ADVERTISING EXPENSE</option><option>BANK CHARGES</option><option>BROKER FEES EXPENSE</option>
+            <option>DECORATION EXPENSE</option><option>DEPOSIT</option><option>DONATION EXPENSE</option>
+            <option>DOOR CONTRACTOR</option><option>ELECTRIC EXPENSE</option><option>ELECTRIC REPAIRS</option>
+            <option>ELECTRICIAL EXPENSE</option><option>ENTERTAINMENT EXPENSE</option><option>FEDERAL TAXES</option>
+            <option>FOOD GROCERY</option><option>FRAMING EXPENSE</option><option>HARDWARE EXPENSE</option>
+            <option>HEATING EXPENSE</option><option>INSURANCE EXPENSE</option><option>INTEREST EXPENSE</option>
+            <option>INTEREST INCOME</option><option>JOB FOOD COST</option><option>LANDSCAPE COST</option>
+            <option>LEGAL/ACCOUNT FEES</option><option>LICENSE PERMITS EXPENSE</option><option>LOAN PYMT</option>
+            <option>MANAGEMENT FEE</option><option>MASON EXPENSE</option><option>MEDICAL EXPENSE</option>
+            <option>MEDICAL INSURANCE</option><option>MISC</option><option>MISCELLANEOUS</option>
+            <option>MISC WORK ORDER</option><option>OFFICE SUPPLIES</option><option>PETRO ENGINEERING FEES</option>
+            <option>PHONE/FAX/INTERNET</option><option>PLUMBING EXPENSE</option><option>PRODUCTION TAXES</option>
+            <option>PROPERTY TAXES</option><option>ROOF CONTRACT</option><option>ROOFING SUPPLIES</option>
+            <option>SCAVENGER COST</option><option>STORAGE FEE</option><option>SUBCONTRACTOR COST</option>
+            <option>TRAVEL/HOTEL EXPENSE</option><option>TRUCK EXPENSE</option><option>TRUCK GAS</option>
+            <option>WATER EXPENSE</option><option>WIRE TRANSFER</option>
+          </select>
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button onclick="balSaveNewPayee()" style="flex:2;padding:10px;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;background:#ffff00;color:#000080;">SAVE + USE</button>
+            <button onclick="balCancelNewPayee()" style="flex:1;padding:10px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;background:#0000aa;color:#ccccff;">CANCEL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 2: ENTRY PANEL (revealed after picking/adding a payee) -->
+      <div id="bal-entry-panel" style="display:none;">
+        <div style="border-top:1px solid #336699;margin-top:8px;padding-top:10px;">
+          <div style="font-size:13px;color:#ccccff;">PAYEE</div>
+          <div id="bal-picked-payee" style="color:#ffff00;font-weight:700;font-size:15px;min-height:20px;padding:4px 0;"></div>
+
+          <div style="font-size:13px;color:#ccccff;margin-top:4px;">PCODE</div>
+          <select id="bal-pcode-sel" style="width:100%;box-sizing:border-box;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
+            <option value="ROOF">ROOF</option><option value="BART">BART</option><option value="NORD">NORD</option>
+            <option value="TOMM">TOMM</option><option value="TOUT">TOUT</option><option value="10629">10629</option>
+            <option value="10735">10735</option><option value="2760">2760</option><option value="3120">3120</option>
+            <option value="5481">5481</option><option value="OIL">OIL</option><option value="TRADE">TRADE</option>
+          </select>
+
+          <div style="font-size:13px;color:#ccccff;margin-top:8px;">DESCRIPTION</div>
+          <select id="bal-desc-in" style="width:100%;box-sizing:border-box;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;margin-top:4px;">
+            <option value="">-- PICK DESCRIPTION --</option>
+            <option>INCOME</option><option>RENT INCOME</option><option>SECURITY DEPOSIT</option><option>LATE FEE INCOME</option>
+            <option>ADVERTISING EXPENSE</option><option>BANK CHARGES</option><option>BROKER FEES EXPENSE</option>
+            <option>DECORATION EXPENSE</option><option>DEPOSIT</option><option>DONATION EXPENSE</option>
+            <option>DOOR CONTRACTOR</option><option>ELECTRIC EXPENSE</option><option>ELECTRIC REPAIRS</option>
+            <option>ELECTRICIAL EXPENSE</option><option>ENTERTAINMENT EXPENSE</option><option>FEDERAL TAXES</option>
+            <option>FOOD GROCERY</option><option>FRAMING EXPENSE</option><option>HARDWARE EXPENSE</option>
+            <option>HEATING EXPENSE</option><option>INSURANCE EXPENSE</option><option>INTEREST EXPENSE</option>
+            <option>INTEREST INCOME</option><option>JOB FOOD COST</option><option>LANDSCAPE COST</option>
+            <option>LEGAL/ACCOUNT FEES</option><option>LICENSE PERMITS EXPENSE</option><option>LOAN PYMT</option>
+            <option>MANAGEMENT FEE</option><option>MASON EXPENSE</option><option>MEDICAL EXPENSE</option>
+            <option>MEDICAL INSURANCE</option><option>MISC</option><option>MISCELLANEOUS</option>
+            <option>MISC WORK ORDER</option><option>OFFICE SUPPLIES</option><option>PETRO ENGINEERING FEES</option>
+            <option>PHONE/FAX/INTERNET</option><option>PLUMBING EXPENSE</option><option>PRODUCTION TAXES</option>
+            <option>PROPERTY TAXES</option><option>ROOF CONTRACT</option><option>ROOFING SUPPLIES</option>
+            <option>SCAVENGER COST</option><option>STORAGE FEE</option><option>SUBCONTRACTOR COST</option>
+            <option>TRAVEL/HOTEL EXPENSE</option><option>TRUCK EXPENSE</option><option>TRUCK GAS</option>
+            <option>WATER EXPENSE</option><option>WIRE TRANSFER</option>
+          </select>
+
+          <div style="font-size:13px;color:#ccccff;margin-top:8px;">DATE</div>
+          <div style="display:flex;gap:4px;margin-top:4px;">
+            <select id="bal-mon" onchange="balSaveDatePref()" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
+              <option value="01">JAN</option><option value="02">FEB</option><option value="03">MAR</option><option value="04">APR</option>
+              <option value="05">MAY</option><option value="06">JUN</option><option value="07">JUL</option><option value="08">AUG</option>
+              <option value="09">SEP</option><option value="10">OCT</option><option value="11">NOV</option><option value="12">DEC</option>
+            </select>
+            <select id="bal-day" onchange="balSaveDatePref()" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
+              <option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
+            </select>
+            <select id="bal-yr" onchange="balSaveDatePref()" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
+              <option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option>
+            </select>
+          </div>
+
+          <div style="font-size:13px;color:#ccccff;margin-top:8px;">AMOUNT $</div>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <div style="display:flex;flex:1;gap:0;">
+              <button id="bal-sign-plus" onclick="balSetSign(1)" style="flex:1;background:#002200;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:18px;font-weight:700;padding:6px;border-radius:4px 0 0 4px;cursor:pointer;">+</button>
+              <button id="bal-sign-minus" onclick="balSetSign(-1)" style="flex:1;background:#aa0000;border:1px solid #ff6666;color:#ffffff;font-family:Courier New,monospace;font-size:18px;font-weight:700;padding:6px;border-radius:0 4px 4px 0;cursor:pointer;">−</button>
+            </div>
+            <input type="number" id="bal-amt" inputmode="numeric" step="0.01" placeholder="0.00" onkeyup="autoDecimal(this)" style="flex:2;box-sizing:border-box;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:8px;border-radius:4px;outline:none;text-align:right;">
+          </div>
+
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button onclick="balAdd()" id="bal-save-btn" style="flex:3;background:#006600;color:#ffffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:4px;cursor:pointer;">💾 SAVE ENTRY</button>
+            <button onclick="balCancelEdit()" style="flex:1;background:#444;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:4px;cursor:pointer;">CANCEL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Entries list -->
+    <div id="bal-list" style="margin-bottom:20px;"></div>
+
   </div>
 </div>
 
@@ -726,9 +889,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 <div id="screen-reports" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
-  <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+  <div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ff88;flex:1;">📊 Reports</span>
+    <button onclick="reportEmail()" style="background:#003366;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:6px 8px;border-radius:4px;cursor:pointer;">📧 EMAIL</button>
+    <button onclick="reportPrint()" style="background:#330033;border:1px solid #ff88ff;color:#ff88ff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:6px 8px;border-radius:4px;cursor:pointer;">🖨️ PRINT</button>
   </div>
   <div style="padding:10px;">
     <div style="display:flex;gap:6px;margin-bottom:6px;">
@@ -1559,6 +1724,58 @@ function renderCombinedCosts(){
   var days=allDates.length>=2?Math.max(1,Math.round((new Date(allDates[allDates.length-1])-new Date(allDates[0]))/(1000*60*60*24))):365;
   var cpd=tAll/days;
 
+  // ── CPD HISTORY SNAPSHOT (one per day, like an ETF closing price) ──
+  var todayKey=today();
+  var history=[];
+  try{history=JSON.parse(localStorage.getItem('mx_cpd_history')||'[]');}catch(e){history=[];}
+
+  // First-time backfill: if no history yet (or only today's), seed it from the accounting log
+  // by computing the running daily average at the end of each month in the data.
+  if(history.length<=1 && allDates.length>=2){
+    var firstDate=new Date(allDates[0]);
+    var lastDate=new Date(allDates[allDates.length-1]);
+    // Combine all spending entries with their dates and amounts
+    var combined=gasE.concat(grocE).concat(restE).map(function(e){
+      return {date:e.date||'',amt:Math.abs(e.amt)};
+    }).filter(function(e){return e.date;});
+    combined.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+
+    // Walk month-by-month, computing running daily average up to the end of each month
+    var snapshots=[];
+    var runTot=0;
+    var ci=0;
+    var cur=new Date(firstDate.getFullYear(),firstDate.getMonth(),1);
+    var end=new Date(lastDate.getFullYear(),lastDate.getMonth()+1,0); // last day of last month with data
+    while(cur<=end){
+      var monthEnd=new Date(cur.getFullYear(),cur.getMonth()+1,0);
+      var monthEndStr=monthEnd.getFullYear()+'-'+('0'+(monthEnd.getMonth()+1)).slice(-2)+'-'+('0'+monthEnd.getDate()).slice(-2);
+      // Add all entries up to monthEnd
+      while(ci<combined.length && combined[ci].date<=monthEndStr){
+        runTot+=combined[ci].amt;
+        ci++;
+      }
+      var elapsed=Math.max(1,Math.round((monthEnd-firstDate)/(1000*60*60*24)));
+      if(runTot>0){
+        snapshots.push({date:monthEndStr,cpd:runTot/elapsed});
+      }
+      cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+    }
+    if(snapshots.length){
+      history=snapshots;
+    }
+  }
+
+  // Update or append today's snapshot
+  var foundToday=false;
+  for(var hi=0;hi<history.length;hi++){
+    if(history[hi].date===todayKey){history[hi].cpd=cpd;foundToday=true;break;}
+  }
+  if(!foundToday){history.push({date:todayKey,cpd:cpd});}
+  // Sort + cap at 180 entries
+  history.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+  if(history.length>180)history=history.slice(history.length-180);
+  try{localStorage.setItem('mx_cpd_history',JSON.stringify(history));}catch(e){}
+
   var old=document.getElementById('combined-overlay');if(old)old.remove();
   var overlay=document.createElement('div');
   overlay.id='combined-overlay';
@@ -1585,9 +1802,83 @@ function renderCombinedCosts(){
     +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tRest/days).toFixed(2)+'</div>'
     +'<div style="color:#ccccff;font-size:13px;">per day</div>'
     +'<div style="color:#ffaa00;font-size:14px;margin-top:4px;">$'+tRest.toFixed(0)+' total</div></div>'
-    +'</div>'
-    // big combined total
-    +'<div style="background:#000022;border:3px solid #ffff00;border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">'
+    +'</div>';
+
+  // ── ETF-STYLE TREND CHART ──
+  if(history.length>=1){
+    var first=history[0].cpd;
+    var last=history[history.length-1].cpd;
+    var minVal=history.reduce(function(m,p){return Math.min(m,p.cpd);},history[0].cpd);
+    var maxVal=history.reduce(function(m,p){return Math.max(m,p.cpd);},history[0].cpd);
+    var range=Math.max(0.01,maxVal-minVal);
+    var change=last-first;
+    var pctChange=first>0?((change/first)*100):0;
+    // Cost trend: UP = bad (red), DOWN = good (green)
+    var trendColor=change>0?'#ff4444':change<0?'#00ff88':'#ffff00';
+    var trendArrow=change>0?'▲':change<0?'▼':'■';
+    var trendLabel=change>0?'UP (more spending)':change<0?'DOWN (less spending)':'FLAT';
+
+    h+='<div style="background:#000022;border:2px solid '+trendColor+';border-radius:8px;padding:10px;margin-bottom:12px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      +'<span style="color:#ffff00;font-weight:700;font-size:13px;">📈 $/DAY TREND — '+history.length+' day'+(history.length===1?'':'s')+'</span>'
+      +'<span style="color:'+trendColor+';font-weight:700;font-size:13px;">'+trendArrow+' '+(change>=0?'+':'')+'$'+change.toFixed(2)+' ('+(pctChange>=0?'+':'')+pctChange.toFixed(1)+'%)</span>'
+      +'</div>'
+      +'<div style="color:#ccccff;font-size:11px;margin-bottom:8px;">'
+      +'<span style="color:#00ff88;">LOW $'+minVal.toFixed(2)+'</span> &nbsp;·&nbsp; '
+      +'<span style="color:#ff4444;">HIGH $'+maxVal.toFixed(2)+'</span> &nbsp;·&nbsp; '
+      +'<span style="color:#ffff00;">START $'+first.toFixed(2)+'</span> &nbsp;·&nbsp; '
+      +'<span style="color:#ffffff;">NOW $'+last.toFixed(2)+'</span>'
+      +'</div>';
+
+    // The chart itself — vertical bars from the bottom
+    var chartH=120; // px tall
+    var barCount=history.length;
+    h+='<div style="background:#000011;border:1px solid #336699;border-radius:4px;padding:8px 4px 4px;position:relative;">';
+
+    if(barCount===1){
+      // First day — show a "starting today" message with one centered bar
+      h+='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:'+chartH+'px;color:#ccccff;font-size:12px;text-align:center;padding:0 20px;">'
+        +'<div style="font-size:32px;margin-bottom:6px;">📊</div>'
+        +'<div style="color:#ffff00;font-weight:700;margin-bottom:4px;">FIRST SNAPSHOT TODAY</div>'
+        +'<div style="font-size:11px;color:#aaccff;">Today: $'+history[0].cpd.toFixed(2)+' · check back tomorrow to start the trend</div>'
+        +'</div>';
+    } else {
+      h+='<div style="position:absolute;left:2px;top:6px;color:#888;font-size:9px;">$'+maxVal.toFixed(2)+'</div>'
+        +'<div style="position:absolute;left:2px;bottom:18px;color:#888;font-size:9px;">$'+minVal.toFixed(2)+'</div>'
+        +'<div style="display:flex;align-items:flex-end;height:'+chartH+'px;gap:1px;padding-left:42px;overflow-x:auto;">';
+
+      history.forEach(function(p,i){
+        // If range is tiny (all values nearly same), give each bar a baseline height so they're visible
+        var h01=range>0.01?(p.cpd-minVal)/range:0.5;
+        var barH=Math.max(8,Math.round(h01*(chartH-10)));
+        var mid=(minVal+maxVal)/2;
+        var col=p.cpd<=mid?'#00ff88':'#ff6666';
+        if(range<=0.01) col='#ffff00';  // flat trend = yellow bars
+        var isToday=(p.date===todayKey);
+        var border=isToday?'2px solid #ffff00':'none';
+        var labelEvery=Math.max(1,Math.ceil(barCount/6));
+        var showLabel=(i%labelEvery===0)||i===barCount-1;
+        var lbl=showLabel?'<div style="font-size:9px;color:#aaa;text-align:center;margin-top:3px;white-space:nowrap;line-height:1.1;">'+p.date.slice(5)+'</div>':'<div style="height:13px;"></div>';
+        h+='<div style="flex:1;min-width:8px;display:flex;flex-direction:column;align-items:center;cursor:pointer;" title="'+p.date+': $'+p.cpd.toFixed(2)+'">'
+          +'<div style="width:100%;background:'+col+';height:'+barH+'px;border-radius:2px 2px 0 0;border:'+border+';"></div>'
+          +lbl
+          +'</div>';
+      });
+
+      h+='</div>';
+    }
+    h+='</div>';
+
+    // Reset / rebuild buttons
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
+      +'<button onclick="if(confirm(\'Rebuild trend from accounting history?\')){localStorage.removeItem(\'mx_cpd_history\');document.getElementById(\'combined-overlay\').remove();renderCombinedCosts();}" style="background:#002200;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">↻ Rebuild from history</button>'
+      +'<button onclick="if(confirm(\'Clear ALL trend history?\')){localStorage.setItem(\'mx_cpd_history\',\'[]\');document.getElementById(\'combined-overlay\').remove();renderCombinedCosts();}" style="background:#220000;color:#ff6666;border:1px solid #ff4444;font-family:Courier New,monospace;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">✕ Clear</button>'
+      +'</div>'
+      +'</div>';
+  }
+
+  // big combined total
+  h+='<div style="background:#000022;border:3px solid #ffff00;border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">'
     +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">COMBINED AVERAGE DAILY COST</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:28px;">$'+cpd.toFixed(2)+'</div>'
     +'<div style="color:#00ff88;font-size:14px;margin-top:8px;">'
@@ -4770,6 +5061,53 @@ function dupKeepBoth(idx){
 function dupSkipIt(idx){var o=document.getElementById('dup-review-overlay');if(o)o.remove();showDupReview(idx+1);}
 function dupSkipAll(){var o=document.getElementById('dup-review-overlay');if(o)o.remove();showScreen('main');toast(_dupAdded+' new · '+_dupSkipped+' skipped ✓',true);}
 
+function clearAllCheckmarks(){
+  var accCount=0, cliCount=0;
+  try{
+    var log=JSON.parse(localStorage.getItem('mx_log')||'[]');
+    log.forEach(function(e){if(e.x==='X'){e.x='';accCount++;}});
+    localStorage.setItem('mx_log',JSON.stringify(log));
+    if(typeof LOG!=='undefined')LOG=log;
+  }catch(e){}
+  try{
+    loadClients();
+    CLIENTS.forEach(function(c){if(c.x==='X'){c.x='';cliCount++;}});
+    saveClients();
+  }catch(e){}
+  try{if(typeof renderLog==='function')renderLog();}catch(e){}
+  try{if(typeof phoneShowList==='function')phoneShowList();}catch(e){}
+  toast('🧹 Cleared '+accCount+' accounting + '+cliCount+' phone ✓ marks',true);
+}
+
+function promptClearCheckmarks(){
+  // Close any open backup modal first
+  document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+  var accCount=0, cliCount=0;
+  try{
+    var log=JSON.parse(localStorage.getItem('mx_log')||'[]');
+    log.forEach(function(e){if(e.x==='X')accCount++;});
+  }catch(e){}
+  try{
+    loadClients();
+    CLIENTS.forEach(function(c){if(c.x==='X')cliCount++;});
+  }catch(e){}
+  if(accCount===0&&cliCount===0){toast('No ✓ marks to clear',true);return;}
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:3px solid #ffff00;border-radius:10px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+    +'<div style="font-size:38px;margin-bottom:10px;">✅</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:8px;">UPLOAD COMPLETE</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:14px;line-height:1.5;">Clear all green ✓ checkmarks?<br>'
+    +'<span style="color:#00ff88;font-weight:700;">'+accCount+' accounting</span> · '
+    +'<span style="color:#00ffff;font-weight:700;">'+cliCount+' phone</span></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="clearAllCheckmarks();this.closest(\'.modal-overlay\').remove();" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:13px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">🧹 YES — CLEAR</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove();" style="flex:1;background:#660000;color:#ffffff;font-size:13px;padding:13px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">KEEP</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
 function doPhoneBackup(){
   loadClients();
   if(!CLIENTS.length){toast('No phone clients to backup',false);return;}
@@ -4811,6 +5149,7 @@ function doPhoneBackup(){
     +'<div style="color:#aaaacc;font-size:12px;margin-bottom:12px;">Email these files to:<br><span style="color:#ffff00;">'+toEmail+'</span></div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button onclick="window.open(\'mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'\')" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 OPEN EMAIL</button>'
+    +'<button onclick="promptClearCheckmarks()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:12px;padding:11px;border:none;border-radius:6px;cursor:pointer;">🧹 CLEAR ✓</button>'
     +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#fff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
     +'</div></div>';
   document.body.appendChild(overlay);
@@ -4849,6 +5188,7 @@ function doBackup() {
     +'<div style="display:flex;gap:8px;margin-top:8px;">'
     +'<button onclick="shareBackupText()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE</button>'
     +'<button onclick="copyBackupText()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📋 COPY</button>'
+    +'<button onclick="promptClearCheckmarks()" style="flex:2;background:#ff8800;color:#000080;font-weight:700;font-size:12px;padding:11px;border:none;border-radius:6px;cursor:pointer;">🧹 CLEAR ✓</button>'
     +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
     +'</div></div>';
   var overlay=document.createElement('div');
@@ -5070,6 +5410,560 @@ function doExportByYear(){
 
 function loadLog(){try{var s=localStorage.getItem('mx_log');if(s)LOG=JSON.parse(s);}catch(e){LOG=[];}}
 function saveLog(){try{localStorage.setItem('mx_log',JSON.stringify(LOG));}catch(e){}}
+
+// ─────────────────────────────────────────────────────
+// BALANCE SHEET — Pending Payables / Receivables
+// localStorage key: mx_balance
+// ─────────────────────────────────────────────────────
+var BALANCE=[];
+var _balSign=-1;       // default: debit (negative)
+var _balEditId=null;   // null = new entry; id = editing existing
+var _balShown=[];      // current filter results from MX
+var _balPickedPayee=''; // currently selected payee
+
+function balLoad(){try{var s=localStorage.getItem('mx_balance');BALANCE=s?JSON.parse(s):[];}catch(e){BALANCE=[];}}
+function balSave(){try{localStorage.setItem('mx_balance',JSON.stringify(BALANCE));}catch(e){}}
+
+function openBalance(){
+  balLoad();
+  document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
+  document.getElementById('screen-balance').style.display='block';
+  balLoadDatePref();
+  balResetSearch();
+  balRender();
+}
+
+// ── DATE HELPERS (mirror Menu #1 pattern) ──
+function balGetDate(){
+  return document.getElementById('bal-yr').value+'-'+document.getElementById('bal-mon').value+'-'+document.getElementById('bal-day').value;
+}
+function balSetDate(d){
+  if(!d){balSetDateToday();return;}
+  var p=String(d).split('-');
+  if(p.length!==3){balSetDateToday();return;}
+  document.getElementById('bal-yr').value=p[0];
+  document.getElementById('bal-mon').value=p[1];
+  document.getElementById('bal-day').value=p[2];
+}
+function balSetDateToday(){
+  var t=new Date();
+  document.getElementById('bal-yr').value=String(t.getFullYear());
+  document.getElementById('bal-mon').value=('0'+(t.getMonth()+1)).slice(-2);
+  document.getElementById('bal-day').value=('0'+t.getDate()).slice(-2);
+}
+function balSaveDatePref(){
+  try{localStorage.setItem('mx_bal_dt',balGetDate());}catch(e){}
+}
+function balLoadDatePref(){
+  try{
+    var s=localStorage.getItem('mx_bal_dt');
+    if(!s){balSetDateToday();return;}
+    balSetDate(s);
+  }catch(e){balSetDateToday();}
+}
+
+// ── PAYEE SEARCH / PICK / ADD-NEW (mirrors Menu #1 doFilter/showAddNew/saveNewPayee) ──
+function balResetSearch(){
+  _balShown=[];_balPickedPayee='';_balEditId=null;
+  var s=document.getElementById('bal-search'); if(s)s.value='';
+  var h=document.getElementById('bal-hint'); if(h)h.textContent='TYPE PAYEE NAME TO SEARCH';
+  var mt=document.getElementById('bal-matrixtbl'); if(mt)mt.style.display='none';
+  var nf=document.getElementById('bal-notfound'); if(nf)nf.style.display='none';
+  var an=document.getElementById('bal-addnew'); if(an)an.style.display='none';
+  var ep=document.getElementById('bal-entry-panel'); if(ep)ep.style.display='none';
+  var ss=document.getElementById('bal-search-section'); if(ss)ss.style.display='block';
+  balSetSign(-1);
+}
+
+function balClearSearch(){balResetSearch();}
+
+function balExitToMenu(){
+  // Cancel the search and go back to the More Accounting Tasks submenu
+  balResetSearch();
+  if(typeof showSubMenu==='function') showSubMenu('accounting');
+}
+
+function balDoFilter(val){
+  var q=String(val||'').toUpperCase().replace(/[^A-Z0-9 ]/g,'').trim();
+  var tbl=document.getElementById('bal-matrixtbl');
+  document.getElementById('bal-addnew').style.display='none';
+  document.getElementById('bal-notfound').style.display='none';
+  if(!q){
+    _balShown=[];tbl.style.display='none';
+    document.getElementById('bal-hint').textContent='TYPE PAYEE NAME TO SEARCH';
+    return;
+  }
+  // Build combined dataset from THREE sources:
+  //   1) MX (master accounting combos)
+  //   2) LOG (unique payee/pcode/desc seen in accounting)
+  //   3) CLIENTS (phone clients — name only, no pcode/desc yet)
+  var combos=[];
+  var seen={};
+  // 1) MX master
+  for(var i=0;i<MX.length;i++){
+    var k=(MX[i].payee||'')+'|'+(MX[i].pcode||'')+'|'+(MX[i].desc||'');
+    if(!seen[k]){seen[k]=1;combos.push({payee:MX[i].payee||'',pcode:MX[i].pcode||'',desc:MX[i].desc||'',src:'acc'});}
+  }
+  // 2) LOG history
+  try{
+    for(var j=0;j<LOG.length;j++){
+      var c={payee:LOG[j].payee||'',pcode:LOG[j].pcode||'',desc:LOG[j].desc||'',src:'acc'};
+      var k2=c.payee+'|'+c.pcode+'|'+c.desc;
+      if(c.payee && !seen[k2]){seen[k2]=1;combos.push(c);}
+    }
+  }catch(e){}
+  // 3) PHONE CLIENTS (loaded on demand)
+  try{
+    if(typeof CLIENTS==='undefined'||!CLIENTS||!CLIENTS.length){loadClients();}
+    for(var p=0;p<CLIENTS.length;p++){
+      var nm=String(CLIENTS[p].name||'').toUpperCase().trim();
+      if(!nm) continue;
+      var kp=nm+'|PHONE';
+      if(!seen[kp]){seen[kp]=1;combos.push({payee:nm,pcode:'',desc:'',src:'phone',phone:CLIENTS[p].phone||''});}
+    }
+  }catch(e){}
+
+  _balShown=[];
+  for(var n=0;n<combos.length;n++){
+    var stripped=String(combos[n].payee||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    var full=String(combos[n].payee||'').toUpperCase();
+    if(stripped.indexOf(q)>=0||full.indexOf(q)>=0) _balShown.push(combos[n]);
+  }
+
+  if(!_balShown.length){
+    tbl.style.display='none';
+    document.getElementById('bal-notfound-name').textContent='"'+String(val||'').toUpperCase()+'"';
+    document.getElementById('bal-notfound').style.display='block';
+    document.getElementById('bal-hint').textContent='';
+    document.getElementById('bal-an-payee').value=String(val||'').toUpperCase();
+    return;
+  }
+  tbl.style.display='table';
+  var html='';
+  for(var m=0;m<_balShown.length;m++){
+    var r=_balShown[m];
+    var srcBadge=r.src==='phone'
+      ?'<span style="background:#003355;color:#00ffff;font-size:10px;padding:1px 4px;border-radius:3px;border:1px solid #00ffff;margin-right:4px;">📱</span>'
+      :'<span style="background:#003300;color:#00ff88;font-size:10px;padding:1px 4px;border-radius:3px;border:1px solid #00ff88;margin-right:4px;">💰</span>';
+    var pcCell=r.src==='phone'?'<span style="color:#888;font-style:italic;">(pick)</span>':(r.pcode||'');
+    var descCell=r.src==='phone'?'<span style="color:#888;font-style:italic;">(pick)</span>':(r.desc||'');
+    html+='<tr onclick="balPickFromList('+m+')" style="cursor:pointer;">'
+      +'<td style="padding:7px 4px;border:1px solid #5555ee;color:#ffff00;font-weight:700;">'+srcBadge+(r.payee||'')+'</td>'
+      +'<td style="padding:7px 4px;border:1px solid #5555ee;color:#00ffff;text-align:center;">'+pcCell+'</td>'
+      +'<td style="padding:7px 4px;border:1px solid #5555ee;color:#ffffff;">'+descCell+'</td>'
+      +'</tr>';
+  }
+  document.getElementById('bal-tbody').innerHTML=html;
+  // Hint summarizing sources
+  var accN=0,phN=0;
+  for(var x=0;x<_balShown.length;x++){if(_balShown[x].src==='phone')phN++;else accN++;}
+  var hintParts=[];
+  if(accN>0)hintParts.push(accN+' from 💰 Accounting');
+  if(phN>0)hintParts.push(phN+' from 📱 Phone');
+  document.getElementById('bal-hint').textContent=hintParts.join(' · ')+' — tap one';
+}
+
+function balPickFromList(i){
+  var r=_balShown[i];if(!r)return;
+  _balPickedPayee=r.payee||'';
+  document.getElementById('bal-picked-payee').textContent=r.payee||'';
+  // Set PCODE select — add option if missing
+  var pcSel=document.getElementById('bal-pcode-sel');
+  var pcVal=r.pcode||'';
+  if(pcVal){
+    var found=false;
+    for(var k=0;k<pcSel.options.length;k++){if(pcSel.options[k].value===pcVal){found=true;break;}}
+    if(!found){var opt=document.createElement('option');opt.value=pcVal;opt.textContent=pcVal;pcSel.appendChild(opt);}
+    pcSel.value=pcVal;
+  } else {
+    // Phone-sourced: reset to first option, user must choose
+    pcSel.selectedIndex=0;
+  }
+  // Set DESC select — add option if missing
+  var dcSel=document.getElementById('bal-desc-in');
+  var dcVal=r.desc||'';
+  if(dcVal){
+    var foundD=false;
+    for(var kd=0;kd<dcSel.options.length;kd++){if(dcSel.options[kd].value===dcVal){foundD=true;break;}}
+    if(!foundD){var optD=document.createElement('option');optD.value=dcVal;optD.textContent=dcVal;dcSel.appendChild(optD);}
+    dcSel.value=dcVal;
+  } else {
+    dcSel.selectedIndex=0;  // -- PICK DESCRIPTION --
+  }
+  document.getElementById('bal-amt').value='';
+  balLoadDatePref();
+  balSetSign(-1);
+  // Hide search section, reveal entry panel
+  document.getElementById('bal-search-section').style.display='none';
+  document.getElementById('bal-entry-panel').style.display='block';
+  // For phone picks (no pcode/desc), focus pcode select; otherwise focus amount
+  if(r.src==='phone'){
+    toast('📱 From phone — pick PCODE & DESC',true);
+    setTimeout(function(){
+      try{pcSel.focus();}catch(e){}
+      document.getElementById('screen-balance').scrollTop=0;
+    },200);
+  } else {
+    setTimeout(function(){document.getElementById('bal-amt').focus();},250);
+  }
+}
+
+function balShowAddNew(){
+  document.getElementById('bal-notfound').style.display='none';
+  document.getElementById('bal-addnew').style.display='block';
+  document.getElementById('bal-an-payee').focus();
+}
+
+function balCancelNewPayee(){
+  document.getElementById('bal-addnew').style.display='none';
+  var sv=document.getElementById('bal-search').value;
+  if(sv)balDoFilter(sv);
+}
+
+function balSaveNewPayee(){
+  var payee=(document.getElementById('bal-an-payee').value||'').toUpperCase().trim();
+  var pcode=document.getElementById('bal-an-pcode').value;
+  var desc=document.getElementById('bal-an-desc').value;
+  if(!payee){toast('Enter payee name',false);return;}
+  // Save to MX master and persist in mx_custom
+  var combo={payee:payee,pcode:pcode,desc:desc};
+  MX.push(combo);
+  try{
+    var custom=JSON.parse(localStorage.getItem('mx_custom')||'[]');
+    custom.push(combo);
+    localStorage.setItem('mx_custom',JSON.stringify(custom));
+  }catch(e){}
+  document.getElementById('bal-addnew').style.display='none';
+  document.getElementById('bal-search').value=payee;
+  _balShown=[combo];
+  balPickFromList(0);
+  toast('✓ New payee saved',true);
+}
+
+function balFillDatalists(){
+  // No-op kept for backward compat — search now uses MX directly
+}
+
+function balSetSign(s){
+  _balSign=s;
+  var plus=document.getElementById('bal-sign-plus');
+  var minus=document.getElementById('bal-sign-minus');
+  if(!plus||!minus)return;
+  if(s===1){
+    plus.style.background='#006600';plus.style.color='#ffffff';
+    minus.style.background='#220000';minus.style.color='#884444';
+  } else {
+    plus.style.background='#002200';plus.style.color='#00ff88';
+    minus.style.background='#aa0000';minus.style.color='#ffffff';
+  }
+}
+
+function balAdd(){
+  var payee=_balPickedPayee||'';
+  var date=balGetDate();
+  var amtRaw=parseFloat(document.getElementById('bal-amt').value||'0');
+  var desc=(document.getElementById('bal-desc-in').value||'').trim();
+  var pcode=document.getElementById('bal-pcode-sel').value||'';
+  if(!payee){toast('Pick or add a payee first',false);return;}
+  if(!desc){toast('Pick a DESCRIPTION from the dropdown',false);return;}
+  if(!amtRaw||isNaN(amtRaw)){toast('Enter amount',false);return;}
+  var amt=_balSign*Math.abs(amtRaw);
+  var mtime=new Date().toISOString();
+  if(_balEditId!=null){
+    for(var i=0;i<BALANCE.length;i++){
+      if(BALANCE[i].id===_balEditId){
+        BALANCE[i].payee=payee;BALANCE[i].date=date;BALANCE[i].amt=amt;
+        BALANCE[i].desc=desc;BALANCE[i].pcode=pcode;BALANCE[i].mtime=mtime;
+        break;
+      }
+    }
+    toast('✓ Entry updated',true);
+  } else {
+    BALANCE.unshift({
+      id:Date.now()+Math.random(),
+      payee:payee,date:date,amt:amt,desc:desc,pcode:pcode,
+      checked:false,sent:false,mtime:mtime
+    });
+    toast('✓ Entry added',true);
+  }
+  balSave();
+  balResetSearch();
+  balRender();
+}
+
+function balCancelEdit(){
+  balResetSearch();
+}
+
+function balEdit(id){
+  var row=null;
+  for(var i=0;i<BALANCE.length;i++) if(BALANCE[i].id===id){row=BALANCE[i];break;}
+  if(!row)return;
+  _balEditId=id;
+  _balPickedPayee=row.payee||'';
+  document.getElementById('bal-picked-payee').textContent=row.payee||'';
+  // PCODE select
+  var pcSel=document.getElementById('bal-pcode-sel');
+  var pcVal=row.pcode||'';
+  if(pcVal){
+    var found=false;
+    for(var k=0;k<pcSel.options.length;k++){if(pcSel.options[k].value===pcVal){found=true;break;}}
+    if(!found){var opt=document.createElement('option');opt.value=pcVal;opt.textContent=pcVal;pcSel.appendChild(opt);}
+    pcSel.value=pcVal;
+  }
+  // DESC select
+  var dcSel=document.getElementById('bal-desc-in');
+  var dcVal=row.desc||'';
+  if(dcVal){
+    var foundD=false;
+    for(var kd=0;kd<dcSel.options.length;kd++){if(dcSel.options[kd].value===dcVal){foundD=true;break;}}
+    if(!foundD){var optD=document.createElement('option');optD.value=dcVal;optD.textContent=dcVal;dcSel.appendChild(optD);}
+    dcSel.value=dcVal;
+  } else {
+    dcSel.selectedIndex=0;
+  }
+  balSetDate(row.date||today());
+  document.getElementById('bal-amt').value=Math.abs(row.amt||0).toFixed(2);
+  balSetSign((row.amt||0)>=0?1:-1);
+  document.getElementById('bal-save-btn').textContent='✓ UPDATE ENTRY';
+  // Hide search section, show entry panel
+  document.getElementById('bal-search-section').style.display='none';
+  document.getElementById('bal-entry-panel').style.display='block';
+  document.getElementById('screen-balance').scrollTop=0;
+  setTimeout(function(){document.getElementById('bal-amt').focus();},250);
+}
+
+function balDelete(id){
+  if(!confirm('Delete this entry?'))return;
+  BALANCE=BALANCE.filter(function(r){return r.id!==id;});
+  balSave();balRender();
+  toast('Entry deleted',true);
+}
+
+function balToggleCheck(id){
+  for(var i=0;i<BALANCE.length;i++) if(BALANCE[i].id===id){BALANCE[i].checked=!BALANCE[i].checked;break;}
+  balSave();balRender();
+}
+
+function balSendToAccounting(id){
+  var row=null;
+  for(var i=0;i<BALANCE.length;i++) if(BALANCE[i].id===id){row=BALANCE[i];break;}
+  if(!row)return;
+  if(row.sent){toast('Already sent — delete or edit if you need to resend',false);return;}
+  loadLog();
+  LOG.unshift({
+    id:Date.now()+Math.random(),
+    payee:row.payee,pcode:row.pcode||'',desc:row.desc||'',
+    date:row.date,amt:row.amt,
+    x:'X',mtime:new Date().toISOString()
+  });
+  saveLog();
+  row.sent=true;row.mtime=new Date().toISOString();
+  balSave();balRender();
+  toast('→ Sent to Accounting ✓',true);
+}
+
+function balSendAllChecked(){
+  var toSend=BALANCE.filter(function(r){return r.checked&&!r.sent;});
+  if(!toSend.length){toast('No checked items to send',false);return;}
+  if(!confirm('Send '+toSend.length+' checked item(s) to Master Accounting?'))return;
+  loadLog();
+  var mtime=new Date().toISOString();
+  toSend.forEach(function(row){
+    LOG.unshift({
+      id:Date.now()+Math.random(),
+      payee:row.payee,pcode:row.pcode||'',desc:row.desc||'',
+      date:row.date,amt:row.amt,
+      x:'X',mtime:mtime
+    });
+    row.sent=true;row.mtime=mtime;
+  });
+  saveLog();balSave();balRender();
+  toast('→ Sent '+toSend.length+' to Accounting ✓',true);
+}
+
+function _balFmt(n){
+  var v=Number(n||0);
+  var sign=v<0?'-':'';
+  return sign+'$'+Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+}
+
+function _balFmtDate(d){
+  if(!d)return '';
+  // d is like '2026-05-09' → display '05/09/26'
+  var p=d.split('-');
+  if(p.length===3) return p[1]+'/'+p[2]+'/'+p[0].slice(2);
+  return d;
+}
+
+// Drill-down filter state
+var _balFilter={field:'',value:''};   // field: '' | 'payee' | 'pcode' | 'desc'
+var _balSort={by:'date',asc:true};    // by: 'date' | 'payee' | 'amt'
+
+function balSetFilter(field,value){
+  _balFilter.field=field;_balFilter.value=value;
+  balRender();
+}
+function balClearFilter(){
+  _balFilter.field='';_balFilter.value='';
+  balRender();
+}
+function balSetSort(by){
+  if(_balSort.by===by){_balSort.asc=!_balSort.asc;}
+  else{_balSort.by=by;_balSort.asc=true;}
+  balRender();
+}
+
+function balRender(){
+  var list=document.getElementById('bal-list');
+  if(!BALANCE.length){
+    list.innerHTML='<div style="background:#ffffff;border:2px solid #6666ff;border-radius:6px;padding:20px;color:#000080;font-family:Courier New,monospace;text-align:center;">'
+      +'<div style="font-size:24px;margin-bottom:6px;">📋</div>'
+      +'<div style="font-weight:700;font-size:14px;margin-bottom:4px;">NO PENDING ENTRIES</div>'
+      +'<div style="color:#444;font-size:12px;">Add an entry above to start tracking payables &amp; receivables</div>'
+      +'</div>';
+    document.getElementById('bal-running-total').textContent='$0.00';
+    document.getElementById('bal-running-total').style.color='#ffff00';
+    document.getElementById('bal-count').textContent='0';
+    document.getElementById('bal-checked-count').textContent='0';
+    return;
+  }
+
+  // Apply filter
+  var filtered=BALANCE.slice();
+  if(_balFilter.field && _balFilter.value){
+    filtered=filtered.filter(function(r){return (r[_balFilter.field]||'')===_balFilter.value;});
+  }
+
+  // Apply sort
+  filtered.sort(function(a,b){
+    var av,bv;
+    if(_balSort.by==='payee'){av=(a.payee||'').toUpperCase();bv=(b.payee||'').toUpperCase();}
+    else if(_balSort.by==='amt'){av=Number(a.amt||0);bv=Number(b.amt||0);}
+    else {av=a.date||'';bv=b.date||'';}
+    if(av<bv)return _balSort.asc?-1:1;
+    if(av>bv)return _balSort.asc?1:-1;
+    return 0;
+  });
+
+  // Build unique value sets for drill-down pulldown
+  function uniq(field){
+    var u={};
+    BALANCE.forEach(function(r){var v=r[field]||'';if(v)u[v]=(u[v]||0)+Number(r.amt||0);});
+    return u;
+  }
+  var byPayee=uniq('payee'), byPcode=uniq('pcode'), byDesc=uniq('desc');
+
+  // Sort labels
+  var sortLbl={date:_balSort.asc?'OLD→NEW':'NEW→OLD',payee:_balSort.asc?'A→Z':'Z→A',amt:_balSort.asc?'LOW→HIGH':'HIGH→LOW'};
+
+  // Totals
+  var grand=0,checkedCount=0,running=0;
+  BALANCE.forEach(function(r){if(r.checked)checkedCount++;});
+  filtered.forEach(function(r){grand+=Number(r.amt||0);});
+
+  var html='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:10px;font-family:Courier New,monospace;">';
+
+  // Title bar
+  html+='<div style="background:#000080;color:#ffffff;padding:6px 8px;margin:-10px -10px 8px;border-radius:4px 4px 0 0;display:flex;justify-content:space-between;align-items:center;">'
+    +'<span style="font-weight:700;font-size:13px;">💼 BALANCE SHEET — '+filtered.length+' ITEM'+(filtered.length===1?'':'S')+'</span>'
+    +'<span style="font-size:11px;color:#ccccff;">'+(_balFilter.field?'🔍 '+_balFilter.field.toUpperCase()+'='+_balFilter.value:'ALL ENTRIES')+'</span>'
+    +'</div>';
+
+  // Drill-down + sort controls
+  html+='<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">'
+    +'<select onchange="var v=this.value;if(!v){balClearFilter();return;}var p=v.split(\'|\');balSetFilter(p[0],p.slice(1).join(\'|\'));" '
+    +'style="flex:1;min-width:140px;background:#ffffff;color:#000000;border:1px solid #6666ff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;outline:none;">'
+    +'<option value="">— DRILL DOWN —</option>';
+  if(Object.keys(byPayee).length){
+    html+='<optgroup label="BY PAYEE">';
+    Object.keys(byPayee).sort().forEach(function(k){html+='<option value="payee|'+k.replace(/"/g,'&quot;')+'"'+(_balFilter.field==='payee'&&_balFilter.value===k?' selected':'')+'>'+k+' ('+_balFmt(byPayee[k])+')</option>';});
+    html+='</optgroup>';
+  }
+  if(Object.keys(byPcode).length){
+    html+='<optgroup label="BY PCODE">';
+    Object.keys(byPcode).sort().forEach(function(k){html+='<option value="pcode|'+k.replace(/"/g,'&quot;')+'"'+(_balFilter.field==='pcode'&&_balFilter.value===k?' selected':'')+'>'+k+' ('+_balFmt(byPcode[k])+')</option>';});
+    html+='</optgroup>';
+  }
+  if(Object.keys(byDesc).length){
+    html+='<optgroup label="BY DESC">';
+    Object.keys(byDesc).sort().forEach(function(k){html+='<option value="desc|'+k.replace(/"/g,'&quot;')+'"'+(_balFilter.field==='desc'&&_balFilter.value===k?' selected':'')+'>'+k+' ('+_balFmt(byDesc[k])+')</option>';});
+    html+='</optgroup>';
+  }
+  html+='</select>';
+  if(_balFilter.field){
+    html+='<button onclick="balClearFilter()" style="background:#cc0000;color:#fff;border:none;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:6px 10px;border-radius:3px;cursor:pointer;">✕ CLEAR</button>';
+  }
+  html+='</div>';
+
+  html+='<div style="display:flex;gap:4px;margin-bottom:8px;">'
+    +'<button onclick="balSetSort(\'date\')" style="flex:1;background:'+(_balSort.by==='date'?'#000080':'#ffffff')+';color:'+(_balSort.by==='date'?'#ffffff':'#000080')+';border:1px solid #6666ff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px;border-radius:3px;cursor:pointer;">DATE '+(_balSort.by==='date'?'⇅ '+sortLbl.date:'')+'</button>'
+    +'<button onclick="balSetSort(\'payee\')" style="flex:1;background:'+(_balSort.by==='payee'?'#000080':'#ffffff')+';color:'+(_balSort.by==='payee'?'#ffffff':'#000080')+';border:1px solid #6666ff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px;border-radius:3px;cursor:pointer;">PAYEE '+(_balSort.by==='payee'?'⇅ '+sortLbl.payee:'')+'</button>'
+    +'<button onclick="balSetSort(\'amt\')" style="flex:1;background:'+(_balSort.by==='amt'?'#000080':'#ffffff')+';color:'+(_balSort.by==='amt'?'#ffffff':'#000080')+';border:1px solid #6666ff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px;border-radius:3px;cursor:pointer;">AMT '+(_balSort.by==='amt'?'⇅ '+sortLbl.amt:'')+'</button>'
+    +'</div>';
+
+  // Main data table — FoxBase style
+  html+='<div style="overflow-x:auto;">';
+  html+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:12px;background:#ffffff;color:#000000;border:1px solid #6666ff;">';
+  html+='<thead><tr style="background:#000080;color:#ffffff;">'
+    +'<th style="padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:11px;width:24px;">#</th>'
+    +'<th style="padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:11px;">DATE</th>'
+    +'<th style="padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:11px;">PAYEE</th>'
+    +'<th style="padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:11px;">DESC</th>'
+    +'<th style="padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:11px;width:48px;">PC</th>'
+    +'<th style="padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:11px;white-space:nowrap;">AMT</th>'
+    +'<th style="padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:11px;white-space:nowrap;">BAL</th>'
+    +'<th style="padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:11px;width:118px;">ACT</th>'
+    +'</tr></thead><tbody>';
+
+  filtered.forEach(function(r,idx){
+    running+=Number(r.amt||0);
+    var amt=Number(r.amt||0);
+    var amtCol=amt<0?'#cc0000':'#006600';
+    var runCol=running<0?'#cc0000':'#006600';
+    var rowBg=idx%2===0?'#ffffff':'#eef2ff';
+    if(r.sent) rowBg='#e6ffe6';
+    if(r.checked && !r.sent) rowBg='#fff8d0';
+    var sentBadge=r.sent?' <span style="background:#006600;color:#fff;font-size:9px;padding:0 4px;border-radius:2px;">SENT</span>':'';
+    var checkColor=r.checked?'#006600':'#666';
+    var checkBg=r.checked?'#d0ffd0':'#ffffff';
+    var sendDisabled=r.sent;
+    var sendStyle=sendDisabled?'background:#eee;color:#999;cursor:not-allowed;border:1px solid #ccc;':'background:#e0f0ff;color:#000080;border:1px solid #6666ff;cursor:pointer;';
+    html+='<tr style="background:'+rowBg+';border-bottom:1px solid #ccd;">'
+      +'<td style="padding:5px 3px;text-align:center;border:1px solid #ccd;color:#666;">'+(idx+1)+'</td>'
+      +'<td style="padding:5px 3px;border:1px solid #ccd;color:#000080;font-weight:700;white-space:nowrap;">'+_balFmtDate(r.date)+'</td>'
+      +'<td style="padding:5px 3px;border:1px solid #ccd;color:#000;font-weight:700;">'+(r.payee||'')+sentBadge+'</td>'
+      +'<td style="padding:5px 3px;border:1px solid #ccd;color:#444;">'+(r.desc||'')+'</td>'
+      +'<td style="padding:5px 3px;text-align:center;border:1px solid #ccd;color:#cc6600;font-weight:700;">'+(r.pcode||'')+'</td>'
+      +'<td style="padding:5px 3px;text-align:right;border:1px solid #ccd;color:'+amtCol+';font-weight:700;white-space:nowrap;">'+_balFmt(amt)+'</td>'
+      +'<td style="padding:5px 3px;text-align:right;border:1px solid #ccd;color:'+runCol+';font-weight:700;white-space:nowrap;">'+_balFmt(running)+'</td>'
+      +'<td style="padding:4px 3px;text-align:center;border:1px solid #ccd;white-space:nowrap;">'
+      +'<button onclick="balToggleCheck('+r.id+')" title="Check" style="width:24px;height:24px;background:'+checkBg+';color:'+checkColor+';border:1px solid '+checkColor+';border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:2px;">✓</button>'
+      +'<button onclick="balSendToAccounting('+r.id+')" title="Send to Accounting" style="width:24px;height:24px;'+sendStyle+'border-radius:3px;font-size:12px;font-weight:700;font-family:Courier New,monospace;margin-right:2px;">→</button>'
+      +'<button onclick="balEdit('+r.id+')" title="Edit" style="width:24px;height:24px;background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:2px;">✎</button>'
+      +'<button onclick="balDelete('+r.id+')" title="Delete" style="width:24px;height:24px;background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">✕</button>'
+      +'</td></tr>';
+  });
+
+  // Grand total row (FoxBase yellow)
+  var gc=grand<0?'#cc0000':'#006600';
+  html+='<tr style="background:#ffff80;border-top:2px solid #000080;">'
+    +'<td colspan="5" style="padding:6px 4px;font-weight:700;border:1px solid #6666ff;color:#000080;font-size:12px;">TOTAL '+(_balFilter.field?'('+_balFilter.value+')':'')+'</td>'
+    +'<td style="padding:6px 4px;text-align:right;border:1px solid #6666ff;color:'+gc+';font-weight:700;white-space:nowrap;">'+_balFmt(grand)+'</td>'
+    +'<td style="padding:6px 4px;text-align:right;border:1px solid #6666ff;color:'+gc+';font-weight:700;white-space:nowrap;">'+_balFmt(grand)+'</td>'
+    +'<td style="padding:6px 4px;text-align:center;border:1px solid #6666ff;color:#000080;font-weight:700;font-size:10px;">'+filtered.length+' row'+(filtered.length===1?'':'s')+'</td>'
+    +'</tr>';
+
+  html+='</tbody></table></div></div>';
+  list.innerHTML=html;
+
+  // Update the summary strip at top
+  var totColor=grand<0?'#ff8888':'#00ff88';
+  document.getElementById('bal-running-total').style.color=totColor;
+  document.getElementById('bal-running-total').textContent=_balFmt(grand);
+  document.getElementById('bal-count').textContent=filtered.length+(_balFilter.field?' / '+BALANCE.length:'');
+  document.getElementById('bal-checked-count').textContent=checkedCount;
+}
 function buildDays(){
   var ds=document.getElementById('p-day');ds.innerHTML='';
   for(var i=1;i<=31;i++){var v=i<10?'0'+i:''+i;ds.innerHTML+='<option value="'+v+'">'+v+'</option>';}
@@ -6026,6 +6920,84 @@ function rptRender(){
   document.getElementById('rpt-content').innerHTML=html;
   document.getElementById('screen-reports').scrollTop=0;
 }
+// ── REPORT EMAIL / PRINT (FoxBase+ style) ──
+function _reportHasContent(){
+  var c=document.getElementById('rpt-content');
+  if(!c)return false;
+  var html=c.innerHTML||'';
+  if(!html.trim())return false;
+  if(html.indexOf('TAP A BUTTON')>=0)return false;
+  return true;
+}
+
+function _openReportWindow(forPrint){
+  var c=document.getElementById('rpt-content');
+  var title='MFS REPORT — '+today();
+  var w=window.open('','_blank','width=820,height=720');
+  if(!w){toast('Pop-up blocked — allow pop-ups for this site',false);return null;}
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title>'
+    +'<style>'
+    +'body{font-family:"Courier New",monospace;background:#fff;color:#000;padding:18px;font-size:12px;line-height:1.4;}'
+    +'h1,h2,h3,h4{margin:6px 0;color:#000;}'
+    +'table{border-collapse:collapse;width:100%;margin:6px 0 12px;}'
+    +'td,th{border:1px solid #888;padding:4px 6px;font-size:11px;}'
+    +'div{color:#000 !important;}span{color:#000 !important;}'
+    +'.no-print{margin-bottom:14px;}'
+    +'@media print{.no-print{display:none !important;}body{padding:6px;}}'
+    +'</style></head><body>'
+    +'<div class="no-print" style="font-family:Arial,sans-serif;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:10px;">'
+    +'<button onclick="window.print()" style="padding:8px 14px;background:#0066cc;color:#fff;border:none;border-radius:4px;font-weight:700;cursor:pointer;margin-right:6px;">🖨️ Print / Save as PDF</button>'
+    +'<button onclick="window.close()" style="padding:8px 14px;background:#888;color:#fff;border:none;border-radius:4px;cursor:pointer;">Close</button>'
+    +'</div>'
+    +'<h2 style="text-align:center;">'+title+'</h2>'
+    +'<div>'+c.innerHTML+'</div>'
+    +'</body></html>');
+  w.document.close();
+  if(forPrint) setTimeout(function(){try{w.focus();w.print();}catch(e){}},500);
+  return w;
+}
+
+function reportPrint(){
+  if(!_reportHasContent()){toast('No report on screen — tap a report button first',false);return;}
+  _openReportWindow(true);
+}
+
+function reportEmail(){
+  if(!_reportHasContent()){toast('No report on screen — tap a report button first',false);return;}
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:3px solid #00ffff;border-radius:10px;padding:18px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;color:#ffffff;position:relative;">'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove();" style="position:absolute;top:8px;right:8px;width:32px;height:32px;background:#660000;color:#ffffff;border:1px solid #ff6666;border-radius:4px;font-family:Courier New,monospace;font-size:16px;font-weight:700;cursor:pointer;line-height:1;">✕</button>'
+    +'<div style="font-size:36px;margin-bottom:8px;">📧</div>'
+    +'<div style="color:#00ffff;font-weight:700;font-size:15px;margin-bottom:6px;">EMAIL REPORT</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:14px;">How do you want to send it?</div>'
+    +'<button onclick="reportEmailPDF();this.closest(\'.modal-overlay\').remove();" style="display:block;width:100%;margin-bottom:8px;padding:14px;background:#00ff88;color:#000080;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;text-align:left;">📎 PDF FILE<div style="font-size:11px;font-weight:400;margin-top:2px;">Print → Save as PDF → attach to email</div></button>'
+    +'<button onclick="reportEmailText();this.closest(\'.modal-overlay\').remove();" style="display:block;width:100%;margin-bottom:8px;padding:14px;background:#ffff00;color:#000080;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;text-align:left;">📝 PLAIN TEXT<div style="font-size:11px;font-weight:400;margin-top:2px;">Report text in email body — quick &amp; simple</div></button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove();" style="width:100%;padding:10px;background:#660000;color:#ffffff;font-size:13px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">↩ BACK TO REPORTS</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+
+function reportEmailPDF(){
+  // Open print window (user saves as PDF), then open mail compose
+  _openReportWindow(true);
+  var subject='MFS Report — '+today();
+  var body='See attached PDF report (saved from the print dialog).';
+  setTimeout(function(){
+    window.location.href='mailto:tristancarrington1@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  },1200);
+}
+
+function reportEmailText(){
+  var c=document.getElementById('rpt-content');
+  var text=(c.innerText||c.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+  if(text.length>4000) text=text.substring(0,4000)+'\n\n[Report truncated — use PDF option for full report]';
+  var subject='MFS Report — '+today();
+  var body='MFS REPORT — '+today()+'\n\n'+text;
+  window.location.href='mailto:tristancarrington1@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
+
 function rptPage(p){_rptPage=p;rptRender();document.getElementById('screen-reports').scrollTop=0;}
 function rptToggleSort(type){
   _rptSortAsc[type]=!(_rptSortAsc[type]!==false);
