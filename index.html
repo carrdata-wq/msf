@@ -7648,6 +7648,7 @@ function renderLog(){
       +'<td style="padding:3px 2px;text-align:center;white-space:nowrap;">'
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')">DEL</button> '
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')">CPY</button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#006666;color:#fff;" onclick="event.preventDefault();event.stopPropagation();shareLog('+e.id+')" title="Share via email / text / copy">📤</button> '
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog('+e.id+')">EDT</button>'
       +(e.x?'<span title="New/Edited — pending sync" style="margin-left:4px;color:#00ff88;font-size:14px;font-weight:700;">✔</span>':'')
       +'</td>'
@@ -7800,6 +7801,31 @@ function delLog(id){
   if(!confirm('Delete entry?'))return;
   var n=[];for(var i=0;i<LOG.length;i++){if(LOG[i].id!==id)n.push(LOG[i]);}
   LOG=n;saveLog();renderLog();
+}
+
+// Share a single accounting entry via email, SMS, or copy
+function shareLog(id){
+  var e=null;
+  for(var i=0;i<LOG.length;i++) if(LOG[i].id===id){e=LOG[i];break;}
+  if(!e){toast('Entry not found',false);return;}
+  var lines=[];
+  lines.push('ACCOUNTING ENTRY');
+  if(e.payee) lines.push('Payee: '+e.payee);
+  if(e.date)  lines.push('Date: '+e.date);
+  if(e.amt!==undefined && e.amt!==null) lines.push('Amount: $'+Number(e.amt).toFixed(2));
+  if(e.pcode) lines.push('PCode: '+e.pcode);
+  if(e.desc)  lines.push('Desc: '+e.desc);
+  var shareText = lines.join('\n');
+  var subject = 'Accounting: '+(e.payee||'Entry')+' '+(e.date||'');
+  window._shareText = shareText;
+  window._shareSubject = subject;
+  if(navigator.share){
+    navigator.share({title:subject, text:shareText}).catch(function(){
+      _shareShowModal(e.payee||'Entry');
+    });
+    return;
+  }
+  _shareShowModal(e.payee||'Entry');
 }
 //  PHONE CLIENTS MODULE
 var CLIENTS=[];
@@ -8083,6 +8109,7 @@ function renderClientsTable(rows, total, showingAll){
       + '<div style="white-space:nowrap;display:flex;gap:2px;flex-shrink:0;">'
         + '<button onclick="phoneShowForm('+c.id+')" title="Edit" style="background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">EDT</button>'
         + '<button onclick="copyClient('+c.id+')" title="Copy" style="background:#e0f0ff;color:#000080;border:1px solid #6666ff;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">CPY</button>'
+        + '<button onclick="shareClient('+c.id+')" title="Share via email / text / copy" style="background:#e0fff0;color:#006666;border:1px solid #006666;border-radius:3px;padding:3px 6px;font-size:13px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">📤</button>'
         + '<button onclick="delClient('+c.id+')" title="Delete" style="background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">DEL</button>'
       + '</div>'
       + '</div>';
@@ -8195,13 +8222,92 @@ function saveClient(){
   saveClients();
   phoneShowList();
 }
+
+// Share a single client via email, SMS, or copy-to-clipboard
+function shareClient(id){
+  loadClients();
+  var c=null;
+  for(var i=0;i<CLIENTS.length;i++) if(CLIENTS[i].id===id){c=CLIENTS[i];break;}
+  if(!c){toast('Client not found',false);return;}
+
+  // Build a nicely formatted contact text
+  var lines = [];
+  lines.push(c.name || '(no name)');
+  if(c.phone)     lines.push('Phone: '+c.phone);
+  if(c.email)     lines.push('Email: '+c.email);
+  if(c.addr)      lines.push('Address: '+c.addr);
+  if(c.contacted) lines.push('Contacted: '+c.contacted);
+  if(c.notes)     lines.push('Notes: '+c.notes);
+  var shareText = lines.join('\n');
+  var subject = 'Contact: '+(c.name||'');
+
+  // Stash on window so modal buttons can read without messy escaping
+  window._shareText = shareText;
+  window._shareSubject = subject;
+
+  // Try the native share sheet first (Android Chrome / iOS Safari)
+  if(navigator.share){
+    navigator.share({title:subject, text:shareText}).catch(function(){
+      _shareShowModal(c.name||'');
+    });
+    return;
+  }
+  _shareShowModal(c.name||'');
+}
+
+function _shareShowModal(name){
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = '<div style="background:#0000cc;border:3px solid #00ffff;border-radius:10px;padding:18px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;color:#ffffff;position:relative;">'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove();" style="position:absolute;top:8px;right:8px;width:30px;height:30px;background:#660000;color:#fff;border:1px solid #ff6666;border-radius:4px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;line-height:1;">✕</button>'
+    + '<div style="font-size:36px;margin-bottom:6px;">📤</div>'
+    + '<div style="color:#00ffff;font-weight:700;font-size:15px;margin-bottom:4px;letter-spacing:1px;">SHARE CONTACT</div>'
+    + '<div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:14px;">'+escClient(name)+'</div>'
+    + '<button onclick="_shareDoEmail();this.closest(\'.modal-overlay\').remove();" style="display:block;width:100%;margin-bottom:8px;padding:13px;background:#00ff88;color:#000080;font-weight:700;font-size:14px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">📧 EMAIL</button>'
+    + '<button onclick="_shareDoText();this.closest(\'.modal-overlay\').remove();" style="display:block;width:100%;margin-bottom:8px;padding:13px;background:#ffff00;color:#000080;font-weight:700;font-size:14px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">📱 TEXT MESSAGE</button>'
+    + '<button onclick="_shareDoCopy();this.closest(\'.modal-overlay\').remove();" style="display:block;width:100%;margin-bottom:8px;padding:13px;background:#ffaa00;color:#000080;font-weight:700;font-size:14px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">📋 COPY TO CLIPBOARD</button>'
+    + '<button onclick="this.closest(\'.modal-overlay\').remove();" style="width:100%;padding:9px;background:#660000;color:#ffffff;font-size:13px;border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">CANCEL</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function _shareDoEmail(){
+  var u = 'mailto:?subject='+encodeURIComponent(window._shareSubject||'Contact')+'&body='+encodeURIComponent(window._shareText||'');
+  window.location.href = u;
+}
+
+function _shareDoText(){
+  // SMS body — works on both Android (sms:?body=) and iOS (sms:&body=)
+  var u = 'sms:?body='+encodeURIComponent(window._shareText||'');
+  window.location.href = u;
+}
+
+function _shareDoCopy(){
+  var t = window._shareText || '';
+  var ta = document.createElement('textarea');
+  ta.value = t;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); toast('📋 Copied to clipboard',true); }
+  catch(e){ toast('Copy failed',false); }
+  document.body.removeChild(ta);
+}
+
 function delClient(id){
   if(!confirm('Delete this client?'))return;
   loadClients();
+  // Remember which view is active so we restore it after the refresh
+  var listEl = document.getElementById('phone-list');
+  var wasShowingAll = listEl && listEl.innerHTML.indexOf('ALL CLIENTS') >= 0;
   CLIENTS=CLIENTS.filter(function(c){return c.id!==id;});
   saveClients();
-  renderClientList();
-  toast('Deleted',true);
+  // Refresh picker count + table header count on the return loop
+  phoneShowList();
+  if(wasShowingAll) renderAllClients();
+  toast('Deleted ('+CLIENTS.length+' left)',true);
 }
 function copyClient(id){
   loadClients();
