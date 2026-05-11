@@ -260,37 +260,35 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <div class="menu-item" onclick="showSubMenu('accounting')">
       <div class="menu-num">2</div><div class="menu-icon">📊</div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">More Accounting Tasks</div><div class="ms">Reports · Restaurant · Grocery · Bank · Portfolio</div></div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">More Accounting Tasks</div><div class="ms">Reports · Restaurant · Grocery · Bank · Portfolio · Fuel · Utility</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
-    <div class="menu-item" onclick="openModule('fuel')">
-      <div class="menu-num">3</div><div class="menu-icon">⛽</div>
-      <div class="menu-label"><div class="ml">Fuel &amp; Gas Tracker</div><div class="ms">MPG · Cost/day · Weekly · Yearly</div></div>
-      <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="openModule('utilities')">
-      <div class="menu-num">4</div><div class="menu-icon">⚡</div>
-      <div class="menu-label"><div class="ml">Utility Tracker</div><div class="ms">KWH Electric · CF Gas · Cost/unit</div></div>
-      <div class="menu-arrow">›</div>
+    <div class="menu-item" onclick="openBalance()" style="background:#002233;border:3px solid #00ffff;margin:2px 0;min-height:50px;">
+      <div class="menu-num">3</div><div class="menu-icon" style="font-size:28px;">💼</div>
+      <div class="menu-label">
+        <div class="ml" style="color:#00ffff;font-size:14px;">Balance Sheet</div>
+        <div class="ms" style="color:#aaffff;">Pending payables/receivables · Running total</div>
+      </div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
 
         <div class="menu-item" onclick="openModule('phone')">
-      <div class="menu-num">5</div><div class="menu-icon">📱</div>
+      <div class="menu-num">4</div><div class="menu-icon">📱</div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">Phone Clients</div><div class="ms">Client Database · Contacts · Jobs</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
     <div class="menu-item" onclick="showSubMenu('sysutil')">
-      <div class="menu-num">6</div><div class="menu-icon">⚙️</div>
+      <div class="menu-num">5</div><div class="menu-icon">⚙️</div>
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">System Utilities</div><div class="ms">MFS Update · File Manager · Drive</div></div>
       <div class="menu-arrow" style="color:#ff88ff;">›</div>
     </div>
     <div class="menu-item" onclick="openTransferMenu()">
-      <div class="menu-num">7</div><div class="menu-icon">🔄</div>
+      <div class="menu-num">6</div><div class="menu-icon">🔄</div>
       <div class="menu-label"><div class="ml" style="color:#ffff00;">DATA MANAGER</div><div class="ms">Backup · Restore · Sync · Move Data</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
     <div class="menu-item" onclick="openAndroidEasyImport()" style="background:#002200;border:3px solid #00ff88;margin:2px 0;min-height:50px;">
-      <div class="menu-num">8</div><div class="menu-icon" style="font-size:28px;">💰</div>
+      <div class="menu-num">7</div><div class="menu-icon" style="font-size:28px;">💰</div>
       <div class="menu-label">
         <div class="ml" style="color:#00ff88;font-size:14px;">MOVE ACCOUNTING</div>
         <div class="ms" style="color:#aaffaa;">ThinkPad ↔ Android · Paste or Download</div>
@@ -298,7 +296,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
     <div class="menu-item" onclick="openPhoneMoveMenu()" style="background:#002200;border:3px solid #00ffff;margin:2px 0;min-height:50px;">
-      <div class="menu-num">9</div><div class="menu-icon" style="font-size:28px;">📱</div>
+      <div class="menu-num">8</div><div class="menu-icon" style="font-size:28px;">📱</div>
       <div class="menu-label">
         <div class="ml" style="color:#00ffff;font-size:14px;">MOVE PHONE LIST</div>
         <div class="ms" style="color:#aaffff;">ThinkPad ↔ Android · Paste or Download</div>
@@ -554,10 +552,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml">Portfolio</div><div class="ms">Stocks · ETFs · Bonds · P&amp;L</div></div>
       <div class="menu-arrow">›</div>
     </div>
-    <div class="menu-item" onclick="openBalance()" style="background:#002233;border:2px solid #00ffff;">
-      <div class="menu-num">7</div><div class="menu-icon">💼</div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">Balance Sheet</div><div class="ms">Pending payables/receivables · Running total</div></div>
-      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    <div class="menu-item" onclick="openModule('fuel')">
+      <div class="menu-num">7</div><div class="menu-icon">⛽</div>
+      <div class="menu-label"><div class="ml">Fuel &amp; Gas Tracker</div><div class="ms">MPG · Cost/day · Weekly · Yearly</div></div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-item" onclick="openModule('utilities')">
+      <div class="menu-num">8</div><div class="menu-icon">⚡</div>
+      <div class="menu-label"><div class="ml">Utility Tracker</div><div class="ms">KWH Electric · CF Gas · Cost/unit</div></div>
+      <div class="menu-arrow">›</div>
     </div>
   </div>
   </div>
@@ -566,7 +569,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 <!-- ── BALANCE SHEET (Receivables / Payables Pending) ── -->
 <div id="screen-balance" class="screen" style="background:#001a33;font-family:Courier New,monospace;display:none;">
   <div style="background:#0000cc;border-bottom:2px solid #00ffff;padding:8px 10px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:50;">
-    <button onclick="showSubMenu('accounting')" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:4px;cursor:pointer;">◀ BACK</button>
+    <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">💼 Balance Sheet</span>
     <button onclick="balSendAllChecked()" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;">✓→ SEND ALL</button>
   </div>
@@ -5478,9 +5481,9 @@ function balResetSearch(){
 function balClearSearch(){balResetSearch();}
 
 function balExitToMenu(){
-  // Cancel the search and go back to the More Accounting Tasks submenu
+  // Cancel the search and go back to main menu (Balance Sheet is now a top-level item)
   balResetSearch();
-  if(typeof showSubMenu==='function') showSubMenu('accounting');
+  if(typeof goMain==='function') goMain();
 }
 
 function balDoFilter(val){
