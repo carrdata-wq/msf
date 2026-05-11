@@ -342,13 +342,26 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div style="color:#aaffff;font-size:13px;margin-top:6px;">ThinkPad → Android: Phone Backup · email to yourself · load files on Android<br>Android → ThinkPad: same steps in reverse</div>
   </div>
   <button onclick="doPhoneBackup()" style="width:100%;padding:14px;margin-bottom:8px;font-size:14px;font-weight:700;border:none;border-radius:8px;background:#002244;color:#00ffff;border:2px solid #00ffff;font-family:Courier New,monospace;cursor:pointer;">⬇ STEP 1 — BACKUP PHONE LIST NOW</button>
+
   <div style="background:#001133;border:2px solid #00ffff;border-radius:8px;padding:12px;margin-bottom:8px;color:#aaffff;font-size:13px;text-align:center;">
     STEP 2 — Email the 5 files to yourself<br>
     <span style="color:#ffff00;">tristancarrington1@gmail.com</span><br><br>
-    STEP 3 — On other device open Gmail<br>
-    download the files → BULK IMPORT
+    <span style="color:#aaccee;">Then on the other device pick ONE option below:</span>
   </div>
-  <button onclick="bulkCsvImport()" style="width:100%;padding:18px;margin-bottom:8px;font-size:16px;font-weight:700;border:none;border-radius:8px;background:#00ffff;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📦 BULK IMPORT PHONE FILES</button>
+
+  <div style="background:#001a44;border:2px solid #ffaa00;border-radius:8px;padding:10px;margin-bottom:8px;">
+    <div style="color:#ffaa00;font-weight:700;font-size:13px;margin-bottom:6px;">📋 OPTION A — PASTE THE 5 CHUNKS</div>
+    <div style="color:#ccccff;font-size:11px;margin-bottom:6px;">Copy each PHONE_BACKUP CSV from your email and paste here — one after another (any order)</div>
+    <textarea id="phone-paste-area" placeholder="Paste PHONE_BACKUP CSV files here..." style="width:100%;box-sizing:border-box;height:120px;background:#000022;border:1px solid #ffaa00;color:#ffffff;font-family:Courier New,monospace;font-size:11px;padding:8px;border-radius:4px;resize:vertical;outline:none;line-height:1.3;"></textarea>
+    <button onclick="processPhonePaste()" style="width:100%;padding:14px;margin-top:6px;font-size:15px;font-weight:700;border:none;border-radius:8px;background:#ffaa00;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📥 STEP 3 — LOAD PASTED CHUNKS</button>
+  </div>
+
+  <div style="background:#001a44;border:2px solid #00ffff;border-radius:8px;padding:10px;margin-bottom:8px;">
+    <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:6px;">📦 OPTION B — LOAD FILES FROM DISK</div>
+    <div style="color:#ccccff;font-size:11px;margin-bottom:6px;">Download all 5 PHONE_BACKUP files first, then select them all here</div>
+    <button onclick="bulkCsvImport()" style="width:100%;padding:14px;font-size:15px;font-weight:700;border:none;border-radius:8px;background:#00ffff;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📦 SELECT FILES &amp; LOAD</button>
+  </div>
+
   <button onclick="goMain()" style="width:100%;padding:12px;font-size:14px;font-weight:700;border:none;border-radius:8px;background:#660000;color:#ffffff;font-family:Courier New,monospace;cursor:pointer;">❌ CANCEL</button>
 </div>
 
@@ -5245,6 +5258,10 @@ function doPhoneBackup(){
     +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#fff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
     +'</div></div>';
   document.body.appendChild(overlay);
+  // Auto-fire email composer so user can attach the 5 downloaded files right away
+  setTimeout(function(){
+    try{window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Attach all 5 PHONE_BACKUP files from Downloads.'),'_blank');}catch(e){}
+  },1200);
 }
 
 function doBackup() {
@@ -5300,6 +5317,10 @@ function doBackup() {
   overlay.dataset.toEmail=toEmail;
   document.body.appendChild(overlay);
   setTimeout(function(){var ta=document.getElementById('bkp-share-text');if(ta){ta.focus();ta.select();}},400);
+  // Auto-fire email composer so the downloaded CSV can be attached right away
+  setTimeout(function(){
+    try{window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Attach '+filename+' from Downloads.'),'_blank');}catch(e){}
+  },1200);
 }
 function copyBackupText(){
   var ta=document.getElementById('bkp-share-text');if(!ta)return;
@@ -8638,6 +8659,67 @@ function phoneImportFromKey(key){
     phoneShowList();
     toast('Imported ✓ — '+converted.length+' from '+key,true);
   }catch(e){toast('Import failed: '+e.message,false);}
+}
+
+function processPhonePaste(){
+  var ta=document.getElementById('phone-paste-area');
+  if(!ta){toast('Paste area not found',false);return;}
+  var raw=(ta.value||'').trim();
+  if(!raw){toast('Paste the CSV chunks first',false);return;}
+
+  // Multi-chunk handling: the 5 PHONE_BACKUP files all share the header
+  // "NAME,PHONE,EMAIL,ADDR,NOTES,CONTACTED,ADATE,X,MTIME". Split on every
+  // header occurrence so each chunk parses independently then combine.
+  var headerRe = /NAME\s*,\s*PHONE\s*,/i;
+  var chunks = [];
+  var lines = raw.split(/\r?\n/);
+  var currentChunk = [];
+  var seenHeader = false;
+  for(var i=0; i<lines.length; i++){
+    var ln = lines[i];
+    if(headerRe.test(ln)){
+      if(currentChunk.length && seenHeader){chunks.push(currentChunk.join('\n'));}
+      currentChunk = [ln];
+      seenHeader = true;
+    } else {
+      if(seenHeader) currentChunk.push(ln);
+    }
+  }
+  if(currentChunk.length && seenHeader) chunks.push(currentChunk.join('\n'));
+
+  if(!chunks.length){
+    toast('No NAME,PHONE header found — check your paste',false);
+    return;
+  }
+
+  var allClients = [];
+  var chunkOk = 0, chunkFail = 0;
+  chunks.forEach(function(chunkText){
+    var r = parseBulkFile(chunkText, 'phone-paste');
+    if(r.type==='clients' && r.data.length){
+      allClients = allClients.concat(r.data);
+      chunkOk++;
+    } else {
+      chunkFail++;
+    }
+  });
+
+  if(!allClients.length){
+    toast('Could not parse any chunks — check format',false);
+    return;
+  }
+
+  if(!confirm('Found '+allClients.length+' clients in '+chunkOk+' chunk'+(chunkOk===1?'':'s')+
+              (chunkFail?' ('+chunkFail+' skipped)':'')+'.\nMerge into your phone list now?\n'+
+              '(Duplicates by name+phone will be skipped)'))return;
+
+  mergeClients(allClients);
+  ta.value='';
+  setTimeout(function(){
+    goMain();
+    toast('✓ Loaded '+allClients.length+' clients from '+chunkOk+' chunk'+(chunkOk===1?'':'s'),true);
+    setTimeout(function(){promptClearCheckmarks();},800);
+  },300);
 }
 
 function phoneImportPasted(){
