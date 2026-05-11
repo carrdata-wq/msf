@@ -287,7 +287,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffff00;">DATA MANAGER</div><div class="ms">Backup · Restore · Sync · Move Data</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
-    <div class="menu-item" onclick="openAndroidEasyImport()" style="background:#002200;border:3px solid #00ff88;margin:2px 0;min-height:50px;">
+    <div class="menu-item" onclick="confirmMoveAccounting()" style="background:#002200;border:3px solid #00ff88;margin:2px 0;min-height:50px;">
       <div class="menu-num">7</div><div class="menu-icon" style="font-size:28px;">💰</div>
       <div class="menu-label">
         <div class="ml" style="color:#00ff88;font-size:14px;">MOVE ACCOUNTING</div>
@@ -295,7 +295,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
-    <div class="menu-item" onclick="openPhoneMoveMenu()" style="background:#002200;border:3px solid #00ffff;margin:2px 0;min-height:50px;">
+    <div class="menu-item" onclick="confirmMovePhone()" style="background:#002200;border:3px solid #00ffff;margin:2px 0;min-height:50px;">
       <div class="menu-num">8</div><div class="menu-icon" style="font-size:28px;">📱</div>
       <div class="menu-label">
         <div class="ml" style="color:#00ffff;font-size:14px;">MOVE PHONE LIST</div>
@@ -866,8 +866,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button id="led-sort-btn" onclick="ledToggleSort()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">🔽 NEWEST</button>
       <button onclick="doExportByYear()" style="flex:1;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;border:1px solid #00ff88;border-radius:4px;cursor:pointer;">📄 YR CSV</button>
     </div>
-    <div id="totbar" style="background: rgb(0, 0, 204); border: 1px solid rgb(255, 255, 0); border-radius: 4px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between;">
+    <div id="totbar" style="background: rgb(0, 0, 204); border: 1px solid rgb(255, 255, 0); border-radius: 4px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items:center; gap:6px;">
       <span style="font-size:13px;color:#ccccff;">ENTRIES: <strong id="tcnt" style="color:#ffff00;font-size:14px;">2635</strong></span>
+      <button onclick="promptClearCheckmarks()" style="background:#332200;color:#ffaa00;border:1px solid #ffaa00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:4px 8px;border-radius:3px;cursor:pointer;white-space:nowrap;">🧹 CLEAR ✓</button>
       <span style="font-size:13px;color:#ccccff;">TOTAL: <strong id="ttot" style="color:#ffff00;font-size:14px;">$-9542.77</strong></span>
     </div>
     <table id="logtbl" style="width:100%;border-collapse:collapse;font-size:14px;">
@@ -4352,6 +4353,72 @@ function openCleanDownloads(){
   document.body.appendChild(overlay);
 }
 
+// ── PRE-FLIGHT CONFIRMATION for MOVE ACCOUNTING / MOVE PHONE LIST ──
+// Counts X-marked records (new/edited since last sync) and asks user to
+// confirm this is the full set they intend to move right now.
+function _countAccChecks(){
+  try{
+    var log=JSON.parse(localStorage.getItem('mx_log')||'[]');
+    var n=0;log.forEach(function(e){if(e.x==='X')n++;});
+    return {checked:n,total:log.length};
+  }catch(e){return {checked:0,total:0};}
+}
+function _countPhoneChecks(){
+  try{
+    var cl=JSON.parse(localStorage.getItem('mx_clients')||'[]');
+    var n=0;cl.forEach(function(c){if(c.x==='X')n++;});
+    return {checked:n,total:cl.length};
+  }catch(e){return {checked:0,total:0};}
+}
+
+function confirmMoveAccounting(){
+  var c=_countAccChecks();
+  var color='#00ff88', icon='💰', title='MOVE ACCOUNTING';
+  var bodyLine = c.checked>0
+    ? '<span style="color:#00ff88;font-weight:700;font-size:22px;">'+c.checked+'</span> entries marked with ✓ <span style="color:#aaffaa;font-size:11px;">(new or edited)</span>'
+    : '<span style="color:#ff8888;font-weight:700;">No ✓ marks found</span><br><span style="color:#aaffff;font-size:11px;">Nothing new to upload — continue anyway?</span>';
+  var subLine = c.checked>0
+    ? '<span style="color:#aaccff;font-size:12px;">'+c.total+' total in accounting log</span>'
+    : '';
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#001a44;border:3px solid '+color+';border-radius:10px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+    +'<div style="font-size:36px;margin-bottom:6px;">'+icon+'</div>'
+    +'<div style="color:'+color+';font-weight:700;font-size:15px;margin-bottom:12px;letter-spacing:1px;">'+title+'</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:10px;">Is this all the data you want to move at this time?</div>'
+    +'<div style="background:#000a22;border:1px solid #336699;border-radius:6px;padding:12px;margin-bottom:14px;font-size:14px;">'+bodyLine+(subLine?'<br>'+subLine:'')+'</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove();openAndroidEasyImport();" style="flex:2;background:'+color+';color:#000080;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✓ YES — MOVE NOW</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove();" style="flex:1;background:#660000;color:#fff;border:1px solid #ff6666;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function confirmMovePhone(){
+  var c=_countPhoneChecks();
+  var color='#00ffff', icon='📱', title='MOVE PHONE LIST';
+  var bodyLine = c.checked>0
+    ? '<span style="color:#00ffff;font-weight:700;font-size:22px;">'+c.checked+'</span> clients marked with ✓ <span style="color:#aaffff;font-size:11px;">(new or edited)</span>'
+    : '<span style="color:#ff8888;font-weight:700;">No ✓ marks found</span><br><span style="color:#aaffff;font-size:11px;">Nothing new to upload — continue anyway?</span>';
+  var subLine = c.checked>0
+    ? '<span style="color:#aaccff;font-size:12px;">'+c.total+' total in phone list</span>'
+    : '';
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#001a44;border:3px solid '+color+';border-radius:10px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+    +'<div style="font-size:36px;margin-bottom:6px;">'+icon+'</div>'
+    +'<div style="color:'+color+';font-weight:700;font-size:15px;margin-bottom:12px;letter-spacing:1px;">'+title+'</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:10px;">Is this all the data you want to move at this time?</div>'
+    +'<div style="background:#000a22;border:1px solid #336699;border-radius:6px;padding:12px;margin-bottom:14px;font-size:14px;">'+bodyLine+(subLine?'<br>'+subLine:'')+'</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove();openPhoneMoveMenu();" style="flex:2;background:'+color+';color:#000080;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">✓ YES — MOVE NOW</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove();" style="flex:1;background:#660000;color:#fff;border:1px solid #ff6666;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
 function openPhoneMoveMenu(){
   document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
   document.getElementById('screen-phone-move').style.display='block';
@@ -4382,12 +4449,21 @@ function processEasyPaste(){
       saveLog();
       bar.style.width='100%';
       textEl.textContent='✅ Imported '+result.data.length+' entries';
-      setTimeout(function(){goMain();toast('✓ '+result.data.length+' accounting entries imported',true);},1500);
+      setTimeout(function(){
+        goMain();
+        toast('✓ '+result.data.length+' accounting entries imported',true);
+        // Restored data isn't really "new" — prompt to clear all ✓ marks
+        setTimeout(function(){promptClearCheckmarks();},800);
+      },1500);
     } else if(result.type==='clients'&&result.data.length>0){
       mergeClients(result.data);
       bar.style.width='100%';
       textEl.textContent='✅ Imported '+result.data.length+' clients';
-      setTimeout(function(){goMain();toast('✓ '+result.data.length+' clients imported',true);},1500);
+      setTimeout(function(){
+        goMain();
+        toast('✓ '+result.data.length+' clients imported',true);
+        setTimeout(function(){promptClearCheckmarks();},800);
+      },1500);
     } else {
       bar.style.width='0%';
       textEl.innerHTML='❌ Could not read data.<br>Try copying the entire email content.';
