@@ -7904,6 +7904,22 @@ function phoneReadFile(input){
 }
 
 
+
+// Sort direction toggle for phone client table — 'desc' = newest first, 'asc' = oldest first
+var _phoneSortDir = 'desc';
+function phoneToggleSort(){
+  _phoneSortDir = (_phoneSortDir === 'desc') ? 'asc' : 'desc';
+  // Re-render whatever view is active
+  var listEl = document.getElementById('phone-list');
+  if(!listEl) return;
+  // If table currently shows "ALL" header, keep that; else default browse view
+  if(listEl.innerHTML.indexOf('ALL CLIENTS') >= 0){
+    renderAllClients();
+  } else {
+    phoneShowList();
+  }
+}
+
 // Convert any date string into a comparable YYYY-MM-DD key for sorting
 function _phoneDateKey(d){
   if(!d) return '';
@@ -7975,14 +7991,15 @@ function phoneShowList(){
     list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     return;
   }
-  // Sort all clients by newest input first: mtime desc, then date desc, then id desc
+  // Sort by mtime then normalized date — direction from _phoneSortDir toggle
+  var desc = (_phoneSortDir === 'desc');
   var sorted=CLIENTS.slice().sort(function(a,b){
     var ma=a.mtime||'', mb=b.mtime||'';
-    if(mb!==ma) return mb.localeCompare(ma);
+    if(mb!==ma) return desc ? mb.localeCompare(ma) : ma.localeCompare(mb);
     var aa=_phoneDateKey(a.adate||a.contacted||''),
         ab=_phoneDateKey(b.adate||b.contacted||'');
-    if(ab!==aa) return ab.localeCompare(aa);
-    return (b.id||0)-(a.id||0);
+    if(ab!==aa) return desc ? ab.localeCompare(aa) : aa.localeCompare(ab);
+    return desc ? ((b.id||0)-(a.id||0)) : ((a.id||0)-(b.id||0));
   });
   var topN = sorted.slice(0,100);
   list.innerHTML = renderClientsTable(topN, sorted.length, false);
@@ -7990,11 +8007,17 @@ function phoneShowList(){
 
 // FoxBase-style compact table — newest input at top, oldest at bottom
 function renderClientsTable(rows, total, showingAll){
+  var desc = (_phoneSortDir === 'desc');
+  var dirLabel = desc ? '🔽 NEWEST→OLDEST' : '🔼 OLDEST→NEWEST';
+  var orderText = desc ? 'newest first' : 'oldest first';
   var headerLine = showingAll
-    ? '📋 ALL CLIENTS — '+total+' (newest input first)'
-    : '📋 LATEST INPUT — top '+rows.length+' of '+total+' (newest first)';
+    ? '📋 ALL CLIENTS — '+total+' ('+orderText+')'
+    : '📋 LATEST INPUT — top '+rows.length+' of '+total+' ('+orderText+')';
   var html = '<div style="background:#ffffff;color:#000;border:2px solid #6666ff;border-radius:6px;padding:6px;font-family:Courier New,monospace;">'
-    + '<div style="background:#000080;color:#ffffff;padding:6px 8px;margin:-6px -6px 6px;border-radius:4px 4px 0 0;font-weight:700;font-size:12px;">'+headerLine+'</div>'
+    + '<div style="background:#000080;color:#ffffff;padding:6px 8px;margin:-6px -6px 6px;border-radius:4px 4px 0 0;font-weight:700;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">'
+      + '<span>'+headerLine+'</span>'
+      + '<button onclick="phoneToggleSort()" style="background:#ffff00;color:#000080;border:none;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:3px 8px;border-radius:3px;cursor:pointer;white-space:nowrap;">'+dirLabel+'</button>'
+    + '</div>'
     + '<div style="overflow-x:auto;">'
     + '<table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff;">'
     + '<thead><tr style="background:#000080;color:#fff;">'
@@ -8071,14 +8094,15 @@ function clientCardHtml(c){
 
 function renderAllClients(){
   loadClients();
-  // newest input first using mtime, then normalized date
+  // sort with direction from _phoneSortDir
+  var desc = (_phoneSortDir === 'desc');
   var rows=CLIENTS.slice().sort(function(a,b){
     var ma=a.mtime||'', mb=b.mtime||'';
-    if(mb!==ma) return mb.localeCompare(ma);
+    if(mb!==ma) return desc ? mb.localeCompare(ma) : ma.localeCompare(mb);
     var aa=_phoneDateKey(a.adate||a.contacted||''),
         ab=_phoneDateKey(b.adate||b.contacted||'');
-    if(ab!==aa) return ab.localeCompare(aa);
-    return (b.id||0)-(a.id||0);
+    if(ab!==aa) return desc ? ab.localeCompare(aa) : aa.localeCompare(ab);
+    return desc ? ((b.id||0)-(a.id||0)) : ((a.id||0)-(b.id||0));
   });
   var list=document.getElementById('phone-list');
   if(!rows.length){list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';return;}
