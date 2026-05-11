@@ -7910,29 +7910,75 @@ function phoneShowList(){
   // populate the picker with all client names, sorted A-Z
   var picker=document.getElementById('phone-picker');
   if(picker){
-    var sorted=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+    var sortedAZ=CLIENTS.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
     picker.innerHTML='<option value="">— PICK A CLIENT ('+CLIENTS.length+') —</option>'
-      +sorted.map(function(c){return '<option value="'+c.id+'">'+escClient(c.name)+'</option>';}).join('');
+      +sortedAZ.map(function(c){return '<option value="'+c.id+'">'+escClient(c.name)+'</option>';}).join('');
   }
-  // clear search then show last 30 most recently touched
+  // clear search
   var s=document.getElementById('phone-search');if(s)s.value='';
   var list=document.getElementById('phone-list');
-  if(list){
-    if(!CLIENTS.length){
-      list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
-    } else {
-      var recent=CLIENTS.slice().sort(function(a,b){
-        // Sort by adate desc first, then modified desc, then id desc
-        var aa=a.adate||'', ab=b.adate||'';
-        if(ab!==aa) return ab.localeCompare(aa);
-        var ma=a.modified||'', mb=b.modified||'';
-        if(mb!==ma) return mb.localeCompare(ma);
-        return (b.id||0)-(a.id||0);
-      }).slice(0,30);
-      list.innerHTML='<div style="color:#00ffff;font-size:12px;font-weight:700;padding:4px 2px 6px;">📋 LAST 30 ACTIVITY</div>'
-        +recent.map(clientCardHtml).join('');
-    }
+  if(!list)return;
+  if(!CLIENTS.length){
+    list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
+    return;
   }
+  // Sort all clients by newest input first: mtime desc, then adate desc, then id desc
+  var sorted=CLIENTS.slice().sort(function(a,b){
+    var ma=a.mtime||'', mb=b.mtime||'';
+    if(mb!==ma) return mb.localeCompare(ma);
+    var aa=a.adate||a.contacted||'', ab=b.adate||b.contacted||'';
+    if(ab!==aa) return ab.localeCompare(aa);
+    return (b.id||0)-(a.id||0);
+  });
+  var topN = sorted.slice(0,100);
+  list.innerHTML = renderClientsTable(topN, sorted.length, false);
+}
+
+// FoxBase-style compact table — newest input at top, oldest at bottom
+function renderClientsTable(rows, total, showingAll){
+  var headerLine = showingAll
+    ? '📋 ALL CLIENTS — '+total+' (newest input first)'
+    : '📋 LATEST INPUT — top '+rows.length+' of '+total+' (newest first)';
+  var html = '<div style="background:#ffffff;color:#000;border:2px solid #6666ff;border-radius:6px;padding:6px;font-family:Courier New,monospace;">'
+    + '<div style="background:#000080;color:#ffffff;padding:6px 8px;margin:-6px -6px 6px;border-radius:4px 4px 0 0;font-weight:700;font-size:12px;">'+headerLine+'</div>'
+    + '<div style="overflow-x:auto;">'
+    + '<table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff;">'
+    + '<thead><tr style="background:#000080;color:#fff;">'
+    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:center;width:30px;">#</th>'
+    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:left;">NAME</th>'
+    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:left;white-space:nowrap;">PHONE</th>'
+    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:left;">NOTES</th>'
+    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:center;white-space:nowrap;">DATE</th>'
+    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:center;width:88px;">ACT</th>'
+    + '</tr></thead><tbody>';
+  rows.forEach(function(c, idx){
+    var bg = idx%2===0 ? '#ffffff' : '#eef2ff';
+    if(c.x) bg = '#fff8d0';
+    var notes = String(c.notes||'').substring(0,42);
+    if((c.notes||'').length>42) notes += '…';
+    var dateShown = c.adate || c.contacted || '';
+    if(dateShown.length>10) dateShown = dateShown.substring(0,10);
+    var newBadge = c.x ? '<span title="New/edited" style="color:#006600;font-weight:700;margin-left:4px;">✓</span>' : '';
+    html += '<tr style="background:'+bg+';">'
+      + '<td style="padding:4px 3px;border:1px solid #ccd;text-align:center;color:#666;">'+(idx+1)+'</td>'
+      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#000;font-weight:700;cursor:pointer;" onclick="phonePickClient('+c.id+')">'+escClient(c.name)+newBadge+'</td>'
+      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#006600;white-space:nowrap;">'+(c.phone?'<a href="tel:'+escClient(telLink(c.phone))+'" style="color:#006600;text-decoration:none;">'+escClient(c.phone)+'</a>':'')+'</td>'
+      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#444;">'+escClient(notes)+'</td>'
+      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#000080;text-align:center;white-space:nowrap;font-size:10px;">'+escClient(dateShown)+'</td>'
+      + '<td style="padding:3px 2px;border:1px solid #ccd;text-align:center;white-space:nowrap;">'
+        + '<button onclick="phoneShowForm('+c.id+')" title="Edit" style="width:24px;height:22px;background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:1px;">E</button>'
+        + '<button onclick="copyClient('+c.id+')" title="Copy" style="width:24px;height:22px;background:#e0f0ff;color:#000080;border:1px solid #6666ff;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:1px;">C</button>'
+        + '<button onclick="delClient('+c.id+')" title="Delete" style="width:24px;height:22px;background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">D</button>'
+      + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  if(!showingAll && rows.length < total){
+    html += '<div style="text-align:center;margin-top:6px;">'
+      + '<button onclick="phoneShowAll()" style="background:#000080;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 14px;border:none;border-radius:4px;cursor:pointer;">▼ SHOW ALL '+total+'</button>'
+      + '</div>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function phonePickClient(id){
@@ -7972,14 +8018,17 @@ function clientCardHtml(c){
 
 function renderAllClients(){
   loadClients();
+  // newest input first using mtime
   var rows=CLIENTS.slice().sort(function(a,b){
-    var aa=a.adate||'',ab=b.adate||'';
+    var ma=a.mtime||'', mb=b.mtime||'';
+    if(mb!==ma) return mb.localeCompare(ma);
+    var aa=a.adate||a.contacted||'', ab=b.adate||b.contacted||'';
     if(ab!==aa) return ab.localeCompare(aa);
-    return (b.contacted||'').localeCompare(a.contacted||'');
+    return (b.id||0)-(a.id||0);
   });
   var list=document.getElementById('phone-list');
   if(!rows.length){list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';return;}
-  list.innerHTML=rows.map(clientCardHtml).join('');
+  list.innerHTML=renderClientsTable(rows, rows.length, true);
 }
 function phoneShowForm(id){
   document.getElementById('phone-list-page').style.display='none';
