@@ -8005,7 +8005,7 @@ function phoneShowList(){
   list.innerHTML = renderClientsTable(topN, sorted.length, false);
 }
 
-// FoxBase-style compact table — newest input at top, oldest at bottom
+// FoxBase-style 2-line drill-down per client — newest input at top, oldest at bottom
 function renderClientsTable(rows, total, showingAll){
   var desc = (_phoneSortDir === 'desc');
   var dirLabel = desc ? '🔽 NEWEST→OLDEST' : '🔼 OLDEST→NEWEST';
@@ -8017,39 +8017,44 @@ function renderClientsTable(rows, total, showingAll){
     + '<div style="background:#000080;color:#ffffff;padding:6px 8px;margin:-6px -6px 6px;border-radius:4px 4px 0 0;font-weight:700;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">'
       + '<span>'+headerLine+'</span>'
       + '<button onclick="phoneToggleSort()" style="background:#ffff00;color:#000080;border:none;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:3px 8px;border-radius:3px;cursor:pointer;white-space:nowrap;">'+dirLabel+'</button>'
-    + '</div>'
-    + '<div style="overflow-x:auto;">'
-    + '<table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff;">'
-    + '<thead><tr style="background:#000080;color:#fff;">'
-    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:center;width:30px;">#</th>'
-    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:left;">NAME</th>'
-    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:left;white-space:nowrap;">PHONE</th>'
-    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:left;">NOTES</th>'
-    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:center;white-space:nowrap;">DATE</th>'
-    + '<th style="padding:4px 3px;border:1px solid #6666ff;text-align:center;width:88px;">ACT</th>'
-    + '</tr></thead><tbody>';
+    + '</div>';
+
   rows.forEach(function(c, idx){
     var bg = idx%2===0 ? '#ffffff' : '#eef2ff';
     if(c.x) bg = '#fff8d0';
-    var notes = String(c.notes||'').substring(0,42);
-    if((c.notes||'').length>42) notes += '…';
     var dateShown = _phoneFmtDate(c.adate || c.contacted || '');
-    var newBadge = c.x ? '<span title="New/edited" style="color:#006600;font-weight:700;margin-left:4px;">✓</span>' : '';
-    html += '<tr style="background:'+bg+';">'
-      + '<td style="padding:4px 3px;border:1px solid #ccd;text-align:center;color:#666;">'+(idx+1)+'</td>'
-      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#000;font-weight:700;cursor:pointer;" onclick="phonePickClient('+c.id+')">'+escClient(c.name)+newBadge+'</td>'
-      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#006600;white-space:nowrap;">'+(c.phone?'<a href="tel:'+escClient(telLink(c.phone))+'" style="color:#006600;text-decoration:none;">'+escClient(c.phone)+'</a>':'')+'</td>'
-      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#444;">'+escClient(notes)+'</td>'
-      + '<td style="padding:4px 3px;border:1px solid #ccd;color:#000080;text-align:center;white-space:nowrap;font-size:10px;">'+escClient(dateShown)+'</td>'
-      + '<td style="padding:3px 2px;border:1px solid #ccd;text-align:center;white-space:nowrap;">'
-        + '<button onclick="phoneShowForm('+c.id+')" title="Edit" style="width:24px;height:22px;background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:1px;">E</button>'
-        + '<button onclick="copyClient('+c.id+')" title="Copy" style="width:24px;height:22px;background:#e0f0ff;color:#000080;border:1px solid #6666ff;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:1px;">C</button>'
-        + '<button onclick="delClient('+c.id+')" title="Delete" style="width:24px;height:22px;background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">D</button>'
-      + '</td></tr>';
+    var newBadge = c.x ? '<span title="New/edited" style="color:#006600;font-weight:700;">✓</span> ' : '';
+
+    // Line 1: NAME · ADDR · EMAIL
+    var line1Parts = [];
+    line1Parts.push('<span style="color:#000;font-weight:700;cursor:pointer;" onclick="phonePickClient('+c.id+')">'+newBadge+escClient(c.name||'')+'</span>');
+    if(c.addr)  line1Parts.push('<span style="color:#000080;">'+escClient(c.addr)+'</span>');
+    if(c.email) line1Parts.push('<a href="mailto:'+escClient(c.email)+'" style="color:#006699;text-decoration:none;">✉ '+escClient(c.email)+'</a>');
+    var line1 = line1Parts.join(' <span style="color:#999;">·</span> ');
+
+    // Line 2: DATE · PHONE · NOTES
+    var line2Parts = [];
+    if(dateShown) line2Parts.push('<span style="color:#cc6600;font-weight:700;">'+escClient(dateShown)+'</span>');
+    if(c.phone)   line2Parts.push('<a href="tel:'+escClient(telLink(c.phone))+'" style="color:#006600;text-decoration:none;font-weight:700;">📞 '+escClient(c.phone)+'</a>');
+    if(c.notes)   line2Parts.push('<span style="color:#555;">'+escClient(c.notes)+'</span>');
+    var line2 = line2Parts.join(' <span style="color:#999;">·</span> ');
+
+    html += '<div style="background:'+bg+';border-bottom:1px solid #ccd;padding:5px 6px;display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.35;">'
+      + '<div style="color:#999;font-weight:700;min-width:32px;text-align:right;padding-top:1px;">'+(idx+1)+'.</div>'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+line1+'</div>'
+        + '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#555;margin-top:1px;">'+line2+'</div>'
+      + '</div>'
+      + '<div style="white-space:nowrap;display:flex;gap:2px;flex-shrink:0;">'
+        + '<button onclick="phoneShowForm('+c.id+')" title="Edit" style="background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">EDT</button>'
+        + '<button onclick="copyClient('+c.id+')" title="Copy" style="background:#e0f0ff;color:#000080;border:1px solid #6666ff;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">CPY</button>'
+        + '<button onclick="delClient('+c.id+')" title="Delete" style="background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">DEL</button>'
+      + '</div>'
+      + '</div>';
   });
-  html += '</tbody></table></div>';
+
   if(!showingAll && rows.length < total){
-    html += '<div style="text-align:center;margin-top:6px;">'
+    html += '<div style="text-align:center;margin-top:6px;padding:6px 0;">'
       + '<button onclick="phoneShowAll()" style="background:#000080;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 14px;border:none;border-radius:4px;cursor:pointer;">▼ SHOW ALL '+total+'</button>'
       + '</div>';
   }
