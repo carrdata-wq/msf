@@ -865,6 +865,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="doDel()" style="flex:1;padding:10px 6px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#880000;color:#ffffff;">CANCEL</button>
       <button onclick="doExit()" style="flex:1;padding:10px 6px;border:1px solid #6666ff;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#0000aa;color:#ccccff;">EXIT</button>
     </div>
+    <div style="display:flex;gap:6px;margin-top:6px;">
+      <button onclick="shareEditPanelEmail()" style="flex:1;padding:9px 6px;border:1px solid #00ff88;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#003300;color:#00ff88;">📧 EMAIL</button>
+      <button onclick="shareEditPanelCopy()" style="flex:1;padding:9px 6px;border:1px solid #ffaa00;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#3a2a00;color:#ffaa00;">📋 COPY TO CLIPBOARD</button>
+    </div>
   </div>
 
   <div id="logsec" style="display:block;margin-top:16px;">
@@ -8146,6 +8150,10 @@ function clientCardHtml(c){
     +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
     +'<button onclick="copyClient('+c.id+')" style="flex:1;background:#002244;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">COPY</button>'
     +'<button onclick="delClient('+c.id+')" style="flex:1;background:#4a0000;color:#ff4444;border:1px solid #ff4444;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">DEL</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;margin-top:6px;">'
+    +'<button onclick="shareClientEmail('+c.id+')" style="flex:1;background:#003300;color:#00ff88;border:1px solid #00ff88;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;font-weight:700;">📧 EMAIL</button>'
+    +'<button onclick="shareClientCopy('+c.id+')" style="flex:1;background:#3a2a00;color:#ffaa00;border:1px solid #ffaa00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;font-weight:700;">📋 COPY TO CLIPBOARD</button>'
     +'</div></div>';
   return h;
 }
@@ -8284,6 +8292,50 @@ function _shareDoCopy(){
   catch(e){ toast('Copy failed',false); }
   document.body.removeChild(ta);
 }
+
+// Direct-share for a phone client (no chooser modal) — used from card view
+function _shareLoadClient(id){
+  loadClients();
+  var c=null;
+  for(var i=0;i<CLIENTS.length;i++) if(CLIENTS[i].id===id){c=CLIENTS[i];break;}
+  if(!c){toast('Client not found',false);return false;}
+  var lines = [];
+  lines.push(c.name || '(no name)');
+  if(c.phone)     lines.push('Phone: '+c.phone);
+  if(c.email)     lines.push('Email: '+c.email);
+  if(c.addr)      lines.push('Address: '+c.addr);
+  if(c.contacted) lines.push('Contacted: '+c.contacted);
+  if(c.notes)     lines.push('Notes: '+c.notes);
+  window._shareText = lines.join('\n');
+  window._shareSubject = 'Contact: '+(c.name||'');
+  return true;
+}
+function shareClientEmail(id){ if(_shareLoadClient(id)) _shareDoEmail(); }
+function shareClientCopy(id){  if(_shareLoadClient(id)) _shareDoCopy();  }
+
+// Direct-share for the accounting edit panel — reads current FORM values so
+// in-progress edits get shared (no need to save first)
+function _shareLoadEditPanel(){
+  var payee = (document.getElementById('p-payee')||{}).textContent || '';
+  var pcode = (document.getElementById('p-pcode')||{}).value || '';
+  var desc  = (document.getElementById('p-desc')||{}).value || '';
+  var mon   = (document.getElementById('p-mon')||{}).value || '';
+  var day   = (document.getElementById('p-day')||{}).value || '';
+  var yr    = (document.getElementById('p-yr')||{}).value || '';
+  var date  = (yr && mon && day) ? (yr+'-'+mon+'-'+day) : '';
+  var amt   = (document.getElementById('p-amt')||{}).value || '';
+  var lines = ['ACCOUNTING ENTRY'];
+  if(payee) lines.push('Payee: '+payee);
+  if(date)  lines.push('Date: '+date);
+  if(amt)   lines.push('Amount: $'+amt);
+  if(pcode) lines.push('PCode: '+pcode);
+  if(desc)  lines.push('Desc: '+desc);
+  window._shareText = lines.join('\n');
+  window._shareSubject = 'Accounting: '+(payee||'Entry')+' '+(date||'');
+}
+function shareEditPanelEmail(){ _shareLoadEditPanel(); _shareDoEmail(); }
+function shareEditPanelCopy(){  _shareLoadEditPanel(); _shareDoCopy();  }
+
 
 function delClient(id){
   if(!confirm('Delete this client?'))return;
