@@ -7903,6 +7903,59 @@ function phoneReadFile(input){
   reader.readAsText(file);
 }
 
+
+// Convert any date string into a comparable YYYY-MM-DD key for sorting
+function _phoneDateKey(d){
+  if(!d) return '';
+  d = String(d).trim();
+  if(!d) return '';
+  var up = d.toUpperCase();
+  if(up === 'CURRENT') return '9999-12-31';
+  // YYYY-MM-DD (ISO) already
+  var m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return d.substring(0,10);
+  // MM/DD/YYYY
+  m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){
+    var yy=m[3], mm=('0'+m[1]).slice(-2), dd=('0'+m[2]).slice(-2);
+    return yy+'-'+mm+'-'+dd;
+  }
+  // M/YYYY or MM/YYYY
+  m = d.match(/^(\d{1,2})\/(\d{4})$/);
+  if(m){
+    var yy2=m[2], mm2=('0'+m[1]).slice(-2);
+    return yy2+'-'+mm2+'-01';
+  }
+  // YYYY-MM
+  m = d.match(/^(\d{4})-(\d{1,2})$/);
+  if(m) return m[1]+'-'+('0'+m[2]).slice(-2)+'-01';
+  // Just a year "2025"
+  if(/^\d{4}$/.test(d)) return d+'-01-01';
+  return '';  // unknown format — sort to the bottom
+}
+
+// Display date in a consistent MM/DD/YY form
+function _phoneFmtDate(d){
+  if(!d) return '';
+  d = String(d).trim();
+  if(!d) return '';
+  var up = d.toUpperCase();
+  if(up === 'CURRENT') return 'CURRENT';
+  // YYYY-MM-DD → MM/DD/YY
+  var m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return m[2]+'/'+m[3]+'/'+m[1].slice(2);
+  // MM/DD/YYYY → MM/DD/YY
+  m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return ('0'+m[1]).slice(-2)+'/'+('0'+m[2]).slice(-2)+'/'+m[3].slice(2);
+  // M/YYYY or MM/YYYY → MM/YY
+  m = d.match(/^(\d{1,2})\/(\d{4})$/);
+  if(m) return ('0'+m[1]).slice(-2)+'/'+m[2].slice(2);
+  // Just a year
+  if(/^\d{4}$/.test(d)) return d;
+  // Fallback — return first 10 chars
+  return d.length > 10 ? d.substring(0,10) : d;
+}
+
 function phoneShowList(){
   document.getElementById('phone-list-page').style.display='block';
   document.getElementById('phone-form-page').style.display='none';
@@ -7922,11 +7975,12 @@ function phoneShowList(){
     list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     return;
   }
-  // Sort all clients by newest input first: mtime desc, then adate desc, then id desc
+  // Sort all clients by newest input first: mtime desc, then date desc, then id desc
   var sorted=CLIENTS.slice().sort(function(a,b){
     var ma=a.mtime||'', mb=b.mtime||'';
     if(mb!==ma) return mb.localeCompare(ma);
-    var aa=a.adate||a.contacted||'', ab=b.adate||b.contacted||'';
+    var aa=_phoneDateKey(a.adate||a.contacted||''),
+        ab=_phoneDateKey(b.adate||b.contacted||'');
     if(ab!==aa) return ab.localeCompare(aa);
     return (b.id||0)-(a.id||0);
   });
@@ -7956,8 +8010,7 @@ function renderClientsTable(rows, total, showingAll){
     if(c.x) bg = '#fff8d0';
     var notes = String(c.notes||'').substring(0,42);
     if((c.notes||'').length>42) notes += '…';
-    var dateShown = c.adate || c.contacted || '';
-    if(dateShown.length>10) dateShown = dateShown.substring(0,10);
+    var dateShown = _phoneFmtDate(c.adate || c.contacted || '');
     var newBadge = c.x ? '<span title="New/edited" style="color:#006600;font-weight:700;margin-left:4px;">✓</span>' : '';
     html += '<tr style="background:'+bg+';">'
       + '<td style="padding:4px 3px;border:1px solid #ccd;text-align:center;color:#666;">'+(idx+1)+'</td>'
@@ -8018,11 +8071,12 @@ function clientCardHtml(c){
 
 function renderAllClients(){
   loadClients();
-  // newest input first using mtime
+  // newest input first using mtime, then normalized date
   var rows=CLIENTS.slice().sort(function(a,b){
     var ma=a.mtime||'', mb=b.mtime||'';
     if(mb!==ma) return mb.localeCompare(ma);
-    var aa=a.adate||a.contacted||'', ab=b.adate||b.contacted||'';
+    var aa=_phoneDateKey(a.adate||a.contacted||''),
+        ab=_phoneDateKey(b.adate||b.contacted||'');
     if(ab!==aa) return ab.localeCompare(aa);
     return (b.id||0)-(a.id||0);
   });
