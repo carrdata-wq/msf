@@ -639,7 +639,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #00ffff;padding:8px 10px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">💼 Balance Sheet</span>
-    <button onclick="balExportPDF()" style="background:#330033;border:1px solid #ff88ff;color:#ff88ff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:4px;">📄 PDF</button>
+    <button onclick="balShare('email')" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:3px;">📧</button>
+    <button onclick="balShare('text')" style="background:#332200;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:3px;">📱</button>
+    <button onclick="balShare('copy')" style="background:#332200;border:1px solid #ffaa00;color:#ffaa00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:4px;">📋</button>
     <button onclick="balSendAllChecked()" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;">✓→ SEND ALL</button>
   </div>
 
@@ -6077,92 +6079,74 @@ function balSendToAccounting(id){
   toast('→ Sent to Accounting ✓',true);
 }
 
-// Build a print-friendly Balance Sheet view in a new window and trigger Save-as-PDF
-// On Android Chrome and ThinkPad alike, this opens the system print dialog where the
-// user picks "Save as PDF" — the resulting file can be attached to any text/email.
-function balExportPDF(){
+// Build the Balance Sheet as plain text — shared by email/text/copy actions
+function _balBuildText(){
   balLoad();
-  if(!BALANCE.length){toast('Balance Sheet is empty',false);return;}
-
-  // Sort by date desc (newest first)
+  if(!BALANCE.length) return null;
   var rows = BALANCE.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
   var runTotal = rows.reduce(function(s,r){return s + (parseFloat(r.amt)||0);},0);
   var checkedCount = rows.filter(function(r){return r.x==='X';}).length;
   var today = new Date();
   var dateStr = today.getFullYear() + '-' + ('0'+(today.getMonth()+1)).slice(-2) + '-' + ('0'+today.getDate()).slice(-2);
-  var timeStr = ('0'+today.getHours()).slice(-2) + ':' + ('0'+today.getMinutes()).slice(-2);
 
-  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  function fmtDate(d){if(!d)return '';var p=String(d).split('-');if(p.length!==3)return d;return p[1]+'/'+p[2]+'/'+p[0].slice(2);}
-  function fmtAmt(n){var v=parseFloat(n)||0;var s=(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2);return s;}
+  function fmtDate(d){if(!d)return '      ';var p=String(d).split('-');if(p.length!==3)return d;return p[1]+p[2]+p[0].slice(2);}
+  function fmtAmt(n){var v=parseFloat(n)||0;return (v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2);}
+  function pad(s,n){s=String(s||'');while(s.length<n)s+=' ';return s.length>n?s.substring(0,n):s;}
+  function padR(s,n){s=String(s||'');while(s.length<n)s=' '+s;return s.length>n?s.substring(s.length-n):s;}
 
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Balance Sheet — '+dateStr+'</title>'
-    + '<style>'
-    + '@page{margin:0.5in;}'
-    + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:0;padding:12px;}'
-    + 'h1{font-size:20px;margin:0 0 4px 0;color:#000;}'
-    + '.sub{color:#555;font-size:11px;margin-bottom:14px;}'
-    + '.totals{background:#f0f4ff;border:2px solid #000080;border-radius:6px;padding:10px;margin-bottom:14px;display:flex;justify-content:space-around;text-align:center;}'
-    + '.totals .lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px;}'
-    + '.totals .val{font-size:18px;font-weight:700;color:#000080;}'
-    + 'table{width:100%;border-collapse:collapse;font-size:11px;}'
-    + 'th{background:#000080;color:#fff;padding:6px 5px;text-align:left;border:1px solid #6666ff;font-size:11px;}'
-    + 'th.right{text-align:right;}'
-    + 'th.center{text-align:center;}'
-    + 'td{padding:5px;border:1px solid #ccc;vertical-align:top;}'
-    + 'td.right{text-align:right;font-weight:700;}'
-    + 'td.center{text-align:center;}'
-    + 'tr:nth-child(even) td{background:#f5f8ff;}'
-    + 'tr.checked td{background:#fffae0;}'
-    + 'tr.checked td.check{color:#006600;font-weight:700;}'
-    + '.amt-pos{color:#006600;}'
-    + '.amt-neg{color:#cc0000;}'
-    + '.footer{margin-top:20px;font-size:9px;color:#999;text-align:center;border-top:1px solid #ccc;padding-top:8px;}'
-    + '@media print{.no-print{display:none;}}'
-    + '.print-btn{position:fixed;top:8px;right:8px;background:#000080;color:#fff;border:none;padding:10px 18px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.3);}'
-    + '</style></head><body>'
-    + '<button class="print-btn no-print" onclick="window.print()">🖨 Save / Print as PDF</button>'
-    + '<h1>💼 Balance Sheet</h1>'
-    + '<div class="sub">Generated '+dateStr+' '+timeStr+' · '+rows.length+' items</div>'
-    + '<div class="totals">'
-      + '<div><div class="lbl">Running Total</div><div class="val">'+fmtAmt(runTotal)+'</div></div>'
-      + '<div><div class="lbl">Items</div><div class="val">'+rows.length+'</div></div>'
-      + '<div><div class="lbl">✓ Checked</div><div class="val">'+checkedCount+'</div></div>'
-    + '</div>'
-    + '<table><thead><tr>'
-      + '<th class="center" style="width:24px;">✓</th>'
-      + '<th style="width:70px;">DATE</th>'
-      + '<th>PAYEE</th>'
-      + '<th>PCODE</th>'
-      + '<th>DESC</th>'
-      + '<th class="right" style="width:80px;">AMOUNT</th>'
-    + '</tr></thead><tbody>';
-
+  var lines = [];
+  lines.push('💼 BALANCE SHEET — ' + dateStr);
+  lines.push('Running: ' + fmtAmt(runTotal) + ' · Items: ' + rows.length + ' · Checked: ' + checkedCount);
+  lines.push('');
+  lines.push('✓ DATE   PAYEE        PCODE   AMOUNT');
+  lines.push('───────────────────────────────────────');
   rows.forEach(function(r){
-    var amt = parseFloat(r.amt)||0;
-    var cls = amt>=0 ? 'amt-pos' : 'amt-neg';
-    var isChecked = r.x==='X';
-    html += '<tr'+(isChecked?' class="checked"':'')+'>'
-      + '<td class="check center">'+(isChecked?'✓':'')+'</td>'
-      + '<td>'+esc(fmtDate(r.date))+'</td>'
-      + '<td>'+esc(r.payee||'')+'</td>'
-      + '<td>'+esc(r.pcode||'')+'</td>'
-      + '<td>'+esc(r.desc||'')+'</td>'
-      + '<td class="right '+cls+'">'+fmtAmt(amt)+'</td>'
-    + '</tr>';
+    var check = r.x==='X' ? '✓' : ' ';
+    var dt = fmtDate(r.date);
+    var payee = pad(r.payee||'', 12);
+    var pcode = pad(r.pcode||'', 6);
+    var amt = padR(fmtAmt(r.amt), 10);
+    lines.push(check + ' ' + dt + ' ' + payee + ' ' + pcode + ' ' + amt);
+    if(r.desc) lines.push('  └ ' + r.desc);
   });
+  lines.push('───────────────────────────────────────');
+  lines.push('TOTAL: ' + fmtAmt(runTotal));
+  return {text:lines.join('\n'), count:rows.length, total:runTotal, dateStr:dateStr};
+}
 
-  html += '</tbody></table>'
-    + '<div class="footer">MFS — Master Financial System · Balance Sheet Export</div>'
-    + '<script>setTimeout(function(){window.print();},400);<\/script>'
-    + '</body></html>';
+// One handler — mode = 'email' / 'text' / 'copy'
+function balShare(mode){
+  var built = _balBuildText();
+  if(!built){toast('Balance Sheet is empty',false);return;}
+  var text = built.text;
+  var subject = '💼 Balance Sheet — ' + built.dateStr + ' (' + built.count + ' items)';
 
-  var w = window.open('', '_blank');
-  if(!w){toast('Popup blocked — allow popups for this site',false);return;}
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  toast('📄 PDF view opened — tap Save as PDF',true);
+  if(mode === 'email'){
+    // mailto: works on every platform — opens default mail composer
+    var url = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+    window.location.href = url;
+    toast('📧 Opening email composer…', true);
+  } else if(mode === 'text'){
+    // sms: opens Messages on Android / Phone Link on Windows
+    var smsUrl = 'sms:?body=' + encodeURIComponent(text);
+    window.location.href = smsUrl;
+    toast('📱 Opening text composer…', true);
+  } else {
+    // copy — same reliable execCommand approach used elsewhere
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast('📋 Balance Sheet copied (' + built.count + ' items)', true);
+    } catch(e) {
+      toast('Copy failed', false);
+    }
+    document.body.removeChild(ta);
+  }
 }
 
 function balSendAllChecked(){
