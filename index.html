@@ -1703,23 +1703,31 @@ function dbdEditEntry(id){
     + '</div>'
 
     + '<div style="display:flex;gap:6px;">'
-      + '<button onclick="dbdEditSave('+JSON.stringify(String(e.id))+')" style="flex:2;padding:13px;border:none;border-radius:5px;background:#00aa00;color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;">💾 SAVE</button>'
-      + '<button onclick="document.getElementById(\'dbd-edit-modal\').remove()" style="flex:1;padding:13px;border:none;border-radius:5px;background:#660000;color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;">CANCEL</button>'
+      + '<button id="dbe-save-btn" type="button" onclick="dbdEditSave()" style="flex:2;padding:13px;border:none;border-radius:5px;background:#00aa00;color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;">💾 SAVE</button>'
+      + '<button id="dbe-cancel-btn" type="button" onclick="document.getElementById(\'dbd-edit-modal\').remove();window._dbeCurrentId=null;" style="flex:1;padding:13px;border:none;border-radius:5px;background:#660000;color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;">CANCEL</button>'
     + '</div>'
   + '</div>';
+
+  // Stash the id on window so the save function can find it — no string escaping anywhere
+  window._dbeCurrentId = e.id;
   document.body.appendChild(overlay);
 }
 
-// Save handler for the inline edit modal — writes back to master LOG, repulls day-by-day
-function dbdEditSave(idStr){
+// Save handler — reads id from window._dbeCurrentId, NO parameter
+function dbdEditSave(){
+  var id = window._dbeCurrentId;
+  if(id === null || id === undefined){
+    alert('No record id found — try again');
+    return;
+  }
   loadLog();
   var idx = -1;
   for(var i=0;i<LOG.length;i++){
-    if(String(LOG[i].id) === idStr || Math.abs((LOG[i].id||0) - parseFloat(idStr)) < 0.001){
+    if(LOG[i].id===id || String(LOG[i].id)===String(id) || Math.abs((LOG[i].id||0) - id) < 0.001){
       idx = i; break;
     }
   }
-  if(idx < 0){ alert('Save failed — record vanished'); return; }
+  if(idx < 0){ alert('Save failed — record vanished. id='+id+', LOG has '+LOG.length+' entries'); return; }
 
   var payee = document.getElementById('dbe-payee').value.trim().toUpperCase();
   var mo = ('0'+document.getElementById('dbe-mo').value.trim()).slice(-2);
@@ -1746,6 +1754,7 @@ function dbdEditSave(idStr){
 
   // Close modal + repull the day-by-day view from the (now updated) master
   document.getElementById('dbd-edit-modal').remove();
+  window._dbeCurrentId = null;
   toast('✓ Saved — view refreshed',true);
   _dbdRefresh();
 }
