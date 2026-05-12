@@ -1648,6 +1648,108 @@ function fuelShow(sub) {
 }
 
 
+
+// EDIT from a Day-by-Day phantom view → inline modal (no screen navigation needed)
+// Updates the master record in LOG, then repulls the day-by-day view.
+function dbdEditEntry(id){
+  loadLog();
+  // Tolerant id lookup — handles float-precision drift from CSV-imported records
+  var e = null;
+  for(var i=0;i<LOG.length;i++){
+    if(LOG[i].id===id || String(LOG[i].id)===String(id) || Math.abs((LOG[i].id||0)-id)<0.001){
+      e = LOG[i]; break;
+    }
+  }
+  if(!e){
+    alert('Master record not found for id '+id+'.\n\nLOG has '+LOG.length+' entries.\nTry tapping 🔄 UPDATE INDEX first.');
+    return;
+  }
+
+  // Build inline edit modal (sits ON TOP of the day-by-day overlay)
+  var d = e.date || '';
+  var mYr = d.substring(0,4), mMo = d.substring(5,7), mDa = d.substring(8,10);
+  var amtAbs = Math.abs(e.amt||0).toFixed(2);
+  var isInc = (e.amt||0) >= 0;
+
+  var overlay = document.createElement('div');
+  overlay.id = 'dbd-edit-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+  overlay.innerHTML =
+    '<div style="background:#0000cc;border:3px solid #ffff00;border-radius:10px;padding:18px;max-width:440px;width:100%;font-family:Courier New,monospace;color:#fff;">'
+    + '<div style="text-align:center;color:#ffff00;font-weight:700;font-size:16px;margin-bottom:14px;letter-spacing:1px;">✎ EDIT ENTRY</div>'
+
+    + '<label style="display:block;color:#aaccff;font-size:11px;margin-bottom:3px;">PAYEE</label>'
+    + '<input id="dbe-payee" type="text" value="'+(e.payee||'').replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#fff;font-family:inherit;font-size:14px;font-weight:700;padding:8px;border-radius:4px;margin-bottom:8px;">'
+
+    + '<label style="display:block;color:#aaccff;font-size:11px;margin-bottom:3px;">DATE (MM / DD / YYYY)</label>'
+    + '<div style="display:flex;gap:4px;margin-bottom:8px;">'
+      + '<input id="dbe-mo" type="text" maxlength="2" value="'+mMo+'" style="flex:1;min-width:0;background:#0000aa;border:2px solid #fff;color:#fff;font-family:inherit;font-size:14px;font-weight:700;padding:8px;border-radius:4px;text-align:center;">'
+      + '<input id="dbe-da" type="text" maxlength="2" value="'+mDa+'" style="flex:1;min-width:0;background:#0000aa;border:2px solid #fff;color:#fff;font-family:inherit;font-size:14px;font-weight:700;padding:8px;border-radius:4px;text-align:center;">'
+      + '<input id="dbe-yr" type="text" maxlength="4" value="'+mYr+'" style="flex:1.4;min-width:0;background:#0000aa;border:2px solid #fff;color:#fff;font-family:inherit;font-size:14px;font-weight:700;padding:8px;border-radius:4px;text-align:center;">'
+    + '</div>'
+
+    + '<label style="display:block;color:#aaccff;font-size:11px;margin-bottom:3px;">AMOUNT $</label>'
+    + '<input id="dbe-amt" type="number" step="0.01" value="'+amtAbs+'" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #fff;color:#fff;font-family:inherit;font-size:16px;font-weight:700;padding:8px;border-radius:4px;margin-bottom:8px;">'
+
+    + '<label style="display:flex;align-items:center;gap:6px;margin-bottom:10px;cursor:pointer;">'
+      + '<input id="dbe-inc" type="checkbox"'+(isInc?' checked':'')+' style="width:18px;height:18px;">'
+      + '<span style="color:#aaffaa;font-size:12px;">Income (positive amount)</span>'
+    + '</label>'
+
+    + '<label style="display:block;color:#aaccff;font-size:11px;margin-bottom:3px;">PCODE / DESC</label>'
+    + '<div style="display:flex;gap:4px;margin-bottom:14px;">'
+      + '<input id="dbe-pcode" type="text" value="'+(e.pcode||'').replace(/"/g,'&quot;')+'" placeholder="PCODE" style="flex:1;min-width:0;background:#0000aa;border:2px solid #fff;color:#fff;font-family:inherit;font-size:13px;font-weight:700;padding:8px;border-radius:4px;">'
+      + '<input id="dbe-desc" type="text" value="'+(e.desc||'').replace(/"/g,'&quot;')+'" placeholder="DESC" style="flex:2;min-width:0;background:#0000aa;border:2px solid #fff;color:#fff;font-family:inherit;font-size:13px;font-weight:700;padding:8px;border-radius:4px;">'
+    + '</div>'
+
+    + '<div style="display:flex;gap:6px;">'
+      + '<button onclick="dbdEditSave('+JSON.stringify(String(e.id))+')" style="flex:2;padding:13px;border:none;border-radius:5px;background:#00aa00;color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;">💾 SAVE</button>'
+      + '<button onclick="document.getElementById(\'dbd-edit-modal\').remove()" style="flex:1;padding:13px;border:none;border-radius:5px;background:#660000;color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;">CANCEL</button>'
+    + '</div>'
+  + '</div>';
+  document.body.appendChild(overlay);
+}
+
+// Save handler for the inline edit modal — writes back to master LOG, repulls day-by-day
+function dbdEditSave(idStr){
+  loadLog();
+  var idx = -1;
+  for(var i=0;i<LOG.length;i++){
+    if(String(LOG[i].id) === idStr || Math.abs((LOG[i].id||0) - parseFloat(idStr)) < 0.001){
+      idx = i; break;
+    }
+  }
+  if(idx < 0){ alert('Save failed — record vanished'); return; }
+
+  var payee = document.getElementById('dbe-payee').value.trim().toUpperCase();
+  var mo = ('0'+document.getElementById('dbe-mo').value.trim()).slice(-2);
+  var da = ('0'+document.getElementById('dbe-da').value.trim()).slice(-2);
+  var yr = document.getElementById('dbe-yr').value.trim();
+  var amt = parseFloat(document.getElementById('dbe-amt').value);
+  var isInc = document.getElementById('dbe-inc').checked;
+  var pcode = document.getElementById('dbe-pcode').value.trim().toUpperCase();
+  var desc = document.getElementById('dbe-desc').value.trim().toUpperCase();
+
+  if(!payee){ alert('Payee required'); return; }
+  if(isNaN(amt)){ alert('Amount must be a number'); return; }
+  if(yr.length !== 4){ alert('Year must be 4 digits'); return; }
+
+  // Mutate the master record in place
+  LOG[idx].payee = payee;
+  LOG[idx].date = yr+'-'+mo+'-'+da;
+  LOG[idx].amt = isInc ? Math.abs(amt) : -Math.abs(amt);
+  LOG[idx].pcode = pcode;
+  LOG[idx].desc = desc;
+  LOG[idx].x = 'X';
+  LOG[idx].mtime = new Date().toISOString();
+  saveLog();
+
+  // Close modal + repull the day-by-day view from the (now updated) master
+  document.getElementById('dbd-edit-modal').remove();
+  toast('✓ Saved — view refreshed',true);
+  _dbdRefresh();
+}
+
 // Helpers shared by Day-by-Day overlays (fuel / restaurant / grocery)
 function _dbdRefresh(){
   try {
@@ -1660,37 +1762,7 @@ function _dbdCloseOverlay(){
   var ov = document.getElementById('daybyday-overlay');
   if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
 }
-// Named row-action handlers — simple, reliable, no inline-event acrobatics
-function dbdDel(id){
-  if(!confirm('Delete this entry?')) return;
-  loadLog();
-  LOG = LOG.filter(function(x){return x.id!==id;});
-  saveLog();
-  toast('Deleted entry',true);
-  _dbdRefresh();
-}
-function dbdCpy(id){
-  loadLog();
-  var orig = null;
-  for(var i=0;i<LOG.length;i++) if(LOG[i].id===id){orig=LOG[i];break;}
-  if(!orig){toast('Entry not found',false);return;}
-  var clone = {};
-  for(var k in orig) clone[k] = orig[k];
-  clone.id = Date.now() + Math.floor(Math.random()*1000);
-  clone.x = 'X';
-  clone.mtime = new Date().toISOString();
-  LOG.unshift(clone);
-  saveLog();
-  toast('Copied entry',true);
-  _dbdRefresh();
-}
-function dbdShare(id){
-  shareLog(id);  // copies to clipboard via existing shareLog → _shareDoCopy
-}
-function dbdEdt(id){
-  _dbdCloseOverlay();
-  setTimeout(function(){ editLog(id); }, 100);
-}
+
 function renderDayByDay(){
   _dbdActive='fuel';
   loadLog();
@@ -1812,7 +1884,7 @@ function renderDayByDay(){
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
-      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="dbdDel('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:3px;">DEL</button>'+'<button onclick="dbdCpy('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:3px;">CPY</button>'+'<button onclick="dbdShare('+(e.id||0)+')" title="Copy to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:3px;">📤</button>'+'<button onclick="dbdEdt('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
+      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button type="button" onclick="dbdEditEntry('+(e.id||0)+')" style="padding:7px 16px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
       +'</tr>';
   });
   h+='</table>';
@@ -1821,7 +1893,7 @@ function renderDayByDay(){
       +'⚠ <b>'+fDupCount+' duplicate '+(fDupCount===1?'row':'rows')+'</b> detected (yellow 🟡 — same date + same amount). Tap any row to delete it, or use AUTO-DELETE above.'
       +'</div>';
   }
-  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">EDT • CPY • 📤 (clipboard) • DEL on each row</div></div>';
+  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">Tap EDT to edit · DEL · CPY · 📤 on the edit screen</div></div>';
   if(fDupCount>0){
     var fbanner='<div style="margin:8px;"><button onclick="dbdAutoDeleteDups()" style="width:100%;background:#cc0000;color:#fff;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-size:16px;font-weight:700;cursor:pointer;">🗑 AUTO-DELETE '+fDupCount+' DUPLICATE'+(fDupCount===1?'':'S')+'</button></div>';
     h=h.replace('<div style="padding:0 8px 8px;font-family:Courier New,monospace;">',fbanner+'<div style="padding:0 8px 8px;font-family:Courier New,monospace;">');
@@ -2514,7 +2586,7 @@ function renderDayByDayOverlay(entries,title){
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days2+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
-      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="dbdDel('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:3px;">DEL</button>'+'<button onclick="dbdCpy('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:3px;">CPY</button>'+'<button onclick="dbdShare('+(e.id||0)+')" title="Copy to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:3px;">📤</button>'+'<button onclick="dbdEdt('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
+      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button type="button" onclick="dbdEditEntry('+(e.id||0)+')" style="padding:7px 16px;border:none;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
       +'</tr>';
   });
   h+='</table>';
@@ -2523,7 +2595,7 @@ function renderDayByDayOverlay(entries,title){
       +'⚠ <b>'+dupCount+' duplicate '+(dupCount===1?'row':'rows')+'</b> detected (yellow 🟡 — same date + same amount). Tap any row to delete it, or use AUTO-DELETE above.'
       +'</div>';
   }
-  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">EDT • CPY • 📤 (clipboard) • DEL on each row</div></div>';
+  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">Tap EDT to edit · DEL · CPY · 📤 on the edit screen</div></div>';
   // Insert AUTO-DELETE banner at the very top if dups found
   if(dupCount>0){
     var banner='<div style="margin:8px;"><button onclick="dbdAutoDeleteDups()" style="width:100%;background:#cc0000;color:#fff;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-size:16px;font-weight:700;cursor:pointer;">🗑 AUTO-DELETE '+dupCount+' DUPLICATE'+(dupCount===1?'':'S')+'</button></div>';
@@ -7629,6 +7701,16 @@ function doSave(){
     document.getElementById('p-amt').value='';
     document.getElementById('search').value='';
     renderLog();
+    // If this edit came from a Day-by-Day phantom view, repull fresh data into that view
+    if(window._dbdReturnTo){
+      var ret=window._dbdReturnTo; window._dbdReturnTo=null;
+      setTimeout(function(){
+        if(ret==='groc') renderGrocDayByDay();
+        else if(ret==='rest') renderRestDayByDay();
+        else if(ret==='fuel') renderDayByDay();
+        toast('✓ Saved — Day by Day refreshed',true);
+      }, 250);
+    }
     // find other entries with same payee that have different pcode/desc
     var matchCount=LOG.filter(function(r){return r.payee===payee&&(r.pcode!==pcode||r.desc!==desc);}).length;
     if(matchCount>0){
@@ -7872,7 +7954,14 @@ function descKeyNav(e){
 
 function editLog(id){
   loadLog();
-  var e=null;for(var i=0;i<LOG.length;i++){if(LOG[i].id===id){e=LOG[i];break;}}
+  var e=null;
+  for(var i=0;i<LOG.length;i++){
+    // Tolerant match: strict, string, or near-equal (handles float-precision drift
+    // when ids round-trip through HTML attributes or CSV imports)
+    if(LOG[i].id===id || String(LOG[i].id)===String(id) || Math.abs((LOG[i].id||0)-id)<0.001){
+      e=LOG[i]; id=LOG[i].id; break;
+    }
+  }
   if(!e){toast('Record not found — run Reindex',false);return;}
   var cleanPayee=(e.payee||'').replace(/[*#&<>]/g,'').trim();
   var descVal=e.desc||'EXPENSE';
