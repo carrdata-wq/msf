@@ -1654,15 +1654,42 @@ function _dbdRefresh(){
     if(_dbdActive==='groc') renderGrocDayByDay();
     else if(_dbdActive==='rest') renderRestDayByDay();
     else if(_dbdActive==='fuel') renderDayByDay();
-  } catch(e){}
+  } catch(e){console.error('dbd refresh',e);}
 }
 function _dbdCloseOverlay(){
-  var ov = document.querySelector('div[id="dbd-overlay"], .dbd-overlay');
-  if(ov && ov.remove) ov.remove();
-  // also close any generic overlay used by Day-by-Day
-  document.querySelectorAll('div[style*="z-index"][style*="9999"]').forEach(function(d){
-    if(d.querySelector('table.mfs-stack')) d.remove();
-  });
+  var ov = document.getElementById('daybyday-overlay');
+  if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
+}
+// Named row-action handlers — simple, reliable, no inline-event acrobatics
+function dbdDel(id){
+  if(!confirm('Delete this entry?')) return;
+  loadLog();
+  LOG = LOG.filter(function(x){return x.id!==id;});
+  saveLog();
+  toast('Deleted entry',true);
+  _dbdRefresh();
+}
+function dbdCpy(id){
+  loadLog();
+  var orig = null;
+  for(var i=0;i<LOG.length;i++) if(LOG[i].id===id){orig=LOG[i];break;}
+  if(!orig){toast('Entry not found',false);return;}
+  var clone = {};
+  for(var k in orig) clone[k] = orig[k];
+  clone.id = Date.now() + Math.floor(Math.random()*1000);
+  clone.x = 'X';
+  clone.mtime = new Date().toISOString();
+  LOG.unshift(clone);
+  saveLog();
+  toast('Copied entry',true);
+  _dbdRefresh();
+}
+function dbdShare(id){
+  shareLog(id);  // copies to clipboard via existing shareLog → _shareDoCopy
+}
+function dbdEdt(id){
+  _dbdCloseOverlay();
+  setTimeout(function(){ editLog(id); }, 100);
 }
 function renderDayByDay(){
   _dbdActive='fuel';
@@ -1785,7 +1812,7 @@ function renderDayByDay(){
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
-      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="event.preventDefault();event.stopPropagation();delLog('+(e.id||0)+');setTimeout(_dbdRefresh,150);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:2px;">DEL</button>'+'<button onclick="event.preventDefault();event.stopPropagation();copyLog('+(e.id||0)+');setTimeout(_dbdRefresh,200);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:2px;">CPY</button>'+'<button onclick="event.preventDefault();event.stopPropagation();shareLog('+(e.id||0)+');" title="Copy contact to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:2px;">📤</button>'+'<button onclick="event.preventDefault();event.stopPropagation();editLog('+(e.id||0)+');_dbdCloseOverlay();" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
+      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="dbdDel('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:3px;">DEL</button>'+'<button onclick="dbdCpy('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:3px;">CPY</button>'+'<button onclick="dbdShare('+(e.id||0)+')" title="Copy to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:3px;">📤</button>'+'<button onclick="dbdEdt('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
       +'</tr>';
   });
   h+='</table>';
@@ -2487,7 +2514,7 @@ function renderDayByDayOverlay(entries,title){
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days2+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
-      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="event.preventDefault();event.stopPropagation();delLog('+(e.id||0)+');setTimeout(_dbdRefresh,150);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:2px;">DEL</button>'+'<button onclick="event.preventDefault();event.stopPropagation();copyLog('+(e.id||0)+');setTimeout(_dbdRefresh,200);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:2px;">CPY</button>'+'<button onclick="event.preventDefault();event.stopPropagation();shareLog('+(e.id||0)+');" title="Copy contact to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:2px;">📤</button>'+'<button onclick="event.preventDefault();event.stopPropagation();editLog('+(e.id||0)+');_dbdCloseOverlay();" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
+      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="dbdDel('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:3px;">DEL</button>'+'<button onclick="dbdCpy('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:3px;">CPY</button>'+'<button onclick="dbdShare('+(e.id||0)+')" title="Copy to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:3px;">📤</button>'+'<button onclick="dbdEdt('+(e.id||0)+')" style="padding:4px 7px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
       +'</tr>';
   });
   h+='</table>';
