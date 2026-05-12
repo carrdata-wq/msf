@@ -1223,10 +1223,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="field"><label>Name *</label><input type="text" id="cli-name" placeholder="JOHN SMITH" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field"><label>Phone</label><input type="tel" id="cli-phone" placeholder="312-555-1234" inputmode="tel"></div>
       <div class="field"><label>Email</label><input type="email" id="cli-email" placeholder="name@example.com" inputmode="email"></div>
-      <div class="field"><label>Address</label><input type="text" id="cli-addr" placeholder="123 MAIN ST CHICAGO IL" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field"><label>Street Address</label><input type="text" id="cli-addr" placeholder="123 MAIN ST" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field" style="display:flex;gap:6px;">
+        <div style="flex:2;"><label>City</label><input type="text" id="cli-city" placeholder="CHICAGO" style="width:100%;box-sizing:border-box;" oninput="this.value=this.value.toUpperCase()"></div>
+        <div style="flex:0 0 70px;"><label>State</label><input type="text" id="cli-state" maxlength="2" placeholder="IL" style="width:100%;box-sizing:border-box;text-align:center;" oninput="this.value=this.value.toUpperCase()"></div>
+        <div style="flex:0 0 90px;"><label>Zip</label><input type="text" id="cli-zip" maxlength="10" placeholder="60643" inputmode="numeric" style="width:100%;box-sizing:border-box;text-align:center;"></div>
+      </div>
       <div class="field"><label>Notes / Job</label><input type="text" id="cli-notes" placeholder="ROOF REPLACE · 2 STORY"></div>
       <div class="field"><label>Last Contact Date</label><input type="date" id="cli-contacted" placeholder="YYYY-MM-DD"></div>
-      <div class="field"><label>Job Date (ADATE)</label><input type="date" id="cli-adate" placeholder="YYYY-MM-DD"></div>
 	  <input type="hidden" id="cli-id">
       <button class="btn btn-green" onclick="saveClient()">✓ SAVE</button>
       <button class="btn btn-dim" onclick="phoneShowList()">◀ Back</button>
@@ -8372,10 +8376,45 @@ function renderAllClients(){
   if(!rows.length){list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';return;}
   list.innerHTML=renderClientsTable(rows, rows.length, true);
 }
+// Parse a free-form address into street / city / state / zip parts
+function _parseAddr(addr){
+  addr = (addr||'').trim();
+  if(!addr) return {street:'', city:'', state:'', zip:''};
+  var parts = addr.split(',').map(function(s){return s.trim();});
+  var street = '', tail = '';
+  if(parts.length >= 2){
+    street = parts[0];
+    tail = parts.slice(1).join(' ').trim();
+  } else {
+    tail = parts[0];
+  }
+  var words = tail.split(/\s+/).filter(Boolean);
+  var zip = '', state = '', city = '';
+  // Last word: zip if 5 digits (optionally +4)
+  if(words.length && /^\d{5}(-\d{4})?$/.test(words[words.length-1])){
+    zip = words.pop();
+  }
+  // Last word now: state if 2 letters
+  if(words.length && /^[A-Z]{2}$/i.test(words[words.length-1])){
+    state = words.pop().toUpperCase();
+  }
+  // Whatever remains: city
+  city = words.join(' ');
+  return {street:street, city:city, state:state, zip:zip};
+}
+
+// Combine the 4 parts back into a single addr string
+function _joinAddr(street, city, state, zip){
+  var s = (street||'').trim();
+  var locale = [(city||'').trim(), (state||'').trim(), (zip||'').trim()].filter(Boolean).join(' ').trim();
+  if(s && locale) return s + ', ' + locale;
+  return s || locale;
+}
+
 function phoneShowForm(id){
   document.getElementById('phone-list-page').style.display='none';
   document.getElementById('phone-form-page').style.display='block';
-  ['cli-name','cli-phone','cli-email','cli-addr','cli-notes','cli-contacted','cli-adate','cli-id'].forEach(function(f){document.getElementById(f).value='';});
+  ['cli-name','cli-phone','cli-email','cli-addr','cli-city','cli-state','cli-zip','cli-notes','cli-contacted','cli-id'].forEach(function(f){var el=document.getElementById(f);if(el)el.value='';});
   if(id){
     var c=null;for(var i=0;i<CLIENTS.length;i++)if(CLIENTS[i].id===id){c=CLIENTS[i];break;}
     if(c){
@@ -8383,10 +8422,14 @@ function phoneShowForm(id){
       document.getElementById('cli-name').value=c.name||'';
       document.getElementById('cli-phone').value=c.phone||'';
       document.getElementById('cli-email').value=c.email||'';
-      document.getElementById('cli-addr').value=c.addr||'';
+      // Parse the addr field — prefer explicit pieces if they exist, else parse
+      var addrParts = _parseAddr(c.addr||'');
+      document.getElementById('cli-addr').value = c.street || addrParts.street;
+      document.getElementById('cli-city').value = c.city || addrParts.city;
+      document.getElementById('cli-state').value = c.state || addrParts.state;
+      document.getElementById('cli-zip').value = c.zip || addrParts.zip;
       document.getElementById('cli-notes').value=c.notes||'';
-	  document.getElementById('cli-contacted').value=c.contacted||'';
-      document.getElementById('cli-adate').value=c.adate||'';
+      document.getElementById('cli-contacted').value=c.contacted||'';
       document.getElementById('phone-form-title').textContent='EDIT CLIENT';
     }
   } else {
@@ -8397,14 +8440,18 @@ function phoneShowForm(id){
 function saveClient(){
   var name=(document.getElementById('cli-name').value||'').trim();
   if(!name){toast('Name is required',false);return;}
+  var street = (document.getElementById('cli-addr').value||'').trim();
+  var city   = (document.getElementById('cli-city').value||'').trim();
+  var state  = (document.getElementById('cli-state').value||'').trim();
+  var zip    = (document.getElementById('cli-zip').value||'').trim();
   var rec={
     name:name,
     phone:(document.getElementById('cli-phone').value||'').trim(),
     email:(document.getElementById('cli-email').value||'').trim(),
-    addr:(document.getElementById('cli-addr').value||'').trim(),
+    addr:_joinAddr(street, city, state, zip),
+    street:street, city:city, state:state, zip:zip,
     notes:(document.getElementById('cli-notes').value||'').trim(),
-	contacted:(document.getElementById('cli-contacted').value||'').trim(),
-    adate:(document.getElementById('cli-adate').value||'').trim(),
+    contacted:(document.getElementById('cli-contacted').value||'').trim(),
     modified:today(),
     x:'X',
     mtime:new Date().toISOString()
