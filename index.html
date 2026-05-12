@@ -243,9 +243,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
 /* Accounting ledger — mobile: actions drop to a second row, header hidden */
 @media (max-width: 700px) {
-  #logtbl thead { display: none; }
-  #logtbl, #logtbl tbody { display: block; width: 100%; }
-  #logtbl tbody tr.led-row {
+  #logtbl thead, table.mfs-stack thead { display: none; }
+  #logtbl, #logtbl tbody, table.mfs-stack, table.mfs-stack tbody { display: block; width: 100%; }
+  #logtbl tbody tr.led-row, table.mfs-stack tbody tr.led-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -253,20 +253,20 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     padding: 3px 4px;
     border-radius: 4px;
   }
-  #logtbl tbody tr.led-row > td {
+  #logtbl tbody tr.led-row > td, table.mfs-stack tbody tr.led-row > td {
     display: inline-block !important;
     width: auto !important;
     max-width: none !important;
     border: none !important;
     padding: 2px 5px !important;
   }
-  #logtbl tbody tr.led-row > td.led-rownum-cell {
+  #logtbl tbody tr.led-row > td.led-rownum-cell, table.mfs-stack tbody tr.led-row > td.led-rownum-cell {
     order: -1;
     margin-right: 4px;
     font-size: 12px !important;
     min-width: 26px;
   }
-  #logtbl tbody tr.led-row > td.led-actions-cell {
+  #logtbl tbody tr.led-row > td.led-actions-cell, table.mfs-stack tbody tr.led-row > td.led-actions-cell {
     display: flex !important;
     width: 100% !important;
     gap: 4px;
@@ -275,7 +275,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     padding-top: 5px !important;
     border-top: 1px solid rgba(255,255,255,0.15) !important;
   }
-  #logtbl tbody tr.led-row > td.led-actions-cell button {
+  #logtbl tbody tr.led-row > td.led-actions-cell button, table.mfs-stack tbody tr.led-row > td.led-actions-cell button {
     flex: 1 1 0;
     padding: 7px 4px !important;
   }
@@ -1647,6 +1647,23 @@ function fuelShow(sub) {
   if(sub==='log'){document.getElementById('fuel-date').value=today();}
 }
 
+
+// Helpers shared by Day-by-Day overlays (fuel / restaurant / grocery)
+function _dbdRefresh(){
+  try {
+    if(_dbdActive==='groc') renderGrocDayByDay();
+    else if(_dbdActive==='rest') renderRestDayByDay();
+    else if(_dbdActive==='fuel') renderDayByDay();
+  } catch(e){}
+}
+function _dbdCloseOverlay(){
+  var ov = document.querySelector('div[id="dbd-overlay"], .dbd-overlay');
+  if(ov && ov.remove) ov.remove();
+  // also close any generic overlay used by Day-by-Day
+  document.querySelectorAll('div[style*="z-index"][style*="9999"]').forEach(function(d){
+    if(d.querySelector('table.mfs-stack')) d.remove();
+  });
+}
 function renderDayByDay(){
   _dbdActive='fuel';
   loadLog();
@@ -1742,6 +1759,7 @@ function renderDayByDay(){
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">AMT</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">DAYS</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:right;">$/DAY</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaaacc;text-align:center;">ACT</th>'
     +'</tr>';
 
   // Dup detection for fuel
@@ -1761,12 +1779,13 @@ function renderDayByDay(){
     var bg=isDup?'background:#fff3a0':(i%2===0?'background:#ffffff':'background:#f0f4ff');
     var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
-    h+='<tr style="'+bg+';border-bottom:1px solid #cccccc;cursor:pointer;" onclick="dbdConfirmDel('+(e.id||0)+',this)" title="Tap to delete">'
+    h+='<tr class="led-row" style="'+bg+';border-bottom:1px solid #cccccc;">'
       +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+(isDup?' 🟡':'')+'</td>'
       +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
+      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="event.preventDefault();event.stopPropagation();delLog('+(e.id||0)+');setTimeout(_dbdRefresh,150);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:2px;">DEL</button>'+'<button onclick="event.preventDefault();event.stopPropagation();copyLog('+(e.id||0)+');setTimeout(_dbdRefresh,200);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:2px;">CPY</button>'+'<button onclick="event.preventDefault();event.stopPropagation();shareLog('+(e.id||0)+');" title="Copy contact to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:2px;">📤</button>'+'<button onclick="event.preventDefault();event.stopPropagation();editLog('+(e.id||0)+');_dbdCloseOverlay();" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
       +'</tr>';
   });
   h+='</table>';
@@ -1775,7 +1794,7 @@ function renderDayByDay(){
       +'⚠ <b>'+fDupCount+' duplicate '+(fDupCount===1?'row':'rows')+'</b> detected (yellow 🟡 — same date + same amount). Tap any row to delete it, or use AUTO-DELETE above.'
       +'</div>';
   }
-  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">Tap any row to delete it from your ledger</div></div>';
+  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">EDT • CPY • 📤 (clipboard) • DEL on each row</div></div>';
   if(fDupCount>0){
     var fbanner='<div style="margin:8px;"><button onclick="dbdAutoDeleteDups()" style="width:100%;background:#cc0000;color:#fff;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-size:16px;font-weight:700;cursor:pointer;">🗑 AUTO-DELETE '+fDupCount+' DUPLICATE'+(fDupCount===1?'':'S')+'</button></div>';
     h=h.replace('<div style="padding:0 8px 8px;font-family:Courier New,monospace;">',fbanner+'<div style="padding:0 8px 8px;font-family:Courier New,monospace;">');
@@ -2441,6 +2460,7 @@ function renderDayByDayOverlay(entries,title){
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">AMT</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">DAYS</th>'
     +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:right;">$/DAY</th>'
+    +'<th style="color:#fff;padding:4px;border:1px solid #aaa;text-align:center;">ACT</th>'
     +'</tr>';
   // ── DUP DETECTION: same date+amount within entries shown ──
   var dupKeys={};
@@ -2461,12 +2481,13 @@ function renderDayByDayOverlay(entries,title){
     var bg=isDup?'background:#fff3a0':(i%2===0?'background:#ffffff':'background:#f0f4ff');
     var dc=cpd>15?'#cc0000':cpd>8?'#cc6600':'#006600';
     var dt=(e.date||'').replace(/(\d{4})-(\d{2})-(\d{2})/,function(m,y,mo,d){return mo+'/'+d+'/'+y;});
-    h+='<tr style="'+bg+';border-bottom:1px solid #ccc;cursor:pointer;" onclick="dbdConfirmDel('+(e.id||0)+',this)" title="Tap to delete">'
+    h+='<tr class="led-row" style="'+bg+';border-bottom:1px solid #ccc;">'
       +'<td style="padding:4px;color:#000066;font-size:13px;white-space:nowrap;">'+dt+(isDup?' 🟡':'')+'</td>'
       +'<td style="padding:4px;color:#000066;font-weight:700;font-size:13px;">'+trunc(e.payee||'',12)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#cc0000;font-weight:700;font-size:13px;">$'+Math.abs(e.amt).toFixed(2)+'</td>'
       +'<td style="padding:4px;text-align:right;color:#333;font-size:13px;">'+days2+'</td>'
       +'<td style="padding:4px;text-align:right;font-weight:700;font-size:13px;color:'+dc+';">$'+cpd.toFixed(2)+'</td>'
+      +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'+'<button onclick="event.preventDefault();event.stopPropagation();delLog('+(e.id||0)+');setTimeout(_dbdRefresh,150);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#880000;color:#fff;margin-right:2px;">DEL</button>'+'<button onclick="event.preventDefault();event.stopPropagation();copyLog('+(e.id||0)+');setTimeout(_dbdRefresh,200);" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;margin-right:2px;">CPY</button>'+'<button onclick="event.preventDefault();event.stopPropagation();shareLog('+(e.id||0)+');" title="Copy contact to clipboard" style="padding:4px 5px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;background:#006666;color:#fff;margin-right:2px;">📤</button>'+'<button onclick="event.preventDefault();event.stopPropagation();editLog('+(e.id||0)+');_dbdCloseOverlay();" style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:12px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;">EDT</button>'+'</td>'
       +'</tr>';
   });
   h+='</table>';
@@ -2475,7 +2496,7 @@ function renderDayByDayOverlay(entries,title){
       +'⚠ <b>'+dupCount+' duplicate '+(dupCount===1?'row':'rows')+'</b> detected (yellow 🟡 — same date + same amount). Tap any row to delete it, or use AUTO-DELETE above.'
       +'</div>';
   }
-  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">Tap any row to delete it from your ledger</div></div>';
+  h+='<div style="font-size:11px;color:#666;margin-top:6px;text-align:center;">EDT • CPY • 📤 (clipboard) • DEL on each row</div></div>';
   // Insert AUTO-DELETE banner at the very top if dups found
   if(dupCount>0){
     var banner='<div style="margin:8px;"><button onclick="dbdAutoDeleteDups()" style="width:100%;background:#cc0000;color:#fff;border:none;padding:14px;border-radius:6px;font-family:Courier New,monospace;font-size:16px;font-weight:700;cursor:pointer;">🗑 AUTO-DELETE '+dupCount+' DUPLICATE'+(dupCount===1?'':'S')+'</button></div>';
