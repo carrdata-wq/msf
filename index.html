@@ -1399,10 +1399,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <!-- COMPARE VIEW -->
   <div id="infl-compare" style="display:none;background:#000066;border:2px solid #00ffff;border-radius:6px;margin:0 8px 8px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;">
     <div style="color:#00ffff;font-weight:700;font-size:14px;margin-bottom:8px;">📊 PRICE HISTORY — <span id="infl-compare-cat-label">GROCERY</span></div>
-    <select id="infl-compare-item" onchange="infl_renderCompare(this.value)"
-      style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:10px;font-family:inherit;font-size:13px;font-weight:700;border-radius:4px;outline:none;margin-bottom:8px;">
-      <option value="">— PICK AN ITEM —</option>
-    </select>
+    <div style="color:#aaccff;font-size:11px;margin-bottom:6px;">✓ Check items to compare, then tap COMPARE SELECTED</div>
+    <div id="infl-compare-checklist" style="background:#ffffff;border:1px solid #6666ff;border-radius:4px;padding:6px;max-height:240px;overflow-y:auto;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <button onclick="infl_runCompare()" style="flex:2;padding:11px;font-family:inherit;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#00ffff;color:#000080;">📊 COMPARE SELECTED</button>
+      <button onclick="infl_clearChecks()" style="flex:1;padding:11px;font-family:inherit;font-weight:700;font-size:12px;border:none;border-radius:6px;cursor:pointer;background:#660000;color:#ffffff;">CLEAR</button>
+    </div>
     <div id="infl-compare-result"></div>
   </div>
 
@@ -9794,11 +9796,128 @@ function infl_buildItemDL(){
   document.getElementById('infl-item-dl').innerHTML=list.map(function(s){return '<option value="'+infl_esc(s)+'">';}).join('');
 }
 function infl_buildCompareItemList(){
-  var items={};
-  INFL.forEach(function(r){if(r.cat===INFL_CAT && r.item) items[String(r.item).toUpperCase()]=1;});
-  var list=Object.keys(items).sort();
-  var sel=document.getElementById('infl-compare-item');
-  sel.innerHTML='<option value="">— PICK AN ITEM ('+list.length+') —</option>'+list.map(function(s){return '<option value="'+infl_esc(s)+'">'+infl_esc(s)+'</option>';}).join('');
+  // Build a checkbox list of items in current category, with entry counts
+  var counts={};
+  INFL.forEach(function(r){
+    if(r.cat===INFL_CAT && r.item){
+      var key=String(r.item).toUpperCase();
+      counts[key]=(counts[key]||0)+1;
+    }
+  });
+  var list=Object.keys(counts).sort();
+  var el=document.getElementById('infl-compare-checklist');
+  if(!list.length){el.innerHTML='<div style="color:#888;padding:10px;text-align:center;font-size:12px;">No items yet — add some price entries first.</div>';return;}
+  el.innerHTML=list.map(function(name,idx){
+    var bg=idx%2===0?'#ffffff':'#eef2ff';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:'+bg+';cursor:pointer;border-bottom:1px solid #eee;">'
+      +'<input type="checkbox" class="infl-cmp-cb" value="'+infl_esc(name)+'" style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">'
+      +'<span style="flex:1;color:#000080;font-weight:700;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+infl_esc(name)+'</span>'
+      +'<span style="color:#666;font-size:11px;flex-shrink:0;">'+counts[name]+' '+(counts[name]===1?'entry':'entries')+'</span>'
+    +'</label>';
+  }).join('');
+}
+function infl_clearChecks(){
+  var cbs=document.querySelectorAll('.infl-cmp-cb');
+  cbs.forEach(function(cb){cb.checked=false;});
+  document.getElementById('infl-compare-result').innerHTML='';
+}
+function infl_runCompare(){
+  var cbs=document.querySelectorAll('.infl-cmp-cb:checked');
+  var picked=Array.prototype.map.call(cbs,function(cb){return cb.value;});
+  var el=document.getElementById('infl-compare-result');
+  if(!picked.length){
+    el.innerHTML='<div style="color:#ffaa00;padding:10px;text-align:center;background:#220011;border:1px solid #ffaa00;border-radius:4px;font-size:12px;">Check at least one item above, then tap COMPARE SELECTED.</div>';
+    return;
+  }
+  // One item -> show its full history (the rich detail view)
+  if(picked.length===1){ infl_renderCompare(picked[0]); return; }
+  // Multiple items -> side-by-side comparison table
+  infl_renderMultiCompare(picked);
+}
+function infl_renderMultiCompare(items){
+  var el=document.getElementById('infl-compare-result');
+  // Build stats per item
+  var stats=items.map(function(item){
+    var rows=INFL.filter(function(r){return r.cat===INFL_CAT && (r.item||'').toUpperCase()===item.toUpperCase();});
+    rows.sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+    if(!rows.length) return {item:item, n:0};
+    var first=rows[0], last=rows[rows.length-1];
+    var firstUP=(first.size>0)?(first.price/first.size):null;
+    var lastUP=(last.size>0)?(last.price/last.size):null;
+    var pct=first.price>0?((last.price-first.price)/first.price*100):0;
+    return {item:item, n:rows.length, first:first, last:last, pct:pct, firstUP:firstUP, lastUP:lastUP};
+  });
+  // Sort: biggest % increase first
+  stats.sort(function(a,b){return (b.pct||0)-(a.pct||0);});
+
+  var html='<div style="color:#aaccff;font-size:12px;font-weight:700;margin-bottom:6px;">📊 SIDE-BY-SIDE COMPARISON ('+items.length+' items)</div>'
+    +'<div style="background:#ffffff;border:1px solid #6666ff;border-radius:4px;overflow-x:auto;font-size:11px;">';
+  // Header
+  html+='<div style="display:flex;gap:6px;padding:6px 7px;background:#000080;color:#ffff00;font-weight:700;font-size:11px;">'
+    +'<div style="flex:2;min-width:80px;">ITEM</div>'
+    +'<div style="flex:1;min-width:55px;text-align:right;">FIRST</div>'
+    +'<div style="flex:1;min-width:55px;text-align:right;">LATEST</div>'
+    +'<div style="flex:1;min-width:55px;text-align:right;">CHANGE</div>'
+    +'<div style="flex:0 0 40px;text-align:right;">#</div>'
+  +'</div>';
+  stats.forEach(function(s,idx){
+    var bg=idx%2===0?'#ffffff':'#eef2ff';
+    if(s.n===0){
+      html+='<div style="display:flex;gap:6px;padding:6px 7px;background:'+bg+';border-bottom:1px solid #ddd;color:#888;">'
+        +'<div style="flex:2;min-width:80px;">'+infl_esc(s.item)+'</div>'
+        +'<div style="flex:4;text-align:center;font-style:italic;">no data</div>'
+      +'</div>';
+      return;
+    }
+    var pctColor=s.pct>0?'#cc0000':(s.pct<0?'#006600':'#666666');
+    var arrow=s.pct>0?'▲':(s.pct<0?'▼':'─');
+    html+='<div style="display:flex;gap:6px;padding:6px 7px;background:'+bg+';border-bottom:1px solid #ddd;font-size:11px;color:#000;">'
+      +'<div style="flex:2;min-width:80px;font-weight:700;color:#000080;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+infl_esc(s.item)+'</div>'
+      +'<div style="flex:1;min-width:55px;text-align:right;color:#444;">$'+s.first.price.toFixed(2)+'</div>'
+      +'<div style="flex:1;min-width:55px;text-align:right;color:#006600;font-weight:700;">$'+s.last.price.toFixed(2)+'</div>'
+      +'<div style="flex:1;min-width:55px;text-align:right;color:'+pctColor+';font-weight:700;">'+arrow+' '+s.pct.toFixed(1)+'%</div>'
+      +'<div style="flex:0 0 40px;text-align:right;color:#666;">'+s.n+'</div>'
+    +'</div>';
+  });
+  html+='</div>';
+
+  // Summary line — total inflation across the basket
+  var withData=stats.filter(function(s){return s.n>0;});
+  if(withData.length>1){
+    var avgPct=withData.reduce(function(sum,s){return sum+s.pct;},0)/withData.length;
+    var avgColor=avgPct>0?'#cc0000':(avgPct<0?'#006600':'#666666');
+    var avgArrow=avgPct>0?'▲':(avgPct<0?'▼':'─');
+    html+='<div style="background:#001144;border:1px solid #00ffff;border-radius:4px;padding:8px 10px;margin-top:8px;color:#ffffff;font-size:12px;">'
+      +'<span style="color:#aaccff;">BASKET AVERAGE CHANGE: </span>'
+      +'<span style="color:'+avgColor+';font-weight:700;font-size:14px;">'+avgArrow+' '+avgPct.toFixed(1)+'%</span>'
+    +'</div>';
+  }
+
+  // Possible typo warning — items that share most letters might be the same item misspelled
+  var typoNote=infl_typoCheck(items);
+  if(typoNote) html+='<div style="background:#332200;border:1px solid #ffaa00;border-radius:4px;padding:8px 10px;margin-top:6px;color:#ffddaa;font-size:11px;">⚠ '+typoNote+'</div>';
+
+  el.innerHTML=html;
+}
+function infl_typoCheck(items){
+  // Cheap similarity check — flag pairs where one is contained in the other or differ by 1-2 chars
+  for(var i=0;i<items.length;i++){
+    for(var j=i+1;j<items.length;j++){
+      var a=items[i].toUpperCase(), b=items[j].toUpperCase();
+      if(a===b) continue;
+      // Substring match or 1-char edit distance heuristic
+      if(a.indexOf(b)>=0 || b.indexOf(a)>=0 || Math.abs(a.length-b.length)<=1){
+        // Quick char-overlap test
+        var shorter=a.length<b.length?a:b, longer=a.length<b.length?b:a;
+        var match=0;
+        for(var k=0;k<shorter.length;k++) if(longer.indexOf(shorter[k])>=0) match++;
+        if(match/shorter.length > 0.7){
+          return '"'+items[i]+'" and "'+items[j]+'" look similar — possible spelling difference?';
+        }
+      }
+    }
+  }
+  return '';
 }
 function infl_save(){
   var store=(document.getElementById('infl-store').value||'').trim().toUpperCase();
