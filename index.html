@@ -1259,6 +1259,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="mod-btn" onclick="dupCheckCategory('groc')"><div class="mb-icon orange">🟡</div><div class="mb-label">Dup Check</div><div class="mb-sub">Find &amp; delete duplicate entries</div></div>
       <div class="mod-btn" onclick="grocShow('log')"><div class="mb-icon cyan">+</div><div class="mb-label">Add Item Detail</div><div class="mb-sub">Nutrition · Size · Notes</div></div>
       <div class="mod-btn" onclick="renderCombinedCosts()"><div class="mb-icon green">💰</div><div class="mb-label">Combined Costs</div><div class="mb-sub">Gas · Grocery · Restaurant · $/day</div></div>
+      <div class="mod-btn" onclick="infl_open()"><div class="mb-icon orange">📈</div><div class="mb-label">Inflation Tracker</div><div class="mb-sub">Track price changes · Compare items</div></div>
     </div>
     <div style="font-family:Courier New,monospace;font-size:14px;color:#ccccff;text-align:center;padding:8px;">🛒 Grocery costs auto-pulled from Accounting · DESC=FOOD GROCERY</div>
   </div>
@@ -1305,6 +1306,110 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <datalist id="groc-store-dl"></datalist>
   </div>
 </div>
+
+<!-- ==================== INFLATION TRACKER (isolated module) ==================== -->
+<div id="screen-inflation" class="screen" style="display:none;background:#0000aa;">
+  <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📈 Inflation Tracker</div></div>
+
+  <!-- Category tabs -->
+  <div style="display:flex;gap:4px;padding:8px;background:#000088;border-bottom:1px solid #6666ff;">
+    <button id="infl-tab-grocery" onclick="infl_setCat('grocery')" style="flex:1;padding:10px 6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:13px;border:none;border-radius:4px;cursor:pointer;background:#00ff88;color:#000080;">🛒 GROCERY</button>
+    <button id="infl-tab-fuel" onclick="infl_setCat('fuel')" style="flex:1;padding:10px 6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:13px;border:none;border-radius:4px;cursor:pointer;background:#002255;color:#aaccff;">⛽ FUEL</button>
+    <button id="infl-tab-restaurant" onclick="infl_setCat('restaurant')" style="flex:1;padding:10px 6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:13px;border:none;border-radius:4px;cursor:pointer;background:#002255;color:#aaccff;">🍔 REST</button>
+  </div>
+
+  <!-- Action buttons -->
+  <div style="display:flex;gap:6px;padding:8px;">
+    <button onclick="infl_showForm()" style="flex:1;padding:11px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#ffff00;color:#000080;">+ ADD PRICE ENTRY</button>
+    <button onclick="infl_showCompare()" style="flex:1;padding:11px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#00ffff;color:#000080;">📊 COMPARE</button>
+  </div>
+
+  <!-- ADD ENTRY FORM -->
+  <div id="infl-form" style="display:none;background:#000066;border:2px solid #00ff88;border-radius:6px;margin:0 8px 8px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;">
+    <div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">+ NEW PRICE ENTRY — <span id="infl-form-cat-label">GROCERY</span></div>
+
+    <div style="margin-bottom:6px;">
+      <label style="color:#aaccff;font-size:11px;font-weight:700;">STORE</label>
+      <input type="text" id="infl-store" list="infl-store-dl" placeholder="e.g. ALDI, SHELL" autocomplete="off"
+        oninput="this.value=this.value.toUpperCase()"
+        style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+      <datalist id="infl-store-dl"></datalist>
+    </div>
+
+    <div style="margin-bottom:6px;">
+      <label style="color:#aaccff;font-size:11px;font-weight:700;">DATE</label>
+      <input type="date" id="infl-date"
+        style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+    </div>
+
+    <div style="margin-bottom:6px;">
+      <label style="color:#aaccff;font-size:11px;font-weight:700;">ITEM NAME</label>
+      <input type="text" id="infl-item" list="infl-item-dl" placeholder="e.g. PIZZA, REGULAR GAS, BIG MAC" autocomplete="off"
+        oninput="this.value=this.value.toUpperCase()"
+        style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+      <datalist id="infl-item-dl"></datalist>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <div style="flex:1;">
+        <label style="color:#aaccff;font-size:11px;font-weight:700;">PRICE ($)</label>
+        <input type="number" id="infl-price" inputmode="decimal" step="0.01" placeholder="2.99"
+          style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+      </div>
+      <div style="flex:1;">
+        <label style="color:#aaccff;font-size:11px;font-weight:700;">SIZE</label>
+        <input type="number" id="infl-size" inputmode="decimal" step="0.01" placeholder="10.9"
+          style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+      </div>
+      <div style="flex:1;">
+        <label style="color:#aaccff;font-size:11px;font-weight:700;">UNIT</label>
+        <select id="infl-unit" style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+          <option value="OZ">OZ</option>
+          <option value="LB">LB</option>
+          <option value="CNT">CNT</option>
+          <option value="PC">PC</option>
+          <option value="QT">QT</option>
+          <option value="GL">GL</option>
+          <option value="EA">EA</option>
+          <option value="PKG">PKG</option>
+          <option value="L">L</option>
+          <option value="ML">ML</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:6px;">
+      <label style="color:#aaccff;font-size:11px;font-weight:700;">CALORIES (optional)</label>
+      <input type="number" id="infl-cal" inputmode="numeric" placeholder="0"
+        style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <label style="color:#aaccff;font-size:11px;font-weight:700;">NOTES (optional)</label>
+      <input type="text" id="infl-notes" placeholder="e.g. on sale, brand X"
+        style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:8px;font-family:inherit;font-size:13px;border-radius:4px;outline:none;">
+    </div>
+
+    <div style="display:flex;gap:6px;">
+      <button onclick="infl_save()" style="flex:2;padding:12px;font-family:inherit;font-weight:700;font-size:14px;border:none;border-radius:6px;cursor:pointer;background:#00ff88;color:#000080;">✓ SAVE ENTRY</button>
+      <button onclick="infl_hideForm()" style="flex:1;padding:12px;font-family:inherit;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#660000;color:#ffffff;">CANCEL</button>
+    </div>
+  </div>
+
+  <!-- COMPARE VIEW -->
+  <div id="infl-compare" style="display:none;background:#000066;border:2px solid #00ffff;border-radius:6px;margin:0 8px 8px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;">
+    <div style="color:#00ffff;font-weight:700;font-size:14px;margin-bottom:8px;">📊 PRICE HISTORY — <span id="infl-compare-cat-label">GROCERY</span></div>
+    <select id="infl-compare-item" onchange="infl_renderCompare(this.value)"
+      style="width:100%;box-sizing:border-box;background:#ffffff;color:#000080;border:1px solid #6666ff;padding:10px;font-family:inherit;font-size:13px;font-weight:700;border-radius:4px;outline:none;margin-bottom:8px;">
+      <option value="">— PICK AN ITEM —</option>
+    </select>
+    <div id="infl-compare-result"></div>
+  </div>
+
+  <!-- RECENT ENTRIES LIST -->
+  <div id="infl-list" style="margin:0 8px 16px;font-family:ui-monospace,Menlo,Consolas,monospace;"></div>
+</div>
+<!-- ==================== END INFLATION TRACKER ==================== -->
 
 <div id="screen-restaurant" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">🍽️ Restaurant Tracker</div></div>
@@ -9601,6 +9706,223 @@ try{var _c=JSON.parse(localStorage.getItem('mx_custom')||'[]');for(var _i=0;_i<_
 buildDays();buildYears();loadDatePref();doFilter('');renderLog();
 // always boot to main menu, no matter what state the file was saved in
 try{showScreen('main');}catch(e){}
+
+// ==================== INFLATION TRACKER MODULE (isolated) ====================
+// Storage: mx_inflation = [{id, cat, store, date, item, price, size, unit, calories, notes, ts}]
+// All functions prefixed infl_ to avoid any collision with existing code.
+var INFL=[];
+var INFL_CAT='grocery';
+function infl_load(){try{INFL=JSON.parse(localStorage.getItem('mx_inflation')||'[]');}catch(e){INFL=[];}}
+function infl_save_all(){
+  try{
+    localStorage.setItem('mx_inflation',JSON.stringify(INFL));
+    return true;
+  }catch(e){
+    if(typeof toast==='function') toast('⚠ Storage full — inflation entry not saved',false);
+    return false;
+  }
+}
+function infl_esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function infl_today(){
+  try{return today();}catch(e){
+    var d=new Date(),m=d.getMonth()+1,dd=d.getDate();
+    return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd;
+  }
+}
+function infl_open(){
+  infl_load();
+  try{showScreen('inflation');}catch(e){document.getElementById('screen-inflation').style.display='block';}
+  infl_setCat(INFL_CAT||'grocery');
+}
+function infl_setCat(cat){
+  INFL_CAT=cat;
+  ['grocery','fuel','restaurant'].forEach(function(c){
+    var btn=document.getElementById('infl-tab-'+c);
+    if(!btn)return;
+    if(c===cat){btn.style.background='#00ff88';btn.style.color='#000080';}
+    else{btn.style.background='#002255';btn.style.color='#aaccff';}
+  });
+  var label={grocery:'GROCERY',fuel:'FUEL',restaurant:'RESTAURANT'}[cat];
+  var fcl=document.getElementById('infl-form-cat-label'); if(fcl) fcl.textContent=label;
+  var ccl=document.getElementById('infl-compare-cat-label'); if(ccl) ccl.textContent=label;
+  infl_hideForm();
+  infl_hideCompare();
+  infl_renderList();
+}
+function infl_showForm(){
+  infl_hideCompare();
+  document.getElementById('infl-form').style.display='block';
+  document.getElementById('infl-date').value=infl_today();
+  // Reasonable default unit per category
+  var defUnit={grocery:'OZ',fuel:'GL',restaurant:'EA'}[INFL_CAT]||'EA';
+  document.getElementById('infl-unit').value=defUnit;
+  // Build datalists
+  infl_buildStoreDL();
+  infl_buildItemDL();
+}
+function infl_hideForm(){
+  var f=document.getElementById('infl-form'); if(f) f.style.display='none';
+}
+function infl_showCompare(){
+  infl_hideForm();
+  document.getElementById('infl-compare').style.display='block';
+  infl_buildCompareItemList();
+  document.getElementById('infl-compare-result').innerHTML='';
+}
+function infl_hideCompare(){
+  var c=document.getElementById('infl-compare'); if(c) c.style.display='none';
+}
+function infl_buildStoreDL(){
+  // Reuse existing data: payees + grocery stores from accounting/grocery module
+  var stores={};
+  try{
+    if(typeof d!=='undefined' && d){
+      ((d.acct&&d.acct.payees)||[]).forEach(function(p){if(p)stores[String(p).toUpperCase()]=1;});
+      ((d.groc&&d.groc.stores)||[]).forEach(function(p){if(p)stores[String(p).toUpperCase()]=1;});
+    }
+  }catch(e){}
+  // Also include any stores already in inflation log for this category
+  INFL.forEach(function(r){if(r.cat===INFL_CAT && r.store) stores[String(r.store).toUpperCase()]=1;});
+  var list=Object.keys(stores).sort();
+  document.getElementById('infl-store-dl').innerHTML=list.map(function(s){return '<option value="'+infl_esc(s)+'">';}).join('');
+}
+function infl_buildItemDL(){
+  // Items unique to current category, drawn from prior entries
+  var items={};
+  INFL.forEach(function(r){if(r.cat===INFL_CAT && r.item) items[String(r.item).toUpperCase()]=1;});
+  var list=Object.keys(items).sort();
+  document.getElementById('infl-item-dl').innerHTML=list.map(function(s){return '<option value="'+infl_esc(s)+'">';}).join('');
+}
+function infl_buildCompareItemList(){
+  var items={};
+  INFL.forEach(function(r){if(r.cat===INFL_CAT && r.item) items[String(r.item).toUpperCase()]=1;});
+  var list=Object.keys(items).sort();
+  var sel=document.getElementById('infl-compare-item');
+  sel.innerHTML='<option value="">— PICK AN ITEM ('+list.length+') —</option>'+list.map(function(s){return '<option value="'+infl_esc(s)+'">'+infl_esc(s)+'</option>';}).join('');
+}
+function infl_save(){
+  var store=(document.getElementById('infl-store').value||'').trim().toUpperCase();
+  var date=document.getElementById('infl-date').value||infl_today();
+  var item=(document.getElementById('infl-item').value||'').trim().toUpperCase();
+  var price=parseFloat(document.getElementById('infl-price').value||'0');
+  var size=parseFloat(document.getElementById('infl-size').value||'0');
+  var unit=document.getElementById('infl-unit').value||'EA';
+  var cal=parseFloat(document.getElementById('infl-cal').value||'0');
+  var notes=(document.getElementById('infl-notes').value||'').trim();
+  if(!item){toast('Item name required',false);return;}
+  if(!price || price<=0){toast('Valid price required',false);return;}
+  var entry={
+    id:Date.now()+Math.floor(Math.random()*1000),
+    cat:INFL_CAT,
+    store:store, date:date, item:item,
+    price:price, size:size, unit:unit, calories:cal, notes:notes,
+    ts:new Date().toISOString()
+  };
+  INFL.push(entry);
+  if(infl_save_all()){
+    toast('✓ Saved: '+item+' @ $'+price.toFixed(2),true);
+    // Clear form fields except store/date for fast batch entry
+    document.getElementById('infl-item').value='';
+    document.getElementById('infl-price').value='';
+    document.getElementById('infl-size').value='';
+    document.getElementById('infl-cal').value='';
+    document.getElementById('infl-notes').value='';
+    infl_buildItemDL();
+    infl_renderList();
+  }
+}
+function infl_del(id){
+  if(!confirm('Delete this entry?'))return;
+  INFL=INFL.filter(function(r){return r.id!==id;});
+  infl_save_all();
+  infl_renderList();
+  infl_buildCompareItemList();
+}
+function infl_renderList(){
+  var rows=INFL.filter(function(r){return r.cat===INFL_CAT;});
+  rows.sort(function(a,b){return (b.date||'').localeCompare(a.date||'') || (b.ts||'').localeCompare(a.ts||'');});
+  var el=document.getElementById('infl-list');
+  if(!rows.length){el.innerHTML='<div style="background:#000044;border:1px dashed #6666ff;color:#aaccff;padding:20px;text-align:center;border-radius:6px;font-size:13px;">No entries yet for this category.<br>Tap <b style="color:#ffff00;">+ ADD PRICE ENTRY</b> to start tracking.</div>';return;}
+  var html='<div style="color:#aaccff;font-size:11px;font-weight:700;margin:8px 0 4px;">RECENT ENTRIES ('+rows.length+')</div>'
+    +'<div style="background:#ffffff;border:1px solid #6666ff;border-radius:4px;overflow:hidden;">';
+  rows.slice(0,50).forEach(function(r,idx){
+    var bg=idx%2===0?'#ffffff':'#eef2ff';
+    var unitTxt=r.size?(r.size+' '+r.unit):r.unit;
+    var calTxt=r.calories?(' · '+r.calories+' cal'):'';
+    var notesTxt=r.notes?' · '+infl_esc(r.notes):'';
+    html+='<div style="display:flex;align-items:center;gap:6px;padding:5px 7px;border-bottom:1px solid #ddd;background:'+bg+';font-size:11px;line-height:1.3;">'
+      +'<div style="flex:1;min-width:0;overflow:hidden;">'
+        +'<div style="color:#000080;font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+          +infl_esc(r.item)+' · <span style="color:#006600;">$'+(r.price||0).toFixed(2)+'</span>'
+        +'</div>'
+        +'<div style="color:#555;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+          +infl_esc(r.store||'—')+' · '+infl_esc(r.date)+' · '+infl_esc(unitTxt)+calTxt+notesTxt
+        +'</div>'
+      +'</div>'
+      +'<button onclick="infl_del('+r.id+')" style="background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;padding:4px 6px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;min-height:28px;">DEL</button>'
+    +'</div>';
+  });
+  if(rows.length>50) html+='<div style="text-align:center;color:#888;padding:6px;font-size:11px;">... '+(rows.length-50)+' more</div>';
+  html+='</div>';
+  el.innerHTML=html;
+}
+function infl_renderCompare(item){
+  var el=document.getElementById('infl-compare-result');
+  if(!item){el.innerHTML='';return;}
+  var rows=INFL.filter(function(r){return r.cat===INFL_CAT && (r.item||'').toUpperCase()===item.toUpperCase();});
+  rows.sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+  if(!rows.length){el.innerHTML='<div style="color:#aaccff;padding:10px;text-align:center;">No history yet.</div>';return;}
+
+  // Compute unit prices for fair comparison
+  rows.forEach(function(r){r._unitPrice=(r.size>0)?(r.price/r.size):r.price;});
+  var first=rows[0],last=rows[rows.length-1];
+  var pctChange=first.price>0?((last.price-first.price)/first.price*100):0;
+  var pctColor=pctChange>0?'#cc0000':(pctChange<0?'#006600':'#666666');
+  var arrow=pctChange>0?'▲':(pctChange<0?'▼':'─');
+  var span=(rows.length>1 && first.date && last.date)?(first.date+' → '+last.date):last.date;
+
+  var html='<div style="background:#ffffff;color:#000080;border:1px solid #6666ff;border-radius:4px;padding:10px;margin-bottom:8px;font-size:12px;">'
+    +'<div style="font-size:14px;font-weight:700;margin-bottom:6px;color:#000080;">'+infl_esc(item)+'</div>'
+    +'<div style="font-size:13px;color:'+pctColor+';font-weight:700;">'+arrow+' '+pctChange.toFixed(1)+'% change · '+span+'</div>'
+    +'<div style="font-size:12px;color:#555;margin-top:3px;">First $'+first.price.toFixed(2)+' → Latest $'+last.price.toFixed(2)+' · '+rows.length+' entries</div>'
+    +'</div>';
+  html+='<div style="background:#ffffff;border:1px solid #6666ff;border-radius:4px;overflow:hidden;font-size:11px;">';
+  // Header row
+  html+='<div style="display:flex;gap:6px;padding:5px 7px;background:#000080;color:#ffff00;font-weight:700;font-size:11px;">'
+    +'<div style="flex:0 0 70px;">DATE</div>'
+    +'<div style="flex:0 0 60px;text-align:right;">PRICE</div>'
+    +'<div style="flex:0 0 60px;text-align:right;">SIZE</div>'
+    +'<div style="flex:0 0 70px;text-align:right;">$/UNIT</div>'
+    +'<div style="flex:1;min-width:0;">STORE</div>'
+  +'</div>';
+  // Data rows with delta vs previous
+  var prevPrice=null;
+  rows.forEach(function(r,idx){
+    var bg=idx%2===0?'#ffffff':'#eef2ff';
+    var sizeTxt=r.size?(r.size+r.unit):'';
+    var unitPriceTxt=r.size>0?('$'+r._unitPrice.toFixed(3)):'—';
+    var deltaTxt='';
+    if(prevPrice!=null && prevPrice>0){
+      var pct=((r.price-prevPrice)/prevPrice*100);
+      var dc=pct>0?'#cc0000':(pct<0?'#006600':'#666666');
+      var da=pct>0?'▲':(pct<0?'▼':'─');
+      deltaTxt='<span style="color:'+dc+';font-weight:700;font-size:10px;"> '+da+pct.toFixed(1)+'%</span>';
+    }
+    html+='<div style="display:flex;gap:6px;padding:5px 7px;background:'+bg+';color:#000;border-bottom:1px solid #ddd;font-size:11px;">'
+      +'<div style="flex:0 0 70px;color:#444;">'+infl_esc(r.date)+'</div>'
+      +'<div style="flex:0 0 60px;text-align:right;color:#006600;font-weight:700;">$'+r.price.toFixed(2)+deltaTxt+'</div>'
+      +'<div style="flex:0 0 60px;text-align:right;color:#444;">'+infl_esc(sizeTxt)+'</div>'
+      +'<div style="flex:0 0 70px;text-align:right;color:#cc6600;">'+unitPriceTxt+'</div>'
+      +'<div style="flex:1;min-width:0;color:#000080;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+infl_esc(r.store||'—')+'</div>'
+    +'</div>';
+    prevPrice=r.price;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+// Auto-load on first page boot so renders are ready
+try{infl_load();}catch(e){}
+// ==================== END INFLATION TRACKER MODULE ====================
 </script>
 <div id="bkp-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#0000cc;border:3px solid #ffff00;border-radius:8px;padding:24px;width:100%;max-width:340px;text-align:center;font-family:Courier New,monospace;">
