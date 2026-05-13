@@ -406,8 +406,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <div style="background:#001a44;border:2px solid #ffaa00;border-radius:8px;padding:10px;margin-bottom:8px;">
     <div style="color:#ffaa00;font-weight:700;font-size:13px;margin-bottom:6px;">📋 OPTION A — PASTE THE 5 CHUNKS</div>
-    <div style="color:#ccccff;font-size:11px;margin-bottom:6px;">Copy each PHONE_BACKUP CSV from your email and paste here — one after another (any order)</div>
-    <textarea id="phone-paste-area" placeholder="Paste PHONE_BACKUP CSV files here..." style="width:100%;box-sizing:border-box;height:120px;background:#000022;border:1px solid #ffaa00;color:#ffffff;font-family:Courier New,monospace;font-size:11px;padding:8px;border-radius:4px;resize:vertical;outline:none;line-height:1.3;"></textarea>
+    <div style="color:#ccccff;font-size:11px;margin-bottom:6px;">Copy each PHONE_BACKUP file from your email and paste here — one after another (any order)</div>
+    <textarea id="phone-paste-area" placeholder="Paste PHONE_BACKUP files here..." style="width:100%;box-sizing:border-box;height:120px;background:#000022;border:1px solid #ffaa00;color:#ffffff;font-family:Courier New,monospace;font-size:11px;padding:8px;border-radius:4px;resize:vertical;outline:none;line-height:1.3;"></textarea>
     <button onclick="processPhonePaste()" style="width:100%;padding:14px;margin-top:6px;font-size:15px;font-weight:700;border:none;border-radius:8px;background:#ffaa00;color:#000080;font-family:Courier New,monospace;cursor:pointer;">📥 STEP 3 — LOAD PASTED CHUNKS</button>
   </div>
 
@@ -5427,10 +5427,10 @@ function doPhoneBackup(){
       var xVal = cleanExport ? '' : (c.x||'');
       lines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',')+'\n');
     });
-    files.push({name:'PHONE_BACKUP_'+(cleanExport?'CLEAN_':'')+dateStr+'_'+(i+1)+'.csv',text:lines.join(''),count:chunk.length});
+    files.push({name:'PHONE_BACKUP_'+(cleanExport?'CLEAN_':'')+dateStr+'_'+(i+1)+'.txt',text:lines.join(''),count:chunk.length});
   }
   files.forEach(function(f){
-    var blob=new Blob([f.text],{type:'text/csv'});
+    var blob=new Blob([f.text],{type:'text/plain'});
     var a=document.createElement('a');
     a.href=URL.createObjectURL(blob);a.download=f.name;
     document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -5444,7 +5444,7 @@ function doPhoneBackup(){
   overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">📱 PHONE BACKUP COMPLETE</div>'
     +'<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+CLIENTS.length.toLocaleString()+' clients → '+files.length+' files downloaded</div>'
-    +'<div style="color:#ccccff;font-size:12px;margin-bottom:12px;">PHONE_BACKUP_'+dateStr+'_1 through _'+files.length+'.csv</div>'
+    +'<div style="color:#ccccff;font-size:12px;margin-bottom:12px;">PHONE_BACKUP_'+dateStr+'_1 through _'+files.length+'.txt</div>'
     +'<div style="color:#aaaacc;font-size:12px;margin-bottom:12px;">Email these files to:<br><span style="color:#ffff00;">'+toEmail+'</span></div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button onclick="window.open(\'mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'\')" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 OPEN EMAIL</button>'
