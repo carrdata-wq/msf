@@ -6319,7 +6319,18 @@ function balDownload(){
     a.download = fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    toast('⬇ Downloaded '+fname+' ('+built.count+' items)',true);
+    toast('⬇ Downloaded '+fname+' ('+built.count+' items) — opening email…',true);
+    // Auto-fire email composer so the downloaded file can be attached right away
+    var toEmail = 'tristancarrington1@gmail.com';
+    var subject = '💼 Balance Sheet — '+built.dateStr+' ('+built.count+' items)';
+    var body = 'Attach '+fname+' from Downloads to import on the other device.\n\n'
+             + 'On the other device:\n'
+             + '  1. Save '+fname+' to Downloads\n'
+             + '  2. Open MFS → Balance Sheet → tap 📥\n'
+             + '  3. Pick the file — done.\n';
+    setTimeout(function(){
+      try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }catch(e){}
+    }, 1200);
   }catch(e){
     toast('Download failed: '+e.message,false);
   }
