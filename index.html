@@ -759,15 +759,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
           <div style="font-size:13px;color:#ccccff;margin-top:8px;">DATE</div>
           <div style="display:flex;gap:4px;margin-top:4px;">
-            <select id="bal-mon" onchange="balSaveDatePref()" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
+            <select id="bal-mon" onchange="balSaveDatePref();balBuildDays();" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
               <option value="01">JAN</option><option value="02">FEB</option><option value="03">MAR</option><option value="04">APR</option>
               <option value="05">MAY</option><option value="06">JUN</option><option value="07">JUL</option><option value="08">AUG</option>
               <option value="09">SEP</option><option value="10">OCT</option><option value="11">NOV</option><option value="12">DEC</option>
             </select>
-            <select id="bal-day" onchange="balSaveDatePref()" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
-              <option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
+            <select id="bal-day" onchange="balSaveDatePref()" style="flex:1.4;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
+              <option value="01">01</option>
             </select>
-            <select id="bal-yr" onchange="balSaveDatePref()" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
+            <select id="bal-yr" onchange="balSaveDatePref();balBuildDays();" style="flex:1;background:#0000aa;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:8px;border-radius:4px;outline:none;">
               <option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option>
             </select>
           </div>
@@ -5745,8 +5745,32 @@ function openBalance(){
   document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
   document.getElementById('screen-balance').style.display='block';
   balLoadDatePref();
+  balBuildDays();
   balResetSearch();
   balRender();
+}
+
+// Build the day picker dynamically with day-of-week labels — Balance Sheet only.
+// e.g., "01 FRI", "02 SAT", "03 SUN" — so EFT-payment Fridays are easy to spot.
+// Skips invalid days (Feb 30 won't appear); preserves current selection if still valid.
+function balBuildDays(){
+  var sel = document.getElementById('bal-day');
+  if(!sel) return;
+  var mon = parseInt(document.getElementById('bal-mon').value || '01', 10);
+  var yr  = parseInt(document.getElementById('bal-yr').value  || '2026', 10);
+  var prev = sel.value || '01';
+  // Days in this month (handles leap years)
+  var maxDay = new Date(yr, mon, 0).getDate();
+  var names = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var html = '';
+  for(var d = 1; d <= maxDay; d++){
+    var dd = (d<10 ? '0'+d : ''+d);
+    var dow = names[new Date(yr, mon-1, d).getDay()];
+    html += '<option value="'+dd+'">'+dd+' '+dow+'</option>';
+  }
+  sel.innerHTML = html;
+  // Restore previous selection if it's still a valid day in this month
+  if(parseInt(prev,10) <= maxDay) sel.value = prev;
 }
 
 // ── DATE HELPERS (mirror Menu #1 pattern) ──
@@ -5759,12 +5783,14 @@ function balSetDate(d){
   if(p.length!==3){balSetDateToday();return;}
   document.getElementById('bal-yr').value=p[0];
   document.getElementById('bal-mon').value=p[1];
+  balBuildDays();
   document.getElementById('bal-day').value=p[2];
 }
 function balSetDateToday(){
   var t=new Date();
   document.getElementById('bal-yr').value=String(t.getFullYear());
   document.getElementById('bal-mon').value=('0'+(t.getMonth()+1)).slice(-2);
+  balBuildDays();
   document.getElementById('bal-day').value=('0'+t.getDate()).slice(-2);
 }
 function balSaveDatePref(){
