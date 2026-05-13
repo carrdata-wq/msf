@@ -649,7 +649,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">💼 Balance Sheet</span>
     <button onclick="balShare('email')" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:3px;">📧</button>
     <button onclick="balShare('text')" style="background:#332200;border:1px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:3px;">📱</button>
-    <button onclick="balShare('copy')" style="background:#332200;border:1px solid #ffaa00;color:#ffaa00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:4px;">📋</button>
+    <button onclick="balShare('copy')" style="background:#332200;border:1px solid #ffaa00;color:#ffaa00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:3px;">📋</button>
+    <button onclick="balDownload()" title="Download as .txt to share via email and import on another device" style="background:#003355;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:3px;">⬇</button>
+    <button onclick="balImport()" title="Import a downloaded BALANCE_*.txt to update this device" style="background:#330033;border:1px solid #ff66ff;color:#ff66ff;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;margin-right:4px;">📥</button>
     <button onclick="balSendAllChecked()" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer;">✓→ SEND ALL</button>
   </div>
 
@@ -6228,7 +6230,9 @@ function balSendToAccounting(id){
   toast('→ Sent to Accounting ✓',true);
 }
 
-// Build the Balance Sheet as plain text — shared by email/text/copy actions
+// Build the Balance Sheet as plain text — shared by email/text/copy/download actions.
+// Format is intentionally mobile-friendly (no monospace alignment needed) AND
+// self-parseable: balImportFromText() can read it back to update another device.
 function _balBuildText(){
   balLoad();
   if(!BALANCE.length) return null;
@@ -6238,28 +6242,33 @@ function _balBuildText(){
   var today = new Date();
   var dateStr = today.getFullYear() + '-' + ('0'+(today.getMonth()+1)).slice(-2) + '-' + ('0'+today.getDate()).slice(-2);
 
-  function fmtDate(d){if(!d)return '      ';var p=String(d).split('-');if(p.length!==3)return d;return p[1]+p[2]+p[0].slice(2);}
   function fmtAmt(n){var v=parseFloat(n)||0;return (v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2);}
-  function pad(s,n){s=String(s||'');while(s.length<n)s+=' ';return s.length>n?s.substring(0,n):s;}
-  function padR(s,n){s=String(s||'');while(s.length<n)s=' '+s;return s.length>n?s.substring(s.length-n):s;}
 
   var lines = [];
-  lines.push('💼 BALANCE SHEET — ' + dateStr);
-  lines.push('Running: ' + fmtAmt(runTotal) + ' · Items: ' + rows.length + ' · Checked: ' + checkedCount);
+  lines.push('💼 BALANCE SHEET');
+  lines.push('Generated: ' + dateStr);
+  lines.push(rows.length + ' items · ' + checkedCount + ' checked · Running: ' + fmtAmt(runTotal));
   lines.push('');
-  lines.push('✓ DATE   PAYEE        PCODE   AMOUNT');
-  lines.push('───────────────────────────────────────');
-  rows.forEach(function(r){
-    var check = r.x==='X' ? '✓' : ' ';
-    var dt = fmtDate(r.date);
-    var payee = pad(r.payee||'', 12);
-    var pcode = pad(r.pcode||'', 6);
-    var amt = padR(fmtAmt(r.amt), 10);
-    lines.push(check + ' ' + dt + ' ' + payee + ' ' + pcode + ' ' + amt);
-    if(r.desc) lines.push('  └ ' + r.desc);
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  rows.forEach(function(r, idx){
+    lines.push('');
+    lines.push('ITEM ' + (idx+1) + ' — ' + (r.payee||'(no payee)'));
+    lines.push('  DATE:   ' + (r.date||''));
+    lines.push('  PCODE:  ' + (r.pcode||''));
+    lines.push('  AMOUNT: ' + fmtAmt(r.amt));
+    lines.push('  STATUS: ' + (r.x==='X' ? '✓ CHECKED' : ''));
+    if(r.desc) lines.push('  DESC:   ' + r.desc);
   });
-  lines.push('───────────────────────────────────────');
-  lines.push('TOTAL: ' + fmtAmt(runTotal));
+
+  lines.push('');
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  lines.push('TOTAL:  ' + fmtAmt(runTotal));
+  lines.push('ITEMS:  ' + rows.length + ' (' + checkedCount + ' ✓ checked)');
+  lines.push('');
+  lines.push('[ This text can be imported back into MFS to update another device — ');
+  lines.push('  just save as .txt and use 📥 IMPORT on the Balance Sheet screen. ]');
+
   return {text:lines.join('\n'), count:rows.length, total:runTotal, dateStr:dateStr};
 }
 
@@ -6296,6 +6305,108 @@ function balShare(mode){
     }
     document.body.removeChild(ta);
   }
+}
+
+// ── Balance Sheet download (.txt to Downloads) + import (file picker) for cross-device sync ──
+function balDownload(){
+  var built = _balBuildText();
+  if(!built){toast('Balance Sheet is empty',false);return;}
+  var fname = 'BALANCE_'+built.dateStr.replace(/-/g,'')+'.txt';
+  try{
+    var blob = new Blob([built.text],{type:'text/plain'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    toast('⬇ Downloaded '+fname+' ('+built.count+' items)',true);
+  }catch(e){
+    toast('Download failed: '+e.message,false);
+  }
+}
+
+function balImport(){
+  var inp = document.getElementById('bal-import-input');
+  if(!inp){
+    inp = document.createElement('input');
+    inp.type='file';
+    inp.id='bal-import-input';
+    inp.accept='*/*';
+    inp.style.display='none';
+    inp.onchange = function(e){
+      var f = e.target.files && e.target.files[0];
+      if(!f) return;
+      var reader = new FileReader();
+      reader.onload = function(ev){ balImportFromText(ev.target.result); };
+      reader.readAsText(f);
+    };
+    document.body.appendChild(inp);
+  }
+  inp.value='';
+  inp.click();
+}
+
+// Parse the structured balance sheet text format back to item objects
+function _balParseText(text){
+  if(!text) return [];
+  // Split on blank lines into blocks, then find ITEM blocks
+  var blocks = text.split(/\n\s*\n/);
+  var items = [];
+  blocks.forEach(function(block){
+    if(!/^\s*ITEM\s+\d+\s*—/m.test(block)) return;
+    var headerMatch = block.match(/^\s*ITEM\s+\d+\s*—\s*(.+?)\s*$/m);
+    if(!headerMatch) return;
+    var item = { payee: headerMatch[1].trim() };
+    var dm = block.match(/^\s*DATE:\s*(\S+)/m);
+    var pm = block.match(/^\s*PCODE:\s*(\S*)/m);
+    var am = block.match(/^\s*AMOUNT:\s*([+\-]?)\s*\$?([\d,]+\.?\d*)/m);
+    var sm = block.match(/^\s*STATUS:\s*✓/m);
+    var em = block.match(/^\s*DESC:\s*(.+?)\s*$/m);
+    if(dm) item.date = dm[1];
+    if(pm) item.pcode = (pm[1]||'').trim();
+    if(am){
+      var n = parseFloat(am[2].replace(/,/g,''));
+      if(am[1]==='-') n = -n;
+      item.amt = n;
+    }
+    item.x = sm ? 'X' : '';
+    if(em) item.desc = em[1].trim();
+    if(item.payee && item.date && (typeof item.amt === 'number')) items.push(item);
+  });
+  return items;
+}
+
+function balImportFromText(text){
+  var incoming = _balParseText(text);
+  if(!incoming.length){
+    toast('No balance sheet items found in that file',false);
+    return;
+  }
+  balLoad();
+  // Merge by (date|payee|amt) signature — preserves IDs of existing rows, adds new ones
+  var keyOf = function(r){return (r.date||'')+'|'+((r.payee||'').toUpperCase())+'|'+(parseFloat(r.amt)||0).toFixed(2);};
+  var existingMap = {};
+  BALANCE.forEach(function(r,i){existingMap[keyOf(r)] = i;});
+  var added=0, updated=0;
+  incoming.forEach(function(r){
+    var k = keyOf(r);
+    if(existingMap[k]!=null){
+      var idx = existingMap[k];
+      // Update mutable fields; keep existing id
+      if(r.pcode) BALANCE[idx].pcode = r.pcode;
+      if(r.desc)  BALANCE[idx].desc  = r.desc;
+      BALANCE[idx].x = r.x || '';
+      updated++;
+    } else {
+      r.id = Date.now() + Math.floor(Math.random()*100000);
+      BALANCE.push(r);
+      added++;
+    }
+  });
+  balSave();
+  try{ if(typeof balRender==='function') balRender(); }catch(e){}
+  try{ if(typeof balUpdateSummary==='function') balUpdateSummary(); }catch(e){}
+  toast('📥 Imported: '+added+' new · '+updated+' updated',true);
 }
 
 function balSendAllChecked(){
