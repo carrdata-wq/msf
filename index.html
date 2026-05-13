@@ -6200,6 +6200,47 @@ function balSetSort(by){
   balRender();
 }
 
+// Copy a single Balance Sheet entry to clipboard — same format as the all-row copy
+// but for one row only, so it can be pasted into a text or note as a quick reference.
+function balCopyOne(id){
+  balLoad();
+  var r = null;
+  for(var i=0;i<BALANCE.length;i++){
+    if(BALANCE[i].id===id || String(BALANCE[i].id)===String(id) || Math.abs((BALANCE[i].id||0)-id)<0.001){
+      r = BALANCE[i]; break;
+    }
+  }
+  if(!r){toast('Entry not found',false);return;}
+
+  function fmtDate(d){if(!d)return '';var p=String(d).split('-');if(p.length!==3)return d;return p[1]+'/'+p[2]+'/'+p[0];}
+  function fmtAmt(n){var v=parseFloat(n)||0;return (v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2);}
+
+  var lines = [];
+  lines.push('💼 BALANCE SHEET ENTRY');
+  if(r.date)  lines.push('Date: '+fmtDate(r.date));
+  if(r.payee) lines.push('Payee: '+r.payee);
+  if(r.pcode) lines.push('PCode: '+r.pcode);
+  if(r.desc)  lines.push('Desc: '+r.desc);
+  lines.push('Amount: '+fmtAmt(r.amt));
+  if(r.checked) lines.push('✓ Checked');
+  if(r.sent)    lines.push('→ Sent to Accounting');
+  var text = lines.join('\n');
+
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    toast('📋 Copied: '+(r.payee||'entry'),true);
+  } catch(e) {
+    toast('Copy failed',false);
+  }
+  document.body.removeChild(ta);
+}
+
 function balRender(){
   var list=document.getElementById('bal-list');
   if(!BALANCE.length){
@@ -6327,6 +6368,7 @@ function balRender(){
       +'<button onclick="balToggleCheck('+r.id+')" title="Check" style="width:24px;height:24px;background:'+checkBg+';color:'+checkColor+';border:1px solid '+checkColor+';border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:2px;">✓</button>'
       +'<button onclick="balSendToAccounting('+r.id+')" title="Send to Accounting" style="width:24px;height:24px;'+sendStyle+'border-radius:3px;font-size:12px;font-weight:700;font-family:Courier New,monospace;margin-right:2px;">→</button>'
       +'<button onclick="balEdit('+r.id+')" title="Edit" style="width:24px;height:24px;background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:2px;">✎</button>'
+      +'<button onclick="balCopyOne('+r.id+')" title="Copy this entry to clipboard" style="width:24px;height:24px;background:#e0fff0;color:#006666;border:1px solid #006666;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:2px;">📋</button>'
       +'<button onclick="balDelete('+r.id+')" title="Delete" style="width:24px;height:24px;background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">✕</button>'
       +'</td></tr>';
   });
