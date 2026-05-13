@@ -282,18 +282,30 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 }
 </style>
 <style id="ReanimatedPredefinedWebAnimationsStyle"></style><style id="ReanimatedCustomWebAnimationsStyle"></style><style id="ReanimatedCSSStyleTag"></style><style id="pc-row-style">
-/* Phone client / drill-down row layout — desktop = side-by-side, mobile = stacked */
-.pc-row { display:flex; gap:6px; align-items:flex-start; font-size:12px; line-height:1.35; padding:5px 6px; border-bottom:1px solid #ccd; }
-.pc-row .pc-num { color:#999; font-weight:700; min-width:32px; text-align:right; padding-top:1px; }
+/* Phone client / drill-down row layout — compact on Android, fits 2x more clients per screen */
+.pc-row {
+  display:flex; gap:6px; align-items:center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  font-size:11px; line-height:1.25; padding:3px 6px; border-bottom:1px solid #ccd;
+}
+.pc-row * { font-family: inherit !important; }
+.pc-row .pc-num { color:#999; font-weight:700; min-width:24px; text-align:right; font-size:11px; padding-top:1px; flex-shrink:0; }
 .pc-row .pc-body { flex:1; min-width:0; }
 .pc-row .pc-body .pc-l1, .pc-row .pc-body .pc-l2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pc-row .pc-body .pc-l2 { color:#555; margin-top:1px; }
-.pc-row .pc-acts { white-space:nowrap; display:flex; gap:2px; flex-shrink:0; }
+.pc-row .pc-body .pc-l1 { font-size:12px; }
+.pc-row .pc-body .pc-l2 { color:#555; margin-top:1px; font-size:11px; }
+.pc-row .pc-acts { white-space:nowrap; display:flex; gap:3px; flex-shrink:0; align-items:center; }
+.pc-row .pc-acts button {
+  padding:5px 7px !important; font-size:10px !important; font-weight:700;
+  border-radius:3px; min-height:30px; line-height:1;
+}
 @media (max-width: 700px) {
-  .pc-row { flex-wrap: wrap; }
-  .pc-row .pc-body { flex-basis: calc(100% - 38px); }
-  .pc-row .pc-acts { margin-top:5px; margin-left:38px; width:calc(100% - 38px); justify-content:flex-start; gap:4px; }
-  .pc-row .pc-acts button { flex:1; padding:6px 4px !important; font-size:12px !important; }
+  .pc-row { padding:4px 5px; gap:4px; }
+  .pc-row .pc-num { min-width:20px; font-size:10px; }
+  .pc-row .pc-body .pc-l1 { font-size:11px; }
+  .pc-row .pc-body .pc-l2 { font-size:10px; }
+  .pc-row .pc-acts { gap:2px; }
+  .pc-row .pc-acts button { padding:5px 5px !important; font-size:10px !important; min-height:30px; }
 }
 </style>
 </head>
@@ -5401,7 +5413,15 @@ function promptClearCheckmarks(){
 }
 
 function doPhoneBackup(){
+  // Preserve in-memory CLIENTS if it has more records than storage would return
+  // (storage may have silently truncated during a prior import).
+  var memCount=(CLIENTS&&CLIENTS.length)||0;
+  var memSnapshot=memCount?CLIENTS.slice():null;
   loadClients();
+  if(memSnapshot && memCount > CLIENTS.length){
+    CLIENTS=memSnapshot;
+    if(typeof toast==='function') toast('Using in-memory '+memCount.toLocaleString()+' (storage had '+CLIENTS.length.toLocaleString()+')',true);
+  }
   if(!CLIENTS.length){toast('No phone clients to backup',false);return;}
   // Clean-export flag (set in confirmMovePhone) — strip X marks so destination won't see them as new
   var cleanExport = !!window._cleanExportPhone;
@@ -8160,8 +8180,54 @@ function shareLog(id){
 }
 //  PHONE CLIENTS MODULE
 var CLIENTS=[];
-function loadClients(){try{var s=localStorage.getItem('mx_clients');CLIENTS=s?JSON.parse(s):[];}catch(e){CLIENTS=[];}}
-function saveClients(){try{localStorage.setItem('mx_clients',JSON.stringify(CLIENTS));}catch(e){}}
+// Chunked storage: avoids single-key quota / string-size limits on Android Chrome.
+// Saves as mx_clients_0, mx_clients_1, ... and tracks count in mx_clients_n.
+// Reads legacy mx_clients single-key if no chunks present (one-time migration).
+function loadClients(){
+  try{
+    var n=parseInt(localStorage.getItem('mx_clients_n')||'0',10);
+    if(n>0){
+      var arr=[];
+      for(var i=0;i<n;i++){
+        var part=localStorage.getItem('mx_clients_'+i);
+        if(part){ try{ arr=arr.concat(JSON.parse(part)); }catch(e){} }
+      }
+      CLIENTS=arr;
+    } else {
+      // Legacy single-key fallback
+      var s=localStorage.getItem('mx_clients');
+      CLIENTS=s?JSON.parse(s):[];
+    }
+  }catch(e){CLIENTS=[];}
+}
+function saveClients(){
+  var CHUNK_SIZE=500; // records per localStorage key
+  // Clear any prior chunks before writing fresh ones
+  try{
+    var prevN=parseInt(localStorage.getItem('mx_clients_n')||'0',10);
+    for(var p=0;p<prevN;p++) localStorage.removeItem('mx_clients_'+p);
+    localStorage.removeItem('mx_clients_n');
+    localStorage.removeItem('mx_clients'); // remove legacy key too
+  }catch(e){}
+  if(!CLIENTS||!CLIENTS.length){return true;}
+  var n=Math.ceil(CLIENTS.length/CHUNK_SIZE);
+  var savedCount=0;
+  try{
+    for(var i=0;i<n;i++){
+      var chunk=CLIENTS.slice(i*CHUNK_SIZE,(i+1)*CHUNK_SIZE);
+      localStorage.setItem('mx_clients_'+i,JSON.stringify(chunk));
+      savedCount+=chunk.length;
+    }
+    localStorage.setItem('mx_clients_n',String(n));
+    return true;
+  }catch(e){
+    // Quota or other error — show user what got saved vs. what's in memory
+    if(typeof toast==='function'){
+      toast('⚠ STORAGE LIMIT HIT — '+savedCount.toLocaleString()+' of '+CLIENTS.length.toLocaleString()+' saved. BACKUP NOW before reload!',false);
+    }
+    return false;
+  }
+}
 function nextClientId(){return CLIENTS.length?Math.max.apply(null,CLIENTS.map(function(c){return c.id||0;}))+1:1;}
 
 function phoneLoadFile(){
