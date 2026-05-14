@@ -293,14 +293,18 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
      with alternating row backgrounds and dark navy text — proven readable look. */
   #screen-accounting-sub .main-box,
   #screen-accounting .main-box,
-  #screen-main .main-box {
+  #screen-main .main-box,
+  #screen-sysutil-sub .main-box,
+  #screen-transfer .main-box {
     border-color: #00ffff !important;
     border-width: 2px !important;
     background: #ffffff !important;
   }
   #screen-accounting-sub .menu-item,
   #screen-accounting .menu-item,
-  #screen-main .menu-item {
+  #screen-main .menu-item,
+  #screen-sysutil-sub .menu-item,
+  #screen-transfer .menu-item {
     background: #ffffff !important;
     border-bottom: 1px solid #cccccc !important;
     padding: 10px 12px !important;
@@ -308,19 +312,25 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   /* Alternating row tint — the "two-tone" you liked on Balance Sheet */
   #screen-accounting-sub .menu-item:nth-child(even),
   #screen-accounting .menu-item:nth-child(even),
-  #screen-main .menu-item:nth-child(even) {
+  #screen-main .menu-item:nth-child(even),
+  #screen-sysutil-sub .menu-item:nth-child(even),
+  #screen-transfer .menu-item:nth-child(even) {
     background: #eef2ff !important;
   }
   /* Active tap state */
   #screen-accounting-sub .menu-item:active,
   #screen-accounting .menu-item:active,
-  #screen-main .menu-item:active {
+  #screen-main .menu-item:active,
+  #screen-sysutil-sub .menu-item:active,
+  #screen-transfer .menu-item:active {
     background: #cce0ff !important;
   }
   /* Main label — navy bold, dark on light */
   #screen-accounting-sub .menu-item .ml,
   #screen-accounting .menu-item .ml,
-  #screen-main .menu-item .ml {
+  #screen-main .menu-item .ml,
+  #screen-sysutil-sub .menu-item .ml,
+  #screen-transfer .menu-item .ml {
     color: #000080 !important;
     font-size: 15px !important;
     font-weight: 700 !important;
@@ -328,27 +338,35 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   /* Sub label — medium gray, smaller */
   #screen-accounting-sub .menu-item .ms,
   #screen-accounting .menu-item .ms,
-  #screen-main .menu-item .ms {
+  #screen-main .menu-item .ms,
+  #screen-sysutil-sub .menu-item .ms,
+  #screen-transfer .menu-item .ms {
     color: #555555 !important;
     font-size: 12px !important;
   }
   /* Item number — orange accent (stands out against white) */
   #screen-accounting-sub .menu-item .menu-num,
   #screen-accounting .menu-item .menu-num,
-  #screen-main .menu-item .menu-num {
+  #screen-main .menu-item .menu-num,
+  #screen-sysutil-sub .menu-item .menu-num,
+  #screen-transfer .menu-item .menu-num {
     color: #cc6600 !important;
     font-weight: 700 !important;
   }
   /* Icon — larger so it pops */
   #screen-accounting-sub .menu-item .menu-icon,
   #screen-accounting .menu-item .menu-icon,
-  #screen-main .menu-item .menu-icon {
+  #screen-main .menu-item .menu-icon,
+  #screen-sysutil-sub .menu-item .menu-icon,
+  #screen-transfer .menu-item .menu-icon {
     font-size: 18px !important;
   }
   /* Right arrow — navy chevron */
   #screen-accounting-sub .menu-item .menu-arrow,
   #screen-accounting .menu-item .menu-arrow,
-  #screen-main .menu-item .menu-arrow {
+  #screen-main .menu-item .menu-arrow,
+  #screen-sysutil-sub .menu-item .menu-arrow,
+  #screen-transfer .menu-item .menu-arrow {
     color: #000080 !important;
     font-size: 20px !important;
     font-weight: 700 !important;
