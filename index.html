@@ -664,6 +664,19 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       &nbsp;·&nbsp; <span style="color:#ccccff;">✓:</span> <span id="bal-checked-count" style="color:#00ff88;font-weight:700;">0</span>
     </div>
 
+    <!-- SYNC: cross-device CSV download / upload (prominent so it's obvious on Android) -->
+    <div style="background:#001144;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">
+      <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;text-align:center;">🔄 SYNC BALANCE SHEET (CSV)</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button onclick="balDownload()" style="flex:1;padding:13px 6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#00ffff;color:#000080;line-height:1.2;">⬇ DOWNLOAD CSV<br><span style="font-size:10px;font-weight:400;">→ email to other device</span></button>
+        <button onclick="balImport()" style="flex:1;padding:13px 6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#ff66ff;color:#000080;line-height:1.2;">📥 UPLOAD CSV<br><span style="font-size:10px;font-weight:400;">← pick file from Downloads</span></button>
+      </div>
+      <div style="color:#aaccff;font-size:10px;text-align:center;line-height:1.4;">
+        From ThinkPad: <b style="color:#ffff00;">⬇ DOWNLOAD</b> → email file to yourself.<br>
+        On Android: open email → save attachment to Downloads → tap <b style="color:#ff66ff;">📥 UPLOAD</b> → pick the file.
+      </div>
+    </div>
+
     <!-- Entry form: Menu #1 style search → pick → addnew → entry -->
     <div style="background:#000a22;border:2px solid #ffff00;border-radius:6px;padding:10px;margin-bottom:10px;">
       <div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;text-align:center;">➕ ADD ENTRY</div>
@@ -6308,10 +6321,37 @@ function balShare(mode){
 }
 
 // ── Balance Sheet download (.txt to Downloads) + import (file picker) for cross-device sync ──
+// Download produces a real CSV (with .txt extension so Android opens it for viewing).
+// CSV columns: DATE,PAYEE,PCODE,AMOUNT,DESC,X — editable in Excel/Sheets, importable on any device.
+function _balBuildCSV(){
+  balLoad();
+  if(!BALANCE.length) return null;
+  var rows = BALANCE.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var today = new Date();
+  var dateStr = today.getFullYear() + '-' + ('0'+(today.getMonth()+1)).slice(-2) + '-' + ('0'+today.getDate()).slice(-2);
+  function qc(s){
+    s = String(s==null?'':s).replace(/\r?\n/g,' ').replace(/"/g,'""');
+    if(/[,"\n]/.test(s)) s = '"'+s+'"';
+    return s;
+  }
+  var lines = ['DATE,PAYEE,PCODE,AMOUNT,DESC,X'];
+  rows.forEach(function(r){
+    lines.push([
+      qc(r.date||''),
+      qc(r.payee||''),
+      qc(r.pcode||''),
+      (parseFloat(r.amt)||0).toFixed(2),
+      qc(r.desc||''),
+      r.x==='X' ? 'X' : ''
+    ].join(','));
+  });
+  return { text: lines.join('\n')+'\n', count: rows.length, dateStr: dateStr };
+}
+
 function balDownload(){
-  var built = _balBuildText();
+  var built = _balBuildCSV();
   if(!built){toast('Balance Sheet is empty',false);return;}
-  var fname = 'BALANCE_'+built.dateStr.replace(/-/g,'')+'.txt';
+  var fname = 'BALANCE_'+built.dateStr.replace(/-/g,'')+'.txt'; // .txt so Android opens it; content is CSV
   try{
     var blob = new Blob([built.text],{type:'text/plain'});
     var a = document.createElement('a');
@@ -6319,11 +6359,12 @@ function balDownload(){
     a.download = fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    toast('⬇ Downloaded '+fname+' ('+built.count+' items) — opening email…',true);
+    toast('⬇ Downloaded '+fname+' ('+built.count+' items, CSV) — opening email…',true);
     // Auto-fire email composer so the downloaded file can be attached right away
     var toEmail = 'tristancarrington1@gmail.com';
-    var subject = '💼 Balance Sheet — '+built.dateStr+' ('+built.count+' items)';
+    var subject = '💼 Balance Sheet CSV — '+built.dateStr+' ('+built.count+' items)';
     var body = 'Attach '+fname+' from Downloads to import on the other device.\n\n'
+             + 'File is CSV format (DATE,PAYEE,PCODE,AMOUNT,DESC,X) — editable in Excel/Sheets.\n\n'
              + 'On the other device:\n'
              + '  1. Save '+fname+' to Downloads\n'
              + '  2. Open MFS → Balance Sheet → tap 📥\n'
@@ -6357,32 +6398,78 @@ function balImport(){
   inp.click();
 }
 
-// Parse the structured balance sheet text format back to item objects
+// Parse a single CSV line into fields, honoring "quoted ""fields"""
+function _balCSVLine(line){
+  var out=[], cur='', inQ=false;
+  for(var i=0;i<line.length;i++){
+    var ch=line[i];
+    if(inQ){
+      if(ch==='"' && line[i+1]==='"'){cur+='"';i++;}
+      else if(ch==='"') inQ=false;
+      else cur+=ch;
+    } else {
+      if(ch==='"') inQ=true;
+      else if(ch===','){out.push(cur);cur='';}
+      else cur+=ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+// Parse balance sheet CSV (header: DATE,PAYEE,PCODE,AMOUNT,DESC,X)
+// Also tolerates the old human-report format for backwards compatibility.
 function _balParseText(text){
   if(!text) return [];
-  // Split on blank lines into blocks, then find ITEM blocks
-  var blocks = text.split(/\n\s*\n/);
   var items = [];
+
+  // Try CSV first (new format)
+  var rawLines = text.split(/\r?\n/);
+  var lines = rawLines.filter(function(l){return l.trim().length;});
+  if(lines.length >= 2 && /^\s*DATE\s*,\s*PAYEE\s*,/i.test(lines[0])){
+    var header = _balCSVLine(lines[0]).map(function(h){return h.trim().toUpperCase();});
+    var idx = {
+      date:   header.indexOf('DATE'),
+      payee:  header.indexOf('PAYEE'),
+      pcode:  header.indexOf('PCODE'),
+      amount: header.indexOf('AMOUNT'),
+      desc:   header.indexOf('DESC'),
+      x:      header.indexOf('X')
+    };
+    for(var i=1;i<lines.length;i++){
+      var cols = _balCSVLine(lines[i]);
+      var item = {
+        date:  idx.date  >=0 ? (cols[idx.date] ||'').trim() : '',
+        payee: idx.payee >=0 ? (cols[idx.payee]||'').trim() : '',
+        pcode: idx.pcode >=0 ? (cols[idx.pcode]||'').trim() : '',
+        desc:  idx.desc  >=0 ? (cols[idx.desc] ||'').trim() : '',
+        amt:   idx.amount>=0 ? parseFloat(String(cols[idx.amount]||'0').replace(/[$,]/g,'')) : 0,
+        x:    (idx.x     >=0 ? (cols[idx.x]    ||'').trim().toUpperCase() : '')
+      };
+      item.x = (item.x==='X' || item.x==='✓' || item.x==='1' || item.x==='TRUE') ? 'X' : '';
+      if(item.payee && item.date && !isNaN(item.amt)) items.push(item);
+    }
+    return items;
+  }
+
+  // Fallback: old human-report format
+  var blocks = text.split(/\n\s*\n/);
   blocks.forEach(function(block){
     if(!/^\s*ITEM\s+\d+\s*—/m.test(block)) return;
-    var headerMatch = block.match(/^\s*ITEM\s+\d+\s*—\s*(.+?)\s*$/m);
-    if(!headerMatch) return;
-    var item = { payee: headerMatch[1].trim() };
+    var hm = block.match(/^\s*ITEM\s+\d+\s*—\s*(.+?)\s*$/m);
+    if(!hm) return;
+    var item = { payee: hm[1].trim() };
     var dm = block.match(/^\s*DATE:\s*(\S+)/m);
     var pm = block.match(/^\s*PCODE:\s*(\S*)/m);
     var am = block.match(/^\s*AMOUNT:\s*([+\-]?)\s*\$?([\d,]+\.?\d*)/m);
     var sm = block.match(/^\s*STATUS:\s*✓/m);
     var em = block.match(/^\s*DESC:\s*(.+?)\s*$/m);
-    if(dm) item.date = dm[1];
+    if(dm) item.date  = dm[1];
     if(pm) item.pcode = (pm[1]||'').trim();
-    if(am){
-      var n = parseFloat(am[2].replace(/,/g,''));
-      if(am[1]==='-') n = -n;
-      item.amt = n;
-    }
+    if(am){ var n = parseFloat(am[2].replace(/,/g,'')); if(am[1]==='-') n = -n; item.amt = n; }
     item.x = sm ? 'X' : '';
     if(em) item.desc = em[1].trim();
-    if(item.payee && item.date && (typeof item.amt === 'number')) items.push(item);
+    if(item.payee && item.date && typeof item.amt === 'number') items.push(item);
   });
   return items;
 }
@@ -6390,7 +6477,7 @@ function _balParseText(text){
 function balImportFromText(text){
   var incoming = _balParseText(text);
   if(!incoming.length){
-    toast('No balance sheet items found in that file',false);
+    toast('No balance sheet rows found in that file',false);
     return;
   }
   balLoad();
@@ -6403,7 +6490,6 @@ function balImportFromText(text){
     var k = keyOf(r);
     if(existingMap[k]!=null){
       var idx = existingMap[k];
-      // Update mutable fields; keep existing id
       if(r.pcode) BALANCE[idx].pcode = r.pcode;
       if(r.desc)  BALANCE[idx].desc  = r.desc;
       BALANCE[idx].x = r.x || '';
