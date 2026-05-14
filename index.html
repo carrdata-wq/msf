@@ -253,6 +253,19 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     padding: 2px 4px;
     border-radius: 3px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    background: #ffffff !important;
+    border: 1px solid #cccccc !important;
+  }
+  /* Two-tone alternating rows — matches Balance Sheet / menus */
+  #logtbl tbody tr.led-row:nth-child(even),
+  table.mfs-stack tbody tr.led-row:nth-child(even) {
+    background: #eef2ff !important;
+  }
+  /* "Empty" first-row entry placeholder — gold tint instead of bright blue */
+  #logtbl tbody tr.led-row:first-child,
+  table.mfs-stack tbody tr.led-row:first-child {
+    background: #fff8dc !important;
+    border: 2px solid #ffaa00 !important;
   }
   #logtbl tbody tr.led-row > td, table.mfs-stack tbody tr.led-row > td {
     display: inline-block !important;
@@ -262,6 +275,32 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     padding: 1px 4px !important;
     font-size: 14px !important;
     font-family: inherit !important;
+    color: #333333 !important;
+  }
+  /* Specific color overrides for the inline-styled cells — dark on light */
+  #logtbl tbody tr.led-row > td[style*="color:#ccccff"],
+  #logtbl tbody tr.led-row > td[style*="color: #ccccff"] {
+    color: #444444 !important;  /* date — medium gray */
+  }
+  #logtbl tbody tr.led-row > td[style*="color:#ffff00"],
+  #logtbl tbody tr.led-row > td[style*="color: #ffff00"] {
+    color: #000080 !important;  /* payee — navy bold */
+  }
+  #logtbl tbody tr.led-row > td[style*="color:#ffffff"],
+  #logtbl tbody tr.led-row > td[style*="color: #ffffff"] {
+    color: #333333 !important;  /* desc — dark gray */
+  }
+  #logtbl tbody tr.led-row > td[style*="color:#00ffff"],
+  #logtbl tbody tr.led-row > td[style*="color: #00ffff"] {
+    color: #0066aa !important;  /* pcode — deep cyan */
+  }
+  #logtbl tbody tr.led-row > td[style*="color:#ff6666"],
+  #logtbl tbody tr.led-row > td[style*="color: #ff6666"] {
+    color: #cc0000 !important;  /* negative amount — strong red */
+  }
+  #logtbl tbody tr.led-row > td[style*="color:#ff88ff"],
+  #logtbl tbody tr.led-row > td[style*="color: #ff88ff"] {
+    color: #cc6600 !important;  /* row number — orange */
   }
   #logtbl tbody tr.led-row > td.led-rownum-cell, table.mfs-stack tbody tr.led-row > td.led-rownum-cell {
     order: -1;
@@ -276,7 +315,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     justify-content: stretch;
     margin-top: 3px;
     padding-top: 3px !important;
-    border-top: 1px solid rgba(255,255,255,0.12) !important;
+    border-top: 1px solid #cccccc !important;
   }
   #logtbl tbody tr.led-row > td.led-actions-cell button, table.mfs-stack tbody tr.led-row > td.led-actions-cell button {
     flex: 1 1 0;
