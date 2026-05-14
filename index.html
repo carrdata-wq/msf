@@ -664,19 +664,27 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       &nbsp;·&nbsp; <span style="color:#ccccff;">✓:</span> <span id="bal-checked-count" style="color:#00ff88;font-weight:700;">0</span>
     </div>
 
-    <!-- SYNC: cross-device CSV download / upload (prominent so it's obvious on Android) -->
+    <!-- SYNC: cross-device data transfer — PASTE is the safest path on Android (bypasses file picker entirely) -->
     <div style="background:#001144;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">
-      <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;text-align:center;">🔄 SYNC BALANCE SHEET (CSV)</div>
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button onclick="balDownload()" style="flex:1;padding:13px 6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#00ffff;color:#000080;line-height:1.2;">⬇ DOWNLOAD CSV<br><span style="font-size:10px;font-weight:400;">→ email to other device</span></button>
-        <button onclick="balImport()" style="flex:1;padding:13px 6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#ff66ff;color:#000080;line-height:1.2;">📥 UPLOAD CSV<br><span style="font-size:10px;font-weight:400;">← pick file from Downloads</span></button>
-      </div>
-      <div style="background:#220011;border:1px solid #ffaa00;border-radius:4px;padding:6px 8px;margin-bottom:6px;color:#ffddaa;font-size:11px;line-height:1.5;">
-        <strong style="color:#ffff00;">📂 IN THE FILE PICKER:</strong> tap <strong>☰</strong> (top-left) → <strong>Downloads</strong> → tap the <strong>BALANCE_*.txt</strong> file.
-      </div>
-      <div style="color:#aaccff;font-size:10px;text-align:center;line-height:1.4;">
-        From ThinkPad: <b style="color:#ffff00;">⬇ DOWNLOAD</b> → email file to yourself.<br>
-        On Android: open email → save attachment to Downloads → tap <b style="color:#ff66ff;">📥 UPLOAD</b> → pick the file.
+      <div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:10px;text-align:center;">🔄 SYNC BALANCE SHEET</div>
+
+      <!-- 1. PASTE FROM EMAIL — most reliable, no Android file picker involved -->
+      <button onclick="balPasteImport()" style="width:100%;padding:15px;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:none;border-radius:8px;cursor:pointer;background:#ffaa00;color:#000080;margin-bottom:8px;line-height:1.25;">
+        📋 PASTE FROM EMAIL <span style="font-size:11px;font-weight:400;">(easiest)</span>
+      </button>
+
+      <!-- 2. DOWNLOAD + AUTO-EMAIL (uses Gmail web URL with CSV in body) -->
+      <button onclick="balDownloadAndEmail()" style="width:100%;padding:15px;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:none;border-radius:8px;cursor:pointer;background:#00ff88;color:#000080;margin-bottom:8px;line-height:1.25;">
+        ⬇ DOWNLOAD &amp; EMAIL TO ME
+      </button>
+
+      <!-- 3. FILE PICKER — fallback for those who prefer to attach a downloaded .txt -->
+      <button onclick="balImport()" style="width:100%;padding:13px;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:none;border-radius:8px;cursor:pointer;background:#ff66ff;color:#000080;line-height:1.25;">
+        📁 SELECT FILE FROM DOWNLOADS <span style="font-size:10px;font-weight:400;">(alt)</span>
+      </button>
+
+      <div style="color:#aaccff;font-size:10px;text-align:center;line-height:1.4;margin-top:8px;">
+        Easiest flow → ThinkPad: ⬇ DOWNLOAD&amp;EMAIL · Android: open email → 📋 PASTE
       </div>
     </div>
 
@@ -6362,34 +6370,105 @@ function balDownload(){
     a.download = fname;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    toast('⬇ Downloaded '+fname+' ('+built.count+' items, CSV) — opening email…',true);
-    // Auto-fire email composer so the downloaded file can be attached right away
-    var toEmail = 'tristancarrington1@gmail.com';
-    var subject = '💼 Balance Sheet CSV — '+built.dateStr+' ('+built.count+' items)';
-    var body = 'Attach '+fname+' from Downloads to import on the other device.\n\n'
-             + 'File is CSV format (DATE,PAYEE,PCODE,AMOUNT,DESC,X) — editable in Excel/Sheets.\n\n'
-             + 'On the other device:\n'
-             + '  1. Save '+fname+' to Downloads\n'
-             + '  2. Open MFS → Balance Sheet → tap 📥\n'
-             + '  3. Pick the file — done.\n';
-    setTimeout(function(){
-      try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }catch(e){}
-    }, 1200);
+    toast('⬇ Downloaded '+fname+' ('+built.count+' items, CSV)',true);
   }catch(e){
     toast('Download failed: '+e.message,false);
   }
 }
 
+// Downloads the .txt file AND opens Gmail compose with the CSV pre-filled in the body.
+// Gmail web URL is more reliable than mailto: on Android — picks Gmail every time.
+// CSV-in-body means the receiving device can just PASTE FROM EMAIL — no attachment, no file picker.
+function balDownloadAndEmail(){
+  var built = _balBuildCSV();
+  if(!built){toast('Balance Sheet is empty',false);return;}
+  var fname = 'BALANCE_'+built.dateStr.replace(/-/g,'')+'.txt';
+
+  // 1) Download the file (useful as a backup; also lets you attach if body is too big)
+  try{
+    var blob = new Blob([built.text],{type:'text/plain'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }catch(e){
+    toast('Download failed: '+e.message,false);
+    return;
+  }
+
+  // 2) Open Gmail compose with the CSV inside the body
+  var toEmail = 'tristancarrington1@gmail.com';
+  var subject = '💼 Balance Sheet — '+built.dateStr+' ('+built.count+' items)';
+  var instructions = 'BALANCE SHEET — '+built.count+' items · '+built.dateStr+'\n\n'
+                   + 'On the other device:\n'
+                   + '  1. Select all text below (between the lines)\n'
+                   + '  2. Copy it\n'
+                   + '  3. Open MFS → Balance Sheet → tap 📋 PASTE FROM EMAIL\n'
+                   + '  4. Paste and tap LOAD\n\n';
+  var separator = '─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
+  var fullBody  = instructions + separator + built.text + '─────── END CSV ───────\n';
+
+  // Build Gmail URL. If the encoded body is too large (~25 KB), send without it and tell user to attach the file instead.
+  var encoded = encodeURIComponent(fullBody);
+  var body;
+  if(encoded.length > 25000){
+    body = instructions + 'CSV too large for email body — attach the downloaded file '+fname+' from Downloads instead.\n';
+  } else {
+    body = fullBody;
+  }
+  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+               + '&to='   + encodeURIComponent(toEmail)
+               + '&su='   + encodeURIComponent(subject)
+               + '&body=' + encodeURIComponent(body);
+
+  toast('⬇ Saved '+fname+' — opening Gmail…',true);
+  setTimeout(function(){
+    try{ window.open(gmailUrl,'_blank'); }
+    catch(e){
+      try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }
+      catch(e2){}
+    }
+  }, 600);
+}
+
+// Paste-from-email modal — bypasses Android file picker entirely.
+// User copies the CSV block from the email body and pastes it here.
+function balPasteImport(){
+  var existing = document.querySelector('.bal-paste-modal');
+  if(existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.className = 'bal-paste-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:15px;';
+  modal.innerHTML =
+    '<div style="padding:18px;background:#0000cc;border:3px solid #00ffff;border-radius:12px;max-width:440px;width:100%;font-family:Courier New,monospace;box-sizing:border-box;">'
+      +'<div style="color:#00ffff;font-size:16px;font-weight:700;text-align:center;margin-bottom:8px;">📋 PASTE BALANCE SHEET</div>'
+      +'<div style="color:#aaccff;font-size:11px;margin-bottom:10px;line-height:1.4;">In the email, select &amp; copy everything between the <b style="color:#ffff00;">─── CSV DATA ───</b> lines, then paste here.</div>'
+      +'<textarea id="bal-paste-area" placeholder="DATE,PAYEE,PCODE,AMOUNT,DESC,X&#10;2026-05-13,ALDI,GROC,-12.50,MILK,&#10;..." style="width:100%;box-sizing:border-box;height:220px;background:#000022;border:2px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:12px;padding:10px;border-radius:6px;outline:none;resize:vertical;"></textarea>'
+      +'<div style="display:flex;gap:6px;margin-top:10px;">'
+        +'<button onclick="balProcessPaste()" style="flex:2;padding:14px;background:#00ff88;color:#000080;font-weight:700;font-size:14px;border:none;border-radius:8px;cursor:pointer;font-family:Courier New,monospace;">📥 LOAD BALANCE SHEET</button>'
+        +'<button onclick="this.closest(\'.bal-paste-modal\').remove()" style="flex:1;padding:14px;background:#660000;color:#fff;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-family:Courier New,monospace;">CANCEL</button>'
+      +'</div>'
+    +'</div>';
+  document.body.appendChild(modal);
+  setTimeout(function(){ var ta=document.getElementById('bal-paste-area'); if(ta) ta.focus(); }, 100);
+}
+function balProcessPaste(){
+  var ta = document.getElementById('bal-paste-area');
+  if(!ta || !ta.value.trim()){ toast('Paste data first',false); return; }
+  balImportFromText(ta.value);
+  document.querySelectorAll('.bal-paste-modal').forEach(function(m){m.remove();});
+}
+
 function balImport(){
   // Always recreate the input so the latest accept settings apply
-  // (bypasses any stale element from a previous version of the page in memory)
   var old = document.getElementById('bal-import-input');
   if(old && old.parentNode) old.parentNode.removeChild(old);
   var inp = document.createElement('input');
   inp.type = 'file';
   inp.id = 'bal-import-input';
-  inp.accept = '*/*';          // identical to the working bulk phone import
-  inp.multiple = true;          // identical to the working bulk phone import
+  inp.accept = '.txt,.csv';     // extension-only — steers Android away from photo picker on some versions
+  inp.multiple = true;
   inp.style.display = 'none';
   inp.onchange = function(e){
     var files = e.target.files;
