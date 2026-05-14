@@ -287,6 +287,152 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     border-radius: 3px !important;
     line-height: 1 !important;
   }
+
+  /* ── Menu drill-down screens: LIGHT two-tone look (matches Balance Sheet) ──
+     The dark-blue menu cards washed out in sunlight. Flip to a white/light scheme
+     with alternating row backgrounds and dark navy text — proven readable look. */
+  #screen-accounting-sub .main-box,
+  #screen-accounting .main-box,
+  #screen-main .main-box {
+    border-color: #00ffff !important;
+    border-width: 2px !important;
+    background: #ffffff !important;
+  }
+  #screen-accounting-sub .menu-item,
+  #screen-accounting .menu-item,
+  #screen-main .menu-item {
+    background: #ffffff !important;
+    border-bottom: 1px solid #cccccc !important;
+    padding: 10px 12px !important;
+  }
+  /* Alternating row tint — the "two-tone" you liked on Balance Sheet */
+  #screen-accounting-sub .menu-item:nth-child(even),
+  #screen-accounting .menu-item:nth-child(even),
+  #screen-main .menu-item:nth-child(even) {
+    background: #eef2ff !important;
+  }
+  /* Active tap state */
+  #screen-accounting-sub .menu-item:active,
+  #screen-accounting .menu-item:active,
+  #screen-main .menu-item:active {
+    background: #cce0ff !important;
+  }
+  /* Main label — navy bold, dark on light */
+  #screen-accounting-sub .menu-item .ml,
+  #screen-accounting .menu-item .ml,
+  #screen-main .menu-item .ml {
+    color: #000080 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+  /* Sub label — medium gray, smaller */
+  #screen-accounting-sub .menu-item .ms,
+  #screen-accounting .menu-item .ms,
+  #screen-main .menu-item .ms {
+    color: #555555 !important;
+    font-size: 12px !important;
+  }
+  /* Item number — orange accent (stands out against white) */
+  #screen-accounting-sub .menu-item .menu-num,
+  #screen-accounting .menu-item .menu-num,
+  #screen-main .menu-item .menu-num {
+    color: #cc6600 !important;
+    font-weight: 700 !important;
+  }
+  /* Icon — larger so it pops */
+  #screen-accounting-sub .menu-item .menu-icon,
+  #screen-accounting .menu-item .menu-icon,
+  #screen-main .menu-item .menu-icon {
+    font-size: 18px !important;
+  }
+  /* Right arrow — navy chevron */
+  #screen-accounting-sub .menu-item .menu-arrow,
+  #screen-accounting .menu-item .menu-arrow,
+  #screen-main .menu-item .menu-arrow {
+    color: #000080 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+  }
+  /* Helper labels inside accounting screen (search hint, "ADD TO LISTS", etc.) */
+  #screen-accounting #hint,
+  #screen-accounting #add-to-lists {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+  }
+
+  /* ── SUNLIGHT-READABLE THEME (mobile only) ──
+     The default body+surface palette is medium-blue (#1a1aff) on dark-blue (#0000cc).
+     In direct sunlight these two blues blur together. Replace them with near-black so
+     every yellow/cyan/white text element pops against a high-contrast background.
+     ThinkPad layout is untouched (this entire block is inside max-width:700px). */
+
+  /* Body + every screen → near-black */
+  body, .screen,
+  #screen-accounting, #screen-accounting-sub, #screen-android-easy,
+  #screen-grocery, #screen-restaurant, #screen-fuel,
+  #screen-phone, #screen-phone-move, #screen-balance,
+  #screen-main, #screen-inflation, #screen-transfer {
+    background: #000011 !important;
+  }
+
+  /* Inline body-blue (the default --bg) → near-black */
+  [style*="background:#1a1aff"],
+  [style*="background: #1a1aff"],
+  [style*="background:rgb(26, 26, 255)"],
+  [style*="background: rgb(26, 26, 255)"] {
+    background: #000011 !important;
+  }
+
+  /* Inline dark-blue surfaces (#0000cc / #0000aa / #000099 / #000080)
+     are too close to body-blue — push them clearly darker too */
+  [style*="background:#0000cc"],
+  [style*="background: #0000cc"] {
+    background: #001144 !important;
+  }
+  [style*="background:#0000aa"],
+  [style*="background: #0000aa"] {
+    background: #000033 !important;
+  }
+  [style*="background:#000099"],
+  [style*="background: #000099"] {
+    background: #001133 !important;
+  }
+  [style*="background:#000080"],
+  [style*="background: #000080"] {
+    background: #001144 !important;
+  }
+
+  /* Pale-blue text colors → pure white for legibility */
+  [style*="color:#ccccff"],
+  [style*="color: #ccccff"],
+  [style*="color:#aaccff"],
+  [style*="color: #aaccff"],
+  [style*="color:#aaffff"],
+  [style*="color: #aaffff"],
+  [style*="color:#aaffaa"],
+  [style*="color: #aaffaa"],
+  [style*="color:#ccd"],
+  [style*="color: #ccd"] {
+    color: #ffffff !important;
+  }
+
+  /* Mid-blue borders → bright cyan */
+  [style*="border:1px solid #6666ff"],
+  [style*="border: 1px solid #6666ff"],
+  [style*="border-color:#6666ff"],
+  [style*="border-color: #6666ff"],
+  [style*="1px solid var(--border)"] {
+    border-color: #00ffff !important;
+  }
+
+  /* CSS variable overrides — anything still using var(--bg) etc. */
+  :root {
+    --bg: #000011 !important;
+    --surface: #001144 !important;
+    --accent: #000033 !important;
+    --dim: #ffffff !important;
+    --border: #00ffff !important;
+  }
 }
 </style>
 <style id="ReanimatedPredefinedWebAnimationsStyle"></style><style id="ReanimatedCustomWebAnimationsStyle"></style><style id="ReanimatedCSSStyleTag"></style><style id="pc-row-style">
