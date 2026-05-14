@@ -1469,10 +1469,18 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📞 Phone Clients</div></div>
   <div id="phone-list-page" class="fpage">
     <div class="card" style="padding:8px;">
-      <select id="phone-picker" onchange="phonePickClient(this.value);this.selectedIndex=0;" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
-        <option value="">— PICK A CLIENT —</option>
+      <!-- PRIMARY: search across ALL fields — name, address, phone, email, notes -->
+      <div style="background:#003366;padding:8px;border:2px solid #00ffff;border-radius:6px;margin-bottom:8px;">
+        <div style="color:#00ffff;font-weight:700;font-size:12px;margin-bottom:6px;text-align:center;line-height:1.3;">
+          🔍 SEARCH ALL FIELDS<br>
+          <span style="color:#aaffff;font-size:10px;font-weight:400;">name · address · phone · email · notes</span>
+        </div>
+        <input type="text" id="phone-search" placeholder="Type CRANDON, ABC SUPPLY, 773, etc.…" oninput="phoneSearchDebounced()" onkeydown="if(event.key==='Enter'){event.preventDefault();phoneSearchNow();}" style="width:100%;box-sizing:border-box;background:#ffffff;border:none;color:#000080;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;padding:11px 12px;border-radius:4px;outline:none;">
+      </div>
+      <!-- SECONDARY: alphabetical name picker (kept for quick A-Z scrolling) -->
+      <select id="phone-picker" onchange="phonePickClient(this.value);this.selectedIndex=0;" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
+        <option value="">— OR pick by name (A-Z) —</option>
       </select>
-      <input type="text" id="phone-search" placeholder="🔍 Or type to search…" oninput="phoneSearchDebounced()" onkeydown="if(event.key==='Enter'){event.preventDefault();phoneSearchNow();}" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
       <div style="display:flex;gap:4px;margin-bottom:8px;font-size:12px;">
         <button onclick="phoneShowForm(null)" title="Add client" style="flex:1;background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">➕ ADD</button>
         <button onclick="phoneUpdateIndex()" title="Rebuild sort index and show all" style="flex:1;background:#001a44;color:#00aaff;border:1px solid #00aaff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">🔄 UPDATE INDEX</button>
@@ -9552,7 +9560,16 @@ function _phoneRunSearch(q,seq){
     var end=Math.min(i+CHUNK,n);
     for(;i<end;i++){
       var c=sorted[i];
-      if(((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')+' '+(c.adate||'')).toLowerCase().indexOf(ql)>=0){
+      // Search across EVERY field — name, phone, email, address, notes, dates.
+      // Covers c.addr (canonical) and c.address (legacy CSV imports) both.
+      var hay=((c.name||'')+' '+
+               (c.phone||'')+' '+
+               (c.email||'')+' '+
+               (c.addr||c.address||'')+' '+
+               (c.notes||'')+' '+
+               (c.adate||'')+' '+
+               (c.contacted||'')).toLowerCase();
+      if(hay.indexOf(ql)>=0){
         matches.push(c);
       }
     }
