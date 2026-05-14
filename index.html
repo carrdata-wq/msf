@@ -9991,7 +9991,10 @@ function normalizeClient(r){
     phone:String(pick('phone','tel','telephone','mobile','cell','phonenumber','phone1')||'').trim(),
     email:String(pick('email','emailaddress','mail','e-mail')||'').trim(),
     addr:String(pick('addr','address','location','street')||'').trim(),
-    notes:String(pick('notes','note','job','description','desc','memo','comments')||'').trim()
+    notes:String(pick('notes','note','job','description','desc','memo','comments')||'').trim(),
+    contacted:String(pick('contacted','lastcontact','last_contact','lastcontacted','contactdate')||'').trim(),
+    adate:String(pick('adate','addeddate','added','dateadded')||'').trim(),
+    x:String(pick('x','marked','flag','flagged')||'').trim().toUpperCase()==='X'?'X':''
   };
 }
 
@@ -10060,7 +10063,12 @@ function parseClientsCSV(txt){
     for(var j=0;j<fields.length;j++)obj[fields[j]]=cells[j]||'';
     out.push(normalizeClient(obj));
   }
-  return out.filter(function(c){return c.name;});
+  return out.filter(function(c){
+    if(!c.name) return false;
+    // Skip section-header rows like "=== CLIENTS RESIDENTIAL ===", "--- HEADER ---", "*** etc ***"
+    if(/^[\s=\-*<>#~]/.test(c.name)) return false;
+    return true;
+  });
 }
 
 function mergeClients(newOnes){
