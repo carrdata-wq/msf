@@ -671,6 +671,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <button onclick="balDownload()" style="flex:1;padding:13px 6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#00ffff;color:#000080;line-height:1.2;">⬇ DOWNLOAD CSV<br><span style="font-size:10px;font-weight:400;">→ email to other device</span></button>
         <button onclick="balImport()" style="flex:1;padding:13px 6px;font-family:Courier New,monospace;font-weight:700;font-size:13px;border:none;border-radius:6px;cursor:pointer;background:#ff66ff;color:#000080;line-height:1.2;">📥 UPLOAD CSV<br><span style="font-size:10px;font-weight:400;">← pick file from Downloads</span></button>
       </div>
+      <div style="background:#220011;border:1px solid #ffaa00;border-radius:4px;padding:6px 8px;margin-bottom:6px;color:#ffddaa;font-size:11px;line-height:1.5;">
+        <strong style="color:#ffff00;">📂 IN THE FILE PICKER:</strong> tap <strong>☰</strong> (top-left) → <strong>Downloads</strong> → tap the <strong>BALANCE_*.txt</strong> file.
+      </div>
       <div style="color:#aaccff;font-size:10px;text-align:center;line-height:1.4;">
         From ThinkPad: <b style="color:#ffff00;">⬇ DOWNLOAD</b> → email file to yourself.<br>
         On Android: open email → save attachment to Downloads → tap <b style="color:#ff66ff;">📥 UPLOAD</b> → pick the file.
@@ -6378,23 +6381,31 @@ function balDownload(){
 }
 
 function balImport(){
-  var inp = document.getElementById('bal-import-input');
-  if(!inp){
-    inp = document.createElement('input');
-    inp.type='file';
-    inp.id='bal-import-input';
-    inp.accept='*/*';
-    inp.style.display='none';
-    inp.onchange = function(e){
-      var f = e.target.files && e.target.files[0];
-      if(!f) return;
+  // Always recreate the input so the latest accept settings apply
+  // (bypasses any stale element from a previous version of the page in memory)
+  var old = document.getElementById('bal-import-input');
+  if(old && old.parentNode) old.parentNode.removeChild(old);
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.id = 'bal-import-input';
+  inp.accept = '*/*';          // identical to the working bulk phone import
+  inp.multiple = true;          // identical to the working bulk phone import
+  inp.style.display = 'none';
+  inp.onchange = function(e){
+    var files = e.target.files;
+    if(!files || !files.length) return;
+    var idx = 0;
+    function next(){
+      if(idx >= files.length) return;
+      var f = files[idx++];
       var reader = new FileReader();
-      reader.onload = function(ev){ balImportFromText(ev.target.result); };
+      reader.onload  = function(ev){ balImportFromText(ev.target.result); next(); };
+      reader.onerror = function(){ next(); };
       reader.readAsText(f);
-    };
-    document.body.appendChild(inp);
-  }
-  inp.value='';
+    }
+    next();
+  };
+  document.body.appendChild(inp);
   inp.click();
 }
 
