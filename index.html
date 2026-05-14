@@ -345,8 +345,23 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #screen-sysutil-sub .menu-item,
   #screen-transfer .menu-item {
     background: #ffffff !important;
+    border: none !important;
     border-bottom: 1px solid #cccccc !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
     padding: 10px 12px !important;
+    min-height: 0 !important;
+  }
+  /* Catch the 3 inline-styled "highlight" tiles on the main menu (Balance Sheet,
+     MOVE ACCOUNTING, MOVE PHONE) — they all have inline cyan/green borders that
+     would otherwise leak through. */
+  #screen-main .menu-item[style*="background:#002"],
+  #screen-main .menu-item[style*="background: #002"],
+  #screen-main .menu-item[style*="border:3px"],
+  #screen-main .menu-item[style*="border: 3px"] {
+    background: #ffffff !important;
+    border: none !important;
+    border-bottom: 1px solid #cccccc !important;
   }
   /* Alternating row tint — the "two-tone" you liked on Balance Sheet */
   #screen-accounting-sub .menu-item:nth-child(even),
@@ -368,6 +383,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #screen-accounting-sub .menu-item .ml,
   #screen-accounting .menu-item .ml,
   #screen-main .menu-item .ml,
+  #screen-main .menu-item .ml[style],
   #screen-sysutil-sub .menu-item .ml,
   #screen-transfer .menu-item .ml {
     color: #000080 !important;
@@ -378,6 +394,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #screen-accounting-sub .menu-item .ms,
   #screen-accounting .menu-item .ms,
   #screen-main .menu-item .ms,
+  #screen-main .menu-item .ms[style],
   #screen-sysutil-sub .menu-item .ms,
   #screen-transfer .menu-item .ms {
     color: #555555 !important;
@@ -396,6 +413,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #screen-accounting-sub .menu-item .menu-icon,
   #screen-accounting .menu-item .menu-icon,
   #screen-main .menu-item .menu-icon,
+  #screen-main .menu-item .menu-icon[style],
   #screen-sysutil-sub .menu-item .menu-icon,
   #screen-transfer .menu-item .menu-icon {
     font-size: 18px !important;
@@ -404,6 +422,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #screen-accounting-sub .menu-item .menu-arrow,
   #screen-accounting .menu-item .menu-arrow,
   #screen-main .menu-item .menu-arrow,
+  #screen-main .menu-item .menu-arrow[style],
   #screen-sysutil-sub .menu-item .menu-arrow,
   #screen-transfer .menu-item .menu-arrow {
     color: #000080 !important;
