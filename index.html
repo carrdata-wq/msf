@@ -241,7 +241,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;width:100%;max-width:380px;}
 .modal-title{font-size:14px;font-weight:700;color:var(--yellow);margin-bottom:14px;text-align:center;}
 
-/* Accounting ledger — mobile: actions drop to a second row, header hidden */
+/* Accounting ledger — mobile: actions drop to a second row, header hidden, ULTRA-COMPACT */
 @media (max-width: 700px) {
   #logtbl thead, table.mfs-stack thead { display: none; }
   #logtbl, #logtbl tbody, table.mfs-stack, table.mfs-stack tbody { display: block; width: 100%; }
@@ -249,35 +249,43 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 4px;
-    padding: 3px 4px;
-    border-radius: 4px;
+    margin-bottom: 3px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   }
   #logtbl tbody tr.led-row > td, table.mfs-stack tbody tr.led-row > td {
     display: inline-block !important;
     width: auto !important;
     max-width: none !important;
     border: none !important;
-    padding: 2px 5px !important;
+    padding: 1px 4px !important;
+    font-size: 11px !important;
+    font-family: inherit !important;
   }
   #logtbl tbody tr.led-row > td.led-rownum-cell, table.mfs-stack tbody tr.led-row > td.led-rownum-cell {
     order: -1;
     margin-right: 4px;
-    font-size: 12px !important;
-    min-width: 26px;
+    font-size: 10px !important;
+    min-width: 22px;
   }
   #logtbl tbody tr.led-row > td.led-actions-cell, table.mfs-stack tbody tr.led-row > td.led-actions-cell {
     display: flex !important;
     width: 100% !important;
-    gap: 4px;
+    gap: 3px;
     justify-content: stretch;
-    margin-top: 5px;
-    padding-top: 5px !important;
-    border-top: 1px solid rgba(255,255,255,0.15) !important;
+    margin-top: 3px;
+    padding-top: 3px !important;
+    border-top: 1px solid rgba(255,255,255,0.12) !important;
   }
   #logtbl tbody tr.led-row > td.led-actions-cell button, table.mfs-stack tbody tr.led-row > td.led-actions-cell button {
     flex: 1 1 0;
-    padding: 7px 4px !important;
+    padding: 4px 4px !important;
+    font-size: 10px !important;
+    font-family: inherit !important;
+    min-height: 28px !important;
+    border-radius: 3px !important;
+    line-height: 1 !important;
   }
 }
 </style>
@@ -5625,10 +5633,11 @@ function doBackup() {
   });
   var backupText=lines.join('\r\n');
   var dateStr=today().replace(/-/g,'');
-  var filename='mfs-backup-'+(cleanExport?'CLEAN-':'')+dateStr+'.csv';
+  var filename='mfs-backup-'+(cleanExport?'CLEAN-':'')+dateStr+'.txt';
 
-  // Download as CSV file
-  var blob=new Blob([backupText],{type:'text/csv'});
+  // Download as .txt (CSV content inside) — .csv extension causes Android Chrome
+  // to hand the file to Google Slides/PDF viewer; .txt lets MFS handle paste/import cleanly.
+  var blob=new Blob([backupText],{type:'text/plain'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;a.download=filename;
@@ -5660,9 +5669,31 @@ function doBackup() {
   overlay.dataset.toEmail=toEmail;
   document.body.appendChild(overlay);
   setTimeout(function(){var ta=document.getElementById('bkp-share-text');if(ta){ta.focus();ta.select();}},400);
-  // Auto-fire email composer so the downloaded CSV can be attached right away
+  // Auto-fire Gmail compose with the CSV PRE-FILLED in the body so the receiving device
+  // can simply paste from email (no file picker, no Google Slides hijack).
   setTimeout(function(){
-    try{window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Attach '+filename+' from Downloads.'),'_blank');}catch(e){}
+    var instructions = 'ACCOUNTING BACKUP — '+mxLog.length+' entries · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
+                     + 'On the other device:\n'
+                     + '  1. Select all text below (between the lines)\n'
+                     + '  2. Copy it\n'
+                     + '  3. Open MFS → MOVE ACCOUNTING\n'
+                     + '  4. Paste into the green textarea and tap LOAD IT NOW\n\n';
+    var separator    = '─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
+    var fullBody     = instructions + separator + backupText + '\n─────── END CSV ───────\n';
+    // Fall back to instructions-only if encoded body would exceed safe URL length
+    var encoded = encodeURIComponent(fullBody);
+    var body = (encoded.length > 25000)
+      ? instructions + 'CSV is too large for the email body — attach the file '+filename+' from Downloads instead, then on the other device save the file, open in a text editor, copy, and paste.\n'
+      : fullBody;
+    var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+                 + '&to='   + encodeURIComponent(toEmail)
+                 + '&su='   + encodeURIComponent(subject)
+                 + '&body=' + encodeURIComponent(body);
+    try{ window.open(gmailUrl,'_blank'); }
+    catch(e){
+      try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }
+      catch(e2){}
+    }
   },1200);
 }
 function copyBackupText(){
@@ -5676,11 +5707,28 @@ function shareBackupText(){
   var overlay=ta.closest('.modal-overlay');
   var subject=(overlay&&overlay.dataset.subject)||'MFS Backup';
   var toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
+  var csvText=ta.value||'';
+  // Copy to clipboard too (so the user can paste manually as a fallback)
   ta.focus();ta.select();
   try{document.execCommand('copy');}catch(e){}
-  var mail='mailto:'+toEmail+'?subject='+encodeURIComponent(subject);
-  window.location.href=mail;
-  toast('📋 Copied · Email opened to '+toEmail+' — paste into body',true);
+  // Build Gmail compose URL with the full CSV in the body
+  var instructions = 'ACCOUNTING BACKUP\n\n'
+                   + 'On the other device: open MFS → MOVE ACCOUNTING → paste this CSV → LOAD IT NOW.\n\n';
+  var separator    = '─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
+  var fullBody     = instructions + separator + csvText + '\n─────── END CSV ───────\n';
+  var encoded = encodeURIComponent(fullBody);
+  var body = (encoded.length > 25000)
+    ? instructions + 'CSV too large for email body — the textarea content is already on your clipboard, just paste it into the email body manually.\n'
+    : fullBody;
+  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+               + '&to='   + encodeURIComponent(toEmail)
+               + '&su='   + encodeURIComponent(subject)
+               + '&body=' + encodeURIComponent(body);
+  try{ window.open(gmailUrl,'_blank'); }
+  catch(e){
+    try{ window.location.href='mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body); }catch(e2){}
+  }
+  toast('📧 Gmail opened with CSV in body · also copied to clipboard',true);
 }
 async function doShareBackup(){
   document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
