@@ -1231,7 +1231,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <select id="phone-picker" onchange="phonePickClient(this.value);this.selectedIndex=0;" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
         <option value="">— PICK A CLIENT —</option>
       </select>
-      <input type="text" id="phone-search" placeholder="🔍 Or type to search…" oninput="renderClientList()" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
+      <input type="text" id="phone-search" placeholder="🔍 Or type to search…" oninput="phoneSearchDebounced()" onkeydown="if(event.key==='Enter'){event.preventDefault();phoneSearchNow();}" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">
       <div style="display:flex;gap:4px;margin-bottom:8px;font-size:12px;">
         <button onclick="phoneShowForm(null)" title="Add client" style="flex:1;background:#005a4e;color:#00ff88;border:1px solid #00ff88;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">➕ ADD</button>
         <button onclick="phoneUpdateIndex()" title="Rebuild sort index and show all" style="flex:1;background:#001a44;color:#00aaff;border:1px solid #00aaff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">🔄 UPDATE INDEX</button>
@@ -1247,7 +1247,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div class="card">
       <div class="card-title green" id="phone-form-title">ADD CLIENT</div>
       <div class="field"><label>Name *</label><input type="text" id="cli-name" placeholder="JOHN SMITH" oninput="this.value=this.value.toUpperCase()"></div>
-      <div class="field"><label>Phone</label><input type="tel" id="cli-phone" placeholder="312-555-1234" inputmode="tel"></div>
+      <div class="field"><label>Phone</label><input type="tel" id="cli-phone" placeholder="773-507-9150" inputmode="tel" maxlength="14" oninput="phoneFormatInput(this)" onfocus="phoneFormatInput(this)"></div>
       <div class="field"><label>Email</label><input type="email" id="cli-email" placeholder="name@example.com" inputmode="email"></div>
       <div class="field"><label>Street Address</label><input type="text" id="cli-addr" placeholder="123 MAIN ST" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field" style="display:flex;gap:6px;">
@@ -9132,31 +9132,113 @@ function fmtADate(d){
   return d; // return as-is if not ISO format
 }
 function telLink(p){return (p||'').replace(/[^\d+]/g,'');}
-function renderClientList(){
-  loadClients();
-  var q=(document.getElementById('phone-search').value||'').toLowerCase().trim();
+// ── Phone search with FoxBase-style progress feedback ──
+// Live typing debounces (200ms) so we don't hammer; pressing Enter searches immediately.
+// Either way: clear list → show progress bar → run actual search on next frame.
+var _phoneSearchTimer=null;
+var _phoneSearchSeq=0;
+function phoneSearchDebounced(){
+  if(_phoneSearchTimer) clearTimeout(_phoneSearchTimer);
+  _phoneSearchTimer=setTimeout(phoneSearchNow, 200);
+}
+function phoneSearchNow(){
+  if(_phoneSearchTimer){ clearTimeout(_phoneSearchTimer); _phoneSearchTimer=null; }
+  var q=(document.getElementById('phone-search').value||'').trim();
   var list=document.getElementById('phone-list');
-  if(!list)return;
-  // empty search → show hint, NOT the full list
+  if(!list) return;
+  // Empty input -> hint, no search
   if(!q){
     list.innerHTML=CLIENTS.length
       ? '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">Pick a client above · type to search · or tap 🔄 UPDATE INDEX below</div>'
       : '<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No clients yet — tap ➕ ADD</div>';
     return;
   }
-  var rows=CLIENTS.slice().sort(function(a,b){
+  // Show progress bar first (clears the list), then run the search on next frame
+  var seq=++_phoneSearchSeq;
+  var total=(CLIENTS&&CLIENTS.length)||0;
+  list.innerHTML=''
+    +'<div id="phone-search-progress" style="background:#000044;border:2px solid #00ffff;border-radius:6px;padding:14px;margin:10px 0;text-align:center;font-family:ui-monospace,Menlo,Consolas,monospace;">'
+      +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">🔍 SCANNING '+total.toLocaleString()+' CLIENTS</div>'
+      +'<div style="color:#ffff00;font-size:11px;margin-bottom:8px;">searching for "'+escClient(q)+'" …</div>'
+      +'<div style="background:#000022;border:1px solid #00ffff;border-radius:10px;height:14px;overflow:hidden;">'
+        +'<div id="phone-search-bar" style="background:linear-gradient(90deg,#00ff88,#00ffff);height:100%;width:0%;transition:width 0.15s linear;"></div>'
+      +'</div>'
+      +'<div id="phone-search-pct" style="color:#aaccff;font-size:11px;margin-top:6px;">0%</div>'
+    +'</div>';
+  // Run the actual filter+render on the next animation frame so the bar paints first
+  requestAnimationFrame(function(){
+    setTimeout(function(){_phoneRunSearch(q,seq);}, 30);
+  });
+}
+function _phoneRunSearch(q,seq){
+  // If a newer search started, abort this one
+  if(seq!==_phoneSearchSeq) return;
+  var list=document.getElementById('phone-list');
+  if(!list) return;
+  var ql=q.toLowerCase();
+  // Sort first
+  var sorted=CLIENTS.slice().sort(function(a,b){
     var aa=a.adate||'',ab=b.adate||'';
     if(ab!==aa) return ab.localeCompare(aa);
     return (b.contacted||'').localeCompare(a.contacted||'');
   });
-  rows=rows.filter(function(c){
-    return ((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')+' '+(c.adate||'')).toLowerCase().indexOf(q)>=0;
-  });
-  if(!rows.length){
+  var matches=[];
+  var n=sorted.length;
+  // Chunked filter so we can update the progress bar for huge lists
+  var CHUNK=1000;
+  var i=0;
+  function step(){
+    if(seq!==_phoneSearchSeq) return; // newer search took over
+    var end=Math.min(i+CHUNK,n);
+    for(;i<end;i++){
+      var c=sorted[i];
+      if(((c.name||'')+' '+(c.phone||'')+' '+(c.email||'')+' '+(c.addr||'')+' '+(c.notes||'')+' '+(c.adate||'')).toLowerCase().indexOf(ql)>=0){
+        matches.push(c);
+      }
+    }
+    var pct=n?Math.floor((i/n)*100):100;
+    var bar=document.getElementById('phone-search-bar');
+    var pctEl=document.getElementById('phone-search-pct');
+    if(bar) bar.style.width=pct+'%';
+    if(pctEl) pctEl.textContent=pct+'% · '+matches.length+' match'+(matches.length===1?'':'es');
+    if(i<n){
+      // Yield to browser for paint, then continue
+      setTimeout(step, 0);
+    } else {
+      _phoneShowResults(q, matches, seq);
+    }
+  }
+  step();
+}
+function _phoneShowResults(q, matches, seq){
+  if(seq!==_phoneSearchSeq) return;
+  var list=document.getElementById('phone-list');
+  if(!list) return;
+  if(!matches.length){
     list.innerHTML='<div style="color:#ccccff;text-align:center;padding:18px;font-size:13px;">No matches for "'+escClient(q)+'"</div>';
     return;
   }
-  list.innerHTML=rows.map(clientCardHtml).join('');
+  // Render with a cap so we don't paint 10,000 cards
+  var CAP=200;
+  var shown=matches.slice(0,CAP);
+  var html=shown.map(clientCardHtml).join('');
+  if(matches.length>CAP){
+    html='<div style="color:#aaccff;font-size:11px;text-align:center;padding:6px;background:#000044;border-radius:4px;margin-bottom:6px;">Showing first '+CAP+' of '+matches.length.toLocaleString()+' matches — narrow your search to see more</div>'+html;
+  }
+  list.innerHTML=html;
+}
+
+// Kept for any existing callers — routes to the new flow
+function renderClientList(){ phoneSearchNow(); }
+
+// Auto-format phone input as user types: 7735079150 -> 773-507-9150
+function phoneFormatInput(el){
+  if(!el) return;
+  var digits=String(el.value||'').replace(/\D/g,'').slice(0,10);
+  var out=digits;
+  if(digits.length>6) out=digits.slice(0,3)+'-'+digits.slice(3,6)+'-'+digits.slice(6);
+  else if(digits.length>3) out=digits.slice(0,3)+'-'+digits.slice(3);
+  el.value=out;
 }
 
 function emailClientsCSV(){
