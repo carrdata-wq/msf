@@ -7856,22 +7856,32 @@ function rptPayeeSearch(){
   window._allPayees=allPayees;
 
   var rptContent=document.getElementById('rpt-content');
-  // BUILD: clean dropdown picker + search box, NO automatic listing
-  var opts='<option value="">— PICK A PAYEE ('+allPayees.length+') —</option>'
+  // BUILD: search box FIRST (auto-focused), dropdown below as fallback
+  var opts='<option value="">— OR pick from A-Z list ('+allPayees.length+') —</option>'
     +allPayees.map(function(p){
       var d=payeeMap[p];
       var sign=d.amt>=0?'+':'-';
       return '<option value="'+p.replace(/"/g,'&quot;')+'">'+trunc(p,20)+' · '+d.cnt+'x · '+sign+'$'+Math.abs(d.amt).toFixed(0)+'</option>';
     }).join('');
   rptContent.innerHTML='<div style="background:#ffffff;color:#000000;border:2px solid #6666ff;border-radius:6px;padding:12px;margin-top:6px;font-family:Courier New,monospace;">'
-    +'<div style="font-weight:700;font-size:14px;color:#000080;text-align:center;margin-bottom:10px;border-bottom:2px solid #000080;padding-bottom:6px;">📊 BY PAYEE</div>'
-    +'<select id="payee-picker" onchange="if(this.value){rptPayeeSelect(this.value);}" style="width:100%;box-sizing:border-box;background:#ffffff;border:2px solid #6666ff;color:#000080;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;">'+opts+'</select>'
-    +'<input type="text" id="payee-search-input" placeholder="🔍 Or type to search…" '
-    +'style="width:100%;box-sizing:border-box;background:#ffffff;border:2px solid #6666ff;color:#000080;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px 10px;border-radius:4px;outline:none;margin-bottom:8px;" '
-    +'oninput="rptPayeeFilter(this.value)" autocomplete="off">'
-    +'<div id="payee-search-results" style="color:#888;text-align:center;padding:12px;font-size:13px;">Pick a payee from the dropdown · type to search</div>'
+    +'<div style="font-weight:700;font-size:14px;color:#000080;text-align:center;margin-bottom:10px;border-bottom:2px solid #000080;padding-bottom:6px;">📊 BY PAYEE — '+allPayees.length+' total</div>'
+    // PRIMARY: big obvious search box — auto-focused, type starts immediately
+    +'<div style="background:#003366;padding:8px;border:2px solid #00ffff;border-radius:6px;margin-bottom:8px;">'
+      +'<div style="color:#00ffff;font-weight:700;font-size:12px;margin-bottom:6px;text-align:center;">🔍 TYPE TO SEARCH PAYEE</div>'
+      +'<input type="text" id="payee-search-input" placeholder="Type ACE, MENARDS, SHELL, etc.…" '
+      +'oninput="rptPayeeFilter(this.value)" autocomplete="off" '
+      +'style="width:100%;box-sizing:border-box;background:#ffffff;border:none;color:#000080;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:11px 12px;border-radius:4px;outline:none;">'
+    +'</div>'
+    // SECONDARY: A-Z dropdown (kept for quick scroll-and-pick)
+    +'<select id="payee-picker" onchange="if(this.value){rptPayeeSelect(this.value);}" style="width:100%;box-sizing:border-box;background:#ffffff;border:1px solid #6666ff;color:#000080;font-family:Courier New,monospace;font-size:13px;padding:8px 10px;border-radius:4px;outline:none;margin-bottom:8px;">'+opts+'</select>'
+    +'<div id="payee-search-results"></div>'
     +'</div>';
   document.getElementById('screen-reports').scrollTop=0;
+  // Auto-focus the search input so the user lands ready to type
+  setTimeout(function(){
+    var inp=document.getElementById('payee-search-input');
+    if(inp){ inp.focus(); try{inp.select();}catch(e){} }
+  }, 80);
 }
 
 function rptPayeeFilter(val){
