@@ -6899,11 +6899,14 @@ function _balFmt(n){
   return sign+'$'+Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 }
 
-function _balFmtDate(d){
+function _balFmtDate(d, compact){
   if(!d)return '';
-  // d is like '2026-05-09' → display '05/09/26'
+  // d is like '2026-05-09' → display '05/09/26' (desktop) or '050926' (mobile compact)
   var p=d.split('-');
-  if(p.length===3) return p[1]+'/'+p[2]+'/'+p[0].slice(2);
+  if(p.length===3){
+    if(compact) return p[1]+p[2]+p[0].slice(2);   // MMDDYY — 6 chars, no slashes
+    return p[1]+'/'+p[2]+'/'+p[0].slice(2);       // MM/DD/YY — 8 chars
+  }
   return d;
 }
 
@@ -7060,6 +7063,9 @@ function balRender(){
     +'<th style="padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:11px;width:118px;">ACT</th>'
     +'</tr></thead><tbody>';
 
+  // Detect mobile so we can render a more compact table — ThinkPad stays full-detail
+  var _balCompact = window.innerWidth < 700;
+
   filtered.forEach(function(r,idx){
     running+=Number(r.amt||0);
     var amt=Number(r.amt||0);
@@ -7073,14 +7079,19 @@ function balRender(){
     var checkBg=r.checked?'#d0ffd0':'#ffffff';
     var sendDisabled=r.sent;
     var sendStyle=sendDisabled?'background:#eee;color:#999;cursor:not-allowed;border:1px solid #ccc;':'background:#e0f0ff;color:#000080;border:1px solid #6666ff;cursor:pointer;';
+    // Truncate DESC and PCODE on mobile to free horizontal space (FoxBase style: desc,1,9 / pcode,1,2)
+    var descCell = _balCompact ? String(r.desc||'').substring(0,9)  : (r.desc||'');
+    var pcodeCell= _balCompact ? String(r.pcode||'').substring(0,2) : (r.pcode||'');
+    // Tighter cell padding on mobile so AMT/BAL get more room
+    var cellPad = _balCompact ? '4px 2px' : '5px 3px';
     html+='<tr style="background:'+rowBg+';border-bottom:1px solid #ccd;">'
-      +'<td style="padding:5px 3px;text-align:center;border:1px solid #ccd;color:#666;">'+(idx+1)+'</td>'
-      +'<td style="padding:5px 3px;border:1px solid #ccd;color:#000080;font-weight:700;white-space:nowrap;">'+_balFmtDate(r.date)+'</td>'
-      +'<td style="padding:5px 3px;border:1px solid #ccd;color:#000;font-weight:700;">'+(r.payee||'')+sentBadge+'</td>'
-      +'<td style="padding:5px 3px;border:1px solid #ccd;color:#444;">'+(r.desc||'')+'</td>'
-      +'<td style="padding:5px 3px;text-align:center;border:1px solid #ccd;color:#cc6600;font-weight:700;">'+(r.pcode||'')+'</td>'
-      +'<td style="padding:5px 3px;text-align:right;border:1px solid #ccd;color:'+amtCol+';font-weight:700;white-space:nowrap;">'+_balFmt(amt)+'</td>'
-      +'<td style="padding:5px 3px;text-align:right;border:1px solid #ccd;color:'+runCol+';font-weight:700;white-space:nowrap;">'+_balFmt(running)+'</td>'
+      +'<td style="padding:'+cellPad+';text-align:center;border:1px solid #ccd;color:#666;">'+(idx+1)+'</td>'
+      +'<td style="padding:'+cellPad+';border:1px solid #ccd;color:#000080;font-weight:700;white-space:nowrap;">'+_balFmtDate(r.date,_balCompact)+'</td>'
+      +'<td style="padding:'+cellPad+';border:1px solid #ccd;color:#000;font-weight:700;">'+(r.payee||'')+sentBadge+'</td>'
+      +'<td style="padding:'+cellPad+';border:1px solid #ccd;color:#444;">'+descCell+'</td>'
+      +'<td style="padding:'+cellPad+';text-align:center;border:1px solid #ccd;color:#cc6600;font-weight:700;">'+pcodeCell+'</td>'
+      +'<td style="padding:'+cellPad+';text-align:right;border:1px solid #ccd;color:'+amtCol+';font-weight:700;white-space:nowrap;">'+_balFmt(amt)+'</td>'
+      +'<td style="padding:'+cellPad+';text-align:right;border:1px solid #ccd;color:'+runCol+';font-weight:700;white-space:nowrap;">'+_balFmt(running)+'</td>'
       +'<td style="padding:4px 3px;text-align:center;border:1px solid #ccd;white-space:nowrap;">'
       +'<button onclick="balToggleCheck('+r.id+')" title="Check" style="width:24px;height:24px;background:'+checkBg+';color:'+checkColor+';border:1px solid '+checkColor+';border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:2px;">✓</button>'
       +'<button onclick="balSendToAccounting('+r.id+')" title="Send to Accounting" style="width:24px;height:24px;'+sendStyle+'border-radius:3px;font-size:12px;font-weight:700;font-family:Courier New,monospace;margin-right:2px;">→</button>'
