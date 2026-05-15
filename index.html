@@ -4864,8 +4864,24 @@ function doCheatSheet(){
   var byPayee={};
   expEntries.forEach(function(e){
     var p=e.payee||'UNKNOWN';
-    if(!byPayee[p])byPayee[p]={cnt:0,amt:0};
-    byPayee[p].cnt++;byPayee[p].amt+=e.amt;
+    if(!byPayee[p])byPayee[p]={cnt:0,amt:0,curPcodes:{},curDescs:{}};
+    byPayee[p].cnt++;
+    byPayee[p].amt+=e.amt;
+    if(e.pcode) byPayee[p].curPcodes[e.pcode]=(byPayee[p].curPcodes[e.pcode]||0)+1;
+    if(e.desc)  byPayee[p].curDescs[e.desc] =(byPayee[p].curDescs[e.desc] ||0)+1;
+  });
+  // Existing GOOD combos per payee — what proper pcode|desc pairs are already in use
+  // on already-cleaned entries (i.e., entries NOT in EXPENSE/UNKNOWN/empty bucket).
+  // These are the strongest hints for what to apply to the unlabeled ones.
+  var goodCombos={};
+  LOG.forEach(function(e){
+    var d=(e.desc||'').toUpperCase();
+    if(d==='EXPENSE'||d==='UNKNOWN'||d==='') return;
+    var p=e.payee||'UNKNOWN';
+    if(!byPayee[p]) return; // only care about payees that ALSO have unlabeled entries
+    if(!goodCombos[p]) goodCombos[p]={};
+    var key=(e.pcode||'?')+' | '+e.desc;
+    goodCombos[p][key]=(goodCombos[p][key]||0)+1;
   });
   var allDescs=[...new Set(LOG.map(function(e){return e.desc||'';}).filter(Boolean))].sort();
   var allPcodes=[...new Set(LOG.map(function(e){return e.pcode||'';}).filter(Boolean))].sort();
@@ -4879,15 +4895,34 @@ function doCheatSheet(){
     +'<button onclick="document.getElementById(\'cheatsheet-overlay\').remove();goMain();" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ DONE</button>'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">📝 '+Object.keys(byPayee).length+' payees need DESC</span>'
     +'</div><div style="padding:8px;">'
-    +'<div style="color:#00ff88;font-size:11px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry</div>';
+    +'<div style="color:#00ff88;font-size:11px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry. Existing values shown so you know what\'s there.</div>';
   Object.keys(byPayee).sort().forEach(function(payee,i){
     var v=byPayee[payee];
     var sid='cs_'+i;
     var bg=i%2===0?'background:#000044':'background:#00003a';
+    // Build "currently on these entries" strings
+    var curPcStr=Object.keys(v.curPcodes).map(function(k){return k+' ('+v.curPcodes[k]+')';}).join(', ')||'<span style="color:#888;">none</span>';
+    var curDcStr=Object.keys(v.curDescs).map(function(k){return k+' ('+v.curDescs[k]+')';}).join(', ')||'<span style="color:#888;">blank</span>';
+    // Build "existing GOOD combos on other entries for this payee" string
+    var goodList=goodCombos[payee]||{};
+    var goodKeys=Object.keys(goodList).sort(function(a,b){return goodList[b]-goodList[a];});
+    var goodStr='';
+    if(goodKeys.length){
+      goodStr='<div style="background:#001a33;border:1px solid #00ffff;border-radius:3px;padding:5px 7px;margin:5px 0 6px;font-size:11px;color:#aaccff;line-height:1.5;">'
+        +'<span style="color:#00ffff;font-weight:700;">✓ ALREADY USED FOR THIS PAYEE:</span><br>'
+        +goodKeys.slice(0,4).map(function(k){return '<span style="color:#00ff88;">'+k+'</span> ×'+goodList[k];}).join('<br>')
+        +(goodKeys.length>4?'<br><span style="color:#888;">…and '+(goodKeys.length-4)+' more</span>':'')
+        +'</div>';
+    }
     h+='<div style="'+bg+';border:1px solid #333388;border-radius:4px;padding:8px;margin-bottom:6px;">'
-      +'<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
       +'<div style="color:#ffff00;font-weight:700;font-size:13px;">'+trunc(payee,22)+'</div>'
       +'<div style="color:#ff6666;font-size:11px;">'+v.cnt+' · $'+Math.abs(v.amt).toFixed(0)+'</div></div>'
+      +'<div style="color:#ffaa00;font-size:10px;line-height:1.4;margin-bottom:4px;">'
+        +'<span style="color:#aaccff;">CURRENT PCODE:</span> <span style="color:#ffaa00;font-weight:700;">'+curPcStr+'</span><br>'
+        +'<span style="color:#aaccff;">CURRENT DESC:</span> <span style="color:#ffaa00;font-weight:700;">'+curDcStr+'</span>'
+      +'</div>'
+      +goodStr
       +'<div style="display:flex;gap:6px;margin-bottom:6px;">'
       +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
       +'<select id="'+sid+'_dc" style="flex:2;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
