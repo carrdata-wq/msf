@@ -10407,7 +10407,10 @@ function normalizeClient(r){
     notes:String(pick('notes','note','job','description','desc','memo','comments')||'').trim(),
     contacted:String(pick('contacted','lastcontact','last_contact','lastcontacted','contactdate')||'').trim(),
     adate:String(pick('adate','addeddate','added','dateadded')||'').trim(),
-    x:String(pick('x','marked','flag','flagged')||'').trim().toUpperCase()==='X'?'X':''
+    x:String(pick('x','marked','flag','flagged')||'').trim().toUpperCase()==='X'?'X':'',
+    // Preserve mtime from CSV imports — keeps historical timestamps so search
+    // sort puts truly-recent edits above 1993 FoxBase entries.
+    mtime:String(pick('mtime','modified','modifiedtime','lastmodified')||'').trim()
   };
 }
 
