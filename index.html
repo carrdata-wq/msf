@@ -1486,7 +1486,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <button onclick="phoneUpdateIndex()" title="Rebuild sort index and show all" style="flex:1;background:#001a44;color:#00aaff;border:1px solid #00aaff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">🔄 UPDATE INDEX</button>
         <button onclick="emailClientsCSV()" title="Email all clients" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📧 EMAIL</button>
         <button onclick="phoneImportTool()" title="Import clients" style="flex:1;background:#00304a;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📥 IMPORT</button>
-        <button onclick="phoneLoadFile()" title="Load clients from JSON file" style="flex:1;background:#1a0044;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📂 LOAD FILE</button>
+        <button onclick="bulkCsvImport()" title="Bulk upload multiple CSV/TXT files (safe-merge, never overwrites)" style="flex:1;background:#1a0044;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📦 BULK UPLOAD</button>
       </div>
       <input type="file" id="phone-file-input" accept=".json,.csv" style="display:none" onchange="phoneReadFile(this)">
       <div id="phone-list"></div>
@@ -9348,7 +9348,7 @@ function clientCardHtml(c){
   if(c.addr)  h+='<div style="color:#ccccff;font-size:13px;margin:3px 0;">📍 '+escClient(c.addr)+'</div>';
   if(c.notes) h+='<div style="color:#ce93d8;font-size:13px;margin:3px 0;">📝 '+escClient(c.notes)+'</div>';
   if(c.adate)     h+='<div style="font-size:13px;font-weight:700;margin:3px 0;background:#330000;padding:4px 7px;border-radius:3px;color:#ffff00;">📅 JOB DATE: '+escClient(fmtADate(c.adate))+'</div>';
-  else if(c.contacted) h+='<div style="color:#ffff00;font-size:13px;margin:3px 0;">📅 DATE: '+escClient(c.contacted)+'</div>';
+  else if(c.contacted) h+='<div style="color:#888;font-size:12px;margin:3px 0;font-style:italic;">📅 ADDED: '+escClient(fmtADate(c.contacted))+'</div>';
   h+='<div style="display:flex;gap:6px;margin-top:6px;">'
     +'<button onclick="phoneShowForm('+c.id+')" style="flex:1;background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">EDIT</button>'
     +'<button onclick="copyClient('+c.id+')" style="flex:1;background:#002244;color:#00ffff;border:1px solid #00ffff;padding:6px;border-radius:3px;font-family:inherit;font-size:13px;cursor:pointer;">COPY</button>'
