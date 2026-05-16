@@ -5141,14 +5141,26 @@ function handleAndroidBulkImport(e){
   });
 }
 
+// First definition of mergeClients — kept for backwards compatibility but routes
+// through the SAFE merge logic. Existing records always preserved.
 function mergeClients(newClients){
   loadClients();
+  function normName(s){ return String(s||'').toUpperCase().replace(/\s+/g,' ').trim(); }
+  var existing={};
+  CLIENTS.forEach(function(c){ var k=normName(c.name); if(k) existing[k]=true; });
   var maxId=CLIENTS.length?Math.max.apply(null,CLIENTS.map(function(c){return c.id||0;})):0;
+  var added=0, skipped=0;
   newClients.forEach(function(c,i){
-    if(!c.id)c.id=maxId+i+1;
+    var k=normName(c.name);
+    if(!k){ skipped++; return; }
+    if(existing[k]){ skipped++; return; }
+    if(!c.id) c.id=maxId+i+1;
     CLIENTS.push(c);
+    existing[k]=true;
+    added++;
   });
   saveClients();
+  return {added:added, skipped:skipped};
 }
 
 function finishBulkImport(newClients,newEntries,clientCount,accCount){
@@ -10472,20 +10484,42 @@ function parseClientsCSV(txt){
   });
 }
 
+// SAFE MERGE — existing records ALWAYS win. New CSV imports never overwrite
+// or mutate anything already in your list. Dedup keyed on NAME alone (trimmed,
+// uppercased) so spelling-variant phones don't accidentally create duplicates.
+//
+// Returns {added:N, skipped:N} so callers can show a clear toast of what happened.
 function mergeClients(newOnes){
   loadClients();
+  // Build an index of EVERY existing name (case-insensitive, whitespace-collapsed).
+  // We compare names only — if a name exists, the incoming record is skipped,
+  // no matter what its phone or address is. Existing data is never modified.
+  function normName(s){
+    return String(s||'').toUpperCase().replace(/\s+/g,' ').trim();
+  }
   var existing={};
-  CLIENTS.forEach(function(c){existing[(c.name||'').toUpperCase()+'|'+(c.phone||'')]=true;});
+  CLIENTS.forEach(function(c){
+    var k=normName(c.name);
+    if(k) existing[k]=true;
+  });
+  var added=0, skipped=0;
   newOnes.forEach(function(n){
-    var key=(n.name||'').toUpperCase()+'|'+(n.phone||'');
-    if(existing[key])return; // dup
+    var k=normName(n.name);
+    if(!k){ skipped++; return; }     // no name → skip
+    if(existing[k]){ skipped++; return; } // already have this name → skip, never overwrite
     n.id=nextClientId();
-    n.name=(n.name||'').toUpperCase();
+    n.name=normName(n.name);
     if(n.addr)n.addr=n.addr.toUpperCase();
     CLIENTS.push(n);
-    existing[key]=true;
+    existing[k]=true;
+    added++;
   });
   saveClients();
+  // Show clear feedback so user always knows what just happened
+  if(typeof toast==='function' && (added>0 || skipped>0)){
+    toast('✅ Added '+added.toLocaleString()+' new · Skipped '+skipped.toLocaleString()+' already in list',true);
+  }
+  return {added:added, skipped:skipped};
 }
 
 // init matrix on page load
