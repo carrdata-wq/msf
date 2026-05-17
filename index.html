@@ -643,6 +643,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #rpt-content table td[style*="color: #222"] {
     color: #000000 !important;
   }
+  /* Make every report data cell thicker (bold) — payee & amount already are,
+     date / desc / pcode / # become bold for the first time. Together with the
+     darken rule above this gives a chunky black-ink ledger-tape feel. */
+  #rpt-content table td {
+    font-weight: 700 !important;
+  }
 
   /* CSS variable overrides — anything still using var(--bg) etc. */
   :root {
