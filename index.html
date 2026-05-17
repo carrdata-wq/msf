@@ -691,6 +691,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     font-weight: 700 !important;
   }
 
+  /* Balance Sheet — hide the cumulative running balance (BAL) column on Android
+     only. ThinkPad keeps the column. Targets the .bal-cumulative class set on
+     the BAL th, each row's running-total td, and the grand total's duplicate. */
+  #screen-balance .bal-cumulative {
+    display: none !important;
+  }
+
   /* CSS variable overrides — anything still using var(--bg) etc. */
   :root {
     --bg: #000011 !important;
@@ -7437,7 +7444,7 @@ function balRender(){
     +'<th style="padding:5px 3px;text-align:left;border:1px solid #6666ff;font-size:11px;">DESC</th>'
     +'<th style="padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:11px;width:48px;">PC</th>'
     +'<th style="padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:11px;white-space:nowrap;">AMT</th>'
-    +'<th style="padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:11px;white-space:nowrap;">BAL</th>'
+    +'<th class="bal-cumulative" style="padding:5px 3px;text-align:right;border:1px solid #6666ff;font-size:11px;white-space:nowrap;">BAL</th>'
     +'<th style="padding:5px 3px;text-align:center;border:1px solid #6666ff;font-size:11px;width:118px;">ACT</th>'
     +'</tr></thead><tbody>';
 
@@ -7469,7 +7476,7 @@ function balRender(){
       +'<td style="padding:'+cellPad+';border:1px solid #ccd;color:#444;">'+descCell+'</td>'
       +'<td style="padding:'+cellPad+';text-align:center;border:1px solid #ccd;color:#cc6600;font-weight:700;">'+pcodeCell+'</td>'
       +'<td style="padding:'+cellPad+';text-align:right;border:1px solid #ccd;color:'+amtCol+';font-weight:700;white-space:nowrap;">'+_balFmt(amt)+'</td>'
-      +'<td style="padding:'+cellPad+';text-align:right;border:1px solid #ccd;color:'+runCol+';font-weight:700;white-space:nowrap;">'+_balFmt(running)+'</td>'
+      +'<td class="bal-cumulative" style="padding:'+cellPad+';text-align:right;border:1px solid #ccd;color:'+runCol+';font-weight:700;white-space:nowrap;">'+_balFmt(running)+'</td>'
       +'<td style="padding:4px 3px;text-align:center;border:1px solid #ccd;white-space:nowrap;">'
       +'<button onclick="balToggleCheck('+r.id+')" title="Check" style="width:24px;height:24px;background:'+checkBg+';color:'+checkColor+';border:1px solid '+checkColor+';border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;margin-right:2px;">✓</button>'
       +'<button onclick="balSendToAccounting('+r.id+')" title="Send to Accounting" style="width:24px;height:24px;'+sendStyle+'border-radius:3px;font-size:12px;font-weight:700;font-family:Courier New,monospace;margin-right:2px;">→</button>'
@@ -7484,7 +7491,7 @@ function balRender(){
   html+='<tr style="background:#ffff80;border-top:2px solid #000080;">'
     +'<td colspan="5" style="padding:6px 4px;font-weight:700;border:1px solid #6666ff;color:#000080;font-size:12px;">TOTAL '+(_balFilter.field?'('+_balFilter.value+')':'')+'</td>'
     +'<td style="padding:6px 4px;text-align:right;border:1px solid #6666ff;color:'+gc+';font-weight:700;white-space:nowrap;">'+_balFmt(grand)+'</td>'
-    +'<td style="padding:6px 4px;text-align:right;border:1px solid #6666ff;color:'+gc+';font-weight:700;white-space:nowrap;">'+_balFmt(grand)+'</td>'
+    +'<td class="bal-cumulative" style="padding:6px 4px;text-align:right;border:1px solid #6666ff;color:'+gc+';font-weight:700;white-space:nowrap;">'+_balFmt(grand)+'</td>'
     +'<td style="padding:6px 4px;text-align:center;border:1px solid #6666ff;color:#000080;font-weight:700;font-size:10px;">'+filtered.length+' row'+(filtered.length===1?'':'s')+'</td>'
     +'</tr>';
 
