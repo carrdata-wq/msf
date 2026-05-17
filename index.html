@@ -4745,11 +4745,36 @@ function doReindex(){
 }
 
 function doClearPhoneClients(){
-  if(!confirm('CLEAR ALL PHONE CLIENTS?\n\nThis wipes the entire phone database.\nMake sure you have your P1-P26 files ready to reload!\n\nTap OK to confirm.'))return;
+  var overlay=document.createElement('div');
+  overlay.id='clear-phone-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #ff4444;border-radius:8px;padding:20px;width:100%;max-width:380px;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#ff4444;font-weight:700;font-size:15px;margin-bottom:10px;">📱 CLEAR PHONE CLIENTS</div>'
+    +'<div style="color:#ffff00;font-size:14px;margin-bottom:6px;">⚠️ WIPES ENTIRE PHONE DATABASE</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:16px;">Have your XPHONE backup files ready?<br>This cannot be undone.</div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button onclick="confirmClearPhone()" style="flex:1;background:#ff4444;color:#ffffff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
+    +'<button onclick="document.getElementById(\'clear-phone-overlay\').remove();goMain();" style="flex:1;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function confirmClearPhone(){
+  try{
+    // Remove ALL chunked storage keys (mx_clients_0..N + counter)
+    var n=parseInt(localStorage.getItem('mx_clients_n')||'0',10);
+    for(var i=0;i<n;i++) localStorage.removeItem('mx_clients_'+i);
+    localStorage.removeItem('mx_clients_n');
+    localStorage.removeItem('mx_clients'); // legacy single-key
+    // Aggressive sweep — catch any stray chunks above n in case counter is stale
+    for(var j=0;j<200;j++) localStorage.removeItem('mx_clients_'+j);
+  }catch(e){}
   CLIENTS=[];
-  try{localStorage.removeItem('mx_clients');}catch(e){}
-  toast('✓ Phone clients cleared — reload your P1-P26 files',true);
-  goMain();
+  var o=document.getElementById('clear-phone-overlay');
+  if(o)o.remove();
+  toast('✓ Phone clients cleared — ready for bulk upload',true);
+  try{phoneShowList();}catch(e){}
+  setTimeout(function(){goMain();},800);
 }
 
 function doClearAllData(){
