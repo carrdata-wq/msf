@@ -650,6 +650,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     font-weight: 700 !important;
   }
 
+  /* Balance Sheet drill-down — match the DESC cell to the PAYEE cell so both
+     read as equal-weight FoxBase columns. Payee already renders bold black;
+     desc was muted gray (color:#444) — bump it to bold black. */
+  #bal-list table td[style*="color:#444"] {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
+
   /* CSS variable overrides — anything still using var(--bg) etc. */
   :root {
     --bg: #000011 !important;
@@ -701,12 +709,68 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   border-radius:3px; min-height:30px; line-height:1;
 }
 @media (max-width: 700px) {
-  .pc-row { padding:4px 5px; gap:4px; }
-  .pc-row .pc-num { min-width:20px; font-size:10px; }
-  .pc-row .pc-body .pc-l1 { font-size:11px; }
-  .pc-row .pc-body .pc-l2 { font-size:10px; }
-  .pc-row .pc-acts { gap:2px; }
-  .pc-row .pc-acts button { padding:5px 5px !important; font-size:10px !important; min-height:30px; }
+  /* Card-style phone-client rows matching accounting drill-down look */
+  .pc-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 7px 8px;
+    gap: 6px;
+    margin-bottom: 4px;
+    border: 1px solid #cccccc;
+    border-bottom: 1px solid #cccccc;
+    border-radius: 4px;
+  }
+  .pc-row .pc-num {
+    min-width: 22px;
+    color: #cc6600;
+    font-size: 13px;
+    padding-top: 2px;
+  }
+  .pc-row .pc-body { flex: 1 1 auto; min-width: 0; }
+  /* Line fonts — bigger, bolder typewriter look */
+  .pc-row .pc-body .pc-l1 { font-size: 17px; font-weight: 700; }
+  .pc-row .pc-body .pc-l2,
+  .pc-row .pc-body .pc-l3,
+  .pc-row .pc-body .pc-l4 {
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    margin-top: 3px;
+  }
+  .pc-row .pc-body .pc-l2 { font-size: 14px; color: inherit; }
+  .pc-row .pc-body .pc-l3 { font-size: 15px; }
+  .pc-row .pc-body .pc-l4 { font-size: 14px; color: #222; font-weight: 700; }
+
+  /* Actions wrap to their own line, right-aligned (matches accounting line 3) */
+  .pc-row .pc-acts {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  /* Tiny D/C/T/E buttons — solid accounting colors, white text */
+  .pc-row .pc-acts button {
+    width: 26px !important;
+    height: 22px !important;
+    padding: 0 !important;
+    font-size: 11px !important;
+    min-height: 0 !important;
+    border: none !important;
+    border-radius: 2px !important;
+    line-height: 1;
+    color: #fff !important;
+  }
+  /* Visual order on mobile: D, C, T, E (DOM order is EDT, CPY, 📤, DEL) */
+  .pc-row .pc-acts button:nth-child(1) { order: 4; background: #0066aa !important; }  /* EDT → E */
+  .pc-row .pc-acts button:nth-child(2) { order: 2; background: #0055aa !important; }  /* CPY → C */
+  .pc-row .pc-acts button:nth-child(3) { order: 3; background: #006666 !important; }  /* 📤  → T */
+  .pc-row .pc-acts button:nth-child(4) { order: 1; background: #880000 !important; }  /* DEL → D */
+  /* Hide long labels (EDT/CPY/📤/DEL), show single-letter labels */
+  .pc-row .pc-acts button .bl { display: none !important; }
+  .pc-row .pc-acts button .bs {
+    display: inline !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+  }
 }
 </style>
 </head>
@@ -1667,6 +1731,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <button onclick="bulkCsvImport()" title="Bulk upload multiple CSV/TXT files (safe-merge, never overwrites)" style="flex:1;background:#1a0044;color:#ce93d8;border:1px solid #ce93d8;padding:6px;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;">📦 BULK UPLOAD</button>
       </div>
       <input type="file" id="phone-file-input" accept=".json,.csv" style="display:none" onchange="phoneReadFile(this)">
+      <!-- MOBILE LEGEND — explains the per-row D/C/T/E buttons (hidden on desktop) -->
+      <div class="led-legend-mobile">
+        <span><strong style="background:#880000;">D</strong> Delete</span>
+        <span><strong style="background:#0055aa;">C</strong> Copy</span>
+        <span><strong style="background:#006666;">T</strong> Text/Share</span>
+        <span><strong style="background:#0066aa;">E</strong> Edit</span>
+      </div>
       <div id="phone-list"></div>
     </div>
   </div>
@@ -9491,31 +9562,39 @@ function renderClientsTable(rows, total, showingAll){
     var dateShown = _phoneFmtDate(c.adate || c.contacted || '');
     var newBadge = c.x ? '<span title="New/edited" style="color:#006600;font-weight:700;">✓</span> ' : '';
 
-    // Line 1: NAME · ADDR · EMAIL
-    var line1Parts = [];
-    line1Parts.push('<span style="color:#000;font-weight:700;cursor:pointer;" onclick="phonePickClient('+c.id+')">'+newBadge+escClient(c.name||'')+'</span>');
-    if(c.addr)  line1Parts.push('<span style="color:#000080;">'+escClient(c.addr)+'</span>');
-    if(c.email) line1Parts.push('<a href="mailto:'+escClient(c.email)+'" style="color:#006699;text-decoration:none;">✉ '+escClient(c.email)+'</a>');
-    var line1 = line1Parts.join(' <span style="color:#999;">·</span> ');
+    // Line 1: NAME · ADDR
+    var line1 = '<span style="color:#000;font-weight:700;cursor:pointer;" onclick="phonePickClient('+c.id+')">'+newBadge+escClient(c.name||'')+'</span>';
+    if(c.addr) line1 += ' <span style="color:#999;">·</span> <span style="color:#000080;font-weight:700;">'+escClient(c.addr)+'</span>';
 
-    // Line 2: DATE · PHONE · NOTES
-    var line2Parts = [];
-    if(dateShown) line2Parts.push('<span style="color:#cc6600;font-weight:700;">'+escClient(dateShown)+'</span>');
-    if(c.phone)   line2Parts.push('<a href="tel:'+escClient(telLink(c.phone))+'" style="color:#006600;text-decoration:none;font-weight:700;">📞 '+escClient(c.phone)+'</a>');
-    if(c.notes)   line2Parts.push('<span style="color:#555;">'+escClient(c.notes)+'</span>');
-    var line2 = line2Parts.join(' <span style="color:#999;">·</span> ');
+    // Line 2: EMAIL (only if present)
+    var line2 = c.email
+      ? '<a href="mailto:'+escClient(c.email)+'" style="color:#006699;text-decoration:none;font-weight:700;">✉ '+escClient(c.email)+'</a>'
+      : '';
+
+    // Line 3: DATE · PHONE
+    var line3Parts = [];
+    if(dateShown) line3Parts.push('<span style="color:#cc6600;font-weight:700;">'+escClient(dateShown)+'</span>');
+    if(c.phone)   line3Parts.push('<a href="tel:'+escClient(telLink(c.phone))+'" style="color:#006600;text-decoration:none;font-weight:700;">📞 '+escClient(c.phone)+'</a>');
+    var line3 = line3Parts.join(' <span style="color:#999;">·</span> ');
+
+    // Line 4: NOTES (only if present)
+    var line4 = c.notes
+      ? '<span style="color:#222;font-weight:700;">'+escClient(c.notes)+'</span>'
+      : '';
 
     html += '<div class="pc-row" style="background:'+bg+';">'
-      + '<div class="pc-num">'+(idx+1)+'.</div>'
+      + '<div class="pc-num">'+(idx+1)+'</div>'
       + '<div class="pc-body">'
         + '<div class="pc-l1">'+line1+'</div>'
-        + '<div class="pc-l2">'+line2+'</div>'
+        + (line2 ? '<div class="pc-l2">'+line2+'</div>' : '')
+        + (line3 ? '<div class="pc-l3">'+line3+'</div>' : '')
+        + (line4 ? '<div class="pc-l4">'+line4+'</div>' : '')
       + '</div>'
       + '<div class="pc-acts">'
-        + '<button onclick="phoneShowForm('+c.id+')" title="Edit" style="background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">EDT</button>'
-        + '<button onclick="copyClient('+c.id+')" title="Copy" style="background:#e0f0ff;color:#000080;border:1px solid #6666ff;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">CPY</button>'
-        + '<button onclick="shareClient('+c.id+')" title="Share via email / text / copy" style="background:#e0fff0;color:#006666;border:1px solid #006666;border-radius:3px;padding:3px 6px;font-size:13px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">📤</button>'
-        + '<button onclick="delClient('+c.id+')" title="Delete" style="background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;">DEL</button>'
+        + '<button onclick="phoneShowForm('+c.id+')" title="Edit" style="background:#fff8d0;color:#cc6600;border:1px solid #cc6600;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;"><span class="bl">EDT</span><span class="bs">E</span></button>'
+        + '<button onclick="copyClient('+c.id+')" title="Copy" style="background:#e0f0ff;color:#000080;border:1px solid #6666ff;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;"><span class="bl">CPY</span><span class="bs">C</span></button>'
+        + '<button onclick="shareClient('+c.id+')" title="Share via email / text / copy" style="background:#e0fff0;color:#006666;border:1px solid #006666;border-radius:3px;padding:3px 6px;font-size:13px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;"><span class="bl">📤</span><span class="bs">T</span></button>'
+        + '<button onclick="delClient('+c.id+')" title="Delete" style="background:#ffe0e0;color:#cc0000;border:1px solid #cc0000;border-radius:3px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Courier New,monospace;"><span class="bl">DEL</span><span class="bs">D</span></button>'
       + '</div>'
       + '</div>';
   });
