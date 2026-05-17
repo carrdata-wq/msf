@@ -507,9 +507,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   }
   /* MAIN MENU sub-labels — bold black on Android so the small descriptions
      under each menu item ("Payee · Desc · Pcode · Amount", etc.) read crisp
-     in daylight. Matches the bold-black treatment we applied to reports. */
+     in daylight. Matches the bold-black treatment we applied to reports.
+     Also covers SYSTEM UTILITIES and DATA MANAGER for the same readability. */
   #screen-main .menu-item .ms,
-  #screen-main .menu-item .ms[style] {
+  #screen-main .menu-item .ms[style],
+  #screen-sysutil-sub .menu-item .ms,
+  #screen-sysutil-sub .menu-item .ms[style],
+  #screen-transfer .menu-item .ms,
+  #screen-transfer .menu-item .ms[style] {
     color: #000000 !important;
     font-weight: 700 !important;
   }
@@ -715,6 +720,26 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     font-size: 17px !important;
     min-height: 50px !important;
     box-sizing: border-box !important;
+  }
+}
+
+/* ── BALANCE SHEET — DESKTOP/THINKPAD COMPRESSION ──
+   On ThinkPad the SYNC buttons and ADD ENTRY input were eating too much
+   vertical real estate, leaving little room for the entry list below.
+   This block trims the input area only on desktop. Android (< 700px) is
+   unaffected because it's inside (min-width: 701px). */
+@media (min-width: 701px) {
+  /* SYNC BALANCE SHEET — three big buttons, shrink padding */
+  #screen-balance button[onclick*="balPasteImport"],
+  #screen-balance button[onclick*="balDownloadAndEmail"],
+  #screen-balance button[onclick*="balImport()"] {
+    padding: 8px !important;
+    font-size: 12px !important;
+  }
+  /* ADD ENTRY — payee search input slightly more compact */
+  #bal-search {
+    padding: 6px 8px !important;
+    font-size: 14px !important;
   }
 }
 </style>
