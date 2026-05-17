@@ -631,6 +631,19 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     font-size: 15px !important;
   }
 
+  /* Reports — darken the gray text for crisp typewriter readability on Android.
+     Keeps the 60s typewriter feel (Courier mono, same size) but pumps the gray
+     text to pure black for daylight contrast. Payee navy (#000080) and amount
+     red/green (#cc0000 / #006600) stay untouched — those colors carry meaning. */
+  #rpt-content table td[style*="color:#444"],
+  #rpt-content table td[style*="color: #444"],
+  #rpt-content table td[style*="color:#666"],
+  #rpt-content table td[style*="color: #666"],
+  #rpt-content table td[style*="color:#222"],
+  #rpt-content table td[style*="color: #222"] {
+    color: #000000 !important;
+  }
+
   /* CSS variable overrides — anything still using var(--bg) etc. */
   :root {
     --bg: #000011 !important;
