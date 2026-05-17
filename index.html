@@ -241,6 +241,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;width:100%;max-width:380px;}
 .modal-title{font-size:14px;font-weight:700;color:var(--yellow);margin-bottom:14px;text-align:center;}
 
+/* Ledger row action buttons — dual-label system.
+   Desktop shows .bl (DEL/CPY/EDT). Mobile @media swap shows .bs (D/C/T/E)
+   and a legend so the single letters make sense. ThinkPad untouched. */
+.bs { display: none; }
+.led-legend-mobile { display: none; }
+
 /* Accounting ledger — mobile: actions drop to a second row, header hidden, ULTRA-COMPACT */
 @media (max-width: 700px) {
   #logtbl thead, table.mfs-stack thead { display: none; }
@@ -325,6 +331,49 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     min-height: 24px !important;
     border-radius: 3px !important;
     line-height: 1 !important;
+  }
+  /* Swap to single-letter labels on mobile (D/C/T/E). Bigger font since
+     each button now holds one character — easier to read at a glance. */
+  #logtbl tbody tr.led-row > td.led-actions-cell button .bl,
+  table.mfs-stack tbody tr.led-row > td.led-actions-cell button .bl {
+    display: none !important;
+  }
+  #logtbl tbody tr.led-row > td.led-actions-cell button .bs,
+  table.mfs-stack tbody tr.led-row > td.led-actions-cell button .bs {
+    display: inline !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+  }
+  /* Date cell — slightly bigger font so it reads easily at a glance.
+     Width stays the same (it's already nowrap and short text). */
+  #logtbl tbody tr.led-row > td.led-date-cell,
+  table.mfs-stack tbody tr.led-row > td.led-date-cell {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+  /* Legend at top of ledger explaining the D/C/T/E single-letter buttons */
+  .led-legend-mobile {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    justify-content: center;
+    align-items: center;
+    background: #ffffff !important;
+    border: 1px solid #cccccc !important;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    font-family: Courier New, monospace;
+    font-size: 12px;
+    color: #555555 !important;
+  }
+  .led-legend-mobile strong {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #ffffff;
   }
 
   /* ── Menu drill-down screens: LIGHT two-tone look (matches Balance Sheet) ──
@@ -1224,6 +1273,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="goMain()" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:6px 12px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">◀ MENU</button>
       <span style="color:#ffff00;font-size:13px;font-weight:700;">LEDGER</span>
       <span id="logcnt" style="color:#ccccff;font-size:14px;">2635 entries</span>
+    </div>
+    <!-- MOBILE LEGEND — explains the per-row D/C/T/E buttons (hidden on desktop) -->
+    <div class="led-legend-mobile">
+      <span><strong style="background:#880000;">D</strong> Delete</span>
+      <span><strong style="background:#0055aa;">C</strong> Copy</span>
+      <span><strong style="background:#006666;">T</strong> Text/Share</span>
+      <span><strong style="background:#0066aa;">E</strong> Edit</span>
     </div>
     <!-- YEAR FILTER + CLEAR -->
     <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
@@ -8819,10 +8875,10 @@ function renderLog(){
       +'<td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
       +'<td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
       +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'
-      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')">DEL</button> '
-      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')">CPY</button> '
-      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#006666;color:#fff;" onclick="event.preventDefault();event.stopPropagation();shareLog('+e.id+')" title="Share via email / text / copy">📤</button> '
-      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog('+e.id+')">EDT</button>'
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')"><span class="bl">DEL</span><span class="bs">D</span></button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')"><span class="bl">CPY</span><span class="bs">C</span></button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#006666;color:#fff;" onclick="event.preventDefault();event.stopPropagation();shareLog('+e.id+')" title="Share via email / text / copy"><span class="bl">📤</span><span class="bs">T</span></button> '
+      +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0066aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();editLog('+e.id+')"><span class="bl">EDT</span><span class="bs">E</span></button>'
       +(e.x?'<span title="New/Edited — pending sync" style="margin-left:4px;color:#00ff88;font-size:14px;font-weight:700;">✔</span>':'')
       +'</td>'
       +'<td class="led-rownum-cell" style="padding:6px 3px;color:#ff88ff;font-size:14px;text-align:right;white-space:nowrap;font-weight:700;">'+(start+i+1)+'</td>'
