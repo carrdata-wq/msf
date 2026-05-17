@@ -328,15 +328,17 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   }
   #logtbl tbody tr.led-row > td.led-payee-cell,
   table.mfs-stack tbody tr.led-row > td.led-payee-cell {
-    order: 3;
+    order: 4;
     flex: 1 1 auto !important;
     max-width: none !important;
+    padding-left: 18px !important;
     font-size: 16px !important;
     font-weight: 700 !important;
   }
   #logtbl tbody tr.led-row > td.led-pcode-cell,
   table.mfs-stack tbody tr.led-row > td.led-pcode-cell {
-    order: 4;
+    order: 3;
+    min-width: 52px !important;
     font-size: 15px !important;
     font-weight: 700 !important;
   }
@@ -353,6 +355,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     order: 6;
     flex: 1 1 auto !important;
     max-width: none !important;
+    padding-left: 27px !important;
     font-size: 15px !important;
     font-weight: 600 !important;
   }
@@ -8916,9 +8919,9 @@ function renderLog(){
     var rs=(i===0&&_ledPage===0)?'background:#0055ff;border:2px solid #00ffff;':'background:#00008a;border-bottom:1px solid #5555ee;';
     html+='<tr class="led-row" style="cursor:pointer;'+rs+'">'
       +'<td class="led-date-cell" style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">'+fmtDate(e.date)+'</td>'
-      +'<td class="led-payee-cell" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,14)+'</td>'
-      +'<td class="led-desc-cell" style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,8)+'</td>'
-      +'<td class="led-pcode-cell" style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
+      +'<td class="led-payee-cell" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,40)+'</td>'
+      +'<td class="led-desc-cell" style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,40)+'</td>'
+      +'<td class="led-pcode-cell" style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,5)+'</td>'
       +'<td class="led-amt-cell" style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
       +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')"><span class="bl">DEL</span><span class="bs">D</span></button> '
