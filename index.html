@@ -352,6 +352,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     padding: 10px 12px !important;
     min-height: 0 !important;
   }
+  /* Main menu — taller rows on Android to fill the empty real estate below
+     the 8th item. Drill-down menus stay compact (rule above). */
+  #screen-main .menu-item {
+    padding: 20px 12px !important;
+  }
   /* Catch the 3 inline-styled "highlight" tiles on the main menu (Balance Sheet,
      MOVE ACCOUNTING, MOVE PHONE) — they all have inline cyan/green borders that
      would otherwise leak through. */
@@ -508,6 +513,28 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     --accent: #000033 !important;
     --dim: #ffffff !important;
     --border: #00ffff !important;
+  }
+
+  /* ── ACCOUNTING DATA-ENTRY INPUTS — taller on Android ──
+     Field-use ergonomics: bigger touch targets, easier to see what you typed,
+     fewer fat-finger mistakes. Targets the main entry inputs/selects only —
+     filter dropdowns (#led-yr-filter) and the pcode preview stay compact. */
+  #screen-accounting #search,
+  #screen-accounting #new-desc,
+  #screen-accounting #new-pcode,
+  #screen-accounting #an-payee,
+  #screen-accounting #an-pcode,
+  #screen-accounting #an-desc,
+  #screen-accounting #p-pcode,
+  #screen-accounting #p-desc-search,
+  #screen-accounting #p-mon,
+  #screen-accounting #p-day,
+  #screen-accounting #p-yr,
+  #screen-accounting #p-amt {
+    padding: 14px 12px !important;
+    font-size: 17px !important;
+    min-height: 50px !important;
+    box-sizing: border-box !important;
   }
 }
 </style>
