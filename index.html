@@ -6901,9 +6901,10 @@ function balSendToAccounting(id){
     x:'X',mtime:new Date().toISOString()
   });
   saveLog();
-  row.sent=true;row.mtime=new Date().toISOString();
+  // Auto-delete from Balance Sheet after sending — entry now lives in master accounting
+  BALANCE=BALANCE.filter(function(r){return r.id!==id;});
   balSave();balRender();
-  toast('→ Sent to Accounting ✓',true);
+  toast('→ Sent to Accounting ✓ removed from Balance Sheet',true);
 }
 
 // Build the Balance Sheet as plain text — shared by email/text/copy/download actions.
@@ -7251,9 +7252,10 @@ function balImportFromText(text){
 function balSendAllChecked(){
   var toSend=BALANCE.filter(function(r){return r.checked&&!r.sent;});
   if(!toSend.length){toast('No checked items to send',false);return;}
-  if(!confirm('Send '+toSend.length+' checked item(s) to Master Accounting?'))return;
+  if(!confirm('Send '+toSend.length+' checked item(s) to Master Accounting?\n\nThey will be removed from the Balance Sheet after sending.'))return;
   loadLog();
   var mtime=new Date().toISOString();
+  var sentIds={};
   toSend.forEach(function(row){
     LOG.unshift({
       id:Date.now()+Math.random(),
@@ -7261,10 +7263,12 @@ function balSendAllChecked(){
       date:row.date,amt:row.amt,
       x:'X',mtime:mtime
     });
-    row.sent=true;row.mtime=mtime;
+    sentIds[row.id]=true;
   });
+  // Auto-delete sent entries from Balance Sheet — they now live in master accounting
+  BALANCE=BALANCE.filter(function(r){return !sentIds[r.id];});
   saveLog();balSave();balRender();
-  toast('→ Sent '+toSend.length+' to Accounting ✓',true);
+  toast('→ Sent '+toSend.length+' to Accounting ✓ removed from Balance Sheet',true);
 }
 
 function _balFmt(n){
