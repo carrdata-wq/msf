@@ -451,10 +451,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     padding: 10px 12px !important;
     min-height: 0 !important;
   }
-  /* Main menu — taller rows on Android to fill the empty real estate below
-     the 8th item. Drill-down menus stay compact (rule above). */
+  /* Main menu — taller rows on Android, but not so tall that the 8th item
+     gets cut off below the footer buttons. 16px keeps tap targets generous
+     while letting the full 8-item list fit cleanly above the footer. */
   #screen-main .menu-item {
-    padding: 20px 12px !important;
+    padding: 16px 12px !important;
   }
   /* Catch the 3 inline-styled "highlight" tiles on the main menu (Balance Sheet,
      MOVE ACCOUNTING, MOVE PHONE) — they all have inline cyan/green borders that
@@ -504,6 +505,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     color: #555555 !important;
     font-size: 12px !important;
   }
+  /* MAIN MENU sub-labels — bold black on Android so the small descriptions
+     under each menu item ("Payee · Desc · Pcode · Amount", etc.) read crisp
+     in daylight. Matches the bold-black treatment we applied to reports. */
+  #screen-main .menu-item .ms,
+  #screen-main .menu-item .ms[style] {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
   /* Item number — orange accent (stands out against white) */
   #screen-accounting-sub .menu-item .menu-num,
   #screen-accounting .menu-item .menu-num,
@@ -532,6 +541,25 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     color: #000080 !important;
     font-size: 20px !important;
     font-weight: 700 !important;
+  }
+  /* DATA MANAGER (transfer) and SYSTEM UTILITIES — bigger menu items to
+     match the accounting screen scale. Other drill-downs (sub, accounting)
+     keep their compact 15px/12px sizing. */
+  #screen-sysutil-sub .menu-item,
+  #screen-transfer .menu-item {
+    padding: 16px 12px !important;
+  }
+  #screen-sysutil-sub .menu-item .ml,
+  #screen-transfer .menu-item .ml {
+    font-size: 17px !important;
+  }
+  #screen-sysutil-sub .menu-item .ms,
+  #screen-transfer .menu-item .ms {
+    font-size: 14px !important;
+  }
+  #screen-sysutil-sub .menu-item .menu-icon,
+  #screen-transfer .menu-item .menu-icon {
+    font-size: 22px !important;
   }
   /* Helper labels inside accounting screen (search hint, "ADD TO LISTS", etc.) */
   #screen-accounting #hint,
