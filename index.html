@@ -605,6 +605,32 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     border-color: #00ffff !important;
   }
 
+  /* ── REPORTS — taller fonts on Android (one rule catches all reports) ──
+     Affects main listings (BY PCODE/DESC/PAYEE/YR/MON/TYPE/DATE/AMT) AND
+     their drill-downs AND the MASTER/AUDIT/IRS DESC and YR COMPARE reports
+     — they all render into #rpt-content. Widths unchanged (still set by
+     inline styles in the JS). Amount cells get an extra bump to pop. */
+  #rpt-content table {
+    font-size: 15px !important;
+  }
+  #rpt-content table th {
+    padding: 7px 4px !important;
+    font-size: 13px !important;
+  }
+  #rpt-content table td {
+    padding: 8px 4px !important;
+    font-size: 15px !important;
+  }
+  /* Amount cells (right-aligned, bold) — biggest, matches accounting amount */
+  #rpt-content table td[style*="text-align:right"],
+  #rpt-content table td[style*="text-align: right"] {
+    font-size: 16px !important;
+  }
+  /* Report title row above each table (📊/📋 KEY · N entries) */
+  #rpt-content > div > div:first-child {
+    font-size: 15px !important;
+  }
+
   /* CSS variable overrides — anything still using var(--bg) etc. */
   :root {
     --bg: #000011 !important;
