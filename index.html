@@ -255,9 +255,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 3px;
-    padding: 2px 4px;
-    border-radius: 3px;
+    margin-bottom: 4px;
+    padding: 6px 8px;
+    border-radius: 4px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     background: #ffffff !important;
     border: 1px solid #cccccc !important;
@@ -309,31 +309,84 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     color: #cc6600 !important;  /* row number — orange */
   }
   #logtbl tbody tr.led-row > td.led-rownum-cell, table.mfs-stack tbody tr.led-row > td.led-rownum-cell {
-    order: -1;
+    order: 1;
     margin-right: 4px;
-    font-size: 11px !important;
+    font-size: 12px !important;
     min-width: 22px;
   }
+  /* ── TWO-LINE LEDGER ROW (Android) ──
+     Line 1: [#] DATE PAYEE...........PCODE
+     Line 2: DESC.......................AMT
+     Line 3: ...................D C T E
+     Cells are reordered via flex order; a ::after pseudo with flex-basis:100%
+     forces a line break between pcode and desc. */
+  #logtbl tbody tr.led-row > td.led-date-cell,
+  table.mfs-stack tbody tr.led-row > td.led-date-cell {
+    order: 2;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+  }
+  #logtbl tbody tr.led-row > td.led-payee-cell,
+  table.mfs-stack tbody tr.led-row > td.led-payee-cell {
+    order: 3;
+    flex: 1 1 auto !important;
+    max-width: none !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+  #logtbl tbody tr.led-row > td.led-pcode-cell,
+  table.mfs-stack tbody tr.led-row > td.led-pcode-cell {
+    order: 4;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+  /* Force line break between line 1 (pcode) and line 2 (desc) */
+  #logtbl tbody tr.led-row::after,
+  table.mfs-stack tbody tr.led-row::after {
+    content: "";
+    flex-basis: 100%;
+    height: 0;
+    order: 5;
+  }
+  #logtbl tbody tr.led-row > td.led-desc-cell,
+  table.mfs-stack tbody tr.led-row > td.led-desc-cell {
+    order: 6;
+    flex: 1 1 auto !important;
+    max-width: none !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+  }
+  #logtbl tbody tr.led-row > td.led-amt-cell,
+  table.mfs-stack tbody tr.led-row > td.led-amt-cell {
+    order: 7;
+    margin-left: auto;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+  }
+  /* Actions cell — own line (line 3), right-aligned, no separator */
   #logtbl tbody tr.led-row > td.led-actions-cell, table.mfs-stack tbody tr.led-row > td.led-actions-cell {
     display: flex !important;
     width: 100% !important;
-    gap: 3px;
-    justify-content: stretch;
-    margin-top: 3px;
-    padding-top: 3px !important;
-    border-top: 1px solid #cccccc !important;
+    gap: 4px;
+    justify-content: flex-end !important;
+    order: 9;
+    margin-top: 4px;
+    padding-top: 0 !important;
+    border-top: none !important;
   }
+  /* Buttons shrunk to one-letter size — data dominates, buttons recede */
   #logtbl tbody tr.led-row > td.led-actions-cell button, table.mfs-stack tbody tr.led-row > td.led-actions-cell button {
-    flex: 1 1 0;
-    padding: 3px 4px !important;
-    font-size: 9px !important;
+    flex: 0 0 auto !important;
+    width: 26px !important;
+    height: 22px !important;
+    padding: 0 !important;
+    font-size: 11px !important;
     font-family: inherit !important;
-    min-height: 24px !important;
-    border-radius: 3px !important;
+    min-height: 0 !important;
+    border-radius: 2px !important;
     line-height: 1 !important;
   }
-  /* Swap to single-letter labels on mobile (D/C/T/E). Bigger font since
-     each button now holds one character — easier to read at a glance. */
+  /* Swap to single-letter labels on mobile (D/C/T/E). */
   #logtbl tbody tr.led-row > td.led-actions-cell button .bl,
   table.mfs-stack tbody tr.led-row > td.led-actions-cell button .bl {
     display: none !important;
@@ -341,16 +394,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #logtbl tbody tr.led-row > td.led-actions-cell button .bs,
   table.mfs-stack tbody tr.led-row > td.led-actions-cell button .bs {
     display: inline !important;
-    font-size: 15px !important;
+    font-size: 12px !important;
     font-weight: 700 !important;
     letter-spacing: 0.5px;
-  }
-  /* Date cell — slightly bigger font so it reads easily at a glance.
-     Width stays the same (it's already nowrap and short text). */
-  #logtbl tbody tr.led-row > td.led-date-cell,
-  table.mfs-stack tbody tr.led-row > td.led-date-cell {
-    font-size: 16px !important;
-    font-weight: 600 !important;
   }
   /* Legend at top of ledger explaining the D/C/T/E single-letter buttons */
   .led-legend-mobile {
@@ -8870,10 +8916,10 @@ function renderLog(){
     var rs=(i===0&&_ledPage===0)?'background:#0055ff;border:2px solid #00ffff;':'background:#00008a;border-bottom:1px solid #5555ee;';
     html+='<tr class="led-row" style="cursor:pointer;'+rs+'">'
       +'<td class="led-date-cell" style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">'+fmtDate(e.date)+'</td>'
-      +'<td style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,14)+'</td>'
-      +'<td style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,8)+'</td>'
-      +'<td style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
-      +'<td style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
+      +'<td class="led-payee-cell" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,14)+'</td>'
+      +'<td class="led-desc-cell" style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,8)+'</td>'
+      +'<td class="led-pcode-cell" style="padding:6px 3px;color:#00ffff;font-size:13px;text-align:center;white-space:nowrap;">'+(e.pcode||'').slice(0,4)+'</td>'
+      +'<td class="led-amt-cell" style="padding:6px 3px;font-weight:700;font-size:13px;text-align:right;white-space:nowrap;min-width:55px;color:'+(e.amt>=0?'#00ffff':'#ff6666')+';">'+fmtAmt(e.amt)+'</td>'
       +'<td class="led-actions-cell" style="padding:3px 2px;text-align:center;white-space:nowrap;">'
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#880000;color:#fff;" onclick="event.preventDefault();event.stopPropagation();delLog('+e.id+')"><span class="bl">DEL</span><span class="bs">D</span></button> '
       +'<button style="padding:4px 6px;border:none;border-radius:3px;font-family:Courier New,monospace;font-size:14px;font-weight:700;cursor:pointer;background:#0055aa;color:#fff;" onclick="event.preventDefault();event.stopPropagation();copyLog('+e.id+')"><span class="bl">CPY</span><span class="bs">C</span></button> '
