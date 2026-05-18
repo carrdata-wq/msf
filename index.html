@@ -1503,7 +1503,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </select>
     <div style="font-size:14px;color:#ccccff;margin-top:6px;">DESC</div>
     <div style="position:relative;">
-      <input type="text" id="p-desc-search" placeholder="TYPE DESC (e.g. tr = TRUCK GAS)..." autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-top:4px;" oninput="filterDescList(this.value)" onkeydown="descKeyNav(event)">
+      <div style="display:flex;gap:4px;">
+        <input type="text" id="p-desc-search" placeholder="TYPE DESC (e.g. tr = TRUCK GAS)..." autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;box-sizing:border-box;background:#0000aa;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:9px;border-radius:4px;outline:none;text-transform:uppercase;margin-top:4px;" oninput="filterDescList(this.value)" onkeydown="descKeyNav(event)">
+        <button id="desc-pull-dir-btn" onclick="togglePullDir()" title="Flip dropdown order A→Z / Z→A — Z→A puts TRUCK, UTILITY, etc. at the top" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:9px 10px;border-radius:4px;cursor:pointer;margin-top:4px;white-space:nowrap;">🔽 A→Z</button>
+      </div>
       <div id="desc-dropdown" style="display:none;position:absolute;left:0;right:0;background:#0000aa;border:2px solid #ffff00;border-top:none;border-radius:0 0 4px 4px;z-index:999;max-height:180px;overflow-y:auto;"></div>
     </div>
     <input type="hidden" id="p-desc" value="WATER EXPENSE">
@@ -9402,6 +9405,19 @@ var _descList=[
   'WATER EXPENSE','WIRE TRANSFER'
 ];
 var _descIdx=0;
+// Sort direction for the DESC pulldown dropdown — 'asc' = A→Z (default), 'desc' = Z→A.
+// Toggling Z→A puts TRUCK, UTILITY, VENDOR, WATER etc. at the top so user doesn't
+// have to scroll through the whole alphabet to find them.
+var _descPullDir='asc';
+function togglePullDir(){
+  _descPullDir = (_descPullDir==='asc') ? 'desc' : 'asc';
+  // Update button label
+  var btn=document.getElementById('desc-pull-dir-btn');
+  if(btn) btn.textContent = (_descPullDir==='desc') ? '🔼 Z→A' : '🔽 A→Z';
+  // Re-fire the filter with whatever the user typed (or trigger empty list if nothing typed)
+  var inp=document.getElementById('p-desc-search');
+  if(inp && inp.value) filterDescList(inp.value);
+}
 
 function filterDescList(val){
   val=(val||'').toUpperCase().trim();
@@ -9414,6 +9430,10 @@ function filterDescList(val){
   // filter by substring match
   var matches=all.filter(function(d){return d.toUpperCase().indexOf(val)>=0;});
   if(!matches.length){dd.style.display='none';return;}
+  // Apply sort direction (matches start in _descList order; sort by direction)
+  matches.sort(function(a,b){
+    return _descPullDir==='desc' ? b.localeCompare(a) : a.localeCompare(b);
+  });
   _descIdx=0;
   dd.innerHTML=matches.map(function(d,i){
     return '<div onclick="selectDesc(\''+d.replace(/'/g,"\\'")+'\')" style="padding:8px 10px;cursor:pointer;color:#ffff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;border-bottom:1px solid #333388;'+(i===0?'background:#0033aa;':'')+'">'+d+'</div>';
