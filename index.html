@@ -1120,6 +1120,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffff00;">DESC Cheat Sheet</div><div class="ms">Fix EXPENSE descs · Bulk assign PCODE/DESC</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
+    <div class="menu-item" onclick="doIndexCombos()">
+      <div class="menu-num">9b</div><div class="menu-icon">⚡</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">INDEX COMBOS</div><div class="ms">Scan LOG · Build pcode + desc + payee combo list</div></div>
+      <div class="menu-arrow" style="color:#00ffff;">›</div>
+    </div>
     <div class="menu-item" onclick="doFindDups()">
       <div class="menu-num">10</div><div class="menu-icon">🔍</div>
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">Find Duplicates</div><div class="ms">Check · Select · Delete dupes</div></div>
@@ -9071,50 +9076,89 @@ function doFilter(val){
     var full=MX[i].payee.toUpperCase();
     if(stripped.indexOf(q)>=0||full.indexOf(q)>=0) _shown.push(MX[i]);
   }
-  // ALSO scan LOG — imported transactions from backup/email may have payees
-  // that were never in the hardcoded MX. SALVATORI'S RESTAURANT, etc. live here.
-  // Dedupe by payee+pcode+desc combo so we don't flood the matrix.
+  // ALSO scan LOG — imported transactions may have payees not in MX.
+  // For each unique LOG-only payee matching the query, collect actual pcodes
+  // and descs THAT PAYEE has used in LOG, then cross-product them. This way
+  // SALVATORI'S shows ROOF/JOB (its actual combo) — not MENARDS' nonsense
+  // construction combos. As the user adds more combos (via Add Entry or future
+  // per-payee editor), the search results automatically expand.
   try{
     if(typeof loadLog==='function') loadLog();
     if(typeof LOG!=='undefined' && LOG && LOG.length){
       var seen={};
       _shown.forEach(function(s){seen[(s.payee||'').toUpperCase()+'|'+(s.pcode||'')+'|'+(s.desc||'')]=true;});
-      // Pick the biggest GRP entry as the combo template for LOG-only payees —
-      // gives them the same scale of pickable combos as MENARDS, HOME DEPOT, etc.
-      var template=GRP[0];
-      for(var ti=1;ti<GRP.length;ti++){
-        if((GRP[ti].c.length*GRP[ti].d.length)>(template.c.length*template.d.length)) template=GRP[ti];
-      }
-      // Track which LOG payees we've already expanded so we don't repeat
-      var expandedPayees={};
-      // Also track payees already represented by hardcoded MX — skip the expansion for those
+      // Skip payees already represented by hardcoded MX — they have curated combos
       var mxPayees={};
       MX.forEach(function(m){mxPayees[(m.payee||'').toUpperCase()]=true;});
+      // First pass — collect per-payee pcodes and descs from LOG
+      var payeeData={};
       for(var k=0;k<LOG.length;k++){
         var le=LOG[k];
         if(!le.payee) continue;
         var pUp=le.payee.toUpperCase();
+        if(mxPayees[pUp]) continue;
         var pStripped=pUp.replace(/[^A-Z0-9]/g,'');
         if(pStripped.indexOf(q)<0 && pUp.indexOf(q)<0) continue;
-        // Add the existing combo from LOG (preserves the actual recorded pcode/desc)
-        var key=pUp+'|'+(le.pcode||'')+'|'+(le.desc||'');
-        if(!seen[key]){
-          seen[key]=true;
-          _shown.push({payee:le.payee, pcode:le.pcode||'', desc:le.desc||''});
-        }
-        // Expand with template combos — but only ONCE per payee, and only if not in MX
-        if(!expandedPayees[pUp] && !mxPayees[pUp]){
-          expandedPayees[pUp]=true;
-          template.c.forEach(function(pc){
-            template.d.forEach(function(dc){
-              var ck=pUp+'|'+pc+'|'+dc;
-              if(seen[ck]) return;
-              seen[ck]=true;
-              _shown.push({payee:le.payee, pcode:pc, desc:dc});
-            });
-          });
-        }
+        if(!payeeData[pUp]) payeeData[pUp]={pcodes:{}, descs:{}, name:le.payee};
+        if(le.pcode) payeeData[pUp].pcodes[le.pcode]=true;
+        if(le.desc)  payeeData[pUp].descs[le.desc]=true;
       }
+      // Also include any pre-defined combos saved via "+ ADD COMBO" — these
+      // let user expand a payee's combo set WITHOUT making a transaction first.
+      var stored={};
+      try{stored=JSON.parse(localStorage.getItem('mx_payee_combos')||'{}');}catch(e){}
+      Object.keys(stored).forEach(function(pUp){
+        var pStripped=pUp.replace(/[^A-Z0-9]/g,'');
+        if(pStripped.indexOf(q)<0 && pUp.indexOf(q)<0) return;
+        if(mxPayees[pUp]) return; // hardcoded MX takes precedence
+        if(!payeeData[pUp]) payeeData[pUp]={pcodes:{}, descs:{}, name:stored[pUp].displayName||pUp};
+        (stored[pUp].pcodes||[]).forEach(function(p){if(p) payeeData[pUp].pcodes[p]=true;});
+        (stored[pUp].descs||[]).forEach(function(d){if(d) payeeData[pUp].descs[d]=true;});
+      });
+      // Gather global pcodes and descs (used as the default cross-product for
+      // LOG-only payees — every payee gets every pcode × every desc unless
+      // user has manually curated a subset via "+ ADD COMBO").
+      var globalPcodes=[];
+      var pSel=document.getElementById('p-pcode');
+      if(pSel){for(var ip=0;ip<pSel.options.length;ip++){var pv=pSel.options[ip].value;if(pv && globalPcodes.indexOf(pv)<0) globalPcodes.push(pv);}}
+      try{var custP=JSON.parse(localStorage.getItem('mx_pcodes')||'[]');custP.forEach(function(p){if(p && globalPcodes.indexOf(p)<0) globalPcodes.push(p);});}catch(e){}
+      globalPcodes.sort();
+      var globalDescs=[];
+      if(typeof _descList!=='undefined') _descList.forEach(function(d){if(d && globalDescs.indexOf(d)<0) globalDescs.push(d);});
+      try{var custD=JSON.parse(localStorage.getItem('mx_descs')||'[]');custD.forEach(function(d){if(d && globalDescs.indexOf(d)<0) globalDescs.push(d);});}catch(e){}
+      globalDescs.sort();
+      // Second pass — generate combos per payee. If user has saved a custom
+      // combo subset for this payee, use it. Otherwise default to ALL × ALL
+      // so user can browse the full cross-product (~7 pcodes × ~50 descs).
+      Object.keys(payeeData).forEach(function(pUp){
+        var pd=payeeData[pUp];
+        var pcodes, descs;
+        var hasCustom=stored[pUp] && ((stored[pUp].pcodes||[]).length || (stored[pUp].descs||[]).length);
+        if(hasCustom){
+          pcodes=stored[pUp].pcodes||[];
+          descs=stored[pUp].descs||[];
+          // Also include any LOG-recorded combos (so original data isn't lost)
+          Object.keys(pd.pcodes).forEach(function(p){if(pcodes.indexOf(p)<0) pcodes.push(p);});
+          Object.keys(pd.descs).forEach(function(d){if(descs.indexOf(d)<0) descs.push(d);});
+        } else {
+          // Default — ALL pcodes × ALL descs for this payee
+          pcodes=globalPcodes.slice();
+          descs=globalDescs.slice();
+          // Plus anything in LOG that isn't in the global lists
+          Object.keys(pd.pcodes).forEach(function(p){if(pcodes.indexOf(p)<0) pcodes.push(p);});
+          Object.keys(pd.descs).forEach(function(d){if(descs.indexOf(d)<0) descs.push(d);});
+        }
+        if(!pcodes.length) pcodes=[''];
+        if(!descs.length)  descs=[''];
+        pcodes.forEach(function(pc){
+          descs.forEach(function(dc){
+            var ck=pUp+'|'+pc+'|'+dc;
+            if(seen[ck]) return;
+            seen[ck]=true;
+            _shown.push({payee:pd.name, pcode:pc, desc:dc});
+          });
+        });
+      });
     }
   }catch(e){}
   if(!_shown.length){
@@ -9132,7 +9176,20 @@ function doFilter(val){
   // Match found — show table normally
   var al2=document.getElementById('add-to-lists'); if(al2)al2.style.display='block';
   var alb2=document.getElementById('add-to-lists-btns'); if(alb2)alb2.style.display='flex';
+  // Detect a LOG-only payee (one that's NOT in hardcoded MX) so we can offer "+ ADD COMBO"
+  var firstLogPayee=null;
+  var mxNameSet={};
+  MX.forEach(function(m){mxNameSet[(m.payee||'').toUpperCase()]=true;});
+  for(var sx=0;sx<_shown.length;sx++){
+    if(!mxNameSet[_shown[sx].payee.toUpperCase()]){firstLogPayee=_shown[sx].payee;break;}
+  }
   var html='';
+  if(firstLogPayee){
+    var escFp=firstLogPayee.replace(/'/g,"\\'");
+    html+='<tr><td colspan="3" style="padding:0;border:0;">'
+      +'<button onclick="showAddPayeeComboOverlay(\''+escFp+'\')" style="width:100%;background:#003366;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:9px;border-radius:4px;cursor:pointer;margin-bottom:6px;">+ ADD COMBO TO '+firstLogPayee+'</button>'
+      +'</td></tr>';
+  }
   for(var j=0;j<_shown.length;j++){
     html+='<tr onclick="doPick('+j+')" style="cursor:pointer;">'
       +'<td style="padding:7px 4px;border:1px solid #5555ee;color:#ffff00;font-weight:700;">'+_shown[j].payee+'</td>'
@@ -9142,6 +9199,160 @@ function doFilter(val){
   }
   document.getElementById('tbody').innerHTML=html;
   document.getElementById('hint').textContent=_shown.length+' combos -- tap one';
+}
+
+// ─── PER-PAYEE COMBO EDITOR ─────────────────────────────────────────────────
+// Lets user pre-define pcodes/descs for a payee without making a transaction.
+// Stored in localStorage.mx_payee_combos = { "PAYEE NAME": { displayName, pcodes:[], descs:[] } }
+// doFilter merges this with LOG-discovered combos to build the matrix cross-product.
+function showAddPayeeComboOverlay(payeeName){
+  var pUp=payeeName.toUpperCase();
+  var stored={};
+  try{stored=JSON.parse(localStorage.getItem('mx_payee_combos')||'{}');}catch(e){}
+  var cur=stored[pUp]||{displayName:payeeName, pcodes:[], descs:[]};
+  // Collect all known pcodes (from PCODE select + mx_pcodes)
+  var allPc=[];
+  var psel=document.getElementById('p-pcode');
+  if(psel){for(var i=0;i<psel.options.length;i++){var v=psel.options[i].value;if(v && allPc.indexOf(v)<0) allPc.push(v);}}
+  try{var cp=JSON.parse(localStorage.getItem('mx_pcodes')||'[]');cp.forEach(function(p){if(allPc.indexOf(p)<0) allPc.push(p);});}catch(e){}
+  allPc.sort();
+  // Collect all known descs
+  var allDc=[];
+  if(typeof _descList!=='undefined') _descList.forEach(function(d){if(d && allDc.indexOf(d)<0) allDc.push(d);});
+  try{var cd=JSON.parse(localStorage.getItem('mx_descs')||'[]');cd.forEach(function(d){if(allDc.indexOf(d)<0) allDc.push(d);});}catch(e){}
+  allDc.sort();
+  var ov=document.createElement('div');
+  ov.id='add-combo-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:8px;';
+  var pcodeRows=allPc.map(function(p){
+    var checked=cur.pcodes.indexOf(p)>=0?'checked':'';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#001144;border:1px solid #6666ff;border-radius:4px;margin-bottom:3px;cursor:pointer;color:#00ffff;font-size:14px;font-weight:700;"><input type="checkbox" class="acp-pc" value="'+p+'" '+checked+' style="width:18px;height:18px;">'+p+'</label>';
+  }).join('');
+  var descRows=allDc.map(function(d){
+    var esc=d.replace(/"/g,'&quot;');
+    var checked=cur.descs.indexOf(d)>=0?'checked':'';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#001144;border:1px solid #6666ff;border-radius:4px;margin-bottom:2px;cursor:pointer;color:#ffff00;font-size:13px;font-weight:700;"><input type="checkbox" class="acp-dc" value="'+esc+'" '+checked+' style="width:16px;height:16px;flex-shrink:0;"><span>'+d+'</span></label>';
+  }).join('');
+  ov.innerHTML='<div style="background:#000033;border:3px solid #00ffff;border-radius:8px;padding:14px;max-width:500px;width:100%;max-height:95vh;display:flex;flex-direction:column;font-family:Courier New,monospace;">'
+    +'<div style="color:#00ffff;font-size:16px;font-weight:700;text-align:center;margin-bottom:4px;">✚ ADD COMBO</div>'
+    +'<div style="color:#ffff00;font-size:14px;font-weight:700;text-align:center;margin-bottom:10px;">'+payeeName+'</div>'
+    +'<div style="color:#00ffff;font-size:12px;font-weight:700;margin-bottom:4px;">CHECK PCODES TO ALLOW:</div>'
+    +'<div style="background:#000022;border:1px solid #6666ff;border-radius:4px;padding:5px;max-height:30vh;overflow-y:auto;margin-bottom:8px;">'+pcodeRows+'</div>'
+    +'<div style="color:#ffff00;font-size:12px;font-weight:700;margin-bottom:4px;">CHECK DESCS TO ALLOW:</div>'
+    +'<div style="background:#000022;border:1px solid #6666ff;border-radius:4px;padding:5px;max-height:32vh;overflow-y:auto;margin-bottom:10px;">'+descRows+'</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="saveAddPayeeCombo(\''+payeeName.replace(/'/g,"\\'")+'\')" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:12px;border:none;border-radius:6px;cursor:pointer;">✓ SAVE COMBOS</button>'
+    +'<button onclick="document.getElementById(\'add-combo-overlay\').remove();" style="flex:1;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:12px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+
+function saveAddPayeeCombo(payeeName){
+  var pUp=payeeName.toUpperCase();
+  var pcodes=[],descs=[];
+  document.querySelectorAll('.acp-pc:checked').forEach(function(c){pcodes.push(c.value);});
+  document.querySelectorAll('.acp-dc:checked').forEach(function(c){descs.push(c.value);});
+  var stored={};
+  try{stored=JSON.parse(localStorage.getItem('mx_payee_combos')||'{}');}catch(e){}
+  stored[pUp]={displayName:payeeName, pcodes:pcodes, descs:descs};
+  localStorage.setItem('mx_payee_combos',JSON.stringify(stored));
+  document.getElementById('add-combo-overlay').remove();
+  toast('✓ Saved '+pcodes.length+' pcodes × '+descs.length+' descs = '+(pcodes.length*descs.length)+' combos for '+payeeName,true);
+  // Re-run the search so user sees the new combos
+  var s=document.getElementById('search');
+  if(s) doFilter(s.value);
+}
+
+// ⚡ INDEX COMBOS — scan LOG and harvest unique pcodes / descs into the master
+// lists so every payee can browse them. Useful after importing a backup.
+// Processes in chunks with a live progress bar so user can watch it work.
+function doIndexCombos(){
+  loadLog();
+  if(!LOG||!LOG.length){toast('No LOG entries — nothing to index',false);return;}
+  var total=LOG.length;
+  var ex_pc=[];try{ex_pc=JSON.parse(localStorage.getItem('mx_pcodes')||'[]');}catch(e){}
+  var ex_dc=[];try{ex_dc=JSON.parse(localStorage.getItem('mx_descs')||'[]');}catch(e){}
+  var pcSet={};
+  var psel=document.getElementById('p-pcode');
+  if(psel){for(var i=0;i<psel.options.length;i++){if(psel.options[i].value) pcSet[psel.options[i].value]=true;}}
+  ex_pc.forEach(function(p){pcSet[p]=true;});
+  var dcSet={};
+  if(typeof _descList!=='undefined') _descList.forEach(function(d){dcSet[d]=true;});
+  ex_dc.forEach(function(d){dcSet[d]=true;});
+  var newPc=[], newDc=[], payeeSet={};
+  // Show progress overlay
+  var ov=document.createElement('div');
+  ov.id='index-progress-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML='<div style="background:#000033;border:3px solid #00ffff;border-radius:8px;padding:20px;max-width:400px;width:100%;font-family:Courier New,monospace;">'
+    +'<div style="color:#00ffff;font-size:18px;font-weight:700;text-align:center;margin-bottom:14px;">⚡ INDEXING COMBOS</div>'
+    +'<div id="ip-status" style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:8px;text-align:center;">Starting scan...</div>'
+    +'<div style="background:#000022;border:2px solid #6666ff;border-radius:6px;padding:3px;margin-bottom:14px;">'
+      +'<div id="ip-bar" style="background:linear-gradient(90deg,#00ffff,#00ff88);height:22px;width:0%;border-radius:4px;transition:width 0.15s;"></div>'
+    +'</div>'
+    +'<div id="ip-counts" style="color:#aaccff;font-size:13px;line-height:1.8;text-align:left;background:#000022;border:1px solid #6666ff;border-radius:4px;padding:10px 12px;">'
+      +'Scanned: <span style="color:#ffff00;font-weight:700;">0</span> / '+total.toLocaleString()+'<br>'
+      +'Payees found: <span style="color:#00ff88;font-weight:700;">0</span><br>'
+      +'New pcodes: <span style="color:#00ffff;font-weight:700;">0</span><br>'
+      +'New descs: <span style="color:#ffff00;font-weight:700;">0</span>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  // Chunked processing — 200 entries per tick so UI can update between chunks
+  var idx=0;
+  var CHUNK=200;
+  function processChunk(){
+    var end=Math.min(idx+CHUNK,total);
+    for(var i=idx;i<end;i++){
+      var e=LOG[i];
+      if(!e) continue;
+      if(e.pcode && !pcSet[e.pcode]){pcSet[e.pcode]=true;newPc.push(e.pcode);ex_pc.push(e.pcode);}
+      if(e.desc && !dcSet[e.desc] && e.desc.toUpperCase()!=='EXPENSE' && e.desc.toUpperCase()!=='UNKNOWN'){dcSet[e.desc]=true;newDc.push(e.desc);ex_dc.push(e.desc);}
+      if(e.payee) payeeSet[e.payee.toUpperCase()]=true;
+    }
+    idx=end;
+    var pct=Math.floor((idx/total)*100);
+    var bar=document.getElementById('ip-bar');
+    var status=document.getElementById('ip-status');
+    var counts=document.getElementById('ip-counts');
+    if(bar) bar.style.width=pct+'%';
+    if(status) status.textContent=idx===total?'✓ Scan complete':'Scanning... '+pct+'%';
+    if(counts) counts.innerHTML='Scanned: <span style="color:#ffff00;font-weight:700;">'+idx.toLocaleString()+'</span> / '+total.toLocaleString()+'<br>'
+      +'Payees found: <span style="color:#00ff88;font-weight:700;">'+Object.keys(payeeSet).length+'</span><br>'
+      +'New pcodes: <span style="color:#00ffff;font-weight:700;">'+newPc.length+'</span><br>'
+      +'New descs: <span style="color:#ffff00;font-weight:700;">'+newDc.length+'</span>';
+    if(idx<total){
+      setTimeout(processChunk,10);
+    } else {
+      // Done — persist and show final report
+      if(newPc.length){ex_pc.sort();localStorage.setItem('mx_pcodes',JSON.stringify(ex_pc));}
+      if(newDc.length){ex_dc.sort();localStorage.setItem('mx_descs',JSON.stringify(ex_dc));}
+      var totalPayees=Object.keys(payeeSet).length;
+      var totalPcodes=Object.keys(pcSet).length;
+      var totalDescs=Object.keys(dcSet).length;
+      setTimeout(function(){
+        var prog=document.getElementById('index-progress-overlay');if(prog) prog.remove();
+        var ov2=document.createElement('div');
+        ov2.id='index-result-overlay';
+        ov2.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        ov2.innerHTML='<div style="background:#000033;border:3px solid #00ff88;border-radius:8px;padding:18px;max-width:420px;width:100%;font-family:Courier New,monospace;text-align:center;">'
+          +'<div style="color:#00ff88;font-size:20px;font-weight:700;margin-bottom:14px;">⚡ INDEX COMPLETE</div>'
+          +'<div style="color:#ffff00;font-size:14px;font-weight:700;margin-bottom:14px;line-height:1.8;">'
+            +total.toLocaleString()+' LOG entries scanned<br>'
+            +totalPayees+' unique payees<br>'
+            +totalPcodes+' total pcodes ('+newPc.length+' new)<br>'
+            +totalDescs+' total descs ('+newDc.length+' new)<br>'
+            +'<span style="color:#00ff88;font-size:16px;">═══════════════</span><br>'
+            +'<span style="color:#00ff88;font-size:18px;">'+(totalPcodes*totalDescs)+' combos per payee</span>'
+          +'</div>'
+          +(newPc.length?'<div style="color:#00ffff;font-size:11px;margin-bottom:8px;text-align:left;line-height:1.5;">+ NEW PCODES:<br>'+newPc.slice(0,15).join(', ')+(newPc.length>15?', ...':'')+'</div>':'')
+          +(newDc.length?'<div style="color:#ffff00;font-size:11px;margin-bottom:10px;text-align:left;line-height:1.5;">+ NEW DESCS:<br>'+newDc.slice(0,15).join(', ')+(newDc.length>15?', ...':'')+'</div>':'')
+          +'<button onclick="document.getElementById(\'index-result-overlay\').remove();goMain();" style="width:100%;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:12px;border:none;border-radius:6px;cursor:pointer;margin-top:6px;">✓ OK · BACK TO MENU</button>'
+          +'</div>';
+        document.body.appendChild(ov2);
+      },350);
+    }
+  }
+  setTimeout(processChunk,80);
 }
 function showAddNew(){document.getElementById('addnew').style.display='block';document.getElementById('addnew').scrollIntoView({behavior:'smooth'});document.getElementById('an-payee').focus();}
 function cancelNewPayee(){document.getElementById('addnew').style.display='none';}
@@ -9477,7 +9688,8 @@ var _descList=[
   'PROPERTY TAXES','ROOF CONTRACT','ROOFING SUPPLIES',
   'SCAVENGER COST','STORAGE FEE','SUBCONTRACTOR COST',
   'TRADE INVESTMENT','TRAVEL/HOTEL EXPENSE','TRUCK EXPENSE','TRUCK GAS',
-  'WATER EXPENSE','WIRE TRANSFER'
+  'WATER EXPENSE','WIRE TRANSFER',
+  'GROCERY','MEAL EXPENSE','RESTAURANT EXPENSE','GAS','FUEL'
 ];
 var _descIdx=0;
 // Sort direction for ALL desc dropdowns — 'asc' = A→Z (default), 'desc' = Z→A.
