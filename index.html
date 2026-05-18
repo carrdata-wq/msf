@@ -6989,7 +6989,6 @@ function balSendToAccounting(id){
   var row=null;
   for(var i=0;i<BALANCE.length;i++) if(BALANCE[i].id===id){row=BALANCE[i];break;}
   if(!row)return;
-  if(row.sent){toast('Already sent — delete or edit if you need to resend',false);return;}
   loadLog();
   LOG.unshift({
     id:Date.now()+Math.random(),
@@ -7347,7 +7346,7 @@ function balImportFromText(text){
 }
 
 function balSendAllChecked(){
-  var toSend=BALANCE.filter(function(r){return r.checked&&!r.sent;});
+  var toSend=BALANCE.filter(function(r){return r.checked;});
   if(!toSend.length){toast('No checked items to send',false);return;}
   // Custom Y/N overlay — confirm() is unreliable on Android PWA (same reason
   // the phone-clear and other prompts use overlays instead of native dialogs)
