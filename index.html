@@ -5251,6 +5251,31 @@ function cheatSheetToggleSort(){
   var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
   doCheatSheet();
 }
+// SEPARATE state for the DESC pulldown inside each tile. Tapping the inline 🔽
+// next to a DESC pulldown flips ONLY the desc dropdown options across all tiles
+// — payee tile order stays put. No re-render — options sort in place.
+var _csDescDir='asc';
+function cheatSheetToggleDescOnly(){
+  _csDescDir = (_csDescDir==='asc') ? 'desc' : 'asc';
+  // Sort options of every DESC select in the cheat sheet in place
+  var selects=document.querySelectorAll('select[id^="cs_"][id$="_dc"]');
+  selects.forEach(function(sel){
+    var savedValue=sel.value;
+    var opts=Array.prototype.slice.call(sel.options);
+    opts.sort(function(a,b){
+      // Keep "DESC" placeholder (empty value) at top
+      if(a.value==='' && b.value!=='') return -1;
+      if(b.value==='' && a.value!=='') return 1;
+      return _csDescDir==='desc' ? b.text.localeCompare(a.text) : a.text.localeCompare(b.text);
+    });
+    sel.innerHTML='';
+    opts.forEach(function(o){sel.appendChild(o);});
+    sel.value=savedValue;
+  });
+  // Update all inline DESC toggle button icons
+  var icon = _csDescDir==='desc' ? '🔼' : '🔽';
+  document.querySelectorAll('.cs-desc-toggle-btn').forEach(function(b){b.textContent=icon;});
+}
 
 function doCheatSheet(){
   loadLog();
@@ -5283,9 +5308,9 @@ function doCheatSheet(){
   });
   var allDescs=[...new Set([].concat(LOG.map(function(e){return e.desc||'';}).filter(Boolean), (function(){try{return JSON.parse(localStorage.getItem('mx_descs')||'[]');}catch(e){return [];}})()))].sort();
   var allPcodes=[...new Set([].concat(LOG.map(function(e){return e.pcode||'';}).filter(Boolean), (function(){try{return JSON.parse(localStorage.getItem('mx_pcodes')||'[]');}catch(e){return [];}})()))].sort();
-  // Sort direction also flips dropdown options — Z→A puts TRUCK/UTILITY/etc. up top so user
-  // doesn't have to scroll down through the alphabet to find them.
-  if(_csSortDir==='desc'){allDescs.reverse();allPcodes.reverse();}
+  // DESC dropdown options follow their own direction (controlled by inline 🔽 button)
+  // PCODE dropdown options stay A→Z (no toggle on PCODE per user request)
+  if(_csDescDir==='desc'){allDescs.reverse();}
   var descOpts=allDescs.map(function(d){return'<option value="'+d+'">'+d+'</option>';}).join('');
   var pcOpts=allPcodes.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
   var old=document.getElementById('cheatsheet-overlay');if(old)old.remove();
@@ -5334,12 +5359,11 @@ function doCheatSheet(){
       +goodStr
       +'<div style="display:flex;gap:4px;margin-bottom:5px;">'
       +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:7px 6px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
-      +'<button onclick="cheatSheetToggleSort()" title="Flip A→Z / Z→A — applies to all dropdowns" style="background:#003300;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:0 9px;border-radius:3px;cursor:pointer;white-space:nowrap;">'+(_csSortDir==='desc'?'🔼':'🔽')+'</button>'
       +'<button onclick="cheatSheetAddNewPcode(\''+sid+'\')" title="Add new PCODE" style="background:#001a33;color:#00ffff;border:1px solid #00ffff;font-family:Courier New,monospace;font-size:17px;font-weight:700;padding:0 13px;border-radius:3px;cursor:pointer;">+</button>'
       +'</div>'
       +'<div style="display:flex;gap:4px;margin-bottom:8px;">'
       +'<select id="'+sid+'_dc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:7px 6px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
-      +'<button onclick="cheatSheetToggleSort()" title="Flip A→Z / Z→A — applies to all dropdowns" style="background:#003300;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:0 9px;border-radius:3px;cursor:pointer;white-space:nowrap;">'+(_csSortDir==='desc'?'🔼':'🔽')+'</button>'
+      +'<button class="cs-desc-toggle-btn" onclick="cheatSheetToggleDescOnly()" title="Flip DESC order A→Z / Z→A — only flips the DESC dropdown, payees stay put" style="background:#003300;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:0 9px;border-radius:3px;cursor:pointer;white-space:nowrap;">'+(_csDescDir==='desc'?'🔼':'🔽')+'</button>'
       +'<button onclick="cheatSheetAddNewDesc(\''+sid+'\')" title="Add new DESC" style="background:#001a33;color:#ffff00;border:1px solid #ffff00;font-family:Courier New,monospace;font-size:17px;font-weight:700;padding:0 13px;border-radius:3px;cursor:pointer;">+</button>'
       +'</div>'
       +'<button onclick="cheatSheetApply(\''+payee.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',' +'\''+sid+'\')" '
