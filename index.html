@@ -1533,6 +1533,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="promptClearCheckmarks()" style="background:#332200;color:#ffaa00;border:1px solid #ffaa00;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:4px 8px;border-radius:3px;cursor:pointer;white-space:nowrap;">🧹 CLEAR ✓</button>
       <span style="font-size:13px;color:#ccccff;">TOTAL: <strong id="ttot" style="color:#ffff00;font-size:14px;">$-9542.77</strong></span>
     </div>
+    <!-- BROWSE BAR — FoxBase-style row navigation (also works via keyboard arrows) -->
+    <div id="led-browse-bar" style="display:flex;gap:6px;margin-bottom:8px;align-items:center;justify-content:center;">
+      <button onclick="ledBrowseAction('up')" title="Up (↑)" style="flex:1;max-width:56px;background:#003366;color:#aaccff;border:1px solid #6699cc;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:18px;padding:7px;cursor:pointer;">▲</button>
+      <button onclick="ledBrowseAction('down')" title="Down (↓)" style="flex:1;max-width:56px;background:#003366;color:#aaccff;border:1px solid #6699cc;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:18px;padding:7px;cursor:pointer;">▼</button>
+      <button onclick="ledBrowseAction('pgup')" title="Page Up" style="flex:1;max-width:56px;background:#003366;color:#aaccff;border:1px solid #6699cc;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:7px;cursor:pointer;">⏫</button>
+      <button onclick="ledBrowseAction('pgdn')" title="Page Down" style="flex:1;max-width:56px;background:#003366;color:#aaccff;border:1px solid #6699cc;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:7px;cursor:pointer;">⏬</button>
+      <button onclick="ledBrowseAction('edit')" title="Edit highlighted (Enter)" style="flex:2;background:#0066aa;color:#ffffff;border:1px solid #66aaff;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px;cursor:pointer;">✏ EDIT</button>
+    </div>
     <table id="logtbl" style="width:100%;border-collapse:collapse;font-size:14px;">
       <thead><tr>
         <th style="background:#0000cc;color:#ffff00;padding:5px 3px;border:1px solid #6666ff;font-size:14px;white-space:nowrap;">DATE</th>
@@ -9152,18 +9160,11 @@ function renderLog(){
 function ledPage(p){_ledPage=p;_ledSelectedIdx=0;renderLog();}
 
 /* ── FOXBASE-STYLE BROWSE NAVIGATION ──
-   Keyboard arrows let the user scroll the accounting ledger row by row, page
-   by page. Works on both ThinkPad (full keyboard) and Android (Bluetooth or
-   hardware keyboard). 12 rows visible per page (see _pageSize). */
-function ledKeyNav(e){
-  // Only fire when the accounting screen is the visible one
-  var acct=document.getElementById('screen-accounting');
-  if(!acct||acct.style.display==='none')return;
-  // Ignore key events while typing in inputs/selects/textareas — they need their own keys
-  var t=e.target;
-  if(t&&/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName))return;
-  // Only respond to our nav keys
-  if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End','Enter'].indexOf(e.key)<0)return;
+   Keyboard arrows OR on-screen ▲/▼/⏫/⏬/✏ buttons let the user scroll the
+   accounting ledger row by row, page by page. Works on both ThinkPad and
+   Android — touch users get the visible bar; keyboard users get the keys.
+   12 rows visible per page (see _pageSize). */
+function ledBrowseAction(action){
   loadLog();
   var filtered=_ledYr?LOG.filter(function(r){return (r.date||'').startsWith(_ledYr);}):LOG.slice();
   filtered.sort(function(a,b){
@@ -9174,12 +9175,12 @@ function ledKeyNav(e){
   var pageStart=_ledPage*_pageSize;
   var pageEnd=Math.min(pageStart+_pageSize,filtered.length);
   var rowsInPage=pageEnd-pageStart;
-  switch(e.key){
-    case 'ArrowDown':
+  switch(action){
+    case 'down':
       if(_ledSelectedIdx<rowsInPage-1){_ledSelectedIdx++;}
       else if(_ledPage<totalPages-1){_ledPage++;_ledSelectedIdx=0;}
       break;
-    case 'ArrowUp':
+    case 'up':
       if(_ledSelectedIdx>0){_ledSelectedIdx--;}
       else if(_ledPage>0){
         _ledPage--;
@@ -9187,34 +9188,43 @@ function ledKeyNav(e){
         _ledSelectedIdx=(pe-ps)-1;
       }
       break;
-    case 'PageDown':
+    case 'pgdn':
       if(_ledPage<totalPages-1){_ledPage++;_ledSelectedIdx=0;}
       else{_ledSelectedIdx=rowsInPage-1;}
       break;
-    case 'PageUp':
+    case 'pgup':
       if(_ledPage>0){_ledPage--;_ledSelectedIdx=0;}
       else{_ledSelectedIdx=0;}
       break;
-    case 'Home':
+    case 'home':
       _ledPage=0;_ledSelectedIdx=0;
       break;
-    case 'End':
+    case 'end':
       _ledPage=totalPages-1;
       var ls=_ledPage*_pageSize, le=Math.min(ls+_pageSize,filtered.length);
       _ledSelectedIdx=(le-ls)-1;
       break;
-    case 'Enter':
+    case 'edit':
       var pageRows=filtered.slice(pageStart,pageEnd);
-      if(pageRows[_ledSelectedIdx]){e.preventDefault();editLog(pageRows[_ledSelectedIdx].id);}
+      if(pageRows[_ledSelectedIdx]){editLog(pageRows[_ledSelectedIdx].id);}
       return;
   }
-  e.preventDefault();
   renderLog();
-  // Auto-scroll the highlighted row into view
   setTimeout(function(){
     var s=document.querySelector('#logtbl tr.led-selected');
     if(s&&s.scrollIntoView)s.scrollIntoView({block:'nearest',behavior:'smooth'});
   },30);
+}
+function ledKeyNav(e){
+  var acct=document.getElementById('screen-accounting');
+  if(!acct||acct.style.display==='none')return;
+  var t=e.target;
+  if(t&&/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName))return;
+  var keyMap={'ArrowDown':'down','ArrowUp':'up','PageDown':'pgdn','PageUp':'pgup','Home':'home','End':'end','Enter':'edit'};
+  var action=keyMap[e.key];
+  if(!action)return;
+  e.preventDefault();
+  ledBrowseAction(action);
 }
 document.addEventListener('keydown',ledKeyNav);
 function toggleRow(id){_openId=(_openId===id)?null:id;renderLog();}
