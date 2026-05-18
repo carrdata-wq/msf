@@ -9405,18 +9405,69 @@ var _descList=[
   'WATER EXPENSE','WIRE TRANSFER'
 ];
 var _descIdx=0;
-// Sort direction for the DESC pulldown dropdown — 'asc' = A→Z (default), 'desc' = Z→A.
+// Sort direction for ALL desc dropdowns — 'asc' = A→Z (default), 'desc' = Z→A.
 // Toggling Z→A puts TRUCK, UTILITY, VENDOR, WATER etc. at the top so user doesn't
 // have to scroll through the whole alphabet to find them.
 var _descPullDir='asc';
 function togglePullDir(){
   _descPullDir = (_descPullDir==='asc') ? 'desc' : 'asc';
-  // Update button label
+  var label = (_descPullDir==='desc') ? '🔼 Z→A' : '🔽 A→Z';
+  // Update p-desc-search toggle button label
   var btn=document.getElementById('desc-pull-dir-btn');
-  if(btn) btn.textContent = (_descPullDir==='desc') ? '🔼 Z→A' : '🔽 A→Z';
-  // Re-fire the filter with whatever the user typed (or trigger empty list if nothing typed)
+  if(btn) btn.textContent = label;
+  // Update all OTHER desc-sort-btn buttons (injected next to an-desc, bal-an-desc, bal-desc-in)
+  document.querySelectorAll('.desc-sort-btn').forEach(function(b){b.textContent = label;});
+  // Sort the options of every hardcoded desc <select> on the page
+  ['an-desc','bal-an-desc','bal-desc-in'].forEach(function(id){
+    var sel=document.getElementById(id);
+    if(!sel)return;
+    var savedValue=sel.value;
+    var opts=Array.prototype.slice.call(sel.options);
+    opts.sort(function(a,b){
+      // Always keep empty-value placeholder ("-- PICK DESCRIPTION --") at top
+      if(a.value==='' && b.value!=='') return -1;
+      if(b.value==='' && a.value!=='') return 1;
+      return _descPullDir==='desc' ? b.text.localeCompare(a.text) : a.text.localeCompare(b.text);
+    });
+    sel.innerHTML='';
+    opts.forEach(function(o){sel.appendChild(o);});
+    sel.value=savedValue;
+  });
+  // Re-fire the filter on p-desc-search so its dropdown re-sorts too
   var inp=document.getElementById('p-desc-search');
   if(inp && inp.value) filterDescList(inp.value);
+}
+
+// Wrap each hardcoded desc <select> in a flex container with a toggle button next to it.
+// Runs once at DOM ready so the buttons are right there next to every DESC pulldown.
+function injectDescSortToggles(){
+  ['an-desc','bal-an-desc','bal-desc-in'].forEach(function(id){
+    var sel=document.getElementById(id);
+    if(!sel)return;
+    if(sel.parentElement && sel.parentElement.classList && sel.parentElement.classList.contains('desc-sort-wrap'))return; // already wrapped
+    var wrap=document.createElement('div');
+    wrap.className='desc-sort-wrap';
+    wrap.style.cssText='display:flex;gap:4px;align-items:stretch;margin-top:4px;';
+    sel.parentNode.insertBefore(wrap,sel);
+    wrap.appendChild(sel);
+    sel.style.flex='1';
+    sel.style.width='auto';
+    sel.style.marginTop='0';
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.className='desc-sort-btn';
+    btn.onclick=function(){togglePullDir();};
+    btn.title='Flip A→Z / Z→A — applies to every DESC dropdown';
+    btn.textContent=(_descPullDir==='desc') ? '🔼 Z→A' : '🔽 A→Z';
+    btn.style.cssText='background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;';
+    wrap.appendChild(btn);
+  });
+}
+// Run on DOM ready (or now if DOM is already parsed)
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',injectDescSortToggles);
+} else {
+  setTimeout(injectDescSortToggles,0);
 }
 
 function filterDescList(val){
