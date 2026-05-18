@@ -5247,8 +5247,8 @@ function doCheatSheet(){
     var key=(e.pcode||'?')+' | '+e.desc;
     goodCombos[p][key]=(goodCombos[p][key]||0)+1;
   });
-  var allDescs=[...new Set(LOG.map(function(e){return e.desc||'';}).filter(Boolean))].sort();
-  var allPcodes=[...new Set(LOG.map(function(e){return e.pcode||'';}).filter(Boolean))].sort();
+  var allDescs=[...new Set([].concat(LOG.map(function(e){return e.desc||'';}).filter(Boolean), (function(){try{return JSON.parse(localStorage.getItem('mx_descs')||'[]');}catch(e){return [];}})()))].sort();
+  var allPcodes=[...new Set([].concat(LOG.map(function(e){return e.pcode||'';}).filter(Boolean), (function(){try{return JSON.parse(localStorage.getItem('mx_pcodes')||'[]');}catch(e){return [];}})()))].sort();
   var descOpts=allDescs.map(function(d){return'<option value="'+d+'">'+d+'</option>';}).join('');
   var pcOpts=allPcodes.map(function(p){return'<option value="'+p+'">'+p+'</option>';}).join('');
   var old=document.getElementById('cheatsheet-overlay');if(old)old.remove();
@@ -5259,7 +5259,7 @@ function doCheatSheet(){
     +'<button onclick="document.getElementById(\'cheatsheet-overlay\').remove();goMain();" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ DONE</button>'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">📝 '+Object.keys(byPayee).length+' payees need DESC</span>'
     +'</div><div style="padding:8px;">'
-    +'<div style="color:#00ff88;font-size:11px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry. Existing values shown so you know what\'s there.</div>';
+    +'<div style="color:#00ff88;font-size:11px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry. Tap <span style="color:#00ffff;font-weight:700;">+</span> to add a new PCODE or DESC.</div>';
   Object.keys(byPayee).sort().forEach(function(payee,i){
     var v=byPayee[payee];
     var sid='cs_'+i;
@@ -5287,9 +5287,13 @@ function doCheatSheet(){
         +'<span style="color:#aaccff;">CURRENT DESC:</span> <span style="color:#ffaa00;font-weight:700;">'+curDcStr+'</span>'
       +'</div>'
       +goodStr
-      +'<div style="display:flex;gap:6px;margin-bottom:6px;">'
-      +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
-      +'<select id="'+sid+'_dc" style="flex:2;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:11px;padding:5px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
+      +'<div style="display:flex;gap:4px;margin-bottom:4px;">'
+      +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
+      +'<button onclick="cheatSheetAddNewPcode(\''+sid+'\')" title="Add new PCODE" style="background:#001a33;color:#00ffff;border:1px solid #00ffff;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:0 12px;border-radius:3px;cursor:pointer;">+</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:4px;margin-bottom:6px;">'
+      +'<select id="'+sid+'_dc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:12px;padding:6px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
+      +'<button onclick="cheatSheetAddNewDesc(\''+sid+'\')" title="Add new DESC" style="background:#001a33;color:#ffff00;border:1px solid #ffff00;font-family:Courier New,monospace;font-size:16px;font-weight:700;padding:0 12px;border-radius:3px;cursor:pointer;">+</button>'
       +'</div>'
       +'<button onclick="cheatSheetApply(\''+payee.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',' +'\''+sid+'\')" '
       +'style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;border:none;border-radius:4px;cursor:pointer;">'
@@ -5298,6 +5302,62 @@ function doCheatSheet(){
   h+='</div>';
   overlay.innerHTML=h;
   document.body.appendChild(overlay);
+}
+
+// Add a new PCODE inline from the cheat sheet. Saves to localStorage mx_pcodes
+// so it's available everywhere else in the app (ADD PCODE menus, dropdowns, etc.)
+function cheatSheetAddNewPcode(sid){
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML='<div style="background:#0000cc;border:3px solid #00ffff;border-radius:8px;padding:20px;max-width:340px;width:100%;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#00ffff;font-weight:700;font-size:15px;margin-bottom:12px;">➕ NEW PCODE</div>'
+    +'<input id="cs-new-pc-inp" type="text" maxlength="5" style="width:100%;box-sizing:border-box;padding:10px;background:#000022;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:16px;font-weight:700;text-align:center;border-radius:4px;text-transform:uppercase;margin-bottom:10px;outline:none;" placeholder="e.g. SUBC">'
+    +'<div style="color:#aaccff;font-size:11px;margin-bottom:14px;">Up to 5 chars — letters or digits</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="cs-new-pc-ok" style="flex:1;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">SAVE</button>'
+    +'<button id="cs-new-pc-cancel" style="flex:1;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){var i=document.getElementById('cs-new-pc-inp');if(i)i.focus();},50);
+  document.getElementById('cs-new-pc-cancel').onclick=function(){ov.remove();};
+  document.getElementById('cs-new-pc-ok').onclick=function(){
+    var val=(document.getElementById('cs-new-pc-inp').value||'').trim().toUpperCase();
+    if(!val){toast('Type a PCODE first',false);return;}
+    var list=[];try{list=JSON.parse(localStorage.getItem('mx_pcodes')||'[]');}catch(e){}
+    if(list.indexOf(val)<0){list.push(val);localStorage.setItem('mx_pcodes',JSON.stringify(list));}
+    ov.remove();
+    // Refresh the cheat sheet — new pcode will be in dropdowns — then auto-select for this row
+    doCheatSheet();
+    setTimeout(function(){var sel=document.getElementById(sid+'_pc');if(sel)sel.value=val;},80);
+    toast('✓ Added PCODE "'+val+'"',true);
+  };
+}
+
+// Add a new DESC inline from the cheat sheet. Saves to localStorage mx_descs.
+function cheatSheetAddNewDesc(sid){
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML='<div style="background:#0000cc;border:3px solid #ffff00;border-radius:8px;padding:20px;max-width:360px;width:100%;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:12px;">➕ NEW DESC</div>'
+    +'<input id="cs-new-dc-inp" type="text" maxlength="40" style="width:100%;box-sizing:border-box;padding:10px;background:#000022;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;text-align:center;border-radius:4px;text-transform:uppercase;margin-bottom:10px;outline:none;" placeholder="e.g. SUBCONTRACT LABOR">'
+    +'<div style="color:#aaccff;font-size:11px;margin-bottom:14px;">Up to 40 chars</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="cs-new-dc-ok" style="flex:1;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">SAVE</button>'
+    +'<button id="cs-new-dc-cancel" style="flex:1;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){var i=document.getElementById('cs-new-dc-inp');if(i)i.focus();},50);
+  document.getElementById('cs-new-dc-cancel').onclick=function(){ov.remove();};
+  document.getElementById('cs-new-dc-ok').onclick=function(){
+    var val=(document.getElementById('cs-new-dc-inp').value||'').trim().toUpperCase();
+    if(!val){toast('Type a DESC first',false);return;}
+    var list=[];try{list=JSON.parse(localStorage.getItem('mx_descs')||'[]');}catch(e){}
+    if(list.indexOf(val)<0){list.push(val);localStorage.setItem('mx_descs',JSON.stringify(list));}
+    ov.remove();
+    doCheatSheet();
+    setTimeout(function(){var sel=document.getElementById(sid+'_dc');if(sel)sel.value=val;},80);
+    toast('✓ Added DESC "'+val+'"',true);
+  };
 }
 
 function cheatSheetApply(payee,sid){
