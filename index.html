@@ -6217,6 +6217,7 @@ function doPhoneBackup(){
   }
   var header='NAME,PHONE,EMAIL,ADDR,NOTES,CONTACTED,ADATE,X,MTIME\n';
   var mtime=new Date().toISOString();
+  // Build 5 chunked .txt files for download (fallback if CSV too big for email body)
   for(var i=0;i<5;i++){
     var chunk=CLIENTS.slice(i*CHUNK,(i+1)*CHUNK);
     if(!chunk.length) break;
@@ -6234,26 +6235,45 @@ function doPhoneBackup(){
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
   });
-  var subject='PHONE BACKUP — '+today()+' ('+CLIENTS.length+' clients)';
+  // Build ONE combined CSV for the email body — matches Balance Sheet pattern
+  var combinedLines=[header];
+  CLIENTS.forEach(function(c){
+    var xVal = cleanExport ? '' : (c.x||'');
+    combinedLines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',')+'\n');
+  });
+  var combinedText=combinedLines.join('');
+  // Compose Gmail with full CSV in body (or fall back to "attach files" if too big)
+  var subject='📱 PHONE BACKUP — '+today()+' ('+CLIENTS.length+' clients'+(cleanExport?' · CLEAN':'')+')';
   var toEmail='tristancarrington1@gmail.com';
-  var overlay=document.createElement('div');
-  overlay.className='modal-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
-  overlay.innerHTML='<div style="background:#0000cc;border:2px solid #00ff88;border-radius:8px;padding:16px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;">'
-    +'<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">📱 PHONE BACKUP COMPLETE</div>'
-    +'<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+CLIENTS.length.toLocaleString()+' clients → '+files.length+' files downloaded</div>'
-    +'<div style="color:#ccccff;font-size:12px;margin-bottom:12px;">PHONE_BACKUP_'+dateStr+'_1 through _'+files.length+'.txt</div>'
-    +'<div style="color:#aaaacc;font-size:12px;margin-bottom:12px;">Email these files to:<br><span style="color:#ffff00;">'+toEmail+'</span></div>'
-    +'<div style="display:flex;gap:8px;">'
-    +'<button onclick="window.open(\'mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'\')" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 OPEN EMAIL</button>'
-    +'<button onclick="promptClearCheckmarks()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:12px;padding:11px;border:none;border-radius:6px;cursor:pointer;">🧹 CLEAR ✓</button>'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#fff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
-    +'</div></div>';
-  document.body.appendChild(overlay);
-  // Auto-fire email composer so user can attach the 5 downloaded files right away
+  var instructions = 'PHONE BACKUP — '+CLIENTS.length+' clients · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
+                   + 'On the other device:\n'
+                   + '  1. Select all text below (between the lines)\n'
+                   + '  2. Copy it\n'
+                   + '  3. Open MFS → Phone Clients → BULK UPLOAD\n'
+                   + '  4. Paste and tap LOAD\n\n';
+  var separator='─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
+  var fullBody=instructions+separator+combinedText+'─────── END CSV ───────\n';
+  var encoded=encodeURIComponent(fullBody);
+  var body;
+  if(encoded.length>25000){
+    body=instructions+'CSV is too large for the email body ('+combinedText.length.toLocaleString()+' chars).\n'
+        +'Attach the '+files.length+' downloaded files from Downloads instead:\n'
+        +files.map(function(f){return '  • '+f.name+' ('+f.count+' clients)';}).join('\n')+'\n';
+  } else {
+    body=fullBody;
+  }
+  var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1'
+              +'&to='+encodeURIComponent(toEmail)
+              +'&su='+encodeURIComponent(subject)
+              +'&body='+encodeURIComponent(body);
+  toast('📱 Saved '+files.length+' files · '+CLIENTS.length.toLocaleString()+' clients — opening Gmail…',true);
   setTimeout(function(){
-    try{window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Attach all 5 PHONE_BACKUP files from Downloads.'),'_blank');}catch(e){}
-  },1200);
+    try{ window.open(gmailUrl,'_blank'); }
+    catch(e){
+      try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }
+      catch(e2){}
+    }
+  },600);
 }
 
 function doBackup() {
@@ -6285,57 +6305,35 @@ function doBackup() {
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  // Popup with COPY/SHARE
+  // Compose Gmail with full CSV in body — matches Balance Sheet DOWNLOAD & EMAIL pattern.
+  // Tap → email opens with all data → paste on the receiving device. No intermediate popup.
   var subject='MFS Backup — '+today()+' ('+mxLog.length+' entries'+(cleanExport?' · CLEAN':'')+')';
   var toEmail='tristancarrington1@gmail.com';
-  var cleanBadge = cleanExport
-    ? '<div style="background:#332200;color:#ffcc66;border:1px solid #ffaa00;border-radius:4px;padding:5px 8px;margin-bottom:6px;font-size:11px;font-weight:700;">🧹 CLEAN EXPORT — destination will see no ✓ marks</div>'
-    : '';
-  var popupHTML='<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
-    +cleanBadge
-    +'<div style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:6px;">💾 '+filename+' saved · '+mxLog.length+' entries</div>'
-    +'<div style="color:#ccccff;font-size:12px;margin-bottom:6px;">CSV format — Gmail safe · paste to restore</div>'
-    +'<textarea id="bkp-share-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #ffff00;color:#ffffff;font-family:Courier New,monospace;font-size:11px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+backupText+'</textarea>'
-    +'<div style="display:flex;gap:8px;margin-top:8px;">'
-    +'<button onclick="shareBackupText()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE</button>'
-    +'<button onclick="copyBackupText()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📋 COPY</button>'
-    +'<button onclick="promptClearCheckmarks()" style="flex:2;background:#ff8800;color:#000080;font-weight:700;font-size:12px;padding:11px;border:none;border-radius:6px;cursor:pointer;">🧹 CLEAR ✓</button>'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
-    +'</div></div>';
-  var overlay=document.createElement('div');
-  overlay.className='modal-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
-  overlay.innerHTML=popupHTML;
-  overlay.dataset.subject=subject;
-  overlay.dataset.toEmail=toEmail;
-  document.body.appendChild(overlay);
-  setTimeout(function(){var ta=document.getElementById('bkp-share-text');if(ta){ta.focus();ta.select();}},400);
-  // Auto-fire Gmail compose with the CSV PRE-FILLED in the body so the receiving device
-  // can simply paste from email (no file picker, no Google Slides hijack).
+  var instructions = 'ACCOUNTING BACKUP — '+mxLog.length+' entries · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
+                   + 'On the other device:\n'
+                   + '  1. Select all text below (between the lines)\n'
+                   + '  2. Copy it\n'
+                   + '  3. Open MFS → MOVE ACCOUNTING\n'
+                   + '  4. Paste into the green textarea and tap LOAD IT NOW\n\n';
+  var separator    = '─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
+  var fullBody     = instructions + separator + backupText + '\n─────── END CSV ───────\n';
+  // Fall back to instructions-only if encoded body would exceed safe URL length
+  var encoded = encodeURIComponent(fullBody);
+  var body = (encoded.length > 25000)
+    ? instructions + 'CSV is too large for the email body — attach the file '+filename+' from Downloads instead, then on the other device save the file, open in a text editor, copy, and paste.\n'
+    : fullBody;
+  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+               + '&to='   + encodeURIComponent(toEmail)
+               + '&su='   + encodeURIComponent(subject)
+               + '&body=' + encodeURIComponent(body);
+  toast('💾 Saved '+filename+' · '+mxLog.length+' entries — opening Gmail…',true);
   setTimeout(function(){
-    var instructions = 'ACCOUNTING BACKUP — '+mxLog.length+' entries · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
-                     + 'On the other device:\n'
-                     + '  1. Select all text below (between the lines)\n'
-                     + '  2. Copy it\n'
-                     + '  3. Open MFS → MOVE ACCOUNTING\n'
-                     + '  4. Paste into the green textarea and tap LOAD IT NOW\n\n';
-    var separator    = '─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
-    var fullBody     = instructions + separator + backupText + '\n─────── END CSV ───────\n';
-    // Fall back to instructions-only if encoded body would exceed safe URL length
-    var encoded = encodeURIComponent(fullBody);
-    var body = (encoded.length > 25000)
-      ? instructions + 'CSV is too large for the email body — attach the file '+filename+' from Downloads instead, then on the other device save the file, open in a text editor, copy, and paste.\n'
-      : fullBody;
-    var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
-                 + '&to='   + encodeURIComponent(toEmail)
-                 + '&su='   + encodeURIComponent(subject)
-                 + '&body=' + encodeURIComponent(body);
     try{ window.open(gmailUrl,'_blank'); }
     catch(e){
       try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }
       catch(e2){}
     }
-  },1200);
+  },600);
 }
 function copyBackupText(){
   var ta=document.getElementById('bkp-share-text');if(!ta)return;
@@ -7291,7 +7289,26 @@ function balImportFromText(text){
 function balSendAllChecked(){
   var toSend=BALANCE.filter(function(r){return r.checked&&!r.sent;});
   if(!toSend.length){toast('No checked items to send',false);return;}
-  if(!confirm('Send '+toSend.length+' checked item(s) to Master Accounting?\n\nThey will be removed from the Balance Sheet after sending.'))return;
+  // Custom Y/N overlay — confirm() is unreliable on Android PWA (same reason
+  // the phone-clear and other prompts use overlays instead of native dialogs)
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#0000cc;border:3px solid #00ff88;border-radius:8px;padding:20px;max-width:360px;width:100%;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="font-size:28px;margin-bottom:10px;">→📋</div>'
+    +'<div style="color:#00ff88;font-weight:700;font-size:15px;margin-bottom:8px;">SEND '+toSend.length+' TO ACCOUNTING?</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:16px;">They will be removed from the Balance Sheet after sending.</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="bal-send-yes" style="flex:1;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">YES, SEND</button>'
+    +'<button id="bal-send-no" style="flex:1;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">NO</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('bal-send-no').onclick=function(){overlay.remove();};
+  document.getElementById('bal-send-yes').onclick=function(){
+    overlay.remove();
+    _balDoSendAll(toSend);
+  };
+}
+function _balDoSendAll(toSend){
   loadLog();
   var mtime=new Date().toISOString();
   var sentIds={};
