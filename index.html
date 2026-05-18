@@ -5298,9 +5298,9 @@ function doCheatSheet(){
   var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;flex-wrap:wrap;">'
     +'<button onclick="document.getElementById(\'cheatsheet-overlay\').remove();goMain();" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ DONE</button>'
     +'<button onclick="cheatSheetToggleSort()" title="Flip A→Z / Z→A — affects payee tiles AND dropdown lists" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:4px;cursor:pointer;">'+sortIcon+'</button>'
-    +'<span style="color:#ffff00;font-weight:700;font-size:15px;">📝 '+Object.keys(byPayee).length+' payees need DESC</span>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:14px;">📝 '+Object.keys(byPayee).length+' payees need DESC</span>'
     +'</div><div style="padding:8px;">'
-    +'<div style="color:#00ff88;font-size:13px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry. Tap <span style="color:#00ffff;font-weight:700;">+</span> to add a new PCODE or DESC.</div>';
+    +'<div style="color:#00ff88;font-size:12px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry. Tap <span style="color:#00ffff;font-weight:700;">+</span> to add a new PCODE or DESC.</div>';
   // Sort payees by the current direction
   var sortedPayees = Object.keys(byPayee).sort(function(a,b){
     return _csSortDir==='desc' ? b.localeCompare(a) : a.localeCompare(b);
@@ -5317,31 +5317,31 @@ function doCheatSheet(){
     var goodKeys=Object.keys(goodList).sort(function(a,b){return goodList[b]-goodList[a];});
     var goodStr='';
     if(goodKeys.length){
-      goodStr='<div style="background:#001a33;border:1px solid #00ffff;border-radius:3px;padding:6px 8px;margin:5px 0 6px;font-size:13px;color:#aaccff;line-height:1.5;">'
+      goodStr='<div style="background:#001a33;border:1px solid #00ffff;border-radius:3px;padding:5px 7px;margin:5px 0 6px;font-size:12px;color:#aaccff;line-height:1.5;">'
         +'<span style="color:#00ffff;font-weight:700;">✓ ALREADY USED FOR THIS PAYEE:</span><br>'
         +goodKeys.slice(0,4).map(function(k){return '<span style="color:#00ff88;">'+k+'</span> ×'+goodList[k];}).join('<br>')
         +(goodKeys.length>4?'<br><span style="color:#888;">…and '+(goodKeys.length-4)+' more</span>':'')
         +'</div>';
     }
     h+='<div style="'+bg+';border:1px solid #333388;border-radius:4px;padding:10px;margin-bottom:8px;">'
-      +'<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
-      +'<div style="color:#ffff00;font-weight:700;font-size:17px;">'+trunc(payee,22)+'</div>'
-      +'<div style="color:#ff6666;font-size:14px;font-weight:700;">'+v.cnt+' · $'+Math.abs(v.amt).toFixed(0)+'</div></div>'
-      +'<div style="color:#ffaa00;font-size:13px;line-height:1.5;margin-bottom:6px;">'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:6px;padding-right:24px;">'
+      +'<div style="color:#ffff00;font-weight:700;font-size:15px;">'+trunc(payee,22)+'</div>'
+      +'<div style="color:#ff6666;font-size:13px;font-weight:700;">'+v.cnt+' · $'+Math.abs(v.amt).toFixed(0)+'</div></div>'
+      +'<div style="color:#ffaa00;font-size:12px;line-height:1.5;margin-bottom:6px;">'
         +'<span style="color:#aaccff;">CURRENT PCODE:</span> <span style="color:#ffaa00;font-weight:700;">'+curPcStr+'</span><br>'
         +'<span style="color:#aaccff;">CURRENT DESC:</span> <span style="color:#ffaa00;font-weight:700;">'+curDcStr+'</span>'
       +'</div>'
       +goodStr
       +'<div style="display:flex;gap:4px;margin-bottom:5px;">'
-      +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:8px 6px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
-      +'<button onclick="cheatSheetAddNewPcode(\''+sid+'\')" title="Add new PCODE" style="background:#001a33;color:#00ffff;border:1px solid #00ffff;font-family:Courier New,monospace;font-size:18px;font-weight:700;padding:0 14px;border-radius:3px;cursor:pointer;">+</button>'
+      +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:7px 6px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
+      +'<button onclick="cheatSheetAddNewPcode(\''+sid+'\')" title="Add new PCODE" style="background:#001a33;color:#00ffff;border:1px solid #00ffff;font-family:Courier New,monospace;font-size:17px;font-weight:700;padding:0 13px;border-radius:3px;cursor:pointer;">+</button>'
       +'</div>'
       +'<div style="display:flex;gap:4px;margin-bottom:8px;">'
-      +'<select id="'+sid+'_dc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:8px 6px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
-      +'<button onclick="cheatSheetAddNewDesc(\''+sid+'\')" title="Add new DESC" style="background:#001a33;color:#ffff00;border:1px solid #ffff00;font-family:Courier New,monospace;font-size:18px;font-weight:700;padding:0 14px;border-radius:3px;cursor:pointer;">+</button>'
+      +'<select id="'+sid+'_dc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:7px 6px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
+      +'<button onclick="cheatSheetAddNewDesc(\''+sid+'\')" title="Add new DESC" style="background:#001a33;color:#ffff00;border:1px solid #ffff00;font-family:Courier New,monospace;font-size:17px;font-weight:700;padding:0 13px;border-radius:3px;cursor:pointer;">+</button>'
       +'</div>'
       +'<button onclick="cheatSheetApply(\''+payee.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',' +'\''+sid+'\')" '
-      +'style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px;border:none;border-radius:4px;cursor:pointer;">'
+      +'style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:9px;border:none;border-radius:4px;cursor:pointer;">'
       +'REPLACE ALL FOR '+trunc(payee,18)+'</button></div>';
   });
   h+='</div>';
