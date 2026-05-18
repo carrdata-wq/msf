@@ -9079,16 +9079,41 @@ function doFilter(val){
     if(typeof LOG!=='undefined' && LOG && LOG.length){
       var seen={};
       _shown.forEach(function(s){seen[(s.payee||'').toUpperCase()+'|'+(s.pcode||'')+'|'+(s.desc||'')]=true;});
+      // Pick the biggest GRP entry as the combo template for LOG-only payees —
+      // gives them the same scale of pickable combos as MENARDS, HOME DEPOT, etc.
+      var template=GRP[0];
+      for(var ti=1;ti<GRP.length;ti++){
+        if((GRP[ti].c.length*GRP[ti].d.length)>(template.c.length*template.d.length)) template=GRP[ti];
+      }
+      // Track which LOG payees we've already expanded so we don't repeat
+      var expandedPayees={};
+      // Also track payees already represented by hardcoded MX — skip the expansion for those
+      var mxPayees={};
+      MX.forEach(function(m){mxPayees[(m.payee||'').toUpperCase()]=true;});
       for(var k=0;k<LOG.length;k++){
         var le=LOG[k];
         if(!le.payee) continue;
         var pUp=le.payee.toUpperCase();
         var pStripped=pUp.replace(/[^A-Z0-9]/g,'');
         if(pStripped.indexOf(q)<0 && pUp.indexOf(q)<0) continue;
+        // Add the existing combo from LOG (preserves the actual recorded pcode/desc)
         var key=pUp+'|'+(le.pcode||'')+'|'+(le.desc||'');
-        if(seen[key]) continue;
-        seen[key]=true;
-        _shown.push({payee:le.payee, pcode:le.pcode||'', desc:le.desc||''});
+        if(!seen[key]){
+          seen[key]=true;
+          _shown.push({payee:le.payee, pcode:le.pcode||'', desc:le.desc||''});
+        }
+        // Expand with template combos — but only ONCE per payee, and only if not in MX
+        if(!expandedPayees[pUp] && !mxPayees[pUp]){
+          expandedPayees[pUp]=true;
+          template.c.forEach(function(pc){
+            template.d.forEach(function(dc){
+              var ck=pUp+'|'+pc+'|'+dc;
+              if(seen[ck]) return;
+              seen[ck]=true;
+              _shown.push({payee:le.payee, pcode:pc, desc:dc});
+            });
+          });
+        }
       }
     }
   }catch(e){}
