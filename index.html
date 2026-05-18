@@ -508,13 +508,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   /* MAIN MENU sub-labels — bold black on Android so the small descriptions
      under each menu item ("Payee · Desc · Pcode · Amount", etc.) read crisp
      in daylight. Matches the bold-black treatment we applied to reports.
-     Also covers SYSTEM UTILITIES and DATA MANAGER for the same readability. */
+     Also covers SYSTEM UTILITIES, DATA MANAGER and MORE ACCOUNTING. */
   #screen-main .menu-item .ms,
   #screen-main .menu-item .ms[style],
   #screen-sysutil-sub .menu-item .ms,
   #screen-sysutil-sub .menu-item .ms[style],
   #screen-transfer .menu-item .ms,
-  #screen-transfer .menu-item .ms[style] {
+  #screen-transfer .menu-item .ms[style],
+  #screen-accounting-sub .menu-item .ms,
+  #screen-accounting-sub .menu-item .ms[style] {
     color: #000000 !important;
     font-weight: 700 !important;
   }
@@ -547,23 +549,27 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     font-size: 20px !important;
     font-weight: 700 !important;
   }
-  /* DATA MANAGER (transfer) and SYSTEM UTILITIES — bigger menu items to
-     match the accounting screen scale. Other drill-downs (sub, accounting)
-     keep their compact 15px/12px sizing. */
+  /* DATA MANAGER (transfer), SYSTEM UTILITIES and MORE ACCOUNTING — bigger
+     menu items to match the accounting screen scale. (Other drill-downs and
+     main keep their own sizing.) */
   #screen-sysutil-sub .menu-item,
-  #screen-transfer .menu-item {
+  #screen-transfer .menu-item,
+  #screen-accounting-sub .menu-item {
     padding: 16px 12px !important;
   }
   #screen-sysutil-sub .menu-item .ml,
-  #screen-transfer .menu-item .ml {
+  #screen-transfer .menu-item .ml,
+  #screen-accounting-sub .menu-item .ml {
     font-size: 17px !important;
   }
   #screen-sysutil-sub .menu-item .ms,
-  #screen-transfer .menu-item .ms {
+  #screen-transfer .menu-item .ms,
+  #screen-accounting-sub .menu-item .ms {
     font-size: 14px !important;
   }
   #screen-sysutil-sub .menu-item .menu-icon,
-  #screen-transfer .menu-item .menu-icon {
+  #screen-transfer .menu-item .menu-icon,
+  #screen-accounting-sub .menu-item .menu-icon {
     font-size: 22px !important;
   }
   /* Helper labels inside accounting screen (search hint, "ADD TO LISTS", etc.) */
@@ -689,6 +695,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #bal-list table td[style*="color:#444"] {
     color: #000000 !important;
     font-weight: 700 !important;
+  }
+
+  /* BROWSE mode highlight — the keyboard-selected row stands out with a
+     yellow band + orange border, like the FoxBase BROWSE cursor bar. */
+  #logtbl tbody tr.led-row.led-selected,
+  table.mfs-stack tbody tr.led-row.led-selected {
+    background: #ffff80 !important;
+    border: 2px solid #ff8800 !important;
+    box-shadow: 0 0 0 2px rgba(255,136,0,0.25) !important;
   }
 
   /* Balance Sheet — hide the cumulative running balance (BAL) column on Android
@@ -6490,12 +6505,14 @@ var _editId=null;
 var _shown=[];
 var _ledYr='';
 var _ledPage=0;
-var _pageSize=20;
+var _pageSize=12;
+var _ledSelectedIdx=0; // BROWSE mode — index of keyboard-highlighted row within current page
 var _ledSort='desc'; // desc=newest first, asc=oldest first
 
 function ledSetYear(yr){
   _ledYr=yr;
   _ledPage=0;
+  _ledSelectedIdx=0;
   renderLog();
 }
 
@@ -9104,8 +9121,10 @@ function renderLog(){
   var html='';
   for(var i=0;i<pageRows.length;i++){
     var e=pageRows[i];var isOpen=(_openId===e.id);
-    var rs=(i===0&&_ledPage===0)?'background:#0055ff;border:2px solid #00ffff;':'background:#00008a;border-bottom:1px solid #5555ee;';
-    html+='<tr class="led-row" style="cursor:pointer;'+rs+'">'
+    var sel=(i===_ledSelectedIdx);
+    var rs=sel?'background:#0055ff;border:2px solid #00ffff;':'background:#00008a;border-bottom:1px solid #5555ee;';
+    var rowClass='led-row'+(sel?' led-selected':'');
+    html+='<tr class="'+rowClass+'" style="cursor:pointer;'+rs+'">'
       +'<td class="led-date-cell" style="padding:6px 3px;color:#ccccff;white-space:nowrap;font-size:13px;">'+fmtDate(e.date)+'</td>'
       +'<td class="led-payee-cell" style="padding:6px 3px;color:#ffff00;font-weight:700;font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.payee,40)+'</td>'
       +'<td class="led-desc-cell" style="padding:6px 3px;color:#ffffff;font-size:13px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+trunc(e.desc,40)+'</td>'
@@ -9130,7 +9149,74 @@ function renderLog(){
   pgHtml+='<button onclick="ledPage('+(Math.min(totalPages-1,_ledPage+1))+')" style="background:#0000cc;color:#ccccff;font-family:Courier New,monospace;font-size:14px;padding:7px 14px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;">▶</button>';
   pgDiv.innerHTML=pgHtml;
 }
-function ledPage(p){_ledPage=p;renderLog();}
+function ledPage(p){_ledPage=p;_ledSelectedIdx=0;renderLog();}
+
+/* ── FOXBASE-STYLE BROWSE NAVIGATION ──
+   Keyboard arrows let the user scroll the accounting ledger row by row, page
+   by page. Works on both ThinkPad (full keyboard) and Android (Bluetooth or
+   hardware keyboard). 12 rows visible per page (see _pageSize). */
+function ledKeyNav(e){
+  // Only fire when the accounting screen is the visible one
+  var acct=document.getElementById('screen-accounting');
+  if(!acct||acct.style.display==='none')return;
+  // Ignore key events while typing in inputs/selects/textareas — they need their own keys
+  var t=e.target;
+  if(t&&/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName))return;
+  // Only respond to our nav keys
+  if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End','Enter'].indexOf(e.key)<0)return;
+  loadLog();
+  var filtered=_ledYr?LOG.filter(function(r){return (r.date||'').startsWith(_ledYr);}):LOG.slice();
+  filtered.sort(function(a,b){
+    return _ledSort==='asc'?(a.date||'').localeCompare(b.date||''):(b.date||'').localeCompare(a.date||'');
+  });
+  if(!filtered.length)return;
+  var totalPages=Math.ceil(filtered.length/_pageSize);
+  var pageStart=_ledPage*_pageSize;
+  var pageEnd=Math.min(pageStart+_pageSize,filtered.length);
+  var rowsInPage=pageEnd-pageStart;
+  switch(e.key){
+    case 'ArrowDown':
+      if(_ledSelectedIdx<rowsInPage-1){_ledSelectedIdx++;}
+      else if(_ledPage<totalPages-1){_ledPage++;_ledSelectedIdx=0;}
+      break;
+    case 'ArrowUp':
+      if(_ledSelectedIdx>0){_ledSelectedIdx--;}
+      else if(_ledPage>0){
+        _ledPage--;
+        var ps=_ledPage*_pageSize, pe=Math.min(ps+_pageSize,filtered.length);
+        _ledSelectedIdx=(pe-ps)-1;
+      }
+      break;
+    case 'PageDown':
+      if(_ledPage<totalPages-1){_ledPage++;_ledSelectedIdx=0;}
+      else{_ledSelectedIdx=rowsInPage-1;}
+      break;
+    case 'PageUp':
+      if(_ledPage>0){_ledPage--;_ledSelectedIdx=0;}
+      else{_ledSelectedIdx=0;}
+      break;
+    case 'Home':
+      _ledPage=0;_ledSelectedIdx=0;
+      break;
+    case 'End':
+      _ledPage=totalPages-1;
+      var ls=_ledPage*_pageSize, le=Math.min(ls+_pageSize,filtered.length);
+      _ledSelectedIdx=(le-ls)-1;
+      break;
+    case 'Enter':
+      var pageRows=filtered.slice(pageStart,pageEnd);
+      if(pageRows[_ledSelectedIdx]){e.preventDefault();editLog(pageRows[_ledSelectedIdx].id);}
+      return;
+  }
+  e.preventDefault();
+  renderLog();
+  // Auto-scroll the highlighted row into view
+  setTimeout(function(){
+    var s=document.querySelector('#logtbl tr.led-selected');
+    if(s&&s.scrollIntoView)s.scrollIntoView({block:'nearest',behavior:'smooth'});
+  },30);
+}
+document.addEventListener('keydown',ledKeyNav);
 function toggleRow(id){_openId=(_openId===id)?null:id;renderLog();}
 var _grPayee='';var _grPcode='';var _grDesc='';
 
