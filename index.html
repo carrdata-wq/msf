@@ -9065,11 +9065,33 @@ function doFilter(val){
     return;
   }
   tbl.style.display='table';_shown=[];
+  // Match against the hardcoded MX list first (well-known payees + custom additions)
   for(var i=0;i<MX.length;i++){
     var stripped=MX[i].payee.toUpperCase().replace(/[^A-Z0-9]/g,'');
     var full=MX[i].payee.toUpperCase();
     if(stripped.indexOf(q)>=0||full.indexOf(q)>=0) _shown.push(MX[i]);
   }
+  // ALSO scan LOG — imported transactions from backup/email may have payees
+  // that were never in the hardcoded MX. SALVATORI'S RESTAURANT, etc. live here.
+  // Dedupe by payee+pcode+desc combo so we don't flood the matrix.
+  try{
+    if(typeof loadLog==='function') loadLog();
+    if(typeof LOG!=='undefined' && LOG && LOG.length){
+      var seen={};
+      _shown.forEach(function(s){seen[(s.payee||'').toUpperCase()+'|'+(s.pcode||'')+'|'+(s.desc||'')]=true;});
+      for(var k=0;k<LOG.length;k++){
+        var le=LOG[k];
+        if(!le.payee) continue;
+        var pUp=le.payee.toUpperCase();
+        var pStripped=pUp.replace(/[^A-Z0-9]/g,'');
+        if(pStripped.indexOf(q)<0 && pUp.indexOf(q)<0) continue;
+        var key=pUp+'|'+(le.pcode||'')+'|'+(le.desc||'');
+        if(seen[key]) continue;
+        seen[key]=true;
+        _shown.push({payee:le.payee, pcode:le.pcode||'', desc:le.desc||''});
+      }
+    }
+  }catch(e){}
   if(!_shown.length){
     // Clean not-found — hide noise, show simple prompt
     tbl.style.display='none';
