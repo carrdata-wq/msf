@@ -5240,6 +5240,15 @@ function dupDeleteSelected(){
   doFindDups();
 }
 
+// DESC Cheat Sheet — sort direction state. 'asc' = A→Z (default, jump to start);
+// 'desc' = Z→A (jump to last). Toggleable via the header button.
+var _csSortDir='asc';
+function cheatSheetToggleSort(){
+  _csSortDir = (_csSortDir==='asc') ? 'desc' : 'asc';
+  var o=document.getElementById('cheatsheet-overlay');if(o)o.remove();
+  doCheatSheet();
+}
+
 function doCheatSheet(){
   loadLog();
   var expEntries=LOG.filter(function(e){
@@ -5277,12 +5286,19 @@ function doCheatSheet(){
   var overlay=document.createElement('div');
   overlay.id='cheatsheet-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:#000033;z-index:9000;overflow-y:auto;font-family:Courier New,monospace;';
-  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
+  // Sort direction toggle — default A→Z (down arrow), tap to flip to Z→A (up arrow)
+  var sortIcon = _csSortDir==='desc' ? '🔼 Z→A' : '🔽 A→Z';
+  var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;flex-wrap:wrap;">'
     +'<button onclick="document.getElementById(\'cheatsheet-overlay\').remove();goMain();" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ DONE</button>'
+    +'<button onclick="cheatSheetToggleSort()" title="Toggle sort A→Z / Z→A" style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 10px;border-radius:4px;cursor:pointer;">'+sortIcon+'</button>'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">📝 '+Object.keys(byPayee).length+' payees need DESC</span>'
     +'</div><div style="padding:8px;">'
     +'<div style="color:#00ff88;font-size:11px;margin-bottom:8px;">Pick PCODE + DESC → REPLACE ALL updates every matching entry. Tap <span style="color:#00ffff;font-weight:700;">+</span> to add a new PCODE or DESC.</div>';
-  Object.keys(byPayee).sort().forEach(function(payee,i){
+  // Sort payees by the current direction
+  var sortedPayees = Object.keys(byPayee).sort(function(a,b){
+    return _csSortDir==='desc' ? b.localeCompare(a) : a.localeCompare(b);
+  });
+  sortedPayees.forEach(function(payee,i){
     var v=byPayee[payee];
     var sid='cs_'+i;
     var bg=i%2===0?'background:#000044':'background:#00003a';
