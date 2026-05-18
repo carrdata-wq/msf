@@ -5334,10 +5334,12 @@ function doCheatSheet(){
       +goodStr
       +'<div style="display:flex;gap:4px;margin-bottom:5px;">'
       +'<select id="'+sid+'_pc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:7px 6px;border-radius:3px;"><option value="">PCODE</option>'+pcOpts+'</select>'
+      +'<button onclick="cheatSheetToggleSort()" title="Flip A→Z / Z→A — applies to all dropdowns" style="background:#003300;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:0 9px;border-radius:3px;cursor:pointer;white-space:nowrap;">'+(_csSortDir==='desc'?'🔼':'🔽')+'</button>'
       +'<button onclick="cheatSheetAddNewPcode(\''+sid+'\')" title="Add new PCODE" style="background:#001a33;color:#00ffff;border:1px solid #00ffff;font-family:Courier New,monospace;font-size:17px;font-weight:700;padding:0 13px;border-radius:3px;cursor:pointer;">+</button>'
       +'</div>'
       +'<div style="display:flex;gap:4px;margin-bottom:8px;">'
       +'<select id="'+sid+'_dc" style="flex:1;background:#000022;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:7px 6px;border-radius:3px;"><option value="">DESC</option>'+descOpts+'</select>'
+      +'<button onclick="cheatSheetToggleSort()" title="Flip A→Z / Z→A — applies to all dropdowns" style="background:#003300;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:0 9px;border-radius:3px;cursor:pointer;white-space:nowrap;">'+(_csSortDir==='desc'?'🔼':'🔽')+'</button>'
       +'<button onclick="cheatSheetAddNewDesc(\''+sid+'\')" title="Add new DESC" style="background:#001a33;color:#ffff00;border:1px solid #ffff00;font-family:Courier New,monospace;font-size:17px;font-weight:700;padding:0 13px;border-radius:3px;cursor:pointer;">+</button>'
       +'</div>'
       +'<button onclick="cheatSheetApply(\''+payee.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',' +'\''+sid+'\')" '
