@@ -1495,6 +1495,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div id="panel" style="display:none;margin-top:10px;padding:12px;background:#0000cc;border:2px solid #ffff00;border-radius:4px;">
     <div style="font-size:14px;color:#ccccff;margin-top:6px;">PAYEE</div>
     <div id="p-payee" style="color:#ffff00;font-weight:700;font-size:14px;min-height:20px;"></div>
+    <!-- FoxBase-style QUICK PICK — single overlay with both PCODE + DESC by letter -->
+    <button onclick="showQuickPickOverlay()" style="width:100%;background:#003366;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:11px;border-radius:4px;cursor:pointer;margin-top:8px;">🔤 QUICK PICK — PCODE + DESC by letter</button>
     <div style="font-size:14px;color:#ccccff;margin-top:6px;">PCODE</div>
     <select id="p-pcode" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;margin-top:4px;">
       <option>ROOF</option><option>BART</option><option>NORD</option><option>TOMM</option><option>TOUT</option>
@@ -9523,6 +9525,334 @@ function selectDesc(val){
   document.getElementById('p-desc').value=val;
   document.getElementById('desc-dropdown').style.display='none';
   document.getElementById('p-amt').focus();
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// FoxBase-style letter shortcut system — pick PCODE/DESC by typing letters
+// PCODE has ~10 codes → single letter (A-J): A=first sorted, B=second, etc.
+// DESC has many → two-letter codes (AA, AB, AC ... AZ, BA, BB, BC ... ZZ)
+// User taps "🔤 LOOKSEY" button to see the mapping and pick by tap.
+// ───────────────────────────────────────────────────────────────────────
+
+function getPcodeLetterMap(){
+  var pcodes=[];
+  var sel=document.getElementById('p-pcode');
+  if(sel){
+    Array.prototype.forEach.call(sel.options,function(o){
+      if(o.value && pcodes.indexOf(o.value)<0) pcodes.push(o.value);
+    });
+  }
+  try{
+    var custom=JSON.parse(localStorage.getItem('mx_pcodes')||'[]');
+    custom.forEach(function(p){if(p && pcodes.indexOf(p)<0) pcodes.push(p);});
+  }catch(e){}
+  pcodes.sort();
+  var map=[];
+  pcodes.forEach(function(p,i){
+    if(i<26) map.push({letter:String.fromCharCode(65+i), value:p});
+  });
+  return map;
+}
+
+function getDescLetterMap(){
+  var all=[];
+  if(typeof _descList!=='undefined'){
+    _descList.forEach(function(d){if(d && all.indexOf(d)<0) all.push(d);});
+  }
+  try{
+    var custom=JSON.parse(localStorage.getItem('mx_descs')||'[]');
+    custom.forEach(function(d){if(d && all.indexOf(d)<0) all.push(d);});
+  }catch(e){}
+  all.sort();
+  var map=[];
+  all.forEach(function(d,i){
+    if(i<676){
+      var first=String.fromCharCode(65+Math.floor(i/26));
+      var second=String.fromCharCode(65+(i%26));
+      map.push({code:first+second, value:d});
+    }
+  });
+  return map;
+}
+
+function showPcodeLookupOverlay(){
+  var map=getPcodeLetterMap();
+  var ov=document.createElement('div');
+  ov.className='pcode-lookup-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:15px;';
+  var rows=map.map(function(m){
+    var esc=m.value.replace(/'/g,"\\'");
+    return '<button onclick="pickPcodeFromLookup(\''+esc+'\');" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:#001144;color:#fff;border:2px solid #6666ff;font-family:Courier New,monospace;padding:14px 16px;border-radius:6px;cursor:pointer;margin-bottom:6px;">'
+      +'<span style="color:#00ffff;font-size:22px;font-weight:700;min-width:40px;text-align:left;">'+m.letter+'</span>'
+      +'<span style="color:#ffff00;font-size:18px;font-weight:700;">'+m.value+'</span>'
+      +'</button>';
+  }).join('');
+  ov.innerHTML='<div style="background:#000033;border:3px solid #00ffff;border-radius:8px;padding:18px;max-width:380px;width:100%;max-height:90vh;overflow-y:auto;font-family:Courier New,monospace;">'
+    +'<div style="color:#00ffff;font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;">🔤 PCODE LOOKSEY</div>'
+    +'<div style="color:#aaccff;font-size:12px;text-align:center;margin-bottom:12px;">Tap a letter row to pick that PCODE</div>'
+    +rows
+    +'<button onclick="this.closest(\'.pcode-lookup-ov\').remove();" style="width:100%;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;margin-top:8px;">CLOSE</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function pickPcodeFromLookup(value){
+  var sel=document.getElementById('p-pcode');
+  if(sel){
+    var found=false;
+    for(var i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===value){sel.selectedIndex=i;found=true;break;}
+    }
+    if(!found){
+      // Add it as a new option (e.g. for custom pcodes from localStorage)
+      var opt=document.createElement('option');opt.value=value;opt.textContent=value;
+      sel.appendChild(opt);sel.value=value;
+    }
+  }
+  var ov=document.querySelector('.pcode-lookup-ov');if(ov)ov.remove();
+  toast('PCODE → '+value,true);
+}
+
+function showDescLookupOverlay(){
+  var map=getDescLetterMap();
+  var ov=document.createElement('div');
+  ov.className='desc-lookup-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:15px;';
+  var rows=map.map(function(m){
+    var esc=m.value.replace(/'/g,"\\'");
+    return '<button onclick="pickDescFromLookup(\''+esc+'\');" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:#001144;color:#fff;border:2px solid #6666ff;font-family:Courier New,monospace;padding:10px 12px;border-radius:6px;cursor:pointer;margin-bottom:4px;">'
+      +'<span style="color:#00ffff;font-size:18px;font-weight:700;min-width:44px;text-align:left;">'+m.code+'</span>'
+      +'<span style="color:#ffff00;font-size:14px;font-weight:700;text-align:right;flex:1;margin-left:10px;">'+m.value+'</span>'
+      +'</button>';
+  }).join('');
+  ov.innerHTML='<div style="background:#000033;border:3px solid #ffff00;border-radius:8px;padding:16px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;font-family:Courier New,monospace;">'
+    +'<div style="color:#ffff00;font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;">🔤 DESC LOOKSEY</div>'
+    +'<div style="color:#aaccff;font-size:12px;text-align:center;margin-bottom:12px;">Tap a 2-letter code to pick that DESC</div>'
+    +rows
+    +'<button onclick="this.closest(\'.desc-lookup-ov\').remove();" style="width:100%;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;margin-top:8px;position:sticky;bottom:0;">CLOSE</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+function pickDescFromLookup(value){
+  var search=document.getElementById('p-desc-search');
+  var hidden=document.getElementById('p-desc');
+  if(search) search.value=value;
+  if(hidden) hidden.value=value;
+  var dd=document.getElementById('desc-dropdown');if(dd) dd.style.display='none';
+  var ov=document.querySelector('.desc-lookup-ov');if(ov) ov.remove();
+  toast('DESC → '+value,true);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMBINED QUICK PICK — FoxBase-style ONE PAGE with both PCODE + DESC.
+// Type a letter (A-J) to pick PCODE, type 2 letters (AA-ZZ) to pick DESC,
+// + NEW PCODE / + NEW DESC buttons to add inline. APPLY & EXIT fills both
+// fields and closes. Single screen, very efficient.
+// ═══════════════════════════════════════════════════════════════════════
+
+var _qpSelectedPcode='';
+var _qpSelectedDesc='';
+
+function showQuickPickOverlay(){
+  _qpSelectedPcode=(document.getElementById('p-pcode')||{}).value||'';
+  _qpSelectedDesc=(document.getElementById('p-desc')||{}).value||'';
+
+  var pcodeMap=getPcodeLetterMap();
+  var descMap=getDescLetterMap();
+
+  var pcodeRows=pcodeMap.map(function(m){
+    var esc=m.value.replace(/'/g,"\\'");
+    var isSel=(m.value===_qpSelectedPcode);
+    return '<button onclick="qpPickPcode(\''+esc+'\')" data-pcode="'+esc+'" data-letter="'+m.letter+'" class="qp-pcode-row" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:'+(isSel?'#005500':'#001144')+';color:#fff;border:2px solid '+(isSel?'#00ff88':'#6666ff')+';font-family:Courier New,monospace;padding:9px 12px;border-radius:4px;cursor:pointer;margin-bottom:3px;">'
+      +'<span style="color:#00ffff;font-size:20px;font-weight:700;min-width:32px;text-align:left;">['+m.letter+']</span>'
+      +'<span style="color:#ffff00;font-size:16px;font-weight:700;">'+m.value+'</span>'
+      +'</button>';
+  }).join('');
+
+  var descRows=descMap.map(function(m){
+    var esc=m.value.replace(/'/g,"\\'");
+    var isSel=(m.value===_qpSelectedDesc);
+    return '<button onclick="qpPickDesc(\''+esc+'\')" data-desc="'+esc+'" data-code="'+m.code+'" class="qp-desc-row" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:'+(isSel?'#005500':'#001144')+';color:#fff;border:2px solid '+(isSel?'#00ff88':'#6666ff')+';font-family:Courier New,monospace;padding:7px 11px;border-radius:4px;cursor:pointer;margin-bottom:2px;">'
+      +'<span style="color:#00ffff;font-size:16px;font-weight:700;min-width:42px;text-align:left;">['+m.code+']</span>'
+      +'<span style="color:#ffff00;font-size:13px;font-weight:700;text-align:right;flex:1;margin-left:8px;">'+m.value+'</span>'
+      +'</button>';
+  }).join('');
+
+  var ov=document.createElement('div');
+  ov.id='quickpick-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:center;justify-content:center;padding:6px;';
+  ov.innerHTML='<div style="background:#000033;border:3px solid #ffff00;border-radius:8px;padding:12px;max-width:500px;width:100%;max-height:97vh;display:flex;flex-direction:column;font-family:Courier New,monospace;">'
+    +'<div style="color:#ffff00;font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;">🔤 QUICK PICK — PCODE + DESC</div>'
+    // PCODE block
+    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:4px;">THESE ARE PCODES — PICK ITEM LETTER:</div>'
+    +'<div id="qp-pcode-list" style="background:#000022;border:1px solid #6666ff;border-radius:4px;padding:5px;max-height:32vh;overflow-y:auto;margin-bottom:6px;">'+pcodeRows+'</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
+    +'<input id="qp-pcode-input" type="text" maxlength="1" placeholder="A" autocomplete="off" style="flex:1;background:#000022;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:22px;font-weight:700;padding:8px;border-radius:4px;text-align:center;text-transform:uppercase;outline:none;" oninput="qpHandlePcodeInput(this.value)">'
+    +'<button onclick="qpAddNewPcode()" style="background:#003366;color:#00ffff;border:2px solid #00ffff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;">+ NEW PCODE</button>'
+    +'</div>'
+    // DESC block
+    +'<div style="color:#ffff00;font-size:13px;font-weight:700;margin-bottom:4px;">THESE ARE DESCS — PICK 2 LETTERS:</div>'
+    +'<div id="qp-desc-list" style="background:#000022;border:1px solid #6666ff;border-radius:4px;padding:5px;max-height:32vh;overflow-y:auto;margin-bottom:6px;">'+descRows+'</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
+    +'<input id="qp-desc-input" type="text" maxlength="2" placeholder="AA" autocomplete="off" style="flex:1;background:#000022;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:22px;font-weight:700;padding:8px;border-radius:4px;text-align:center;text-transform:uppercase;outline:none;" oninput="qpHandleDescInput(this.value)">'
+    +'<button onclick="qpAddNewDesc()" style="background:#003366;color:#ffff00;border:2px solid #ffff00;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;">+ NEW DESC</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="qpApplyAndExit()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:15px;padding:13px;border:none;border-radius:6px;cursor:pointer;">✓ APPLY &amp; EXIT</button>'
+    +'<button onclick="document.getElementById(\'quickpick-overlay\').remove();" style="flex:1;background:#880000;color:#fff;font-weight:700;font-size:15px;padding:13px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(ov);
+  // Focus the PCODE input so user can type immediately
+  setTimeout(function(){var i=document.getElementById('qp-pcode-input');if(i)i.focus();},50);
+}
+
+function qpPickPcode(value){
+  _qpSelectedPcode=value;
+  document.querySelectorAll('.qp-pcode-row').forEach(function(b){
+    var isSel=(b.getAttribute('data-pcode')===value);
+    b.style.background=isSel?'#005500':'#001144';
+    b.style.borderColor=isSel?'#00ff88':'#6666ff';
+  });
+  var map=getPcodeLetterMap();
+  for(var i=0;i<map.length;i++){
+    if(map[i].value===value){
+      var inp=document.getElementById('qp-pcode-input');
+      if(inp) inp.value=map[i].letter;
+      break;
+    }
+  }
+}
+function qpHandlePcodeInput(val){
+  val=(val||'').toUpperCase();
+  if(!val)return;
+  var map=getPcodeLetterMap();
+  for(var i=0;i<map.length;i++){
+    if(map[i].letter===val){
+      qpPickPcode(map[i].value);
+      var btn=document.querySelector('.qp-pcode-row[data-letter="'+val+'"]');
+      if(btn&&btn.scrollIntoView) btn.scrollIntoView({block:'nearest',behavior:'smooth'});
+      return;
+    }
+  }
+}
+
+function qpPickDesc(value){
+  _qpSelectedDesc=value;
+  document.querySelectorAll('.qp-desc-row').forEach(function(b){
+    var isSel=(b.getAttribute('data-desc')===value);
+    b.style.background=isSel?'#005500':'#001144';
+    b.style.borderColor=isSel?'#00ff88':'#6666ff';
+  });
+  var map=getDescLetterMap();
+  for(var i=0;i<map.length;i++){
+    if(map[i].value===value){
+      var inp=document.getElementById('qp-desc-input');
+      if(inp) inp.value=map[i].code;
+      break;
+    }
+  }
+}
+function qpHandleDescInput(val){
+  val=(val||'').toUpperCase();
+  if(val.length!==2)return;
+  var map=getDescLetterMap();
+  for(var i=0;i<map.length;i++){
+    if(map[i].code===val){
+      qpPickDesc(map[i].value);
+      var btn=document.querySelector('.qp-desc-row[data-code="'+val+'"]');
+      if(btn&&btn.scrollIntoView) btn.scrollIntoView({block:'nearest',behavior:'smooth'});
+      return;
+    }
+  }
+}
+
+function qpAddNewPcode(){
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML='<div style="background:#0000cc;border:3px solid #00ffff;border-radius:8px;padding:20px;max-width:340px;width:100%;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#00ffff;font-weight:700;font-size:15px;margin-bottom:12px;">➕ NEW PCODE</div>'
+    +'<input id="qp-new-pc-inp" type="text" maxlength="5" style="width:100%;box-sizing:border-box;padding:10px;background:#000022;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:16px;font-weight:700;text-align:center;border-radius:4px;text-transform:uppercase;margin-bottom:12px;outline:none;" placeholder="e.g. SUBC">'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="qp-new-pc-ok" style="flex:1;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">SAVE</button>'
+    +'<button id="qp-new-pc-cancel" style="flex:1;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){var i=document.getElementById('qp-new-pc-inp');if(i)i.focus();},50);
+  document.getElementById('qp-new-pc-cancel').onclick=function(){ov.remove();};
+  document.getElementById('qp-new-pc-ok').onclick=function(){
+    var val=(document.getElementById('qp-new-pc-inp').value||'').trim().toUpperCase();
+    if(!val){toast('Type a PCODE first',false);return;}
+    var list=[];try{list=JSON.parse(localStorage.getItem('mx_pcodes')||'[]');}catch(e){}
+    if(list.indexOf(val)<0){list.push(val);localStorage.setItem('mx_pcodes',JSON.stringify(list));}
+    // Also add to the select if not already there
+    var sel=document.getElementById('p-pcode');
+    if(sel){
+      var found=false;
+      for(var i=0;i<sel.options.length;i++) if(sel.options[i].value===val) found=true;
+      if(!found){var opt=document.createElement('option');opt.value=val;opt.textContent=val;sel.appendChild(opt);}
+    }
+    ov.remove();
+    // Re-render quick pick overlay
+    document.getElementById('quickpick-overlay').remove();
+    showQuickPickOverlay();
+    qpPickPcode(val);
+    toast('✓ Added PCODE "'+val+'"',true);
+  };
+}
+
+function qpAddNewDesc(){
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML='<div style="background:#0000cc;border:3px solid #ffff00;border-radius:8px;padding:20px;max-width:360px;width:100%;font-family:Courier New,monospace;text-align:center;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:12px;">➕ NEW DESC</div>'
+    +'<input id="qp-new-dc-inp" type="text" maxlength="40" style="width:100%;box-sizing:border-box;padding:10px;background:#000022;border:2px solid #ffff00;color:#ffff00;font-family:Courier New,monospace;font-size:14px;font-weight:700;text-align:center;border-radius:4px;text-transform:uppercase;margin-bottom:12px;outline:none;" placeholder="e.g. SUBCONTRACT LABOR">'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="qp-new-dc-ok" style="flex:1;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">SAVE</button>'
+    +'<button id="qp-new-dc-cancel" style="flex:1;background:#880000;color:#fff;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){var i=document.getElementById('qp-new-dc-inp');if(i)i.focus();},50);
+  document.getElementById('qp-new-dc-cancel').onclick=function(){ov.remove();};
+  document.getElementById('qp-new-dc-ok').onclick=function(){
+    var val=(document.getElementById('qp-new-dc-inp').value||'').trim().toUpperCase();
+    if(!val){toast('Type a DESC first',false);return;}
+    var list=[];try{list=JSON.parse(localStorage.getItem('mx_descs')||'[]');}catch(e){}
+    if(list.indexOf(val)<0){list.push(val);localStorage.setItem('mx_descs',JSON.stringify(list));}
+    ov.remove();
+    document.getElementById('quickpick-overlay').remove();
+    showQuickPickOverlay();
+    qpPickDesc(val);
+    toast('✓ Added DESC "'+val+'"',true);
+  };
+}
+
+function qpApplyAndExit(){
+  // Apply PCODE
+  if(_qpSelectedPcode){
+    var sel=document.getElementById('p-pcode');
+    if(sel){
+      var found=false;
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].value===_qpSelectedPcode){sel.selectedIndex=i;found=true;break;}
+      }
+      if(!found){
+        var opt=document.createElement('option');opt.value=_qpSelectedPcode;opt.textContent=_qpSelectedPcode;
+        sel.appendChild(opt);sel.value=_qpSelectedPcode;
+      }
+    }
+  }
+  // Apply DESC
+  if(_qpSelectedDesc){
+    var s=document.getElementById('p-desc-search');
+    var h=document.getElementById('p-desc');
+    if(s) s.value=_qpSelectedDesc;
+    if(h) h.value=_qpSelectedDesc;
+    var dd=document.getElementById('desc-dropdown');if(dd) dd.style.display='none';
+  }
+  document.getElementById('quickpick-overlay').remove();
+  toast('✓ PCODE: '+(_qpSelectedPcode||'—')+' · DESC: '+(_qpSelectedDesc||'—'),true);
 }
 
 function descKeyNav(e){
