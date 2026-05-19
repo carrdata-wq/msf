@@ -889,6 +889,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div class="main-sub">Select Module</div>
   </div>
   <div class="main-box">
+    <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
+      <div class="menu-num" style="color:#00ff88;font-size:22px;">🚀</div><div class="menu-icon" style="font-size:28px;">⚡</div>
+      <div class="menu-label">
+        <div class="ml" style="color:#00ff88;font-size:14px;font-weight:700;letter-spacing:1px;">FAST ENTRY</div>
+        <div class="ms" style="color:#88ffaa;">Bloomberg prompt · 1-2 sec per entry</div>
+      </div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
     <div class="menu-item" onclick="openModule('accounting')">
       <div class="menu-num">1</div><div class="menu-icon">💰</div>
       <div class="menu-label"><div class="ml">Accounting</div><div class="ms">Payee · Desc · Pcode · Amount</div></div>
@@ -1401,6 +1409,70 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div id="bal-list" style="margin-bottom:20px;"></div>
 
   </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     FAST ENTRY SCREEN — Bloomberg Terminal for Accounting
+     FoxBase ZFIND1.PRG pattern · 4-letter prompt · fading table
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="screen-fastentry" class="screen" style="background:#000044;font-family:'Courier New',monospace;display:none;">
+  <div style="background:#000088;border-bottom:2px solid #ffff00;padding:7px 10px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;">
+    <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+    <span style="font-weight:700;font-size:14px;color:#00ff88;flex:1;">🚀 FAST ENTRY</span>
+    <button onclick="_feShowHelp()" style="background:#003366;border:1px solid #00ffff;color:#00ffff;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:5px 11px;border-radius:4px;cursor:pointer;">?</button>
+  </div>
+
+  <div style="padding:8px;display:flex;flex-direction:column;gap:6px;min-height:calc(100vh - 50px);">
+
+    <!-- PROMPT BAR — top-right -->
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <div style="font-size:11px;color:#aaccff;flex:1;text-align:left;display:flex;align-items:center;gap:8px;">
+        <span id="fe-mode" style="background:#001144;border:1px solid #4466cc;padding:3px 8px;border-radius:3px;color:#ffff00;font-weight:700;font-size:11px;letter-spacing:1px;">CMD</span>
+        <span id="fe-ghost" style="color:#5577aa;font-size:11px;"></span>
+      </div>
+      <div style="color:#ffff00;font-weight:700;font-size:12px;">SIGN<span id="fe-sign" style="font-size:20px;margin-left:4px;">–</span></div>
+      <div style="background:#000022;border:2px solid #ffff00;border-radius:4px;padding:6px 8px;display:flex;align-items:center;gap:5px;min-width:170px;">
+        <span style="color:#00ff88;font-weight:700;font-size:14px;">MFS&gt;</span>
+        <span id="fe-mini-label" style="color:#ffff00;font-size:11px;font-weight:700;display:none;white-space:nowrap;"></span>
+        <input id="fe-prompt" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="4"
+               oninput="_feHandleInput(this.value)"
+               onkeydown="_feHandlePromptKey(event)"
+               style="flex:1;background:transparent;border:none;color:#ffffff;font-family:'Courier New',monospace;font-size:18px;font-weight:700;padding:0;outline:none;text-transform:uppercase;letter-spacing:2px;min-width:50px;width:60px;">
+      </div>
+    </div>
+
+    <!-- FADING RECENT-ENTRIES TABLE -->
+    <div style="border:1px solid #4466cc;border-radius:4px;background:#000022;overflow:hidden;">
+      <table id="fe-tbl" style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:13px;">
+        <thead>
+          <tr style="background:#001144;border-bottom:1px solid #4466cc;">
+            <th style="padding:5px 6px;text-align:right;color:#aaccff;font-size:10px;font-weight:700;width:32px;">CNT</th>
+            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;width:74px;">DATE</th>
+            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;">PAYEE</th>
+            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;width:62px;">PCODE</th>
+            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;">DESC</th>
+            <th style="padding:5px 6px;text-align:right;color:#aaccff;font-size:10px;font-weight:700;width:88px;">AMT</th>
+          </tr>
+        </thead>
+        <tbody id="fe-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- ACTION BAR for current bottom row -->
+    <div id="fe-actbar" style="display:none;gap:6px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="_feActCopy()" style="background:#003366;border:1px solid #00ffff;color:#00ffff;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">📋 COPY</button>
+      <button onclick="_feFlipSign()" style="background:#333300;border:1px solid #ffff00;color:#ffff00;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">± FLIP</button>
+      <button onclick="_feActDel()" style="background:#330000;border:1px solid #ff6666;color:#ff6666;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">🗑 DEL</button>
+    </div>
+
+    <!-- Status / cheat hint strip -->
+    <div style="text-align:center;font-size:10px;color:#5577aa;letter-spacing:1px;padding:4px;">
+      MM · DD · YR · AMT · PCOD · DESC · &minus; · S · B · R · ? — type 1-4 letters of payee to lookup
+    </div>
+  </div>
+
+  <!-- OVERLAY for pickers, ADD NEW, help -->
+  <div id="fe-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,16,0.92);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
 </div>
 
 <div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
@@ -12120,7 +12192,691 @@ function infl_renderCompare(item){
 }
 // Auto-load on first page boot so renders are ready
 try{infl_load();}catch(e){}
-// ==================== END INFLATION TRACKER MODULE ====================
+// ════════════════════════════════════════════════════════════════════
+// FAST ENTRY MODULE — Bloomberg Terminal for Accounting
+// Ported from FoxBase ZFIND1.PRG · 35 years of opinions baked in
+// localStorage keys used: mx_log, mx_combo_cnt
+// Does not touch existing accounting/cheat-sheet/Phone DB code.
+// ════════════════════════════════════════════════════════════════════
+var _feSign = -1;                  // session default sign (configurable per session)
+var _feLastCommand = '';           // sticky last typed command
+var _feRowIdx = 0;                 // 0 = LOG[0] = newest = bottom of fading table
+var _feIndexDirty = true;
+var _fePayeeIndex = {};            // UPPER(payee) -> [{pcode, desc, cnt}, ...] sorted by cnt desc
+var _feComboCnt = {};              // "PAYEE|PCODE|DESC" -> running count
+var _feMode = 'cmd';
+var _feMiniLabel = '';
+var _fePickerItems = [];
+var _fePickerFilter = '';
+var _fePendingNewPayee = '';
+var _feKeyMap = [];                // combo picker key shortcuts
+var _feAutoApplyThreshold = 25;    // FoxBase 25-uses rule
+var _feMaxRows = 8;
+
+// ───── ENTRY POINT ─────
+function openFastEntry(){
+  _feLoadComboCnt();
+  loadLog();
+  if(_feIndexDirty) _feBuildIndex();
+  _feMode = 'cmd';
+  _feMiniLabel = '';
+  _fePickerFilter = '';
+  _feRowIdx = 0;
+  showScreen('fastentry');
+  _feRender();
+  _feFocusPrompt();
+}
+
+// ───── PERSISTENCE ─────
+function _feLoadComboCnt(){
+  try { _feComboCnt = JSON.parse(localStorage.getItem('mx_combo_cnt') || '{}'); }
+  catch(e) { _feComboCnt = {}; }
+}
+function _feSaveComboCnt(){
+  try { localStorage.setItem('mx_combo_cnt', JSON.stringify(_feComboCnt)); }
+  catch(e){}
+}
+
+// Rebuild index from LOG. Backfills entry.cnt on first pass.
+function _feBuildIndex(){
+  var changed = false;
+  var counts = {};
+  // Walk OLDEST-first so cnt = sequence number for that combo
+  for(var i = LOG.length - 1; i >= 0; i--){
+    var e = LOG[i];
+    var key = (e.payee||'').toUpperCase() + '|' + (e.pcode||'') + '|' + (e.desc||'');
+    counts[key] = (counts[key] || 0) + 1;
+    if(typeof e.cnt !== 'number' || e.cnt !== counts[key]){
+      e.cnt = counts[key];
+      changed = true;
+    }
+  }
+  _feComboCnt = counts;
+  _feSaveComboCnt();
+  _fePayeeIndex = {};
+  Object.keys(counts).forEach(function(k){
+    var parts = k.split('|');
+    var p = parts[0], pc = parts[1], d = parts[2];
+    if(!_fePayeeIndex[p]) _fePayeeIndex[p] = [];
+    _fePayeeIndex[p].push({pcode: pc, desc: d, cnt: counts[k]});
+  });
+  Object.keys(_fePayeeIndex).forEach(function(p){
+    _fePayeeIndex[p].sort(function(a,b){ return b.cnt - a.cnt; });
+  });
+  if(changed) saveLog();
+  _feIndexDirty = false;
+}
+function _feInvalidateIndex(){ _feIndexDirty = true; }
+
+// ───── RENDERING ─────
+function _feRender(){ _feRenderTable(); _feRenderPrompt(); }
+
+function _feRenderTable(){
+  var tbody = document.getElementById('fe-tbody');
+  if(!tbody) return;
+  var start = _feRowIdx;
+  var end = Math.min(LOG.length, start + _feMaxRows);
+  var slice = LOG.slice(start, end);  // newest -> older
+  slice.reverse();                    // oldest at top, newest at bottom
+  var n = slice.length;
+  var html = '';
+  var pad = _feMaxRows - n;
+  for(var p = 0; p < pad; p++){
+    html += '<tr style="opacity:0.10;"><td colspan="6" style="border-bottom:1px solid #223;padding:6px 4px;color:#225;font-size:11px;">·</td></tr>';
+  }
+  for(var i = 0; i < n; i++){
+    var e = slice[i];
+    var rowIdx = start + (n - 1 - i);
+    var op = 0.28 + (0.72 * (i / Math.max(1, _feMaxRows - 1)));
+    var bottom = (i === n - 1);
+    var dateStr = _feFmtDate(e.date || '');
+    var amtStr = _feFmtAmt(e.amt);
+    var amtColor = e.amt >= 0 ? '#00ff88' : '#ff8888';
+    var border = bottom ? '2px solid #ffff00' : '1px solid #223';
+    var bg = bottom ? '#001844' : 'transparent';
+    var cnt = e.cnt || 0;
+    html += '<tr data-idx="' + rowIdx + '" onclick="_feRowTap(' + rowIdx + ')" style="opacity:' + op.toFixed(2) + ';background:' + bg + ';cursor:pointer;">'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#aaccff;text-align:right;font-size:11px;">' + cnt + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#ffffff;font-size:12px;">' + dateStr + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#ffff00;font-weight:700;">' + _feEsc(e.payee||'') + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#00ffff;">' + _feEsc(e.pcode||'') + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#ffffff;font-size:12px;">' + _feEsc(e.desc||'') + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:' + amtColor + ';text-align:right;font-weight:700;">' + amtStr + '</td>'
+      + '</tr>';
+  }
+  tbody.innerHTML = html;
+  var actBar = document.getElementById('fe-actbar');
+  if(actBar) actBar.style.display = (LOG.length > 0 ? 'flex' : 'none');
+}
+
+function _feRenderPrompt(){
+  var ghost = document.getElementById('fe-ghost');
+  if(ghost) ghost.textContent = _feLastCommand ? '↵ repeats ' + _feLastCommand : '';
+  var label = document.getElementById('fe-mini-label');
+  if(label){
+    label.textContent = _feMiniLabel;
+    label.style.display = _feMiniLabel ? 'inline-block' : 'none';
+  }
+  var signEl = document.getElementById('fe-sign');
+  if(signEl){
+    signEl.textContent = _feSign > 0 ? '+' : '–';
+    signEl.style.color = _feSign > 0 ? '#00ff88' : '#ff8888';
+  }
+  var modeEl = document.getElementById('fe-mode');
+  if(modeEl){
+    var labels = { 'cmd':'CMD','edit-mm':'MM','edit-dd':'DD','edit-yr':'YR','edit-amt':'AMT','pick-pcode':'PCOD','pick-desc':'DESC','pick-combo':'COMBO','ask-new':'NEW?' };
+    modeEl.textContent = labels[_feMode] || _feMode.toUpperCase();
+  }
+  var inp = document.getElementById('fe-prompt');
+  if(inp){
+    if(_feMode === 'cmd'){ inp.placeholder='____'; inp.maxLength=4; }
+    else if(_feMode === 'edit-amt'){ inp.placeholder='0.00'; inp.maxLength=12; }
+    else if(_feMode === 'edit-mm'){ inp.placeholder='MM'; inp.maxLength=2; }
+    else if(_feMode === 'edit-dd'){ inp.placeholder='DD'; inp.maxLength=2; }
+    else if(_feMode === 'edit-yr'){ inp.placeholder='YYYY'; inp.maxLength=4; }
+    else if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){ inp.placeholder='TYPE'; inp.maxLength=10; }
+    else if(_feMode === 'ask-new'){ inp.placeholder='Y/N'; inp.maxLength=1; }
+    else if(_feMode === 'pick-combo'){ inp.placeholder='#'; inp.maxLength=2; }
+  }
+}
+
+function _feEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+});}
+
+function _feFmtDate(iso){
+  if(!iso) return '--/--/--';
+  var parts = iso.split('-');
+  if(parts.length !== 3) return iso;
+  return parts[1] + '/' + parts[2] + '/' + parts[0].slice(2);
+}
+
+function _feFmtAmt(n){
+  if(typeof n !== 'number' || isNaN(n)) return '0.00';
+  var abs = Math.abs(n).toFixed(2);
+  return (n < 0 ? '-' : '') + abs;
+}
+
+function _feTodayISO(){
+  var d = new Date();
+  return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+}
+
+// ───── PROMPT INPUT HANDLERS ─────
+function _feHandleInput(val){
+  // Live narrowing of pickers as user types
+  if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){
+    _fePickerFilter = (val||'').toUpperCase();
+    _feRenderPickerOverlay();
+  }
+}
+
+function _feHandlePromptKey(e){
+  // Combo-picker single-key shortcuts (1-9, A-Z)
+  if(_feMode === 'pick-combo' && e.key && e.key.length === 1){
+    var k = e.key.toUpperCase();
+    for(var ki = 0; ki < _feKeyMap.length; ki++){
+      if(_feKeyMap[ki].k === k){
+        e.preventDefault();
+        var m = _feKeyMap[ki];
+        _feInsertNew(m.payee, m.pcode, m.desc);
+        return;
+      }
+    }
+  }
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    var inp = document.getElementById('fe-prompt');
+    var val = (inp.value || '').trim();
+    inp.value = '';
+    _feDispatchInput(val);
+    return;
+  }
+  if(e.key === 'Escape'){
+    e.preventDefault();
+    _feCancelMode();
+    return;
+  }
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    _feCancelMode();
+    return;
+  }
+  if(e.key === 'ArrowUp' && _feMode === 'cmd'){
+    e.preventDefault();
+    _feBrowse(1);
+    return;
+  }
+}
+
+function _feCancelMode(){
+  _feMode = 'cmd';
+  _feMiniLabel = '';
+  _fePickerFilter = '';
+  _fePendingNewPayee = '';
+  _feKeyMap = [];
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.innerHTML=''; ov.style.display='none'; }
+  var inp = document.getElementById('fe-prompt');
+  if(inp) inp.value = '';
+  _feRender();
+  _feFocusPrompt();
+}
+
+function _feDispatchInput(val){
+  // Empty ENTER → repeat last command (only in cmd mode)
+  if(_feMode === 'cmd' && val === ''){
+    if(_feLastCommand) _feDispatchCommand(_feLastCommand);
+    return;
+  }
+  if(_feMode === 'edit-mm'){ _feApplyMM(val); return; }
+  if(_feMode === 'edit-dd'){ _feApplyDD(val); return; }
+  if(_feMode === 'edit-yr'){ _feApplyYR(val); return; }
+  if(_feMode === 'edit-amt'){ _feApplyAMT(val); return; }
+  if(_feMode === 'pick-pcode'){ _feApplyPcodePick(val); return; }
+  if(_feMode === 'pick-desc'){ _feApplyDescPick(val); return; }
+  if(_feMode === 'ask-new'){ _feApplyAskNew(val); return; }
+  _feDispatchCommand(val);
+}
+
+function _feDispatchCommand(raw){
+  var cmd = (raw||'').toUpperCase();
+  if(!cmd) return;
+  _feLastCommand = cmd;
+  if(cmd === 'MM'){ _feStartMM(); return; }
+  if(cmd === 'DD'){ _feStartDD(); return; }
+  if(cmd === 'YR'){ _feStartYR(); return; }
+  if(cmd === 'AMT'){ _feStartAMT(); return; }
+  if(cmd === 'PCOD'){ _feStartPcodePick(); return; }
+  if(cmd === 'DESC'){ _feStartDescPick(); return; }
+  if(cmd === '-'){ _feFlipSign(); return; }
+  if(cmd === 'S'){ _feToggleSessionSign(); return; }
+  if(cmd === 'R'){ showScreen('reports'); return; }
+  if(cmd === 'B'){ _feBrowse(1); return; }
+  if(cmd === '?' || cmd === 'H'){ _feShowHelp(); return; }
+  // Otherwise → payee lookup
+  _feLookupAndApply(cmd);
+}
+
+// ───── DATE / AMT EDIT COMMANDS ─────
+function _feStartMM(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-mm'; _feMiniLabel='EDIT MM:'; _feRender(); _feFocusPrompt(); }
+function _feStartDD(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-dd'; _feMiniLabel='EDIT DD:'; _feRender(); _feFocusPrompt(); }
+function _feStartYR(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-yr'; _feMiniLabel='EDIT YR:'; _feRender(); _feFocusPrompt(); }
+function _feStartAMT(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-amt'; _feMiniLabel='EDIT AMT:'; _feRender(); _feFocusPrompt(); }
+
+function _feApplyMM(val){
+  var mm = parseInt(val,10);
+  if(isNaN(mm) || mm<1 || mm>12){ toast('Bad MM',false); _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  var parts = (e.date || _feTodayISO()).split('-');
+  parts[1] = ('0'+mm).slice(-2);
+  e.date = parts.join('-');
+  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+}
+function _feApplyDD(val){
+  var dd = parseInt(val,10);
+  if(isNaN(dd) || dd<1 || dd>31){ toast('Bad DD',false); _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  var parts = (e.date || _feTodayISO()).split('-');
+  parts[2] = ('0'+dd).slice(-2);
+  e.date = parts.join('-');
+  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+}
+function _feApplyYR(val){
+  var y = parseInt(val,10);
+  // Allow 2-digit year shorthand
+  if(!isNaN(y) && y >= 0 && y < 100) y = 2000 + y;
+  if(isNaN(y) || y<2000 || y>2100){ toast('Bad YR',false); _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  var parts = (e.date || _feTodayISO()).split('-');
+  parts[0] = String(y);
+  e.date = parts.join('-');
+  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+}
+function _feApplyAMT(val){
+  var s = String(val||'').replace(/[^0-9.\-]/g,'');
+  var n = parseFloat(s);
+  if(isNaN(n)){ toast('Bad AMT',false); _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  // If user did not include explicit sign, preserve current row's sign;
+  // if row's current amt is 0 (fresh insert), apply session default sign.
+  if(s.indexOf('-') < 0){
+    var abs = Math.abs(n);
+    if(e.amt < 0) n = -abs;
+    else if(e.amt > 0) n = abs;
+    else n = (_feSign < 0 ? -abs : abs);
+  }
+  e.amt = n;
+  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+}
+
+// ───── SIGN ─────
+function _feFlipSign(){
+  if(LOG.length===0 || _feRowIdx>=LOG.length){ toast('No entry to flip',false); _feFocusPrompt(); return; }
+  LOG[_feRowIdx].amt = -LOG[_feRowIdx].amt;
+  saveLog(); _feRender();
+  toast('Sign flipped',true);
+  _feFocusPrompt();
+}
+function _feToggleSessionSign(){
+  _feSign = -_feSign;
+  toast('Session default: ' + (_feSign>0?'+ INCOME':'– EXPENSE'), true);
+  _feRender(); _feFocusPrompt();
+}
+
+// ───── PCODE / DESC PICKERS ─────
+function _feGetAllPcodes(){
+  var arr = [];
+  var sel = document.getElementById('p-pcode');
+  if(sel){ for(var i=0;i<sel.options.length;i++){ var v = sel.options[i].value; if(v && arr.indexOf(v)<0) arr.push(v); } }
+  try { var cp = JSON.parse(localStorage.getItem('mx_pcodes')||'[]');
+    cp.forEach(function(p){ if(p && arr.indexOf(p)<0) arr.push(p); });
+  } catch(e){}
+  return arr;
+}
+function _feGetAllDescs(){
+  var arr = [];
+  if(typeof _descList !== 'undefined') _descList.forEach(function(d){ if(d && arr.indexOf(d)<0) arr.push(d); });
+  try { var cd = JSON.parse(localStorage.getItem('mx_descs')||'[]');
+    cd.forEach(function(d){ if(d && arr.indexOf(d)<0) arr.push(d); });
+  } catch(e){}
+  arr.sort();
+  return arr;
+}
+
+function _feStartPcodePick(){
+  if(LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
+  _feMode='pick-pcode'; _feMiniLabel='PCOD:'; _fePickerItems=_feGetAllPcodes(); _fePickerFilter='';
+  _feRender(); _feRenderPickerOverlay(); _feFocusPrompt();
+}
+function _feStartDescPick(){
+  if(LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
+  _feMode='pick-desc'; _feMiniLabel='DESC:'; _fePickerItems=_feGetAllDescs(); _fePickerFilter='';
+  _feRender(); _feRenderPickerOverlay(); _feFocusPrompt();
+}
+
+function _feRenderPickerOverlay(){
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  var q = _fePickerFilter.toUpperCase();
+  var matches = _fePickerItems.filter(function(it){
+    if(!q) return true;
+    return it.toUpperCase().indexOf(q) === 0;  // prefix match (FoxBase style)
+  });
+  if(q && matches.length === 1){
+    if(_feMode === 'pick-pcode') _feSetPcode(matches[0]);
+    else _feSetDesc(matches[0]);
+    return;
+  }
+  var title = (_feMode === 'pick-pcode' ? 'PCOD' : 'DESC');
+  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:80vh;display:flex;flex-direction:column;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">' + title + ' — type letters to narrow · auto-applies when 1 left · ESC cancels</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:4px;overflow-y:auto;">';
+  matches.slice(0, 100).forEach(function(it){
+    var esc = _feEsc(it).replace(/'/g, "\\'");
+    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:#001144;border:1px solid #4466cc;color:#00ffff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:6px 10px;border-radius:3px;cursor:pointer;">' + _feEsc(it) + '</button>';
+  });
+  if(!matches.length){
+    html += '<div style="color:#ff6666;padding:8px;">No matches for "' + _feEsc(_fePickerFilter) + '"</div>';
+  }
+  html += '</div></div>';
+  ov.innerHTML = html;
+  ov.style.display = 'flex';
+}
+function _feSetItem(val){
+  if(_feMode === 'pick-pcode') _feSetPcode(val);
+  else if(_feMode === 'pick-desc') _feSetDesc(val);
+}
+function _feApplyPcodePick(val){
+  if(!val){ _feCancelMode(); return; }
+  var up = val.toUpperCase();
+  var m = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(up)===0; });
+  if(m.length === 1){ _feSetPcode(m[0]); return; }
+  if(m.length === 0){ toast('No pcode "'+val+'"',false); _feCancelMode(); return; }
+  _fePickerFilter = up; _feRenderPickerOverlay(); _feFocusPrompt();
+}
+function _feApplyDescPick(val){
+  if(!val){ _feCancelMode(); return; }
+  var up = val.toUpperCase();
+  var m = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(up)===0; });
+  if(m.length === 1){ _feSetDesc(m[0]); return; }
+  if(m.length === 0){ toast('No desc "'+val+'"',false); _feCancelMode(); return; }
+  _fePickerFilter = up; _feRenderPickerOverlay(); _feFocusPrompt();
+}
+function _feSetPcode(pcode){
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  _feShiftCnt(e, e.pcode, pcode, e.desc, e.desc);
+  e.pcode = pcode;
+  saveLog(); _feInvalidateIndex();
+  _feMode='cmd'; _feMiniLabel=''; _fePickerFilter='';
+  var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
+  _feRender(); _feFocusPrompt();
+}
+function _feSetDesc(desc){
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  _feShiftCnt(e, e.pcode, e.pcode, e.desc, desc);
+  e.desc = desc;
+  saveLog(); _feInvalidateIndex();
+  _feMode='cmd'; _feMiniLabel=''; _fePickerFilter='';
+  var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
+  _feRender(); _feFocusPrompt();
+}
+function _feShiftCnt(entry, oldPc, newPc, oldDc, newDc){
+  var oldKey = (entry.payee||'').toUpperCase() + '|' + (oldPc||'') + '|' + (oldDc||'');
+  var newKey = (entry.payee||'').toUpperCase() + '|' + (newPc||'') + '|' + (newDc||'');
+  if(oldKey === newKey) return;
+  _feComboCnt[oldKey] = Math.max(0, (_feComboCnt[oldKey] || 1) - 1);
+  if(_feComboCnt[oldKey] === 0) delete _feComboCnt[oldKey];
+  _feComboCnt[newKey] = (_feComboCnt[newKey] || 0) + 1;
+  entry.cnt = _feComboCnt[newKey];
+  _feSaveComboCnt();
+}
+
+// ───── PAYEE LOOKUP & INSERT ─────
+function _feLookupAndApply(query){
+  if(_feIndexDirty) _feBuildIndex();
+  var q = query.toUpperCase();
+  var matches = Object.keys(_fePayeeIndex).filter(function(p){ return p.indexOf(q) >= 0; });
+  if(matches.length === 0){
+    _feAskAddNew(query);
+    return;
+  }
+  // Sort: prefix matches first, then top-combo cnt desc
+  matches.sort(function(a,b){
+    var ap = a.indexOf(q)===0 ? 0 : 1;
+    var bp = b.indexOf(q)===0 ? 0 : 1;
+    if(ap !== bp) return ap - bp;
+    var aCnt = (_fePayeeIndex[a][0]||{}).cnt || 0;
+    var bCnt = (_fePayeeIndex[b][0]||{}).cnt || 0;
+    return bCnt - aCnt;
+  });
+  var topPayee = matches[0];
+  var combos = _fePayeeIndex[topPayee];
+  var topCombo = combos[0];
+  // 25-uses rule — auto-apply when ONLY one payee matched AND top combo cnt >= threshold
+  if(matches.length === 1 && topCombo && topCombo.cnt >= _feAutoApplyThreshold){
+    _feInsertNew(topPayee, topCombo.pcode, topCombo.desc);
+    toast('AUTO ' + topPayee + ' ×' + topCombo.cnt, true);
+    return;
+  }
+  _feShowComboPicker(matches, q);
+}
+
+function _feShowComboPicker(payees, q){
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  _feKeyMap = [];
+  var keyIdx = 0;
+  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:620px;width:100%;max-height:82vh;display:flex;flex-direction:column;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">PAYEE MATCH for "' + _feEsc(q) + '" — type # or tap</div>'
+    + '<div style="overflow-y:auto;flex:1;">';
+  payees.slice(0, 12).forEach(function(p){
+    var combos = _fePayeeIndex[p].slice(0, 5);
+    html += '<div style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed #335;">'
+         + '<div style="color:#ffff00;font-size:14px;font-weight:700;margin-bottom:4px;letter-spacing:1px;">' + _feEsc(p) + '</div>';
+    combos.forEach(function(c){
+      keyIdx++;
+      var k = keyIdx <= 9 ? String(keyIdx) : String.fromCharCode(64 + (keyIdx - 9));
+      _feKeyMap.push({k:k, payee:p, pcode:c.pcode, desc:c.desc});
+      var pEsc = _feEsc(p).replace(/'/g,"\\'");
+      var pcEsc = _feEsc(c.pcode).replace(/'/g,"\\'");
+      var dcEsc = _feEsc(c.desc).replace(/'/g,"\\'");
+      html += '<button onclick="_feInsertNew(\''+pEsc+'\',\''+pcEsc+'\',\''+dcEsc+'\')" style="display:block;width:100%;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:12px;padding:7px 10px;border-radius:3px;cursor:pointer;margin-bottom:3px;">'
+        + '<span style="display:inline-block;width:24px;color:#ffff00;font-weight:700;">[' + k + ']</span> '
+        + '<span style="color:#00ffff;font-weight:700;">' + _feEsc(c.pcode||'(none)') + '</span> · '
+        + '<span style="color:#fff;">' + _feEsc(c.desc||'(none)') + '</span>'
+        + '<span style="color:#aaaaff;float:right;">×' + c.cnt + '</span>'
+        + '</button>';
+    });
+    html += '</div>';
+  });
+  html += '</div><div style="display:flex;gap:6px;margin-top:8px;">'
+    + '<button onclick="_feAskAddNew(\''+_feEsc(q).replace(/\'/g,"\\'")+'\')" style="flex:1;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:9px;border-radius:4px;cursor:pointer;">+ NEW PAYEE</button>'
+    + '<button onclick="_feCancelMode()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:9px;border-radius:4px;cursor:pointer;">CANCEL (ESC)</button>'
+    + '</div></div>';
+  ov.innerHTML = html;
+  ov.style.display = 'flex';
+  _feMode = 'pick-combo';
+  _feMiniLabel = 'PICK #:';
+  _feRenderPrompt();
+  _feFocusPrompt();
+}
+
+function _feInsertNew(payee, pcode, desc){
+  loadLog();
+  var entry = {
+    id: Date.now(),
+    payee: payee,
+    pcode: pcode || '',
+    desc: desc || '',
+    date: _feTodayISO(),
+    amt: 0   // ZERO until AMT command sets it
+  };
+  var key = payee.toUpperCase() + '|' + (pcode||'') + '|' + (desc||'');
+  _feComboCnt[key] = (_feComboCnt[key] || 0) + 1;
+  entry.cnt = _feComboCnt[key];
+  _feSaveComboCnt();
+  LOG.unshift(entry);
+  saveLog();
+  _feInvalidateIndex();
+  _feRowIdx = 0;
+  // Update _fePayeeIndex incrementally
+  var pu = payee.toUpperCase();
+  if(!_fePayeeIndex[pu]) _fePayeeIndex[pu] = [];
+  var found = false;
+  for(var i=0;i<_fePayeeIndex[pu].length;i++){
+    if(_fePayeeIndex[pu][i].pcode === (pcode||'') && _fePayeeIndex[pu][i].desc === (desc||'')){
+      _fePayeeIndex[pu][i].cnt = _feComboCnt[key];
+      found = true;
+      break;
+    }
+  }
+  if(!found) _fePayeeIndex[pu].push({pcode: pcode||'', desc: desc||'', cnt: _feComboCnt[key]});
+  _fePayeeIndex[pu].sort(function(a,b){ return b.cnt - a.cnt; });
+  _feMode = 'cmd'; _feMiniLabel = ''; _feKeyMap = [];
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.innerHTML=''; ov.style.display='none'; }
+  _feRender();
+  // Auto-jump into AMT mode — the next thing user almost always needs
+  setTimeout(function(){ _feStartAMT(); }, 60);
+}
+
+// ───── ADD NEW PAYEE ─────
+function _feAskAddNew(query){
+  _fePendingNewPayee = (query||'').toUpperCase();
+  _feMode = 'ask-new';
+  _feMiniLabel = 'ADD "'+_fePendingNewPayee+'"? Y/N:';
+  var ov = document.getElementById('fe-overlay');
+  if(ov){
+    ov.innerHTML = '<div style="background:#000033;border:2px solid #00ff88;border-radius:6px;padding:16px;max-width:400px;font-family:Courier New,monospace;">'
+      + '<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">+ ADD NEW PAYEE?</div>'
+      + '<div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:12px;letter-spacing:1px;">"' + _feEsc(_fePendingNewPayee) + '"</div>'
+      + '<div style="color:#aaccff;font-size:12px;margin-bottom:12px;">Will insert with blank pcode/desc — run PCOD and DESC next to set them.</div>'
+      + '<div style="display:flex;gap:6px;">'
+      + '<button onclick="_feApplyAskNew(\'Y\')" style="flex:1;background:#00ff88;color:#000;font-weight:700;padding:10px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">YES (Y)</button>'
+      + '<button onclick="_feApplyAskNew(\'N\')" style="flex:1;background:#880000;color:#fff;font-weight:700;padding:10px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">NO (N)</button>'
+      + '</div></div>';
+    ov.style.display = 'flex';
+  }
+  _feRenderPrompt();
+  _feFocusPrompt();
+}
+function _feApplyAskNew(v){
+  var up = (v||'').toUpperCase();
+  if(up === 'Y' || up === 'YES'){
+    _feInsertNew(_fePendingNewPayee, '', '');
+    return;
+  }
+  _feCancelMode();
+}
+
+// ───── BROWSE MODE ─────
+function _feBrowse(steps){
+  if(LOG.length===0) return;
+  _feRowIdx = Math.max(0, Math.min(LOG.length - 1, _feRowIdx + steps));
+  _feMode = 'cmd';
+  _feMiniLabel = 'BROWSE ['+(_feRowIdx+1)+'/'+LOG.length+']';
+  _feRender();
+  // clear label after a moment so it stops sticking
+  setTimeout(function(){
+    if(_feMiniLabel.indexOf('BROWSE')===0){ _feMiniLabel=''; _feRenderPrompt(); }
+  }, 1800);
+  _feFocusPrompt();
+}
+function _feRowTap(idx){
+  _feRowIdx = idx;
+  _feRender();
+  _feFocusPrompt();
+}
+
+// ───── ROW ACTIONS ─────
+function _feActDel(){
+  if(LOG.length===0 || _feRowIdx>=LOG.length) return;
+  var e = LOG[_feRowIdx];
+  var ok = window.confirm('Delete this entry?\n\n' + (e.payee||'') + ' · ' + (e.pcode||'') + ' · ' + _feFmtAmt(e.amt));
+  if(!ok){ _feFocusPrompt(); return; }
+  var key = (e.payee||'').toUpperCase() + '|' + (e.pcode||'') + '|' + (e.desc||'');
+  if(_feComboCnt[key]) _feComboCnt[key] = Math.max(0, _feComboCnt[key] - 1);
+  if(_feComboCnt[key] === 0) delete _feComboCnt[key];
+  _feSaveComboCnt();
+  LOG.splice(_feRowIdx, 1);
+  saveLog();
+  _feInvalidateIndex();
+  if(_feRowIdx >= LOG.length) _feRowIdx = Math.max(0, LOG.length - 1);
+  _feRender();
+  toast('Deleted',true);
+  _feFocusPrompt();
+}
+function _feActCopy(){
+  if(LOG.length===0 || _feRowIdx>=LOG.length) return;
+  var src = LOG[_feRowIdx];
+  var copy = {
+    id: Date.now(),
+    payee: src.payee,
+    pcode: src.pcode,
+    desc: src.desc,
+    date: _feTodayISO(),
+    amt: src.amt
+  };
+  var key = (src.payee||'').toUpperCase() + '|' + (src.pcode||'') + '|' + (src.desc||'');
+  _feComboCnt[key] = (_feComboCnt[key] || 0) + 1;
+  copy.cnt = _feComboCnt[key];
+  _feSaveComboCnt();
+  LOG.unshift(copy);
+  saveLog();
+  _feInvalidateIndex();
+  _feRowIdx = 0;
+  _feRender();
+  toast('Row copied to bottom',true);
+  _feFocusPrompt();
+}
+
+// ───── HELP ─────
+function _feShowHelp(){
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  ov.innerHTML = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:14px;max-width:520px;font-family:Courier New,monospace;color:#fff;font-size:13px;line-height:1.55;max-height:90vh;overflow-y:auto;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:10px;">FAST ENTRY COMMANDS</div>'
+    + '<div style="color:#aaccff;font-size:11px;margin-bottom:10px;">4-letter prompt · ENTER fires · ESC cancels</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">PAYEE</span> type 1-4 letters of payee name → match</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">MM</span> edit month of current row</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DD</span> edit day</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">YR</span> edit year (4-digit or 2-digit)</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">AMT</span> edit amount (preserves sign)</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">PCOD</span> change pcode (type letters to narrow)</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DESC</span> change desc (type letters to narrow)</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">&minus;</span> flip sign of current row</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">S</span> toggle session default sign (+/&minus;)</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">B / ↑</span> browse back through older entries</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">↓ / ESC</span> cancel current mode</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">R</span> open Reports</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">↵</span> on empty prompt — repeat last command</div>'
+    + '<div style="color:#ffff00;margin-top:12px;font-weight:700;">⚡ 25-USES RULE</div>'
+    + '<div style="font-size:12px;">When a payee+pcode+desc combo has been used 25+ times AND only one payee matches your input, the entry auto-applies — no picker. Just AMT next.</div>'
+    + '<div style="display:flex;gap:6px;margin-top:14px;">'
+    + '<button onclick="_feCloseOverlay()" style="flex:1;background:#ffff00;color:#000;font-weight:700;padding:10px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">CLOSE (ESC)</button>'
+    + '</div></div>';
+  ov.style.display = 'flex';
+  _feFocusPrompt();
+}
+function _feCloseOverlay(){
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  _feMode='cmd'; _feMiniLabel='';
+  _feRender(); _feFocusPrompt();
+}
+
+// ───── FOCUS ─────
+function _feFocusPrompt(){
+  setTimeout(function(){
+    var inp = document.getElementById('fe-prompt');
+    if(inp){ try { inp.focus(); inp.select(); } catch(e){} }
+  }, 50);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// END FAST ENTRY MODULE
+// ════════════════════════════════════════════════════════════════════
 </script>
 <div id="bkp-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#0000cc;border:3px solid #ffff00;border-radius:8px;padding:24px;width:100%;max-width:340px;text-align:center;font-family:Courier New,monospace;">
