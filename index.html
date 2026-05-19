@@ -1415,43 +1415,43 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
      FAST ENTRY SCREEN — Bloomberg Terminal for Accounting
      FoxBase ZFIND1.PRG pattern · 4-letter prompt · fading table
      ════════════════════════════════════════════════════════════════════ -->
-<div id="screen-fastentry" class="screen" style="background:#000044;font-family:'Courier New',monospace;display:none;">
+<div id="screen-fastentry" class="screen" style="background:#ffffff;font-family:'Courier New',monospace;display:none;color:#000;">
   <div style="background:#000088;border-bottom:2px solid #ffff00;padding:7px 10px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#00ff88;flex:1;">🚀 FAST ENTRY</span>
-    <button onclick="_feShowHelp()" style="background:#003366;border:1px solid #00ffff;color:#00ffff;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:5px 11px;border-radius:4px;cursor:pointer;">?</button>
+    <button onclick="_feShowHelp()" style="background:#ffffff;border:1px solid #ffff00;color:#000080;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:5px 11px;border-radius:4px;cursor:pointer;">?</button>
   </div>
 
-  <div style="padding:8px;display:flex;flex-direction:column;gap:6px;min-height:calc(100vh - 50px);">
+  <div style="padding:8px;display:flex;flex-direction:column;gap:6px;min-height:calc(100vh - 50px);background:#ffffff;">
 
-    <!-- PROMPT BAR — top-right -->
+    <!-- PROMPT BAR — LEFT side -->
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-      <div style="font-size:11px;color:#aaccff;flex:1;text-align:left;display:flex;align-items:center;gap:8px;">
-        <span id="fe-mode" style="background:#001144;border:1px solid #4466cc;padding:3px 8px;border-radius:3px;color:#ffff00;font-weight:700;font-size:11px;letter-spacing:1px;">CMD</span>
-        <span id="fe-ghost" style="color:#5577aa;font-size:11px;"></span>
-      </div>
-      <div style="color:#ffff00;font-weight:700;font-size:12px;">SIGN<span id="fe-sign" style="font-size:20px;margin-left:4px;">–</span></div>
-      <div style="background:#000022;border:2px solid #ffff00;border-radius:4px;padding:6px 8px;display:flex;align-items:center;gap:5px;min-width:170px;">
-        <span style="color:#00ff88;font-weight:700;font-size:14px;">MFS&gt;</span>
-        <span id="fe-mini-label" style="color:#ffff00;font-size:11px;font-weight:700;display:none;white-space:nowrap;"></span>
+      <div style="background:#ffffcc;border:2px solid #000080;border-radius:4px;padding:6px 8px;display:flex;align-items:center;gap:5px;min-width:180px;">
+        <span style="color:#000080;font-weight:700;font-size:14px;">MFS&gt;</span>
+        <span id="fe-mini-label" style="color:#cc0000;font-size:11px;font-weight:700;display:none;white-space:nowrap;"></span>
         <input id="fe-prompt" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="4"
                oninput="_feHandleInput(this.value)"
                onkeydown="_feHandlePromptKey(event)"
-               style="flex:1;background:transparent;border:none;color:#ffffff;font-family:'Courier New',monospace;font-size:18px;font-weight:700;padding:0;outline:none;text-transform:uppercase;letter-spacing:2px;min-width:50px;width:60px;">
+               style="flex:1;background:transparent;border:none;color:#000080;font-family:'Courier New',monospace;font-size:18px;font-weight:700;padding:0;outline:none;text-transform:uppercase;letter-spacing:2px;min-width:50px;width:60px;">
+      </div>
+      <div style="font-size:11px;color:#666;flex:1;display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+        <span style="color:#000080;font-weight:700;font-size:12px;">SIGN<span id="fe-sign" style="font-size:20px;margin-left:4px;">–</span></span>
+        <span id="fe-mode" style="background:#ffffcc;border:1px solid #000080;padding:3px 8px;border-radius:3px;color:#000080;font-weight:700;font-size:11px;letter-spacing:1px;">CMD</span>
+        <span id="fe-ghost" style="color:#888;font-size:11px;"></span>
       </div>
     </div>
 
     <!-- FADING RECENT-ENTRIES TABLE -->
-    <div style="border:1px solid #4466cc;border-radius:4px;background:#000022;overflow:hidden;">
-      <table id="fe-tbl" style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:13px;">
+    <div style="border:1px solid #000080;border-radius:4px;background:#ffffff;overflow:hidden;">
+      <table id="fe-tbl" style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:13px;background:#ffffff;">
         <thead>
-          <tr style="background:#001144;border-bottom:1px solid #4466cc;">
-            <th style="padding:5px 6px;text-align:right;color:#aaccff;font-size:10px;font-weight:700;width:32px;">CNT</th>
-            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;width:74px;">DATE</th>
-            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;">PAYEE</th>
-            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;width:62px;">PCODE</th>
-            <th style="padding:5px 6px;text-align:left;color:#aaccff;font-size:10px;font-weight:700;">DESC</th>
-            <th style="padding:5px 6px;text-align:right;color:#aaccff;font-size:10px;font-weight:700;width:88px;">AMT</th>
+          <tr style="background:#000088;border-bottom:1px solid #000080;">
+            <th style="padding:5px 6px;text-align:right;color:#ffff00;font-size:10px;font-weight:700;width:32px;">CNT</th>
+            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;width:74px;">DATE</th>
+            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;">PAYEE</th>
+            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;width:62px;">PCODE</th>
+            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;">DESC</th>
+            <th style="padding:5px 6px;text-align:right;color:#ffff00;font-size:10px;font-weight:700;width:88px;">AMT</th>
           </tr>
         </thead>
         <tbody id="fe-tbody"></tbody>
@@ -1460,19 +1460,19 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
     <!-- ACTION BAR for current bottom row -->
     <div id="fe-actbar" style="display:none;gap:6px;justify-content:center;flex-wrap:wrap;">
-      <button onclick="_feActCopy()" style="background:#003366;border:1px solid #00ffff;color:#00ffff;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">📋 COPY</button>
-      <button onclick="_feFlipSign()" style="background:#333300;border:1px solid #ffff00;color:#ffff00;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">± FLIP</button>
-      <button onclick="_feActDel()" style="background:#330000;border:1px solid #ff6666;color:#ff6666;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">🗑 DEL</button>
+      <button onclick="_feActCopy()" style="background:#ffffff;border:1px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">📋 COPY</button>
+      <button onclick="_feFlipSign()" style="background:#ffffcc;border:1px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">± FLIP</button>
+      <button onclick="_feActDel()" style="background:#ffffff;border:1px solid #cc0000;color:#cc0000;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">🗑 DEL</button>
     </div>
 
     <!-- Status / cheat hint strip -->
-    <div style="text-align:center;font-size:10px;color:#5577aa;letter-spacing:1px;padding:4px;">
+    <div style="text-align:center;font-size:10px;color:#666;letter-spacing:1px;padding:4px;">
       MM · DD · YR · AMT · PCOD · DESC · &minus; · S · B · R · ? — type 1-4 letters of payee to lookup
     </div>
   </div>
 
   <!-- OVERLAY for pickers, ADD NEW, help -->
-  <div id="fe-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,16,0.92);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
+  <div id="fe-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,32,0.85);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
 </div>
 
 <div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
@@ -12282,25 +12282,25 @@ function _feRenderTable(){
   var html = '';
   var pad = _feMaxRows - n;
   for(var p = 0; p < pad; p++){
-    html += '<tr style="opacity:0.10;"><td colspan="6" style="border-bottom:1px solid #223;padding:6px 4px;color:#225;font-size:11px;">·</td></tr>';
+    html += '<tr style="opacity:0.20;"><td colspan="6" style="border-bottom:1px solid #ddd;padding:6px 4px;color:#bbb;font-size:11px;">·</td></tr>';
   }
   for(var i = 0; i < n; i++){
     var e = slice[i];
     var rowIdx = start + (n - 1 - i);
-    var op = 0.28 + (0.72 * (i / Math.max(1, _feMaxRows - 1)));
+    var op = 0.32 + (0.68 * (i / Math.max(1, _feMaxRows - 1)));
     var bottom = (i === n - 1);
     var dateStr = _feFmtDate(e.date || '');
     var amtStr = _feFmtAmt(e.amt);
-    var amtColor = e.amt >= 0 ? '#00ff88' : '#ff8888';
-    var border = bottom ? '2px solid #ffff00' : '1px solid #223';
-    var bg = bottom ? '#001844' : 'transparent';
+    var amtColor = e.amt >= 0 ? '#006600' : '#cc0000';
+    var border = bottom ? '2px solid #ffaa00' : '1px solid #ddd';
+    var bg = bottom ? '#fff8b0' : '#ffffff';
     var cnt = e.cnt || 0;
     html += '<tr data-idx="' + rowIdx + '" onclick="_feRowTap(' + rowIdx + ')" style="opacity:' + op.toFixed(2) + ';background:' + bg + ';cursor:pointer;">'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#aaccff;text-align:right;font-size:11px;">' + cnt + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#ffffff;font-size:12px;">' + dateStr + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#ffff00;font-weight:700;">' + _feEsc(e.payee||'') + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#00ffff;">' + _feEsc(e.pcode||'') + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#ffffff;font-size:12px;">' + _feEsc(e.desc||'') + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#666;text-align:right;font-size:11px;">' + cnt + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#222;font-size:12px;">' + dateStr + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#000080;font-weight:700;">' + _feEsc(e.payee||'') + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#006688;font-weight:700;">' + _feEsc(e.pcode||'') + '</td>'
+      + '<td style="border:' + border + ';padding:4px 6px;color:#000;font-size:12px;">' + _feEsc(e.desc||'') + '</td>'
       + '<td style="border:' + border + ';padding:4px 6px;color:' + amtColor + ';text-align:right;font-weight:700;">' + amtStr + '</td>'
       + '</tr>';
   }
