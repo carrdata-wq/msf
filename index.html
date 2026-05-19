@@ -1416,42 +1416,42 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
      FoxBase ZFIND1.PRG pattern · 4-letter prompt · fading table
      ════════════════════════════════════════════════════════════════════ -->
 <div id="screen-fastentry" class="screen" style="background:#ffffff;font-family:'Courier New',monospace;display:none;color:#000;">
-  <div style="background:#000088;border-bottom:2px solid #ffff00;padding:7px 10px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;">
-    <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">◀ MENU</button>
-    <span style="font-weight:700;font-size:14px;color:#00ff88;flex:1;">🚀 FAST ENTRY</span>
-    <button onclick="_feShowHelp()" style="background:#ffffff;border:1px solid #ffff00;color:#000080;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:5px 11px;border-radius:4px;cursor:pointer;">?</button>
+  <div style="background:#000088;border-bottom:3px solid #ffff00;padding:9px 10px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;">
+    <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
+    <span style="font-weight:700;font-size:16px;color:#00ff88;flex:1;letter-spacing:1px;">🚀 FAST ENTRY</span>
+    <button onclick="_feShowHelp()" style="background:#ffff00;border:2px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:16px;font-weight:700;padding:6px 14px;border-radius:4px;cursor:pointer;">?</button>
   </div>
 
-  <div style="padding:8px;display:flex;flex-direction:column;gap:6px;min-height:calc(100vh - 50px);background:#ffffff;">
+  <div style="padding:10px;display:flex;flex-direction:column;gap:8px;min-height:calc(100vh - 56px);background:#ffffff;">
 
     <!-- PROMPT BAR — LEFT side -->
-    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-      <div style="background:#ffffcc;border:2px solid #000080;border-radius:4px;padding:6px 8px;display:flex;align-items:center;gap:5px;min-width:180px;">
-        <span style="color:#000080;font-weight:700;font-size:14px;">MFS&gt;</span>
-        <span id="fe-mini-label" style="color:#cc0000;font-size:11px;font-weight:700;display:none;white-space:nowrap;"></span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div style="background:#ffffaa;border:3px solid #000080;border-radius:5px;padding:9px 12px;display:flex;align-items:center;gap:7px;min-width:220px;box-shadow:0 2px 0 #888;">
+        <span style="color:#000080;font-weight:700;font-size:18px;">MFS&gt;</span>
+        <span id="fe-mini-label" style="color:#aa0000;font-size:14px;font-weight:700;display:none;white-space:nowrap;"></span>
         <input id="fe-prompt" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="4"
                oninput="_feHandleInput(this.value)"
                onkeydown="_feHandlePromptKey(event)"
-               style="flex:1;background:transparent;border:none;color:#000080;font-family:'Courier New',monospace;font-size:18px;font-weight:700;padding:0;outline:none;text-transform:uppercase;letter-spacing:2px;min-width:50px;width:60px;">
+               style="flex:1;background:transparent;border:none;color:#000080;font-family:'Courier New',monospace;font-size:26px;font-weight:700;padding:0;outline:none;text-transform:uppercase;letter-spacing:3px;min-width:70px;width:80px;">
       </div>
-      <div style="font-size:11px;color:#666;flex:1;display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-        <span style="color:#000080;font-weight:700;font-size:12px;">SIGN<span id="fe-sign" style="font-size:20px;margin-left:4px;">–</span></span>
-        <span id="fe-mode" style="background:#ffffcc;border:1px solid #000080;padding:3px 8px;border-radius:3px;color:#000080;font-weight:700;font-size:11px;letter-spacing:1px;">CMD</span>
-        <span id="fe-ghost" style="color:#888;font-size:11px;"></span>
+      <div style="flex:1;display:flex;align-items:center;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+        <span style="color:#000080;font-weight:700;font-size:15px;">SIGN<span id="fe-sign" style="font-size:26px;margin-left:6px;font-weight:700;">–</span></span>
+        <span id="fe-mode" style="background:#ffffaa;border:2px solid #000080;padding:5px 10px;border-radius:4px;color:#000080;font-weight:700;font-size:14px;letter-spacing:1px;">CMD</span>
+        <span id="fe-ghost" style="color:#555;font-size:13px;font-weight:700;"></span>
       </div>
     </div>
 
     <!-- FADING RECENT-ENTRIES TABLE -->
-    <div style="border:1px solid #000080;border-radius:4px;background:#ffffff;overflow:hidden;">
-      <table id="fe-tbl" style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:13px;background:#ffffff;">
+    <div style="border:2px solid #000080;border-radius:4px;background:#ffffff;overflow:hidden;">
+      <table id="fe-tbl" style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:16px;background:#ffffff;">
         <thead>
-          <tr style="background:#000088;border-bottom:1px solid #000080;">
-            <th style="padding:5px 6px;text-align:right;color:#ffff00;font-size:10px;font-weight:700;width:32px;">CNT</th>
-            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;width:74px;">DATE</th>
-            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;">PAYEE</th>
-            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;width:62px;">PCODE</th>
-            <th style="padding:5px 6px;text-align:left;color:#ffff00;font-size:10px;font-weight:700;">DESC</th>
-            <th style="padding:5px 6px;text-align:right;color:#ffff00;font-size:10px;font-weight:700;width:88px;">AMT</th>
+          <tr style="background:#000088;border-bottom:2px solid #000080;">
+            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:38px;letter-spacing:1px;">CNT</th>
+            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;width:88px;letter-spacing:1px;">DATE</th>
+            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">PAYEE</th>
+            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;width:70px;letter-spacing:1px;">PCODE</th>
+            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">DESC</th>
+            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:100px;letter-spacing:1px;">AMT</th>
           </tr>
         </thead>
         <tbody id="fe-tbody"></tbody>
@@ -1459,20 +1459,20 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
 
     <!-- ACTION BAR for current bottom row -->
-    <div id="fe-actbar" style="display:none;gap:6px;justify-content:center;flex-wrap:wrap;">
-      <button onclick="_feActCopy()" style="background:#ffffff;border:1px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">📋 COPY</button>
-      <button onclick="_feFlipSign()" style="background:#ffffcc;border:1px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">± FLIP</button>
-      <button onclick="_feActDel()" style="background:#ffffff;border:1px solid #cc0000;color:#cc0000;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;">🗑 DEL</button>
+    <div id="fe-actbar" style="display:none;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="_feActCopy()" style="background:#ffffff;border:2px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;">📋 COPY</button>
+      <button onclick="_feFlipSign()" style="background:#ffffaa;border:2px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;">± FLIP</button>
+      <button onclick="_feActDel()" style="background:#ffffff;border:2px solid #aa0000;color:#aa0000;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;">🗑 DEL</button>
     </div>
 
     <!-- Status / cheat hint strip -->
-    <div style="text-align:center;font-size:10px;color:#666;letter-spacing:1px;padding:4px;">
-      MM · DD · YR · AMT · PCOD · DESC · &minus; · S · B · R · ? — type 1-4 letters of payee to lookup
+    <div style="text-align:center;font-size:13px;color:#222;letter-spacing:1px;padding:6px;font-weight:700;">
+      MM · DD · YR · AMT · PCOD · DESC · &minus; · S · B · R · ? — 1-4 letters of payee
     </div>
   </div>
 
   <!-- OVERLAY for pickers, ADD NEW, help -->
-  <div id="fe-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,32,0.85);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
+  <div id="fe-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,32,0.88);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
 </div>
 
 <div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
@@ -12212,6 +12212,8 @@ var _fePendingNewPayee = '';
 var _feKeyMap = [];                // combo picker key shortcuts
 var _feAutoApplyThreshold = 25;    // FoxBase 25-uses rule
 var _feMaxRows = 8;
+var _feIdleTimer = null;           // FoxBase auto-fire: type letters, pause, dispatch
+var _feIdleMs = 4000;              // 4 seconds — type R, wait, Reports opens
 
 // ───── ENTRY POINT ─────
 function openFastEntry(){
@@ -12282,26 +12284,27 @@ function _feRenderTable(){
   var html = '';
   var pad = _feMaxRows - n;
   for(var p = 0; p < pad; p++){
-    html += '<tr style="opacity:0.20;"><td colspan="6" style="border-bottom:1px solid #ddd;padding:6px 4px;color:#bbb;font-size:11px;">·</td></tr>';
+    html += '<tr style="opacity:0.25;"><td colspan="6" style="border-bottom:1px solid #ccc;padding:8px 6px;color:#999;font-size:13px;">·</td></tr>';
   }
   for(var i = 0; i < n; i++){
     var e = slice[i];
     var rowIdx = start + (n - 1 - i);
-    var op = 0.32 + (0.68 * (i / Math.max(1, _feMaxRows - 1)));
+    // Higher minimum opacity (0.65) so older rows stay readable on phone
+    var op = 0.65 + (0.35 * (i / Math.max(1, _feMaxRows - 1)));
     var bottom = (i === n - 1);
     var dateStr = _feFmtDate(e.date || '');
     var amtStr = _feFmtAmt(e.amt);
-    var amtColor = e.amt >= 0 ? '#006600' : '#cc0000';
-    var border = bottom ? '2px solid #ffaa00' : '1px solid #ddd';
-    var bg = bottom ? '#fff8b0' : '#ffffff';
+    var amtColor = e.amt >= 0 ? '#004400' : '#aa0000';
+    var border = bottom ? '3px solid #ff9900' : '2px solid #888';
+    var bg = bottom ? '#fff4a3' : '#ffffff';
     var cnt = e.cnt || 0;
     html += '<tr data-idx="' + rowIdx + '" onclick="_feRowTap(' + rowIdx + ')" style="opacity:' + op.toFixed(2) + ';background:' + bg + ';cursor:pointer;">'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#666;text-align:right;font-size:11px;">' + cnt + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#222;font-size:12px;">' + dateStr + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#000080;font-weight:700;">' + _feEsc(e.payee||'') + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#006688;font-weight:700;">' + _feEsc(e.pcode||'') + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:#000;font-size:12px;">' + _feEsc(e.desc||'') + '</td>'
-      + '<td style="border:' + border + ';padding:4px 6px;color:' + amtColor + ';text-align:right;font-weight:700;">' + amtStr + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:#333;text-align:right;font-size:14px;font-weight:700;">' + cnt + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:#000;font-size:15px;font-weight:700;">' + dateStr + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:#000080;font-weight:700;font-size:16px;">' + _feEsc(e.payee||'') + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:#003366;font-weight:700;font-size:15px;">' + _feEsc(e.pcode||'') + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:#000;font-size:14px;font-weight:700;">' + _feEsc(e.desc||'') + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:' + amtColor + ';text-align:right;font-weight:700;font-size:16px;">' + amtStr + '</td>'
       + '</tr>';
   }
   tbody.innerHTML = html;
@@ -12311,7 +12314,7 @@ function _feRenderTable(){
 
 function _feRenderPrompt(){
   var ghost = document.getElementById('fe-ghost');
-  if(ghost) ghost.textContent = _feLastCommand ? '↵ repeats ' + _feLastCommand : '';
+  if(ghost) ghost.textContent = _feLastCommand ? '↵ or wait 4s · last: ' + _feLastCommand : 'type · wait 4s · or ↵';
   var label = document.getElementById('fe-mini-label');
   if(label){
     label.textContent = _feMiniLabel;
@@ -12363,11 +12366,33 @@ function _feTodayISO(){
 }
 
 // ───── PROMPT INPUT HANDLERS ─────
+function _feClearIdleTimer(){
+  if(_feIdleTimer){ clearTimeout(_feIdleTimer); _feIdleTimer = null; }
+}
+function _feArmIdleTimer(){
+  _feClearIdleTimer();
+  _feIdleTimer = setTimeout(function(){
+    _feIdleTimer = null;
+    var inp = document.getElementById('fe-prompt');
+    if(!inp) return;
+    var v = (inp.value||'').trim();
+    if(!v) return;
+    inp.value = '';
+    _feDispatchInput(v);
+  }, _feIdleMs);
+}
+
 function _feHandleInput(val){
   // Live narrowing of pickers as user types
   if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){
     _fePickerFilter = (val||'').toUpperCase();
     _feRenderPickerOverlay();
+  }
+  // FoxBase idle auto-fire: type letter(s), pause, dispatch — no ENTER needed
+  if(val && val.length > 0){
+    _feArmIdleTimer();
+  } else {
+    _feClearIdleTimer();
   }
 }
 
@@ -12378,6 +12403,7 @@ function _feHandlePromptKey(e){
     for(var ki = 0; ki < _feKeyMap.length; ki++){
       if(_feKeyMap[ki].k === k){
         e.preventDefault();
+        _feClearIdleTimer();
         var m = _feKeyMap[ki];
         _feInsertNew(m.payee, m.pcode, m.desc);
         return;
@@ -12386,6 +12412,7 @@ function _feHandlePromptKey(e){
   }
   if(e.key === 'Enter'){
     e.preventDefault();
+    _feClearIdleTimer();
     var inp = document.getElementById('fe-prompt');
     var val = (inp.value || '').trim();
     inp.value = '';
@@ -12394,16 +12421,19 @@ function _feHandlePromptKey(e){
   }
   if(e.key === 'Escape'){
     e.preventDefault();
+    _feClearIdleTimer();
     _feCancelMode();
     return;
   }
   if(e.key === 'ArrowDown'){
     e.preventDefault();
+    _feClearIdleTimer();
     _feCancelMode();
     return;
   }
   if(e.key === 'ArrowUp' && _feMode === 'cmd'){
     e.preventDefault();
+    _feClearIdleTimer();
     _feBrowse(1);
     return;
   }
@@ -12415,6 +12445,7 @@ function _feCancelMode(){
   _fePickerFilter = '';
   _fePendingNewPayee = '';
   _feKeyMap = [];
+  _feClearIdleTimer();
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.innerHTML=''; ov.style.display='none'; }
   var inp = document.getElementById('fe-prompt');
