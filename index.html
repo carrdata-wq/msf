@@ -1424,21 +1424,23 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <div style="padding:10px;display:flex;flex-direction:column;gap:8px;min-height:calc(100vh - 56px);background:#ffffff;">
 
-    <!-- PROMPT BAR — LEFT side -->
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <div style="background:#ffffaa;border:3px solid #000080;border-radius:5px;padding:9px 12px;display:flex;align-items:center;gap:7px;min-width:220px;box-shadow:0 2px 0 #888;">
-        <span style="color:#000080;font-weight:700;font-size:18px;">MFS&gt;</span>
-        <span id="fe-mini-label" style="color:#aa0000;font-size:14px;font-weight:700;display:none;white-space:nowrap;"></span>
+    <!-- PROMPT BAR — full row width (own line so it can reach 50 chars wide) -->
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="background:#ffffaa;border:3px solid #000080;border-radius:5px;padding:9px 12px;display:flex;align-items:center;gap:7px;flex:1;width:100%;box-shadow:0 2px 0 #888;">
+        <span style="color:#000080;font-weight:700;font-size:18px;flex-shrink:0;">MFS&gt;</span>
+        <span id="fe-mini-label" style="color:#aa0000;font-size:14px;font-weight:700;display:none;white-space:nowrap;flex-shrink:0;"></span>
         <input id="fe-prompt" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="4"
                oninput="_feHandleInput(this.value)"
                onkeydown="_feHandlePromptKey(event)"
-               style="flex:1;background:transparent;border:none;color:#000080;font-family:'Courier New',monospace;font-size:26px;font-weight:700;padding:0;outline:none;text-transform:uppercase;letter-spacing:3px;min-width:70px;width:80px;">
+               style="flex:1;background:transparent;border:none;color:#000080;font-family:'Courier New',monospace;font-size:26px;font-weight:700;padding:0;outline:none;text-transform:uppercase;letter-spacing:1px;min-width:0;width:100%;">
       </div>
-      <div style="flex:1;display:flex;align-items:center;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
-        <span style="color:#000080;font-weight:700;font-size:15px;">SIGN<span id="fe-sign" style="font-size:26px;margin-left:6px;font-weight:700;">–</span></span>
-        <span id="fe-mode" style="background:#ffffaa;border:2px solid #000080;padding:5px 10px;border-radius:4px;color:#000080;font-weight:700;font-size:14px;letter-spacing:1px;">CMD</span>
-        <span id="fe-ghost" style="color:#555;font-size:13px;font-weight:700;"></span>
-      </div>
+    </div>
+
+    <!-- STATUS STRIP — SIGN, mode, ghost (own row) -->
+    <div style="display:flex;align-items:center;gap:14px;justify-content:flex-end;flex-wrap:wrap;padding:0 2px;">
+      <span style="color:#000080;font-weight:700;font-size:15px;">SIGN<span id="fe-sign" style="font-size:26px;margin-left:6px;font-weight:700;">–</span></span>
+      <span id="fe-mode" style="background:#ffffaa;border:2px solid #000080;padding:5px 10px;border-radius:4px;color:#000080;font-weight:700;font-size:14px;letter-spacing:1px;">CMD</span>
+      <span id="fe-ghost" style="color:#555;font-size:13px;font-weight:700;"></span>
     </div>
 
     <!-- ACTION BAR for current row (now at top — next to current/newest row) -->
@@ -12217,6 +12219,24 @@ var _feIdleMs = 2000;              // 2 seconds — type R, wait, Reports opens
 var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 
+// IRS sign rule: descs that look like income/credits → +, everything else → −.
+// Auto-applied when desc is set or amt is entered. User can still override per
+// entry by typing explicit "-" in AMT or by using the FLIP command afterwards.
+var _feIncomeKeywords = ['INCOME','DIVIDEND','REFUND','ROYALTY','GAIN','SECURITY DEPOSIT'];
+function _feIsIncomeDesc(desc){
+  if(!desc) return false;
+  var d = String(desc).toUpperCase();
+  for(var i = 0; i < _feIncomeKeywords.length; i++){
+    if(d.indexOf(_feIncomeKeywords[i]) >= 0) return true;
+  }
+  return false;
+}
+// Returns +1 for income desc, −1 for expense desc, 0 for unknown/no desc
+function _feSignFromDesc(desc){
+  if(!desc) return 0;
+  return _feIsIncomeDesc(desc) ? 1 : -1;
+}
+
 // ───── ENTRY POINT ─────
 function openFastEntry(){
   _feLoadComboCnt();
@@ -12642,12 +12662,23 @@ function _feApplyAMT(val){
   }
   if(isNaN(n)){ toast('Bad AMT',false); _feGuidedFlow=[]; _feCancelMode(); return; }
   var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
-  // If user did not include explicit sign, apply session default (expenses → negative)
+  // Sign decision priority (IRS-driven):
+  //   1. Explicit "-" in user's input → user override
+  //   2. Desc-based IRS classification (income → +, expense → -)
+  //   3. Existing row sign (if non-zero)
+  //   4. Session default sign
   if(s.indexOf('-') < 0){
     var abs = Math.abs(n);
-    if(e.amt < 0) n = -abs;          // preserve existing negative
-    else if(e.amt > 0) n = abs;       // preserve existing positive
-    else n = (_feSign < 0 ? -abs : abs);  // fresh entry → session default sign
+    var descSign = _feSignFromDesc(e.desc);
+    if(descSign !== 0){
+      n = descSign > 0 ? abs : -abs;
+    } else if(e.amt < 0){
+      n = -abs;
+    } else if(e.amt > 0){
+      n = abs;
+    } else {
+      n = (_feSign < 0 ? -abs : abs);
+    }
   }
   e.amt = n;
   saveLog();
@@ -12657,9 +12688,29 @@ function _feApplyAMT(val){
 // ───── SIGN ─────
 function _feFlipSign(){
   if(LOG.length===0 || _feRowIdx>=LOG.length){ toast('No entry to flip',false); _feFocusPrompt(); return; }
-  LOG[_feRowIdx].amt = -LOG[_feRowIdx].amt;
-  saveLog(); _feRender();
-  toast('Sign flipped',true);
+  var e = LOG[_feRowIdx];
+  // Zero amount: flipping -0/+0 has no visible effect. Fall back to flipping
+  // the session sign so the NEXT amt entry will use the opposite sign.
+  if(!e.amt || e.amt === 0){
+    _feSign = -_feSign;
+    toast('AMT is 0 — flipped session to ' + (_feSign>0?'+ INCOME':'– EXPENSE'), true);
+    _feRender(); _feFocusPrompt();
+    return;
+  }
+  e.amt = -e.amt;
+  saveLog();
+  _feRender();
+  toast('Flipped → ' + _feFmtAmt(e.amt), true);
+  // Brief flash on the affected row so the change is visible
+  setTimeout(function(){
+    var row = document.querySelector('#fe-tbody tr[data-idx="' + _feRowIdx + '"]');
+    if(row){
+      var origBg = row.style.background;
+      row.style.transition = 'background-color 0.4s';
+      row.style.background = '#ffff66';
+      setTimeout(function(){ row.style.background = origBg || ''; }, 250);
+    }
+  }, 20);
   _feFocusPrompt();
 }
 function _feToggleSessionSign(){
@@ -12760,6 +12811,11 @@ function _feSetDesc(desc){
   var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   _feShiftCnt(e, e.pcode, e.pcode, e.desc, desc);
   e.desc = desc;
+  // IRS sign rule: auto-set amt sign from desc classification
+  if(e.amt !== 0){
+    var abs = Math.abs(e.amt);
+    e.amt = _feIsIncomeDesc(desc) ? abs : -abs;
+  }
   saveLog(); _feInvalidateIndex();
   _fePickerFilter='';
   var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
@@ -12904,15 +12960,15 @@ function _feShowNewPayeeBigPrompt(prefilledName){
   _feMiniLabel = '';
   var ov = document.getElementById('fe-overlay');
   if(!ov) return;
-  ov.innerHTML = '<div style="background:#ffffff;border:4px solid #000080;border-radius:8px;padding:22px 20px;max-width:580px;width:100%;font-family:Courier New,monospace;box-shadow:0 10px 40px rgba(0,0,0,0.5);">'
+  ov.innerHTML = '<div style="background:#ffffff;border:4px solid #000080;border-radius:8px;padding:22px 20px;max-width:780px;width:100%;font-family:Courier New,monospace;box-shadow:0 10px 40px rgba(0,0,0,0.5);">'
     + '<div style="color:#000080;font-weight:700;font-size:20px;margin-bottom:4px;letter-spacing:2px;">+ NEW PAYEE</div>'
     + '<div style="color:#aa0000;font-size:13px;margin-bottom:14px;font-weight:700;">"' + _feEsc(prefilledName||'') + '" not found — enter full proper name:</div>'
     + '<input id="fe-newpayee-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" '
     + 'value="' + _feEsc(prefilledName||'') + '" '
     + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();_feSubmitNewPayee();} else if(event.key===\'Escape\'){event.preventDefault();_feCancelMode();}" '
     + 'style="width:100%;box-sizing:border-box;background:#ffffaa;border:3px solid #000080;color:#000080;'
-    + 'font-family:Courier New,monospace;font-size:24px;font-weight:700;padding:16px 14px;border-radius:6px;'
-    + 'outline:none;text-transform:uppercase;letter-spacing:2px;">'
+    + 'font-family:Courier New,monospace;font-size:22px;font-weight:700;padding:16px 14px;border-radius:6px;'
+    + 'outline:none;text-transform:uppercase;letter-spacing:1px;">'
     + '<div style="color:#666;font-size:11px;margin-top:6px;letter-spacing:1px;">Type full name · ENTER saves · ESC cancels · max 40 chars</div>'
     + '<div style="display:flex;gap:8px;margin-top:14px;">'
     + '<button onclick="_feSubmitNewPayee()" style="flex:2;background:#000080;color:#ffff00;font-weight:700;'
