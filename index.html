@@ -1440,6 +1440,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div style="display:flex;align-items:center;gap:14px;justify-content:flex-end;flex-wrap:wrap;padding:0 2px;">
       <span style="color:#000080;font-weight:700;font-size:15px;">SIGN<span id="fe-sign" style="font-size:26px;margin-left:6px;font-weight:700;">–</span></span>
       <span id="fe-mode" style="background:#ffffaa;border:2px solid #000080;padding:5px 10px;border-radius:4px;color:#000080;font-weight:700;font-size:14px;letter-spacing:1px;">CMD</span>
+      <span id="fe-hist" style="color:#006600;font-size:12px;font-weight:700;"></span>
       <span id="fe-ghost" style="color:#555;font-size:13px;font-weight:700;"></span>
     </div>
 
@@ -1469,8 +1470,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
     <!-- Status / cheat hint strip -->
     <div style="text-align:center;font-size:13px;color:#000080;letter-spacing:1px;padding:6px;font-weight:700;line-height:1.6;">
-      NEW ENTRY: DAY &#9656; PAYEE &#9656; AMT &nbsp;(MM/YR auto)<br>
-      <span style="color:#222;font-size:12px;">DEFA set-date · MM DD YR AMT PCOD DESC · &minus; flip · S sign · &#8597; browse · R · ?</span>
+      TYPE PAYEE &#9656; LINE PAINTS &#9656; DAY &#9656; AMOUNT &#9656; LOOPS<br>
+      <span style="color:#222;font-size:12px;">ESC discards the line · DEFA set-date · MM DD YR AMT PCOD DESC fix · &#8597; browse · R · ?</span>
     </div>
   </div>
 
@@ -12207,7 +12208,8 @@ var _feRowIdx = 0;                 // 0 = LOG[0] = newest = bottom of fading tab
 var _feIndexDirty = true;
 var _fePayeeIndex = {};            // UPPER(payee) -> [{pcode, desc, cnt}, ...] sorted by cnt desc
 var _feComboCnt = {};              // "PAYEE|PCODE|DESC" -> running count
-var _feMode = 'entry-day';
+var _feHistoryCnt = {};            // imported 34-year baseline (write-once via import tool)
+var _feMode = 'entry-payee';
 var _feMiniLabel = '';
 var _fePickerItems = [];
 var _fePickerFilter = '';
@@ -12221,7 +12223,9 @@ var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 var _feDefMM = '';                 // default month (2-digit) — set via DEFA, persisted
 var _feDefYR = '';                 // default year (2-digit)  — set via DEFA, persisted
-var _feDraftDay = '';              // day for the entry currently being built
+var _feDraftDay = '';              // (legacy) day holder
+var _feDraft = null;               // MASKED LINE: in-progress entry painted as table top row
+var _feDraftInput = '';            // live text mirrored into the masked line's open field
 
 // IRS sign rule: descs that look like income/credits → +, everything else → −.
 // Auto-applied when desc is set or amt is entered. User can still override per
@@ -12244,12 +12248,13 @@ function _feSignFromDesc(desc){
 // ───── ENTRY POINT ─────
 function openFastEntry(){
   _feLoadComboCnt();
+  _feLoadHistory();
   _feLoadDefaults();
   loadLog();
   if(_feIndexDirty) _feBuildIndex();
   _fePickerFilter = '';
   _feRowIdx = 0;
-  _feStartEntryDay();
+  _feStartEntryPayee();
   showScreen('fastentry');
   _feRender();
   _feFocusPrompt();
@@ -12284,6 +12289,12 @@ function _feLoadComboCnt(){
   try { _feComboCnt = JSON.parse(localStorage.getItem('mx_combo_cnt') || '{}'); }
   catch(e) { _feComboCnt = {}; }
 }
+// The imported 34-year history baseline (PAYEE|PCODE|DESC -> lifetime count).
+// Written once by the import tool; never modified by FAST ENTRY. Seeds the index.
+function _feLoadHistory(){
+  try { _feHistoryCnt = JSON.parse(localStorage.getItem('mx_history_cnt') || '{}'); }
+  catch(e) { _feHistoryCnt = {}; }
+}
 function _feSaveComboCnt(){
   try { localStorage.setItem('mx_combo_cnt', JSON.stringify(_feComboCnt)); }
   catch(e){}
@@ -12293,7 +12304,10 @@ function _feSaveComboCnt(){
 function _feBuildIndex(){
   var changed = false;
   var counts = {};
-  // Walk OLDEST-first so cnt = sequence number for that combo
+  // Seed with the imported 34-year history baseline so the 25-uses rule and
+  // the ×CNT badges reflect lifetime usage, not just this session's LOG.
+  for(var hk in _feHistoryCnt){ counts[hk] = _feHistoryCnt[hk]; }
+  // Then walk the LOG OLDEST-first, adding current entries on top of history.
   for(var i = LOG.length - 1; i >= 0; i--){
     var e = LOG[i];
     var key = (e.payee||'').toUpperCase() + '|' + (e.pcode||'') + '|' + (e.desc||'');
@@ -12326,20 +12340,64 @@ function _feRender(){ _feRenderTable(); _feRenderPrompt(); }
 function _feRenderTable(){
   var tbody = document.getElementById('fe-tbody');
   if(!tbody) return;
+  var html = '';
+  var rowsUsed = 0;
+  // ───── MASKED LINE: the in-progress draft, painted as the actual top row ─────
+  if(_feDraft){
+    var d = _feDraft;
+    var fillingDay = (_feMode === 'fill-day');
+    var fillingAmt = (_feMode === 'fill-amt');
+    // DAY field — open { }. Bright when active.
+    var dayTxt = fillingDay ? (_feDraftInput || '') : (d.dd || '');
+    var dayCell;
+    if(d.dd && !fillingDay){
+      dayCell = d.dd;
+    } else {
+      var dShow = dayTxt ? dayTxt : '&nbsp;&nbsp;';
+      var dBg = fillingDay ? '#ffe600' : '#e8e8e8';
+      var dBd = fillingDay ? '2px solid #cc8800' : '1px dashed #999';
+      dayCell = '<span style="background:'+dBg+';border:'+dBd+';padding:1px 5px;border-radius:3px;color:#000;">'+dShow+'</span>';
+    }
+    var dateCell = d.mm + '/' + dayCell + '/' + d.yr;
+    // AMOUNT field — open { }. Bright when active.
+    var amtCell;
+    if(typeof d.amt === 'number' && !fillingAmt){
+      amtCell = _feFmtAmt(d.amt);
+    } else {
+      var aTxt = '';
+      if(fillingAmt && _feDraftInput){
+        var rawA = _feDraftInput.replace(/[^0-9]/g,'');
+        aTxt = rawA ? (parseInt(rawA,10)/100).toFixed(2) : '';
+      }
+      var aShow = aTxt ? aTxt : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+      var aBg = fillingAmt ? '#ffe600' : '#e8e8e8';
+      var aBd = fillingAmt ? '2px solid #cc8800' : '1px dashed #999';
+      amtCell = '<span style="background:'+aBg+';border:'+aBd+';padding:1px 6px;border-radius:3px;color:#000;">'+aShow+'</span>';
+    }
+    var mBorder = '3px solid #000080';
+    html += '<tr style="background:#dbe7ff;">'
+      + '<td style="border:'+mBorder+';padding:9px 4px;color:#000;font-size:14px;font-weight:700;white-space:nowrap;">' + dateCell + '</td>'
+      + '<td style="border:'+mBorder+';padding:9px 4px;color:#000080;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(d.payee||'') + '</td>'
+      + '<td style="border:'+mBorder+';padding:9px 4px;color:#003366;font-weight:700;font-size:14px;white-space:nowrap;">' + _feEsc(d.pcode||'·') + '</td>'
+      + '<td style="border:'+mBorder+';padding:9px 4px;color:#000;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(d.desc||'·') + '</td>'
+      + '<td style="border:'+mBorder+';padding:9px 6px;text-align:right;font-weight:700;font-size:18px;white-space:nowrap;">' + amtCell + '</td>'
+      + '<td style="border:'+mBorder+';padding:9px 4px;color:#000080;text-align:right;font-size:11px;font-weight:700;white-space:nowrap;">NEW</td>'
+      + '</tr>';
+    rowsUsed = 1;
+  }
   var start = _feRowIdx;
-  var end = Math.min(LOG.length, start + _feMaxRows);
+  var logRows = Math.max(0, _feMaxRows - rowsUsed);
+  var end = Math.min(LOG.length, start + logRows);
   // LOG[0] is newest. Slice and DO NOT reverse — newest stays at index 0,
   // which we render at the TOP of the table (Android keyboard covers bottom).
   var slice = LOG.slice(start, end);
   var n = slice.length;
-  var html = '';
   for(var i = 0; i < n; i++){
     var e = slice[i];
     var rowIdx = start + i;
-    // i=0 is newest = current edit target = brightest at TOP
-    // Fade gets dimmer going DOWN (older entries below)
+    // i=0 is newest = current edit target = brightest (just under any masked line)
     var op = 1.00 - (0.35 * (i / Math.max(1, _feMaxRows - 1)));
-    var current = (i === 0);
+    var current = (i === 0 && !_feDraft);
     var dateStr = _feFmtDate(e.date || '');
     var amtStr = _feFmtAmt(e.amt);
     var amtColor = e.amt >= 0 ? '#004400' : '#aa0000';
@@ -12347,8 +12405,6 @@ function _feRenderTable(){
     var bg = current ? '#fff4a3' : '#ffffff';
     var cnt = e.cnt || 0;
     var cntBadge = cnt ? ' <span style="color:#666;font-size:11px;font-weight:700;">×' + cnt + '</span>' : '';
-    // RECNO: FoxBase-style position in LOG. LOG[0] is newest = highest #.
-    // (LOG grows via unshift, so total count − index = 1-based recno from oldest.)
     var recno = LOG.length - rowIdx;
     html += '<tr data-idx="' + rowIdx + '" onclick="_feRowTap(' + rowIdx + ')" style="opacity:' + op.toFixed(2) + ';background:' + bg + ';cursor:pointer;">'
       + '<td style="border:' + border + ';padding:8px 4px;color:#000;font-size:14px;font-weight:700;white-space:nowrap;">' + dateStr + '</td>'
@@ -12360,7 +12416,7 @@ function _feRenderTable(){
       + '</tr>';
   }
   // Padding rows at the BOTTOM (less-important visual area)
-  var pad = _feMaxRows - n;
+  var pad = _feMaxRows - n - rowsUsed;
   for(var p = 0; p < pad; p++){
     html += '<tr style="opacity:0.25;"><td colspan="6" style="border-bottom:1px solid #ccc;padding:8px 6px;color:#999;font-size:13px;">·</td></tr>';
   }
@@ -12372,6 +12428,12 @@ function _feRenderTable(){
 function _feRenderPrompt(){
   var ghost = document.getElementById('fe-ghost');
   if(ghost) ghost.textContent = _feLastCommand ? '↵ or wait 1s · last: ' + _feLastCommand : 'type · wait 1s · or ↵';
+  var histEl = document.getElementById('fe-hist');
+  if(histEl){
+    var hn = 0;
+    for(var hk in _feHistoryCnt){ hn++; }
+    histEl.textContent = hn ? ('\u2713 HIST ' + hn.toLocaleString() + ' combos') : '';
+  }
   var label = document.getElementById('fe-mini-label');
   if(label){
     label.textContent = _feMiniLabel;
@@ -12384,14 +12446,15 @@ function _feRenderPrompt(){
   }
   var modeEl = document.getElementById('fe-mode');
   if(modeEl){
-    var labels = { 'entry-day':'DAY','entry-payee':'PAYEE','edit-defa':'DEFA','cmd':'CMD','edit-mm':'MM','edit-dd':'DD','edit-yr':'YR','edit-amt':'AMT','pick-pcode':'PCOD','pick-desc':'DESC','pick-combo':'COMBO','ask-new':'NEW?' };
+    var labels = { 'entry-payee':'PAYEE','fill-day':'DAY','fill-amt':'AMT','edit-defa':'DEFA','cmd':'CMD','edit-mm':'MM','edit-dd':'DD','edit-yr':'YR','edit-amt':'AMT','pick-pcode':'PCOD','pick-desc':'DESC','pick-combo':'COMBO','ask-new':'NEW?' };
     modeEl.textContent = labels[_feMode] || _feMode.toUpperCase();
   }
   var inp = document.getElementById('fe-prompt');
   if(inp){
-    if(_feMode === 'entry-day'){ inp.placeholder='DD (↵=today)'; inp.maxLength=4; }
+    if(_feMode === 'fill-day'){ inp.placeholder='DD'; inp.maxLength=2; }
     else if(_feMode === 'entry-payee'){ inp.placeholder='PAYEE'; inp.maxLength=20; }
     else if(_feMode === 'edit-defa'){ inp.placeholder='MMYR e.g. 0526'; inp.maxLength=6; }
+    else if(_feMode === 'fill-amt'){ inp.placeholder='0.00'; inp.maxLength=12; }
     else if(_feMode === 'cmd'){ inp.placeholder='...'; inp.maxLength=4; }
     else if(_feMode === 'edit-amt'){ inp.placeholder='0.00'; inp.maxLength=12; }
     else if(_feMode === 'edit-mm'){ inp.placeholder='MM (or ↵)'; inp.maxLength=2; }
@@ -12449,13 +12512,38 @@ function _feArmIdleTimer(){
 }
 
 function _feHandleInput(val){
-  // ENTRY-DAY: 2 digits typed → jump instantly to payee (no ENTER, no wait)
-  if(_feMode === 'entry-day' && val && /^[0-9]{2}$/.test(val.trim())){
-    _feClearIdleTimer();
-    var inpD = document.getElementById('fe-prompt');
-    var dv = val.trim();
-    if(inpD) inpD.value = '';
-    _feApplyDay(dv);
+  // MASKED LINE — fill-day: mirror digits into the day field, 2 digits auto-jumps
+  if(_feMode === 'fill-day'){
+    _feDraftInput = (val||'').replace(/[^0-9]/g,'').slice(0,2);
+    _feRenderTable();
+    if(/^[0-9]{2}$/.test(_feDraftInput)){
+      _feClearIdleTimer();
+      var inpD = document.getElementById('fe-prompt');
+      var dv = _feDraftInput;
+      if(inpD) inpD.value = '';
+      _feDraftInput = '';
+      _feApplyDraftDay(dv);
+      return;
+    }
+    if(val && val.length>0){ _feArmIdleTimer(); } else { _feClearIdleTimer(); }
+    return;
+  }
+  // MASKED LINE — fill-amt: mirror cents-formatted value into the amount field
+  if(_feMode === 'fill-amt'){
+    _feDraftInput = val || '';
+    var rawC = (val||'').replace(/[^0-9\-]/g,'');
+    var negC = rawC.indexOf('-')>=0;
+    var digC = rawC.replace(/-/g,'');
+    if(digC){
+      var fmtC = (negC?'-':'') + (parseInt(digC,10)/100).toFixed(2);
+      if(fmtC !== val){
+        var inpC = document.getElementById('fe-prompt');
+        if(inpC){ inpC.value = fmtC; try{ inpC.setSelectionRange(fmtC.length,fmtC.length); }catch(e){} }
+        _feDraftInput = fmtC;
+      }
+    }
+    _feRenderTable();
+    if(val && val.length>0){ _feArmIdleTimer(); } else { _feClearIdleTimer(); }
     return;
   }
   // Live narrowing of pickers as user types
@@ -12475,7 +12563,6 @@ function _feHandleInput(val){
     }
   }
   // edit-amt: live cents-formatting matching autoDecimal convention
-  // Type 123456 → display as 1234.56 in real time
   if(_feMode === 'edit-amt' && val){
     var raw = val.replace(/[^0-9\-]/g,'');
     var negative = raw.indexOf('-') >= 0;
@@ -12531,7 +12618,7 @@ function _feHandlePromptKey(e){
   if(e.key === 'ArrowDown'){
     e.preventDefault();
     _feClearIdleTimer();
-    if(_feMode === 'entry-day'){
+    if(_feMode === 'entry-payee' && !_feDraft){
       // Visual DOWN = older entries (now below the current row at top)
       _feBrowse(1);
     } else {
@@ -12543,7 +12630,7 @@ function _feHandlePromptKey(e){
   if(e.key === 'ArrowUp'){
     e.preventDefault();
     _feClearIdleTimer();
-    if(_feMode === 'entry-day'){
+    if(_feMode === 'entry-payee' && !_feDraft){
       // Visual UP = newer entries (back toward the current row at top)
       _feBrowse(-1);
     }
@@ -12563,31 +12650,132 @@ function _feCancelMode(){
   if(ov){ ov.innerHTML=''; ov.style.display='none'; }
   var inp = document.getElementById('fe-prompt');
   if(inp) inp.value = '';
-  _feStartEntryDay();
+  _feDraft = null;
+  _feDraftInput = '';
+  _feStartEntryPayee();
   _feRender();
   _feFocusPrompt();
 }
 
 // ───── ENTRY FLOW: DAY → PAYEE → AMT → loop ─────
-function _feStartEntryDay(){
-  _feMode = 'entry-day';
-  _feDraftDay = '';
+// ════════════ MASKED LINE ENTRY FLOW ════════════
+// HOME: type PAYEE → line paints on table top row → fill DAY → fill AMOUNT → loop.
+// ESC at any point discards the masked line and returns to PAYEE.
+
+function _feStartEntryPayee(){
+  _feMode = 'entry-payee';
+  _feDraft = null;
+  _feDraftInput = '';
   _feGuidedFlow = [];
-  _feMiniLabel = 'DAY ' + _feDefMM + '/__/' + _feDefYR;
+  _feMiniLabel = 'PAYEE \u25b8 type a name';
 }
-function _feApplyDay(val){
-  var s = String(val||'').trim();
+
+// Paint the masked line — payee matched (or new payee named).
+function _feBeginDraft(payee, pcode, desc){
+  _feDraft = {
+    payee: payee,
+    pcode: pcode || '',
+    desc:  desc || '',
+    mm: _feDefMM,
+    yr: _feDefYR,
+    dd: '',
+    amt: null
+  };
+  _feDraftInput = '';
+  _feRowIdx = 0;
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.innerHTML=''; ov.style.display='none'; }
+  // New payee (no pcode/desc yet) → pick those first, THEN fill the line.
+  if(!pcode && !desc){
+    _feGuidedFlow = ['pcode','desc'];
+    _feRender();
+    setTimeout(_feAdvanceGuided, 80);
+    return;
+  }
+  _feEnterFillDay();
+}
+
+function _feEnterFillDay(){
+  _feMode = 'fill-day';
+  _feDraftInput = '';
+  var inp = document.getElementById('fe-prompt');
+  if(inp) inp.value = '';
+  _feMiniLabel = 'DAY \u25b8 confirm the day, amount is next';
+  _feRender();
+  _feFocusPrompt();
+}
+function _feApplyDraftDay(val){
+  if(!_feDraft){ _feStartEntryPayee(); _feRender(); _feFocusPrompt(); return; }
+  var s = String(val||'').replace(/[^0-9]/g,'');
   var dd;
-  if(!s){
-    dd = ('0'+new Date().getDate()).slice(-2);   // empty ENTER → today's day
-  } else {
-    var d = parseInt(s.replace(/[^0-9]/g,''),10);
-    if(isNaN(d) || d<1 || d>31){ toast('Bad day (1-31)',false); _feFocusPrompt(); return; }
+  if(!s){ dd = ('0'+new Date().getDate()).slice(-2); }   // empty = today
+  else {
+    var d = parseInt(s,10);
+    if(isNaN(d)||d<1||d>31){ toast('Bad day (1-31)',false); _feFocusPrompt(); return; }
     dd = ('0'+d).slice(-2);
   }
-  _feDraftDay = dd;
-  _feMode = 'entry-payee';
-  _feMiniLabel = _feDefMM + '/' + _feDraftDay + '/' + _feDefYR + ' \u25b8 PAYEE';
+  _feDraft.dd = dd;
+  _feEnterFillAmt();
+}
+
+function _feEnterFillAmt(){
+  _feMode = 'fill-amt';
+  _feDraftInput = '';
+  var inp = document.getElementById('fe-prompt');
+  if(inp) inp.value = '';
+  _feMiniLabel = 'AMOUNT \u25b8 punch it in, ENTER commits';
+  _feRender();
+  _feFocusPrompt();
+}
+function _feApplyDraftAmt(val){
+  if(!_feDraft){ _feStartEntryPayee(); _feRender(); _feFocusPrompt(); return; }
+  var raw = String(val||'').replace(/[^0-9\-]/g,'');
+  var neg = raw.indexOf('-') >= 0;
+  var digits = raw.replace(/-/g,'');
+  if(!digits){ toast('Enter an amount',false); _feFocusPrompt(); return; }
+  var amt = Math.abs(parseInt(digits,10)/100);
+  // IRS sign rule: income-type desc → +, everything else → expense (−)
+  if(neg) amt = -amt;
+  else if(!_feIsIncomeDesc(_feDraft.desc)) amt = -amt;
+  _feDraft.amt = amt;
+  _feCommitDraft();
+}
+
+// Write the finished masked line into the LOG as a real entry, then loop.
+function _feCommitDraft(){
+  if(!_feDraft) return;
+  var d = _feDraft;
+  loadLog();
+  var entry = {
+    id: Date.now(),
+    payee: d.payee,
+    pcode: d.pcode || '',
+    desc:  d.desc || '',
+    date: '20' + d.yr + '-' + d.mm + '-' + d.dd,
+    amt: (typeof d.amt === 'number') ? d.amt : 0
+  };
+  var key = d.payee.toUpperCase() + '|' + (d.pcode||'') + '|' + (d.desc||'');
+  _feComboCnt[key] = (_feComboCnt[key] || 0) + 1;
+  entry.cnt = _feComboCnt[key];
+  _feSaveComboCnt();
+  LOG.unshift(entry);
+  saveLog();
+  _feInvalidateIndex();
+  // incremental payee-index update
+  var pu = d.payee.toUpperCase();
+  if(!_fePayeeIndex[pu]) _fePayeeIndex[pu] = [];
+  var found = false;
+  for(var i=0;i<_fePayeeIndex[pu].length;i++){
+    if(_fePayeeIndex[pu][i].pcode===(d.pcode||'') && _fePayeeIndex[pu][i].desc===(d.desc||'')){
+      _fePayeeIndex[pu][i].cnt = _feComboCnt[key]; found = true; break;
+    }
+  }
+  if(!found) _fePayeeIndex[pu].push({pcode:d.pcode||'',desc:d.desc||'',cnt:_feComboCnt[key]});
+  _fePayeeIndex[pu].sort(function(a,b){ return b.cnt - a.cnt; });
+  toast('SAVED  ' + d.payee + '  ' + _feFmtAmt(entry.amt), true);
+  _feDraft = null;
+  _feRowIdx = 0;
+  _feStartEntryPayee();
   _feRender();
   _feFocusPrompt();
 }
@@ -12611,34 +12799,27 @@ function _feApplyDefa(val){
   _feDefYR = yy;
   _feSaveDefaults();
   toast('Default date set: ' + _feDefMM + '/' + _feDefYR, true);
-  _feStartEntryDay();
+  _feStartEntryPayee();
   _feRender();
   _feFocusPrompt();
 }
 
 function _feDispatchInput(val){
   var v = (val||'').trim();
-  // ENTRY-DAY: digits → day; letters/"-" → command
-  if(_feMode === 'entry-day'){
-    if(v && (/[A-Za-z]/.test(v) || v === '-')){
-      _feDispatchCommand(v);   // a command was typed instead of a day
-    } else {
-      _feApplyDay(v);          // digits or empty → the day
-    }
-    return;
-  }
-  // ENTRY-PAYEE: type payee, look it up
+  // HOME: waiting for a PAYEE (or a command)
   if(_feMode === 'entry-payee'){
-    if(!v){ toast('Type a payee',false); _feFocusPrompt(); return; }
-    // Allow commands from the payee position too (correction codes etc.)
+    if(!v){ _feFocusPrompt(); return; }
     var vu = v.toUpperCase();
     if(['DEFA','MM','DD','YR','AMT','PCOD','DESC','R','B','S','-','?','H'].indexOf(vu) >= 0){
-      _feDispatchCommand(v);
-      return;
+      _feDispatchCommand(v); return;
     }
     _feLookupAndApply(v);
     return;
   }
+  // MASKED LINE: filling the DAY field
+  if(_feMode === 'fill-day'){ _feApplyDraftDay(v); return; }
+  // MASKED LINE: filling the AMOUNT field
+  if(_feMode === 'fill-amt'){ _feApplyDraftAmt(v); return; }
   if(_feMode === 'edit-defa'){ _feApplyDefa(v); return; }
   if(_feMode === 'edit-mm'){ _feApplyMM(v); return; }
   if(_feMode === 'edit-dd'){ _feApplyDD(v); return; }
@@ -12651,33 +12832,38 @@ function _feDispatchInput(val){
   _feDispatchCommand(v);
 }
 
-// ───── STEP CHAINING (for guided new-payee flow) ─────
+// ───── STEP CHAINING (new-payee: PCOD → DESC, then the masked line) ─────
 function _feFinishStep(){
   _feMiniLabel = '';
   if(_feGuidedFlow && _feGuidedFlow.length > 0){
-    _feMode = 'cmd';  // transient between guided steps
     _feRender();
     setTimeout(_feAdvanceGuided, 80);
     return;
   }
-  // Entry complete → loop straight back to DAY entry for the next one
-  _feStartEntryDay();
+  // pickers done — if a draft is waiting, go fill its masked line
+  if(_feDraft && _feDraft.amt === null && !_feDraft.dd){
+    _feEnterFillDay();
+    return;
+  }
+  _feStartEntryPayee();
   _feRender();
   _feFocusPrompt();
 }
 
 function _feStartGuidedFlow(){
-  // New payee: PCOD → DESC → AMT. The date is already set from DEFA + draft day.
-  _feGuidedFlow = ['pcode','desc','amt'];
+  _feGuidedFlow = ['pcode','desc'];
   setTimeout(_feAdvanceGuided, 80);
 }
 
 function _feAdvanceGuided(){
   if(!_feGuidedFlow || _feGuidedFlow.length === 0){
     _feGuidedFlow = [];
-    _feStartEntryDay();
+    if(_feDraft && _feDraft.amt === null && !_feDraft.dd){
+      _feEnterFillDay();   // new payee finished pcode/desc → fill the masked line
+      return;
+    }
+    _feStartEntryPayee();
     _feRender();
-    toast('New payee saved — ready', true);
     _feFocusPrompt();
     return;
   }
@@ -12685,10 +12871,6 @@ function _feAdvanceGuided(){
   switch(step){
     case 'pcode': _feStartPcodePick(); break;
     case 'desc':  _feStartDescPick();  break;
-    case 'mm':    _feStartMM();        break;
-    case 'dd':    _feStartDD();        break;
-    case 'yr':    _feStartYR();        break;
-    case 'amt':   _feStartAMT();       break;
     default:      _feFinishStep();
   }
 }
@@ -12697,7 +12879,9 @@ function _feApplyNewPayeeName(name){
   var n = (name||'').trim().toUpperCase();
   if(!n){ _feGuidedFlow = []; _feCancelMode(); return; }
   _feIsNewPayeeName = false;
-  _feInsertNew(n, '', '', true);   // true = start guided flow after insert
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.innerHTML=''; ov.style.display='none'; }
+  _feBeginDraft(n, '', '');   // empty pcode/desc → pickers fire, then masked line
 }
 
 function _feDispatchCommand(raw){
@@ -12823,7 +13007,7 @@ function _feFlipSign(){
   // Defensive: ensure _feRowIdx is within range (= the recno() sanity check)
   if(_feRowIdx < 0 || _feRowIdx >= LOG.length) _feRowIdx = 0;
   // Ensure overlay isn't accidentally open from a prior mode
-  if(_feMode === 'entry-day'){
+  if(_feMode === 'entry-payee'){
     var ov = document.getElementById('fe-overlay');
     if(ov && ov.style.display !== 'none'){ ov.style.display='none'; ov.innerHTML=''; }
   }
@@ -12870,12 +13054,12 @@ function _feGetAllDescs(){
 }
 
 function _feStartPcodePick(){
-  if(LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
+  if(!_feDraft && LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
   _feMode='pick-pcode'; _feMiniLabel='PCOD:'; _fePickerItems=_feGetAllPcodes(); _fePickerFilter='';
   _feRender(); _feRenderPickerOverlay(); _feFocusPrompt();
 }
 function _feStartDescPick(){
-  if(LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
+  if(!_feDraft && LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
   _feMode='pick-desc'; _feMiniLabel='DESC:'; _fePickerItems=_feGetAllDescs(); _fePickerFilter='';
   _feRender(); _feRenderPickerOverlay(); _feFocusPrompt();
 }
@@ -12929,15 +13113,27 @@ function _feApplyDescPick(val){
   _fePickerFilter = up; _feRenderPickerOverlay(); _feFocusPrompt();
 }
 function _feSetPcode(pcode){
+  _fePickerFilter='';
+  var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
+  if(_feDraft){                       // MASKED LINE: write into the draft
+    _feDraft.pcode = pcode;
+    _feFinishStep();
+    return;
+  }
   var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   _feShiftCnt(e, e.pcode, pcode, e.desc, e.desc);
   e.pcode = pcode;
   saveLog(); _feInvalidateIndex();
-  _fePickerFilter='';
-  var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
   _feFinishStep();
 }
 function _feSetDesc(desc){
+  _fePickerFilter='';
+  var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
+  if(_feDraft){                       // MASKED LINE: write into the draft
+    _feDraft.desc = desc;
+    _feFinishStep();
+    return;
+  }
   var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   _feShiftCnt(e, e.pcode, e.pcode, e.desc, desc);
   e.desc = desc;
@@ -12947,8 +13143,6 @@ function _feSetDesc(desc){
     e.amt = _feIsIncomeDesc(desc) ? abs : -abs;
   }
   saveLog(); _feInvalidateIndex();
-  _fePickerFilter='';
-  var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
   _feFinishStep();
 }
 function _feShiftCnt(entry, oldPc, newPc, oldDc, newDc){
@@ -12985,7 +13179,7 @@ function _feLookupAndApply(query){
   var topCombo = combos[0];
   // 25-uses rule — auto-apply when ONLY one payee matched AND top combo cnt >= threshold
   if(matches.length === 1 && topCombo && topCombo.cnt >= _feAutoApplyThreshold){
-    _feInsertNew(topPayee, topCombo.pcode, topCombo.desc);
+    _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
     toast('AUTO ' + topPayee + ' ×' + topCombo.cnt, true);
     return;
   }
@@ -13011,7 +13205,7 @@ function _feShowComboPicker(payees, q){
       var pEsc = _feEsc(p).replace(/'/g,"\\'");
       var pcEsc = _feEsc(c.pcode).replace(/'/g,"\\'");
       var dcEsc = _feEsc(c.desc).replace(/'/g,"\\'");
-      html += '<button onclick="_feInsertNew(\''+pEsc+'\',\''+pcEsc+'\',\''+dcEsc+'\')" style="display:block;width:100%;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:12px;padding:7px 10px;border-radius:3px;cursor:pointer;margin-bottom:3px;">'
+      html += '<button onclick="_feBeginDraft(\''+pEsc+'\',\''+pcEsc+'\',\''+dcEsc+'\')" style="display:block;width:100%;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:12px;padding:7px 10px;border-radius:3px;cursor:pointer;margin-bottom:3px;">'
         + '<span style="display:inline-block;width:24px;color:#ffff00;font-weight:700;">[' + k + ']</span> '
         + '<span style="color:#00ffff;font-weight:700;">' + _feEsc(c.pcode||'(none)') + '</span> · '
         + '<span style="color:#fff;">' + _feEsc(c.desc||'(none)') + '</span>'
@@ -13151,7 +13345,7 @@ function _feApplyAskNew(v){
 function _feBrowse(steps){
   if(LOG.length===0) return;
   _feRowIdx = Math.max(0, Math.min(LOG.length - 1, _feRowIdx + steps));
-  _feMode = 'entry-day';
+  _feMode = 'entry-payee';
   _feMiniLabel = 'BROWSE ['+(_feRowIdx+1)+'/'+LOG.length+']';
   _feRender();
   // clear label after a moment so it stops sticking
@@ -13219,7 +13413,7 @@ function _feShowHelp(){
     + '<div style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:10px;">FAST ENTRY COMMANDS</div>'
     + '<div style="background:#003300;border:1px solid #00ff88;padding:8px;border-radius:4px;margin-bottom:12px;">'
     + '<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:4px;">▶ HOW A NEW ENTRY WORKS</div>'
-    + '<div style="font-size:13px;">1. Type the DAY (2 digits) — jumps instantly. ENTER alone = today.<br>2. Type the PAYEE — matches your history, or adds new.<br>3. Type the AMT — cents style (123456 = 1234.56).<br>Loops back to DAY for the next one. MM and YR come from DEFA.</div>'
+    + '<div style="font-size:13px;">1. Type the PAYEE — the entry line paints itself on the top row of the table, filled in.<br>2. Only the DAY and AMOUNT are left open. Type the DAY (2 digits jumps instantly).<br>3. Punch the AMOUNT — ENTER commits. The line loops back for the next one.<br>ESC throws the line away. MM/YR come from DEFA.</div>'
     + '</div>'
     + '<div style="color:#aaccff;font-size:11px;margin-bottom:10px;">Input fires on ENTER, or auto-fires 1s after you stop typing.</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DEFA</span> set default MM/YR (type 0526 for May 2026)</div>'
@@ -13246,7 +13440,8 @@ function _feShowHelp(){
 function _feCloseOverlay(){
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.style.display='none'; ov.innerHTML=''; }
-  _feStartEntryDay();
+  _feDraft=null; _feDraftInput='';
+  _feStartEntryPayee();
   _feRender(); _feFocusPrompt();
 }
 
