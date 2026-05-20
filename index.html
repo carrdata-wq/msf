@@ -1466,7 +1466,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
     <!-- Status / cheat hint strip -->
     <div style="text-align:center;font-size:13px;color:#000080;letter-spacing:1px;padding:6px;font-weight:700;line-height:1.6;">
-      NEW ENTRY: type 1-4 letters of payee + ↵<br>
+      NEW ENTRY: type 1-4 letters of payee · wait 2s or ↵<br>
       <span style="color:#222;font-size:12px;">EDIT: MM DD YR AMT PCOD DESC · &minus; flip · S sign · B browse · R reports · ?</span>
     </div>
   </div>
@@ -12375,13 +12375,10 @@ function _feTodayISO(){
 function _feClearIdleTimer(){
   if(_feIdleTimer){ clearTimeout(_feIdleTimer); _feIdleTimer = null; }
 }
-// Commands safe to auto-fire on idle (exact match required).
-// Payee lookups are deliberately NOT here — they need explicit ENTER
-// so you can type slowly on mobile without "R" firing before "RICHARDS".
-var _feAutoFireCmds = ['R','B','S','-','MM','DD','YR','AMT','PCOD','DESC','?','H'];
-// Modes where the input is unambiguous (numbers / single picks) — safe to auto-fire.
-// edit-newpayee is NOT here: full payee names take time to type and shouldn't fire early.
-var _feAutoFireModes = ['edit-mm','edit-dd','edit-yr','edit-amt'];
+// 2-second idle rule applies to EVERYTHING except typing a full new-payee name.
+// Type "R" + 2s → Reports. Type "RICH" + 2s → lookup → if not found, ADD NEW?
+// The only exception is edit-newpayee where the user is typing a long
+// proper name like "RICHARDS BUILDING SUPPLY COMPANY" and needs time.
 function _feArmIdleTimer(){
   _feClearIdleTimer();
   _feIdleTimer = setTimeout(function(){
@@ -12390,14 +12387,7 @@ function _feArmIdleTimer(){
     if(!inp) return;
     var v = (inp.value||'').trim();
     if(!v) return;
-    var safe = false;
-    if(_feMode === 'cmd'){
-      var vu = v.toUpperCase();
-      if(_feAutoFireCmds.indexOf(vu) >= 0) safe = true;
-    } else if(_feAutoFireModes.indexOf(_feMode) >= 0){
-      safe = true;
-    }
-    if(!safe) return;
+    if(_feMode === 'edit-newpayee') return;   // full names take time, don't auto-fire
     inp.value = '';
     _feDispatchInput(v);
   }, _feIdleMs);
@@ -12408,6 +12398,17 @@ function _feHandleInput(val){
   if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){
     _fePickerFilter = (val||'').toUpperCase();
     _feRenderPickerOverlay();
+  }
+  // Ask-new mode: Y or N keypress fires immediately (no wait needed)
+  if(_feMode === 'ask-new' && val){
+    var v = val.trim().toUpperCase();
+    if(v === 'Y' || v === 'N'){
+      _feClearIdleTimer();
+      var inp = document.getElementById('fe-prompt');
+      if(inp) inp.value = '';
+      _feDispatchInput(v);
+      return;
+    }
   }
   // FoxBase idle auto-fire: type letter(s), pause, dispatch — no ENTER needed
   if(val && val.length > 0){
@@ -12882,8 +12883,10 @@ function _feAskAddNew(query){
   _feFocusPrompt();
 }
 function _feApplyAskNew(v){
-  var up = (v||'').toUpperCase();
-  if(up === 'Y' || up === 'YES'){
+  var up = (v||'').trim().toUpperCase();
+  // Empty ENTER, Y, or YES → add new payee. Empty defaults to YES because
+  // the user already typed an unknown name and waited — that IS confirmation.
+  if(up === '' || up === 'Y' || up === 'YES'){
     // Switch to edit-newpayee mode — let user type the FULL proper name
     // (the 4-char query was just a lookup; the real payee name is what we save)
     _feMode = 'edit-newpayee';
