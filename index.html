@@ -1459,7 +1459,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
             <th style="padding:8px 4px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">PAYEE</th>
             <th style="padding:8px 4px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;width:58px;letter-spacing:1px;">PCOD</th>
             <th style="padding:8px 4px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">DESC</th>
-            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:108px;letter-spacing:1px;">AMT</th>
+            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:100px;letter-spacing:1px;">AMT</th>
+            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:58px;letter-spacing:1px;">#</th>
           </tr>
         </thead>
         <tbody id="fe-tbody"></tbody>
@@ -1468,7 +1469,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
     <!-- Status / cheat hint strip -->
     <div style="text-align:center;font-size:13px;color:#000080;letter-spacing:1px;padding:6px;font-weight:700;line-height:1.6;">
-      NEW ENTRY: type 1-4 letters of payee · wait 2s or ↵<br>
+      NEW ENTRY: type 1-4 letters of payee · wait 1s or ↵<br>
       <span style="color:#222;font-size:12px;">EDIT: MM DD YR AMT PCOD DESC · &minus; flip · S sign · ↑↓ browse · R reports · ?</span>
     </div>
   </div>
@@ -12215,7 +12216,7 @@ var _feKeyMap = [];                // combo picker key shortcuts
 var _feAutoApplyThreshold = 25;    // FoxBase 25-uses rule
 var _feMaxRows = 8;
 var _feIdleTimer = null;           // FoxBase auto-fire: type letters, pause, dispatch
-var _feIdleMs = 2000;              // 2 seconds — type R, wait, Reports opens
+var _feIdleMs = 1000;              // 1 second — at terminal speed, 2s felt like 10 hours
 var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 
@@ -12319,18 +12320,22 @@ function _feRenderTable(){
     var bg = current ? '#fff4a3' : '#ffffff';
     var cnt = e.cnt || 0;
     var cntBadge = cnt ? ' <span style="color:#666;font-size:11px;font-weight:700;">×' + cnt + '</span>' : '';
+    // RECNO: FoxBase-style position in LOG. LOG[0] is newest = highest #.
+    // (LOG grows via unshift, so total count − index = 1-based recno from oldest.)
+    var recno = LOG.length - rowIdx;
     html += '<tr data-idx="' + rowIdx + '" onclick="_feRowTap(' + rowIdx + ')" style="opacity:' + op.toFixed(2) + ';background:' + bg + ';cursor:pointer;">'
       + '<td style="border:' + border + ';padding:8px 4px;color:#000;font-size:14px;font-weight:700;white-space:nowrap;">' + dateStr + '</td>'
       + '<td style="border:' + border + ';padding:8px 4px;color:#000080;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(e.payee||'') + cntBadge + '</td>'
       + '<td style="border:' + border + ';padding:8px 4px;color:#003366;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(e.pcode||'') + '</td>'
       + '<td style="border:' + border + ';padding:8px 4px;color:#000;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(e.desc||'') + '</td>'
       + '<td style="border:' + border + ';padding:8px 6px;color:' + amtColor + ';text-align:right;font-weight:700;font-size:18px;white-space:nowrap;">' + amtStr + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:#888;text-align:right;font-size:12px;font-weight:700;white-space:nowrap;">#' + recno + '</td>'
       + '</tr>';
   }
   // Padding rows at the BOTTOM (less-important visual area)
   var pad = _feMaxRows - n;
   for(var p = 0; p < pad; p++){
-    html += '<tr style="opacity:0.25;"><td colspan="5" style="border-bottom:1px solid #ccc;padding:8px 6px;color:#999;font-size:13px;">·</td></tr>';
+    html += '<tr style="opacity:0.25;"><td colspan="6" style="border-bottom:1px solid #ccc;padding:8px 6px;color:#999;font-size:13px;">·</td></tr>';
   }
   tbody.innerHTML = html;
   var actBar = document.getElementById('fe-actbar');
@@ -12339,7 +12344,7 @@ function _feRenderTable(){
 
 function _feRenderPrompt(){
   var ghost = document.getElementById('fe-ghost');
-  if(ghost) ghost.textContent = _feLastCommand ? '↵ or wait 2s · last: ' + _feLastCommand : 'type · wait 2s · or ↵';
+  if(ghost) ghost.textContent = _feLastCommand ? '↵ or wait 1s · last: ' + _feLastCommand : 'type · wait 1s · or ↵';
   var label = document.getElementById('fe-mini-label');
   if(label){
     label.textContent = _feMiniLabel;
@@ -13107,7 +13112,7 @@ function _feShowHelp(){
     + '<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:4px;">▶ TO START A NEW ENTRY</div>'
     + '<div style="font-size:13px;">Type 1-4 letters of the payee name and press ENTER. If it matches existing history with 25+ uses, it auto-applies. Otherwise pick from the combo list — or "+ NEW PAYEE" if no match.</div>'
     + '</div>'
-    + '<div style="color:#aaccff;font-size:11px;margin-bottom:10px;">Commands fire on ENTER, or auto-fire 2s after typing (single letters / known codes only — payees always need ENTER).</div>'
+    + '<div style="color:#aaccff;font-size:11px;margin-bottom:10px;">All input fires on ENTER, or auto-fires 1s after you stop typing (FoxBase READ-timeout pattern).</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">PAYEE</span> 1-4 letters → match → new entry</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">MM</span> edit month of bottom row</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DD</span> edit day</div>'
