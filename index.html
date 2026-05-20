@@ -12656,7 +12656,16 @@ function _feApplyYR(val){
 }
 function _feApplyAMT(val){
   var s = String(val||'').trim();
-  if(!s){ toast('Enter amount',false); _feFocusPrompt(); return; }
+  // In guided flow with an existing non-zero amt (e.g. after COPY), empty ENTER
+  // keeps the current value and advances. New-payee flow starts with amt=0 so
+  // this branch doesn't fire there — user still has to enter an amount.
+  if(!s){
+    var ee0 = LOG[_feRowIdx];
+    if(_feGuidedFlow && ee0 && ee0.amt !== 0){
+      _feFinishStep(); return;
+    }
+    toast('Enter amount',false); _feFocusPrompt(); return;
+  }
   var n;
   // If user typed explicit decimal (e.g. "1234.56" or "-1234.56"), parse as-is
   if(s.indexOf('.') >= 0){
@@ -13081,8 +13090,11 @@ function _feActCopy(){
   _feInvalidateIndex();
   _feRowIdx = 0;
   _feRender();
-  toast('Row copied to bottom',true);
-  _feFocusPrompt();
+  toast('Copied '+(src.payee||'').slice(0,20)+' · edit date/amt',true);
+  // Guided mini-flow: MM → DD → YR → AMT.
+  // ENTER on empty keeps current value (today's date or copied amt) for each step.
+  _feGuidedFlow = ['mm','dd','yr','amt'];
+  setTimeout(_feAdvanceGuided, 80);
 }
 
 // ───── HELP ─────
