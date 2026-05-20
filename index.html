@@ -1,5 +1,8 @@
 <html lang="en-US" style="transition-property: none; margin-right: 0px;"><head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12354,8 +12357,8 @@ function _feRenderTable(){
       dayCell = d.dd;
     } else {
       var dShow = dayTxt ? dayTxt : '&nbsp;&nbsp;';
-      var dBg = fillingDay ? '#ffe600' : '#e8e8e8';
-      var dBd = fillingDay ? '2px solid #cc8800' : '1px dashed #999';
+      var dBg = fillingDay ? '#2dd4bf' : '#e8e8e8';
+      var dBd = fillingDay ? '2px solid #047857' : '1px dashed #999';
       dayCell = '<span style="background:'+dBg+';border:'+dBd+';padding:1px 5px;border-radius:3px;color:#000;">'+dShow+'</span>';
     }
     var dateCell = d.mm + '/' + dayCell + '/' + d.yr;
@@ -12370,12 +12373,12 @@ function _feRenderTable(){
         aTxt = rawA ? (parseInt(rawA,10)/100).toFixed(2) : '';
       }
       var aShow = aTxt ? aTxt : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-      var aBg = fillingAmt ? '#ffe600' : '#e8e8e8';
-      var aBd = fillingAmt ? '2px solid #cc8800' : '1px dashed #999';
+      var aBg = fillingAmt ? '#2dd4bf' : '#e8e8e8';
+      var aBd = fillingAmt ? '2px solid #047857' : '1px dashed #999';
       amtCell = '<span style="background:'+aBg+';border:'+aBd+';padding:1px 6px;border-radius:3px;color:#000;">'+aShow+'</span>';
     }
-    var mBorder = '3px solid #000080';
-    html += '<tr style="background:#dbe7ff;">'
+    var mBorder = '4px solid #1d4ed8';
+    html += '<tr style="background:#dbeafe;">'
       + '<td style="border:'+mBorder+';padding:9px 4px;color:#000;font-size:14px;font-weight:700;white-space:nowrap;">' + dateCell + '</td>'
       + '<td style="border:'+mBorder+';padding:9px 4px;color:#000080;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(d.payee||'') + '</td>'
       + '<td style="border:'+mBorder+';padding:9px 4px;color:#003366;font-weight:700;font-size:14px;white-space:nowrap;">' + _feEsc(d.pcode||'·') + '</td>'
@@ -12401,8 +12404,8 @@ function _feRenderTable(){
     var dateStr = _feFmtDate(e.date || '');
     var amtStr = _feFmtAmt(e.amt);
     var amtColor = e.amt >= 0 ? '#004400' : '#aa0000';
-    var border = current ? '3px solid #ff9900' : '2px solid #888';
-    var bg = current ? '#fff4a3' : '#ffffff';
+    var border = current ? '3px solid #0d9488' : '2px solid #94a3b8';
+    var bg = current ? '#ccfbf1' : '#ffffff';
     var cnt = e.cnt || 0;
     var cntBadge = cnt ? ' <span style="color:#666;font-size:11px;font-weight:700;">×' + cnt + '</span>' : '';
     var recno = LOG.length - rowIdx;
@@ -12427,7 +12430,7 @@ function _feRenderTable(){
 
 function _feRenderPrompt(){
   var ghost = document.getElementById('fe-ghost');
-  if(ghost) ghost.textContent = _feLastCommand ? '↵ or wait 1s · last: ' + _feLastCommand : 'type · wait 1s · or ↵';
+  if(ghost) ghost.textContent = '';
   var histEl = document.getElementById('fe-hist');
   if(histEl){
     var hn = 0;
@@ -12667,7 +12670,7 @@ function _feStartEntryPayee(){
   _feDraft = null;
   _feDraftInput = '';
   _feGuidedFlow = [];
-  _feMiniLabel = 'PAYEE \u25b8 type a name';
+  _feMiniLabel = 'PAYEE';
 }
 
 // Paint the masked line — payee matched (or new payee named).
@@ -12700,7 +12703,7 @@ function _feEnterFillDay(){
   _feDraftInput = '';
   var inp = document.getElementById('fe-prompt');
   if(inp) inp.value = '';
-  _feMiniLabel = 'DAY \u25b8 confirm the day, amount is next';
+  _feMiniLabel = 'DAY';
   _feRender();
   _feFocusPrompt();
 }
@@ -12723,7 +12726,7 @@ function _feEnterFillAmt(){
   _feDraftInput = '';
   var inp = document.getElementById('fe-prompt');
   if(inp) inp.value = '';
-  _feMiniLabel = 'AMOUNT \u25b8 punch it in, ENTER commits';
+  _feMiniLabel = 'AMOUNT';
   _feRender();
   _feFocusPrompt();
 }
