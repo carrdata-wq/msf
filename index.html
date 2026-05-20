@@ -12410,6 +12410,23 @@ function _feHandleInput(val){
       return;
     }
   }
+  // edit-amt: live cents-formatting matching autoDecimal convention
+  // Type 123456 → display as 1234.56 in real time
+  if(_feMode === 'edit-amt' && val){
+    var raw = val.replace(/[^0-9\-]/g,'');
+    var negative = raw.indexOf('-') >= 0;
+    var digits = raw.replace(/-/g,'');
+    if(digits){
+      var formatted = (negative ? '-' : '') + (parseInt(digits,10)/100).toFixed(2);
+      if(formatted !== val){
+        var inpA = document.getElementById('fe-prompt');
+        if(inpA){
+          inpA.value = formatted;
+          try { inpA.setSelectionRange(formatted.length, formatted.length); } catch(e){}
+        }
+      }
+    }
+  }
   // FoxBase idle auto-fire: type letter(s), pause, dispatch — no ENTER needed
   if(val && val.length > 0){
     _feArmIdleTimer();
@@ -12609,17 +12626,28 @@ function _feApplyYR(val){
   _feFinishStep();
 }
 function _feApplyAMT(val){
-  var s = String(val||'').replace(/[^0-9.\-]/g,'');
-  var n = parseFloat(s);
+  var s = String(val||'').trim();
+  if(!s){ toast('Enter amount',false); _feFocusPrompt(); return; }
+  var n;
+  // If user typed explicit decimal (e.g. "1234.56" or "-1234.56"), parse as-is
+  if(s.indexOf('.') >= 0){
+    n = parseFloat(s.replace(/[^0-9.\-]/g,''));
+  } else {
+    // Otherwise treat as cents: 123456 → 1234.56  (autoDecimal convention)
+    var negative = s.indexOf('-') >= 0;
+    var digits = s.replace(/[^0-9]/g,'');
+    if(!digits){ toast('Bad AMT',false); _feGuidedFlow=[]; _feCancelMode(); return; }
+    n = parseInt(digits,10) / 100;
+    if(negative) n = -n;
+  }
   if(isNaN(n)){ toast('Bad AMT',false); _feGuidedFlow=[]; _feCancelMode(); return; }
   var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
-  // If user did not include explicit sign, preserve current row's sign;
-  // if row's current amt is 0 (fresh insert), apply session default sign.
+  // If user did not include explicit sign, apply session default (expenses → negative)
   if(s.indexOf('-') < 0){
     var abs = Math.abs(n);
-    if(e.amt < 0) n = -abs;
-    else if(e.amt > 0) n = abs;
-    else n = (_feSign < 0 ? -abs : abs);
+    if(e.amt < 0) n = -abs;          // preserve existing negative
+    else if(e.amt > 0) n = abs;       // preserve existing positive
+    else n = (_feSign < 0 ? -abs : abs);  // fresh entry → session default sign
   }
   e.amt = n;
   saveLog();
@@ -12862,46 +12890,72 @@ function _feInsertNew(payee, pcode, desc, isNewPayee){
   }
 }
 
-// ───── ADD NEW PAYEE ─────
+// ───── ADD NEW PAYEE (BIG MODAL) ─────
+// Skip the small Y/N step — user already implicitly confirmed by typing
+// an unknown name and pausing 2s. Open a big modal with a big input.
 function _feAskAddNew(query){
   _fePendingNewPayee = (query||'').toUpperCase();
-  _feMode = 'ask-new';
-  _feMiniLabel = 'ADD "'+_fePendingNewPayee+'"? Y/N:';
-  var ov = document.getElementById('fe-overlay');
-  if(ov){
-    ov.innerHTML = '<div style="background:#000033;border:2px solid #00ff88;border-radius:6px;padding:16px;max-width:400px;font-family:Courier New,monospace;">'
-      + '<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:8px;">+ ADD NEW PAYEE?</div>'
-      + '<div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:12px;letter-spacing:1px;">"' + _feEsc(_fePendingNewPayee) + '"</div>'
-      + '<div style="color:#aaccff;font-size:12px;margin-bottom:12px;">Will insert with blank pcode/desc — run PCOD and DESC next to set them.</div>'
-      + '<div style="display:flex;gap:6px;">'
-      + '<button onclick="_feApplyAskNew(\'Y\')" style="flex:1;background:#00ff88;color:#000;font-weight:700;padding:10px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">YES (Y)</button>'
-      + '<button onclick="_feApplyAskNew(\'N\')" style="flex:1;background:#880000;color:#fff;font-weight:700;padding:10px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px;">NO (N)</button>'
-      + '</div></div>';
-    ov.style.display = 'flex';
-  }
-  _feRenderPrompt();
-  _feFocusPrompt();
+  _feShowNewPayeeBigPrompt(_fePendingNewPayee);
 }
+
+function _feShowNewPayeeBigPrompt(prefilledName){
+  _feMode = 'edit-newpayee';
+  _feIsNewPayeeName = true;
+  _feMiniLabel = '';
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  ov.innerHTML = '<div style="background:#ffffff;border:4px solid #000080;border-radius:8px;padding:22px 20px;max-width:580px;width:100%;font-family:Courier New,monospace;box-shadow:0 10px 40px rgba(0,0,0,0.5);">'
+    + '<div style="color:#000080;font-weight:700;font-size:20px;margin-bottom:4px;letter-spacing:2px;">+ NEW PAYEE</div>'
+    + '<div style="color:#aa0000;font-size:13px;margin-bottom:14px;font-weight:700;">"' + _feEsc(prefilledName||'') + '" not found — enter full proper name:</div>'
+    + '<input id="fe-newpayee-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" '
+    + 'value="' + _feEsc(prefilledName||'') + '" '
+    + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();_feSubmitNewPayee();} else if(event.key===\'Escape\'){event.preventDefault();_feCancelMode();}" '
+    + 'style="width:100%;box-sizing:border-box;background:#ffffaa;border:3px solid #000080;color:#000080;'
+    + 'font-family:Courier New,monospace;font-size:24px;font-weight:700;padding:16px 14px;border-radius:6px;'
+    + 'outline:none;text-transform:uppercase;letter-spacing:2px;">'
+    + '<div style="color:#666;font-size:11px;margin-top:6px;letter-spacing:1px;">Type full name · ENTER saves · ESC cancels · max 40 chars</div>'
+    + '<div style="display:flex;gap:8px;margin-top:14px;">'
+    + '<button onclick="_feSubmitNewPayee()" style="flex:2;background:#000080;color:#ffff00;font-weight:700;'
+    + 'font-size:16px;padding:14px;border:none;border-radius:5px;cursor:pointer;font-family:Courier New,monospace;'
+    + 'letter-spacing:2px;">✓ SAVE &amp; CONTINUE</button>'
+    + '<button onclick="_feCancelMode()" style="flex:1;background:#ffffff;border:2px solid #aa0000;color:#aa0000;'
+    + 'font-weight:700;font-size:14px;padding:14px;border-radius:5px;cursor:pointer;font-family:Courier New,monospace;letter-spacing:1px;">CANCEL</button>'
+    + '</div></div>';
+  ov.style.display = 'flex';
+  // Cap input length at 40 chars from JS too (HTML maxlength doesn't always render correctly when set via innerHTML)
+  setTimeout(function(){
+    var bigInp = document.getElementById('fe-newpayee-input');
+    if(bigInp){
+      bigInp.maxLength = 40;
+      bigInp.focus();
+      try { bigInp.setSelectionRange(bigInp.value.length, bigInp.value.length); } catch(e){}
+    }
+  }, 80);
+}
+
+function _feSubmitNewPayee(){
+  var inp = document.getElementById('fe-newpayee-input');
+  if(!inp) return;
+  var name = (inp.value||'').trim().toUpperCase();
+  if(!name){
+    inp.style.borderColor = '#aa0000';
+    inp.focus();
+    toast('Enter a payee name',false);
+    return;
+  }
+  // Close overlay
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.innerHTML=''; ov.style.display='none'; }
+  _feIsNewPayeeName = false;
+  // Insert and start guided flow: PCOD → DESC → MM → DD → YR → AMT
+  _feInsertNew(name, '', '', true);
+}
+
+// Kept for backward compat (if anything still calls it) — funnels into the big modal.
 function _feApplyAskNew(v){
   var up = (v||'').trim().toUpperCase();
-  // Empty ENTER, Y, or YES → add new payee. Empty defaults to YES because
-  // the user already typed an unknown name and waited — that IS confirmation.
   if(up === '' || up === 'Y' || up === 'YES'){
-    // Switch to edit-newpayee mode — let user type the FULL proper name
-    // (the 4-char query was just a lookup; the real payee name is what we save)
-    _feMode = 'edit-newpayee';
-    _feIsNewPayeeName = true;
-    _feMiniLabel = 'FULL PAYEE NAME:';
-    var ov = document.getElementById('fe-overlay');
-    if(ov){ ov.innerHTML=''; ov.style.display='none'; }
-    // Pre-fill prompt with what they typed so they just keep typing
-    var inp = document.getElementById('fe-prompt');
-    if(inp){
-      inp.value = _fePendingNewPayee || '';
-      try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch(e){}
-    }
-    _feRender();
-    _feFocusPrompt();
+    _feShowNewPayeeBigPrompt(_fePendingNewPayee);
     return;
   }
   _feCancelMode();
