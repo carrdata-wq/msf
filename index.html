@@ -1441,33 +1441,33 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
     </div>
 
-    <!-- FADING RECENT-ENTRIES TABLE -->
-    <div style="border:2px solid #000080;border-radius:4px;background:#ffffff;overflow:hidden;">
-      <table id="fe-tbl" style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:16px;background:#ffffff;">
-        <thead>
-          <tr style="background:#000088;border-bottom:2px solid #000080;">
-            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:38px;letter-spacing:1px;">CNT</th>
-            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;width:88px;letter-spacing:1px;">DATE</th>
-            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">PAYEE</th>
-            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;width:70px;letter-spacing:1px;">PCODE</th>
-            <th style="padding:8px 6px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">DESC</th>
-            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:100px;letter-spacing:1px;">AMT</th>
-          </tr>
-        </thead>
-        <tbody id="fe-tbody"></tbody>
-      </table>
-    </div>
-
-    <!-- ACTION BAR for current bottom row -->
+    <!-- ACTION BAR for current row (now at top — next to current/newest row) -->
     <div id="fe-actbar" style="display:none;gap:8px;justify-content:center;flex-wrap:wrap;">
       <button onclick="_feActCopy()" style="background:#ffffff;border:2px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;">📋 COPY</button>
       <button onclick="_feFlipSign()" style="background:#ffffaa;border:2px solid #000080;color:#000080;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;">± FLIP</button>
       <button onclick="_feActDel()" style="background:#ffffff;border:2px solid #aa0000;color:#aa0000;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;">🗑 DEL</button>
     </div>
 
+    <!-- FADING RECENT-ENTRIES TABLE (newest row at TOP — keyboard-friendly) -->
+    <div style="border:2px solid #000080;border-radius:4px;background:#ffffff;overflow:hidden;">
+      <table id="fe-tbl" style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:'Courier New',monospace;font-size:16px;background:#ffffff;">
+        <thead>
+          <tr style="background:#000088;border-bottom:2px solid #000080;">
+            <th style="padding:8px 4px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;width:78px;letter-spacing:1px;">DATE</th>
+            <th style="padding:8px 4px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">PAYEE</th>
+            <th style="padding:8px 4px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;width:58px;letter-spacing:1px;">PCOD</th>
+            <th style="padding:8px 4px;text-align:left;color:#ffff00;font-size:13px;font-weight:700;letter-spacing:1px;">DESC</th>
+            <th style="padding:8px 6px;text-align:right;color:#ffff00;font-size:13px;font-weight:700;width:108px;letter-spacing:1px;">AMT</th>
+          </tr>
+        </thead>
+        <tbody id="fe-tbody"></tbody>
+      </table>
+    </div>
+
     <!-- Status / cheat hint strip -->
-    <div style="text-align:center;font-size:13px;color:#222;letter-spacing:1px;padding:6px;font-weight:700;">
-      MM · DD · YR · AMT · PCOD · DESC · &minus; · S · B · R · ? — 1-4 letters of payee
+    <div style="text-align:center;font-size:13px;color:#000080;letter-spacing:1px;padding:6px;font-weight:700;line-height:1.6;">
+      NEW ENTRY: type 1-4 letters of payee + ↵<br>
+      <span style="color:#222;font-size:12px;">EDIT: MM DD YR AMT PCOD DESC · &minus; flip · S sign · B browse · R reports · ?</span>
     </div>
   </div>
 
@@ -12213,7 +12213,9 @@ var _feKeyMap = [];                // combo picker key shortcuts
 var _feAutoApplyThreshold = 25;    // FoxBase 25-uses rule
 var _feMaxRows = 8;
 var _feIdleTimer = null;           // FoxBase auto-fire: type letters, pause, dispatch
-var _feIdleMs = 4000;              // 4 seconds — type R, wait, Reports opens
+var _feIdleMs = 2000;              // 2 seconds — type R, wait, Reports opens
+var _feGuidedFlow = [];            // queue of steps when adding a new payee
+var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 
 // ───── ENTRY POINT ─────
 function openFastEntry(){
@@ -12278,34 +12280,37 @@ function _feRenderTable(){
   if(!tbody) return;
   var start = _feRowIdx;
   var end = Math.min(LOG.length, start + _feMaxRows);
-  var slice = LOG.slice(start, end);  // newest -> older
-  slice.reverse();                    // oldest at top, newest at bottom
+  // LOG[0] is newest. Slice and DO NOT reverse — newest stays at index 0,
+  // which we render at the TOP of the table (Android keyboard covers bottom).
+  var slice = LOG.slice(start, end);
   var n = slice.length;
   var html = '';
-  var pad = _feMaxRows - n;
-  for(var p = 0; p < pad; p++){
-    html += '<tr style="opacity:0.25;"><td colspan="6" style="border-bottom:1px solid #ccc;padding:8px 6px;color:#999;font-size:13px;">·</td></tr>';
-  }
   for(var i = 0; i < n; i++){
     var e = slice[i];
-    var rowIdx = start + (n - 1 - i);
-    // Higher minimum opacity (0.65) so older rows stay readable on phone
-    var op = 0.65 + (0.35 * (i / Math.max(1, _feMaxRows - 1)));
-    var bottom = (i === n - 1);
+    var rowIdx = start + i;
+    // i=0 is newest = current edit target = brightest at TOP
+    // Fade gets dimmer going DOWN (older entries below)
+    var op = 1.00 - (0.35 * (i / Math.max(1, _feMaxRows - 1)));
+    var current = (i === 0);
     var dateStr = _feFmtDate(e.date || '');
     var amtStr = _feFmtAmt(e.amt);
     var amtColor = e.amt >= 0 ? '#004400' : '#aa0000';
-    var border = bottom ? '3px solid #ff9900' : '2px solid #888';
-    var bg = bottom ? '#fff4a3' : '#ffffff';
+    var border = current ? '3px solid #ff9900' : '2px solid #888';
+    var bg = current ? '#fff4a3' : '#ffffff';
     var cnt = e.cnt || 0;
+    var cntBadge = cnt ? ' <span style="color:#666;font-size:11px;font-weight:700;">×' + cnt + '</span>' : '';
     html += '<tr data-idx="' + rowIdx + '" onclick="_feRowTap(' + rowIdx + ')" style="opacity:' + op.toFixed(2) + ';background:' + bg + ';cursor:pointer;">'
-      + '<td style="border:' + border + ';padding:8px 6px;color:#333;text-align:right;font-size:14px;font-weight:700;">' + cnt + '</td>'
-      + '<td style="border:' + border + ';padding:8px 6px;color:#000;font-size:15px;font-weight:700;">' + dateStr + '</td>'
-      + '<td style="border:' + border + ';padding:8px 6px;color:#000080;font-weight:700;font-size:16px;">' + _feEsc(e.payee||'') + '</td>'
-      + '<td style="border:' + border + ';padding:8px 6px;color:#003366;font-weight:700;font-size:15px;">' + _feEsc(e.pcode||'') + '</td>'
-      + '<td style="border:' + border + ';padding:8px 6px;color:#000;font-size:14px;font-weight:700;">' + _feEsc(e.desc||'') + '</td>'
-      + '<td style="border:' + border + ';padding:8px 6px;color:' + amtColor + ';text-align:right;font-weight:700;font-size:16px;">' + amtStr + '</td>'
+      + '<td style="border:' + border + ';padding:8px 4px;color:#000;font-size:14px;font-weight:700;white-space:nowrap;">' + dateStr + '</td>'
+      + '<td style="border:' + border + ';padding:8px 4px;color:#000080;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(e.payee||'') + cntBadge + '</td>'
+      + '<td style="border:' + border + ';padding:8px 4px;color:#003366;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(e.pcode||'') + '</td>'
+      + '<td style="border:' + border + ';padding:8px 4px;color:#000;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(e.desc||'') + '</td>'
+      + '<td style="border:' + border + ';padding:8px 6px;color:' + amtColor + ';text-align:right;font-weight:700;font-size:18px;white-space:nowrap;">' + amtStr + '</td>'
       + '</tr>';
+  }
+  // Padding rows at the BOTTOM (less-important visual area)
+  var pad = _feMaxRows - n;
+  for(var p = 0; p < pad; p++){
+    html += '<tr style="opacity:0.25;"><td colspan="5" style="border-bottom:1px solid #ccc;padding:8px 6px;color:#999;font-size:13px;">·</td></tr>';
   }
   tbody.innerHTML = html;
   var actBar = document.getElementById('fe-actbar');
@@ -12314,7 +12319,7 @@ function _feRenderTable(){
 
 function _feRenderPrompt(){
   var ghost = document.getElementById('fe-ghost');
-  if(ghost) ghost.textContent = _feLastCommand ? '↵ or wait 4s · last: ' + _feLastCommand : 'type · wait 4s · or ↵';
+  if(ghost) ghost.textContent = _feLastCommand ? '↵ or wait 2s · last: ' + _feLastCommand : 'type · wait 2s · or ↵';
   var label = document.getElementById('fe-mini-label');
   if(label){
     label.textContent = _feMiniLabel;
@@ -12332,11 +12337,12 @@ function _feRenderPrompt(){
   }
   var inp = document.getElementById('fe-prompt');
   if(inp){
-    if(_feMode === 'cmd'){ inp.placeholder='____'; inp.maxLength=4; }
+    if(_feMode === 'cmd'){ inp.placeholder='PAYEE'; inp.maxLength=4; }
     else if(_feMode === 'edit-amt'){ inp.placeholder='0.00'; inp.maxLength=12; }
-    else if(_feMode === 'edit-mm'){ inp.placeholder='MM'; inp.maxLength=2; }
-    else if(_feMode === 'edit-dd'){ inp.placeholder='DD'; inp.maxLength=2; }
-    else if(_feMode === 'edit-yr'){ inp.placeholder='YYYY'; inp.maxLength=4; }
+    else if(_feMode === 'edit-mm'){ inp.placeholder='MM (or ↵)'; inp.maxLength=2; }
+    else if(_feMode === 'edit-dd'){ inp.placeholder='DD (or ↵)'; inp.maxLength=2; }
+    else if(_feMode === 'edit-yr'){ inp.placeholder='YYYY (or ↵)'; inp.maxLength=4; }
+    else if(_feMode === 'edit-newpayee'){ inp.placeholder='FULL NAME'; inp.maxLength=40; }
     else if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){ inp.placeholder='TYPE'; inp.maxLength=10; }
     else if(_feMode === 'ask-new'){ inp.placeholder='Y/N'; inp.maxLength=1; }
     else if(_feMode === 'pick-combo'){ inp.placeholder='#'; inp.maxLength=2; }
@@ -12369,6 +12375,13 @@ function _feTodayISO(){
 function _feClearIdleTimer(){
   if(_feIdleTimer){ clearTimeout(_feIdleTimer); _feIdleTimer = null; }
 }
+// Commands safe to auto-fire on idle (exact match required).
+// Payee lookups are deliberately NOT here — they need explicit ENTER
+// so you can type slowly on mobile without "R" firing before "RICHARDS".
+var _feAutoFireCmds = ['R','B','S','-','MM','DD','YR','AMT','PCOD','DESC','?','H'];
+// Modes where the input is unambiguous (numbers / single picks) — safe to auto-fire.
+// edit-newpayee is NOT here: full payee names take time to type and shouldn't fire early.
+var _feAutoFireModes = ['edit-mm','edit-dd','edit-yr','edit-amt'];
 function _feArmIdleTimer(){
   _feClearIdleTimer();
   _feIdleTimer = setTimeout(function(){
@@ -12377,6 +12390,14 @@ function _feArmIdleTimer(){
     if(!inp) return;
     var v = (inp.value||'').trim();
     if(!v) return;
+    var safe = false;
+    if(_feMode === 'cmd'){
+      var vu = v.toUpperCase();
+      if(_feAutoFireCmds.indexOf(vu) >= 0) safe = true;
+    } else if(_feAutoFireModes.indexOf(_feMode) >= 0){
+      safe = true;
+    }
+    if(!safe) return;
     inp.value = '';
     _feDispatchInput(v);
   }, _feIdleMs);
@@ -12445,6 +12466,8 @@ function _feCancelMode(){
   _fePickerFilter = '';
   _fePendingNewPayee = '';
   _feKeyMap = [];
+  _feGuidedFlow = [];
+  _feIsNewPayeeName = false;
   _feClearIdleTimer();
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.innerHTML=''; ov.style.display='none'; }
@@ -12464,10 +12487,57 @@ function _feDispatchInput(val){
   if(_feMode === 'edit-dd'){ _feApplyDD(val); return; }
   if(_feMode === 'edit-yr'){ _feApplyYR(val); return; }
   if(_feMode === 'edit-amt'){ _feApplyAMT(val); return; }
+  if(_feMode === 'edit-newpayee'){ _feApplyNewPayeeName(val); return; }
   if(_feMode === 'pick-pcode'){ _feApplyPcodePick(val); return; }
   if(_feMode === 'pick-desc'){ _feApplyDescPick(val); return; }
   if(_feMode === 'ask-new'){ _feApplyAskNew(val); return; }
   _feDispatchCommand(val);
+}
+
+// ───── STEP CHAINING (for guided new-payee flow) ─────
+function _feFinishStep(){
+  _feMode = 'cmd';
+  _feMiniLabel = '';
+  _feRender();
+  if(_feGuidedFlow && _feGuidedFlow.length > 0){
+    setTimeout(_feAdvanceGuided, 80);
+    return;
+  }
+  _feFocusPrompt();
+}
+
+function _feStartGuidedFlow(){
+  // Walk a NEW payee through: PCOD → DESC → MM → DD → YR → AMT → cmd
+  _feGuidedFlow = ['pcode','desc','mm','dd','yr','amt'];
+  setTimeout(_feAdvanceGuided, 80);
+}
+
+function _feAdvanceGuided(){
+  if(!_feGuidedFlow || _feGuidedFlow.length === 0){
+    _feGuidedFlow = [];
+    _feMode = 'cmd'; _feMiniLabel = '';
+    _feRender();
+    toast('New payee set up — ready', true);
+    _feFocusPrompt();
+    return;
+  }
+  var step = _feGuidedFlow.shift();
+  switch(step){
+    case 'pcode': _feStartPcodePick(); break;
+    case 'desc':  _feStartDescPick();  break;
+    case 'mm':    _feStartMM();        break;
+    case 'dd':    _feStartDD();        break;
+    case 'yr':    _feStartYR();        break;
+    case 'amt':   _feStartAMT();       break;
+    default:      _feFinishStep();
+  }
+}
+
+function _feApplyNewPayeeName(name){
+  var n = (name||'').trim().toUpperCase();
+  if(!n){ _feGuidedFlow = []; _feCancelMode(); return; }
+  _feIsNewPayeeName = false;
+  _feInsertNew(n, '', '', true);   // true = start guided flow after insert
 }
 
 function _feDispatchCommand(raw){
@@ -12497,38 +12567,51 @@ function _feStartAMT(){ if(LOG.length===0){toast('No entry yet',false);_feFocusP
 
 function _feApplyMM(val){
   var mm = parseInt(val,10);
-  if(isNaN(mm) || mm<1 || mm>12){ toast('Bad MM',false); _feCancelMode(); return; }
-  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  // ENTER on empty in guided flow = keep current month, skip to next step
+  if((!val || val === '') && _feGuidedFlow && _feGuidedFlow.length >= 0){
+    _feFinishStep(); return;
+  }
+  if(isNaN(mm) || mm<1 || mm>12){ toast('Bad MM',false); _feGuidedFlow=[]; _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   var parts = (e.date || _feTodayISO()).split('-');
   parts[1] = ('0'+mm).slice(-2);
   e.date = parts.join('-');
-  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+  saveLog();
+  _feFinishStep();
 }
 function _feApplyDD(val){
   var dd = parseInt(val,10);
-  if(isNaN(dd) || dd<1 || dd>31){ toast('Bad DD',false); _feCancelMode(); return; }
-  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  if((!val || val === '') && _feGuidedFlow && _feGuidedFlow.length >= 0){
+    _feFinishStep(); return;
+  }
+  if(isNaN(dd) || dd<1 || dd>31){ toast('Bad DD',false); _feGuidedFlow=[]; _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   var parts = (e.date || _feTodayISO()).split('-');
   parts[2] = ('0'+dd).slice(-2);
   e.date = parts.join('-');
-  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+  saveLog();
+  _feFinishStep();
 }
 function _feApplyYR(val){
   var y = parseInt(val,10);
+  if((!val || val === '') && _feGuidedFlow && _feGuidedFlow.length >= 0){
+    _feFinishStep(); return;
+  }
   // Allow 2-digit year shorthand
   if(!isNaN(y) && y >= 0 && y < 100) y = 2000 + y;
-  if(isNaN(y) || y<2000 || y>2100){ toast('Bad YR',false); _feCancelMode(); return; }
-  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  if(isNaN(y) || y<2000 || y>2100){ toast('Bad YR',false); _feGuidedFlow=[]; _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   var parts = (e.date || _feTodayISO()).split('-');
   parts[0] = String(y);
   e.date = parts.join('-');
-  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+  saveLog();
+  _feFinishStep();
 }
 function _feApplyAMT(val){
   var s = String(val||'').replace(/[^0-9.\-]/g,'');
   var n = parseFloat(s);
-  if(isNaN(n)){ toast('Bad AMT',false); _feCancelMode(); return; }
-  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  if(isNaN(n)){ toast('Bad AMT',false); _feGuidedFlow=[]; _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   // If user did not include explicit sign, preserve current row's sign;
   // if row's current amt is 0 (fresh insert), apply session default sign.
   if(s.indexOf('-') < 0){
@@ -12538,7 +12621,8 @@ function _feApplyAMT(val){
     else n = (_feSign < 0 ? -abs : abs);
   }
   e.amt = n;
-  saveLog(); _feMode='cmd'; _feMiniLabel=''; _feRender(); _feFocusPrompt();
+  saveLog();
+  _feFinishStep();
 }
 
 // ───── SIGN ─────
@@ -12635,22 +12719,22 @@ function _feApplyDescPick(val){
   _fePickerFilter = up; _feRenderPickerOverlay(); _feFocusPrompt();
 }
 function _feSetPcode(pcode){
-  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   _feShiftCnt(e, e.pcode, pcode, e.desc, e.desc);
   e.pcode = pcode;
   saveLog(); _feInvalidateIndex();
-  _feMode='cmd'; _feMiniLabel=''; _fePickerFilter='';
+  _fePickerFilter='';
   var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
-  _feRender(); _feFocusPrompt();
+  _feFinishStep();
 }
 function _feSetDesc(desc){
-  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
   _feShiftCnt(e, e.pcode, e.pcode, e.desc, desc);
   e.desc = desc;
   saveLog(); _feInvalidateIndex();
-  _feMode='cmd'; _feMiniLabel=''; _fePickerFilter='';
+  _fePickerFilter='';
   var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
-  _feRender(); _feFocusPrompt();
+  _feFinishStep();
 }
 function _feShiftCnt(entry, oldPc, newPc, oldDc, newDc){
   var oldKey = (entry.payee||'').toUpperCase() + '|' + (oldPc||'') + '|' + (oldDc||'');
@@ -12733,7 +12817,7 @@ function _feShowComboPicker(payees, q){
   _feFocusPrompt();
 }
 
-function _feInsertNew(payee, pcode, desc){
+function _feInsertNew(payee, pcode, desc, isNewPayee){
   loadLog();
   var entry = {
     id: Date.now(),
@@ -12768,8 +12852,13 @@ function _feInsertNew(payee, pcode, desc){
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.innerHTML=''; ov.style.display='none'; }
   _feRender();
-  // Auto-jump into AMT mode — the next thing user almost always needs
-  setTimeout(function(){ _feStartAMT(); }, 60);
+  // NEW PAYEE: walk through PCOD → DESC → MM → DD → YR → AMT
+  // EXISTING PAYEE: just jump to AMT (date/pcode/desc come from the matched combo)
+  if(isNewPayee){
+    _feStartGuidedFlow();
+  } else {
+    setTimeout(function(){ _feStartAMT(); }, 60);
+  }
 }
 
 // ───── ADD NEW PAYEE ─────
@@ -12795,7 +12884,21 @@ function _feAskAddNew(query){
 function _feApplyAskNew(v){
   var up = (v||'').toUpperCase();
   if(up === 'Y' || up === 'YES'){
-    _feInsertNew(_fePendingNewPayee, '', '');
+    // Switch to edit-newpayee mode — let user type the FULL proper name
+    // (the 4-char query was just a lookup; the real payee name is what we save)
+    _feMode = 'edit-newpayee';
+    _feIsNewPayeeName = true;
+    _feMiniLabel = 'FULL PAYEE NAME:';
+    var ov = document.getElementById('fe-overlay');
+    if(ov){ ov.innerHTML=''; ov.style.display='none'; }
+    // Pre-fill prompt with what they typed so they just keep typing
+    var inp = document.getElementById('fe-prompt');
+    if(inp){
+      inp.value = _fePendingNewPayee || '';
+      try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch(e){}
+    }
+    _feRender();
+    _feFocusPrompt();
     return;
   }
   _feCancelMode();
@@ -12868,9 +12971,13 @@ function _feShowHelp(){
   if(!ov) return;
   ov.innerHTML = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:14px;max-width:520px;font-family:Courier New,monospace;color:#fff;font-size:13px;line-height:1.55;max-height:90vh;overflow-y:auto;">'
     + '<div style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:10px;">FAST ENTRY COMMANDS</div>'
-    + '<div style="color:#aaccff;font-size:11px;margin-bottom:10px;">4-letter prompt · ENTER fires · ESC cancels</div>'
-    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">PAYEE</span> type 1-4 letters of payee name → match</div>'
-    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">MM</span> edit month of current row</div>'
+    + '<div style="background:#003300;border:1px solid #00ff88;padding:8px;border-radius:4px;margin-bottom:12px;">'
+    + '<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:4px;">▶ TO START A NEW ENTRY</div>'
+    + '<div style="font-size:13px;">Type 1-4 letters of the payee name and press ENTER. If it matches existing history with 25+ uses, it auto-applies. Otherwise pick from the combo list — or "+ NEW PAYEE" if no match.</div>'
+    + '</div>'
+    + '<div style="color:#aaccff;font-size:11px;margin-bottom:10px;">Commands fire on ENTER, or auto-fire 2s after typing (single letters / known codes only — payees always need ENTER).</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">PAYEE</span> 1-4 letters → match → new entry</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">MM</span> edit month of bottom row</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DD</span> edit day</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">YR</span> edit year (4-digit or 2-digit)</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">AMT</span> edit amount (preserves sign)</div>'
