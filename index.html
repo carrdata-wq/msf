@@ -1469,7 +1469,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <!-- Status / cheat hint strip -->
     <div style="text-align:center;font-size:13px;color:#000080;letter-spacing:1px;padding:6px;font-weight:700;line-height:1.6;">
       NEW ENTRY: type 1-4 letters of payee · wait 2s or ↵<br>
-      <span style="color:#222;font-size:12px;">EDIT: MM DD YR AMT PCOD DESC · &minus; flip · S sign · B browse · R reports · ?</span>
+      <span style="color:#222;font-size:12px;">EDIT: MM DD YR AMT PCOD DESC · &minus; flip · S sign · ↑↓ browse · R reports · ?</span>
     </div>
   </div>
 
@@ -12487,13 +12487,22 @@ function _feHandlePromptKey(e){
   if(e.key === 'ArrowDown'){
     e.preventDefault();
     _feClearIdleTimer();
-    _feCancelMode();
+    if(_feMode === 'cmd'){
+      // Visual DOWN = older entries (now below the current row at top)
+      _feBrowse(1);
+    } else {
+      // In edit/picker modes, arrow-down still bails out
+      _feCancelMode();
+    }
     return;
   }
-  if(e.key === 'ArrowUp' && _feMode === 'cmd'){
+  if(e.key === 'ArrowUp'){
     e.preventDefault();
     _feClearIdleTimer();
-    _feBrowse(1);
+    if(_feMode === 'cmd'){
+      // Visual UP = newer entries (back toward the current row at top)
+      _feBrowse(-1);
+    }
     return;
   }
 }
@@ -12687,30 +12696,28 @@ function _feApplyAMT(val){
 
 // ───── SIGN ─────
 function _feFlipSign(){
-  if(LOG.length===0 || _feRowIdx>=LOG.length){ toast('No entry to flip',false); _feFocusPrompt(); return; }
+  if(LOG.length===0){ toast('No entry to flip',false); _feFocusPrompt(); return; }
+  // Defensive: ensure _feRowIdx is within range (= the recno() sanity check)
+  if(_feRowIdx < 0 || _feRowIdx >= LOG.length) _feRowIdx = 0;
+  // Ensure overlay isn't accidentally open from a prior mode
+  if(_feMode === 'cmd'){
+    var ov = document.getElementById('fe-overlay');
+    if(ov && ov.style.display !== 'none'){ ov.style.display='none'; ov.innerHTML=''; }
+  }
   var e = LOG[_feRowIdx];
   // Zero amount: flipping -0/+0 has no visible effect. Fall back to flipping
   // the session sign so the NEXT amt entry will use the opposite sign.
   if(!e.amt || e.amt === 0){
     _feSign = -_feSign;
-    toast('AMT is 0 — flipped session to ' + (_feSign>0?'+ INCOME':'– EXPENSE'), true);
+    toast('Row '+(_feRowIdx+1)+' amt is 0 — session → ' + (_feSign>0?'+ INCOME':'– EXPENSE'), true);
     _feRender(); _feFocusPrompt();
     return;
   }
   e.amt = -e.amt;
   saveLog();
   _feRender();
-  toast('Flipped → ' + _feFmtAmt(e.amt), true);
-  // Brief flash on the affected row so the change is visible
-  setTimeout(function(){
-    var row = document.querySelector('#fe-tbody tr[data-idx="' + _feRowIdx + '"]');
-    if(row){
-      var origBg = row.style.background;
-      row.style.transition = 'background-color 0.4s';
-      row.style.background = '#ffff66';
-      setTimeout(function(){ row.style.background = origBg || ''; }, 250);
-    }
-  }, 20);
+  // Show payee + new amount so user can verify the right row flipped
+  toast('Flipped #'+(_feRowIdx+1)+' '+(e.payee||'').slice(0,18)+' → '+_feFmtAmt(e.amt), true);
   _feFocusPrompt();
 }
 function _feToggleSessionSign(){
@@ -13098,8 +13105,9 @@ function _feShowHelp(){
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DESC</span> change desc (type letters to narrow)</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">&minus;</span> flip sign of current row</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">S</span> toggle session default sign (+/&minus;)</div>'
-    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">B / ↑</span> browse back through older entries</div>'
-    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">↓ / ESC</span> cancel current mode</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">↓ / B</span> browse to older entries (down through history)</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">↑</span> browse back to newer (up toward current)</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">ESC</span> cancel current mode</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">R</span> open Reports</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">↵</span> on empty prompt — repeat last command</div>'
     + '<div style="color:#ffff00;margin-top:12px;font-weight:700;">⚡ 25-USES RULE</div>'
