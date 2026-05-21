@@ -1454,6 +1454,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="_feActDel()" style="background:#ffffff;border:2px solid #aa0000;color:#aa0000;font-family:'Courier New',monospace;font-size:15px;font-weight:700;padding:9px 16px;border-radius:4px;cursor:pointer;">🗑 DEL</button>
     </div>
 
+    <!-- MERGE-CONFIRM banner (self-cleaning picker) -->
+    <div id="fe-merge" style="display:none;margin-bottom:6px;"></div>
+
     <!-- FADING RECENT-ENTRIES TABLE (newest row at TOP — keyboard-friendly) -->
     <div style="border:2px solid #000080;border-radius:4px;background:#ffffff;overflow:hidden;">
       <table id="fe-tbl" style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:'Courier New',monospace;font-size:16px;background:#ffffff;">
@@ -12218,6 +12221,9 @@ var _fePickerItems = [];
 var _fePickerFilter = '';
 var _fePendingNewPayee = '';
 var _feKeyMap = [];                // combo picker key shortcuts
+var _feComboPickerRows = [];       // flat list of combo rows in picker order
+var _feMergeChecks = [];           // indices of rows ticked for merge
+var _feMergePending = null;        // {keeper, losers[]} awaiting soft confirm
 var _feAutoApplyThreshold = 25;    // FoxBase 25-uses rule
 var _feMaxRows = 8;
 var _feIdleTimer = null;           // FoxBase auto-fire: type letters, pause, dispatch
@@ -12253,6 +12259,7 @@ function openFastEntry(){
   _feLoadComboCnt();
   _feLoadHistory();
   _feLoadDefaults();
+  _feLoadPickMem();
   loadLog();
   if(_feIndexDirty) _feBuildIndex();
   _fePickerFilter = '';
@@ -12338,7 +12345,7 @@ function _feBuildIndex(){
 function _feInvalidateIndex(){ _feIndexDirty = true; }
 
 // ───── RENDERING ─────
-function _feRender(){ _feRenderTable(); _feRenderPrompt(); }
+function _feRender(){ _feRenderTable(); _feRenderPrompt(); _feRenderMergeBanner(); }
 
 function _feRenderTable(){
   var tbody = document.getElementById('fe-tbody');
@@ -12517,6 +12524,8 @@ function _feArmIdleTimer(){
 function _feHandleInput(val){
   // MASKED LINE — fill-day: mirror digits into the day field, 2 digits auto-jumps
   if(_feMode === 'fill-day'){
+    // typing the day = "leave the merge for next time" — dismiss it quietly
+    if(_feMergePending && val){ _feMergePending = null; _feRenderMergeBanner(); }
     _feDraftInput = (val||'').replace(/[^0-9]/g,'').slice(0,2);
     _feRenderTable();
     if(/^[0-9]{2}$/.test(_feDraftInput)){
@@ -12598,7 +12607,7 @@ function _feHandlePromptKey(e){
         e.preventDefault();
         _feClearIdleTimer();
         var m = _feKeyMap[ki];
-        _feInsertNew(m.payee, m.pcode, m.desc);
+        _fePickCombo(typeof m.idx === 'number' ? m.idx : ki);
         return;
       }
     }
@@ -13037,6 +13046,36 @@ function _feToggleSessionSign(){
 }
 
 // ───── PCODE / DESC PICKERS ─────
+// ───── PICKER MEMORY: remember last pcode/desc per payee, pin to top ─────
+var _fePickMem = {};      // { PAYEE: {pcode:'X', desc:'Y'} }
+var _fePickPayee = '';    // payee context for the picker currently open
+function _feLoadPickMem(){
+  try { _fePickMem = JSON.parse(localStorage.getItem('mx_fe_pickmem')||'{}'); }
+  catch(e){ _fePickMem = {}; }
+}
+function _feSavePickMem(){
+  try { localStorage.setItem('mx_fe_pickmem', JSON.stringify(_fePickMem)); } catch(e){}
+}
+function _feRememberPick(payee, kind, val){
+  if(!payee || !val) return;
+  var pu = payee.toUpperCase();
+  if(!_fePickMem[pu]) _fePickMem[pu] = {};
+  _fePickMem[pu][kind] = val;
+  _feSavePickMem();
+}
+// Move this payee's last-used value to the front of the list
+function _fePinLastUsed(items, payee, kind){
+  if(!payee) return items;
+  var pu = payee.toUpperCase();
+  if(!_fePickMem[pu] || !_fePickMem[pu][kind]) return items;
+  var last = _fePickMem[pu][kind];
+  var out = items.slice();
+  var idx = out.indexOf(last);
+  if(idx > 0){ out.splice(idx,1); out.unshift(last); }
+  else if(idx < 0){ out.unshift(last); }
+  return out;
+}
+
 function _feGetAllPcodes(){
   var arr = [];
   var sel = document.getElementById('p-pcode');
@@ -13058,12 +13097,18 @@ function _feGetAllDescs(){
 
 function _feStartPcodePick(){
   if(!_feDraft && LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
-  _feMode='pick-pcode'; _feMiniLabel='PCOD:'; _fePickerItems=_feGetAllPcodes(); _fePickerFilter='';
+  _fePickPayee = _feDraft ? _feDraft.payee : (LOG[_feRowIdx] ? LOG[_feRowIdx].payee : '');
+  _feMode='pick-pcode'; _feMiniLabel='PCOD:';
+  _fePickerItems = _fePinLastUsed(_feGetAllPcodes(), _fePickPayee, 'pcode');
+  _fePickerFilter='';
   _feRender(); _feRenderPickerOverlay(); _feFocusPrompt();
 }
 function _feStartDescPick(){
   if(!_feDraft && LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
-  _feMode='pick-desc'; _feMiniLabel='DESC:'; _fePickerItems=_feGetAllDescs(); _fePickerFilter='';
+  _fePickPayee = _feDraft ? _feDraft.payee : (LOG[_feRowIdx] ? LOG[_feRowIdx].payee : '');
+  _feMode='pick-desc'; _feMiniLabel='DESC:';
+  _fePickerItems = _fePinLastUsed(_feGetAllDescs(), _fePickPayee, 'desc');
+  _fePickerFilter='';
   _feRender(); _feRenderPickerOverlay(); _feFocusPrompt();
 }
 
@@ -13081,12 +13126,19 @@ function _feRenderPickerOverlay(){
     return;
   }
   var title = (_feMode === 'pick-pcode' ? 'PCOD' : 'DESC');
+  var memVal = (_fePickPayee && _fePickMem[_fePickPayee.toUpperCase()])
+    ? _fePickMem[_fePickPayee.toUpperCase()][_feMode === 'pick-pcode' ? 'pcode' : 'desc'] : '';
   var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:80vh;display:flex;flex-direction:column;">'
     + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">' + title + ' — type letters to narrow · auto-applies when 1 left · ESC cancels</div>'
     + '<div style="display:flex;flex-wrap:wrap;gap:4px;overflow-y:auto;">';
   matches.slice(0, 100).forEach(function(it){
     var esc = _feEsc(it).replace(/'/g, "\\'");
-    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:#001144;border:1px solid #4466cc;color:#00ffff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:6px 10px;border-radius:3px;cursor:pointer;">' + _feEsc(it) + '</button>';
+    var isLast = (memVal && it === memVal && !q);
+    var bg = isLast ? '#0d9488' : '#001144';
+    var bd = isLast ? '2px solid #2dd4bf' : '1px solid #4466cc';
+    var col = isLast ? '#ffffff' : '#00ffff';
+    var star = isLast ? '\u2605 ' : '';
+    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:6px 10px;border-radius:3px;cursor:pointer;">' + star + _feEsc(it) + '</button>';
   });
   if(!matches.length){
     html += '<div style="color:#ff6666;padding:8px;">No matches for "' + _feEsc(_fePickerFilter) + '"</div>';
@@ -13118,6 +13170,7 @@ function _feApplyDescPick(val){
 function _feSetPcode(pcode){
   _fePickerFilter='';
   var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
+  _feRememberPick(_fePickPayee, 'pcode', pcode);
   if(_feDraft){                       // MASKED LINE: write into the draft
     _feDraft.pcode = pcode;
     _feFinishStep();
@@ -13132,6 +13185,7 @@ function _feSetPcode(pcode){
 function _feSetDesc(desc){
   _fePickerFilter='';
   var ov=document.getElementById('fe-overlay'); if(ov){ov.style.display='none';ov.innerHTML='';}
+  _feRememberPick(_fePickPayee, 'desc', desc);
   if(_feDraft){                       // MASKED LINE: write into the draft
     _feDraft.desc = desc;
     _feFinishStep();
@@ -13193,27 +13247,32 @@ function _feShowComboPicker(payees, q){
   var ov = document.getElementById('fe-overlay');
   if(!ov) return;
   _feKeyMap = [];
+  _feComboPickerRows = [];
+  _feMergeChecks = [];
   var keyIdx = 0;
   var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:620px;width:100%;max-height:82vh;display:flex;flex-direction:column;">'
-    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">PAYEE MATCH for "' + _feEsc(q) + '" — type # or tap</div>'
+    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:3px;">PAYEE MATCH for "' + _feEsc(q) + '" — tap row to pick</div>'
+    + '<div style="color:#2dd4bf;font-size:11px;margin-bottom:8px;">✓ tick the green box on dupes of the same vendor — you\'ll be asked to merge them</div>'
     + '<div style="overflow-y:auto;flex:1;">';
   payees.slice(0, 12).forEach(function(p){
     var combos = _fePayeeIndex[p].slice(0, 5);
     html += '<div style="margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed #335;">'
          + '<div style="color:#ffff00;font-size:14px;font-weight:700;margin-bottom:4px;letter-spacing:1px;">' + _feEsc(p) + '</div>';
     combos.forEach(function(c){
+      var idx = _feComboPickerRows.length;
+      _feComboPickerRows.push({payee:p, pcode:c.pcode, desc:c.desc, cnt:c.cnt});
       keyIdx++;
       var k = keyIdx <= 9 ? String(keyIdx) : String.fromCharCode(64 + (keyIdx - 9));
-      _feKeyMap.push({k:k, payee:p, pcode:c.pcode, desc:c.desc});
-      var pEsc = _feEsc(p).replace(/'/g,"\\'");
-      var pcEsc = _feEsc(c.pcode).replace(/'/g,"\\'");
-      var dcEsc = _feEsc(c.desc).replace(/'/g,"\\'");
-      html += '<button onclick="_feBeginDraft(\''+pEsc+'\',\''+pcEsc+'\',\''+dcEsc+'\')" style="display:block;width:100%;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:12px;padding:7px 10px;border-radius:3px;cursor:pointer;margin-bottom:3px;">'
+      _feKeyMap.push({k:k, payee:p, pcode:c.pcode, desc:c.desc, idx:idx});
+      html += '<div style="display:flex;align-items:stretch;gap:5px;margin-bottom:3px;">'
+        + '<span id="fechk'+idx+'" onclick="_feToggleMergeCheck('+idx+')" title="mark as same vendor" '
+        + 'style="flex:0 0 30px;display:flex;align-items:center;justify-content:center;background:#0a1a3a;border:2px solid #2dd4bf;border-radius:3px;cursor:pointer;font-weight:700;font-size:16px;color:#2dd4bf;"></span>'
+        + '<button onclick="_fePickCombo('+idx+')" style="flex:1;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:12px;padding:7px 10px;border-radius:3px;cursor:pointer;">'
         + '<span style="display:inline-block;width:24px;color:#ffff00;font-weight:700;">[' + k + ']</span> '
         + '<span style="color:#00ffff;font-weight:700;">' + _feEsc(c.pcode||'(none)') + '</span> · '
         + '<span style="color:#fff;">' + _feEsc(c.desc||'(none)') + '</span>'
         + '<span style="color:#aaaaff;float:right;">×' + c.cnt + '</span>'
-        + '</button>';
+        + '</button></div>';
     });
     html += '</div>';
   });
@@ -13227,6 +13286,96 @@ function _feShowComboPicker(payees, q){
   _feMiniLabel = 'PICK #:';
   _feRenderPrompt();
   _feFocusPrompt();
+}
+
+// Toggle a row's green merge checkbox
+function _feToggleMergeCheck(idx){
+  var pos = _feMergeChecks.indexOf(idx);
+  if(pos >= 0) _feMergeChecks.splice(pos,1);
+  else _feMergeChecks.push(idx);
+  var el = document.getElementById('fechk'+idx);
+  if(el){
+    var on = _feMergeChecks.indexOf(idx) >= 0;
+    el.style.background = on ? '#22c55e' : '#0a1a3a';
+    el.textContent = on ? '\u2713' : '';
+    el.style.color = on ? '#ffffff' : '#2dd4bf';
+  }
+}
+
+// Pick a combo for the entry; evaluate any merge checks first
+function _fePickCombo(idx){
+  var row = _feComboPickerRows[idx];
+  if(!row) return;
+  _feMergePending = null;
+  if(_feMergeChecks.length >= 2){
+    var payeeMax = {};
+    _feMergeChecks.forEach(function(ci){
+      var r = _feComboPickerRows[ci];
+      if(!r) return;
+      if(!(r.payee in payeeMax) || r.cnt > payeeMax[r.payee]) payeeMax[r.payee] = r.cnt;
+    });
+    var names = Object.keys(payeeMax);
+    if(names.length >= 2){
+      var keeper = names[0];
+      names.forEach(function(nm){ if(payeeMax[nm] > payeeMax[keeper]) keeper = nm; });
+      var losers = names.filter(function(nm){ return nm !== keeper; });
+      _feMergePending = { keeper: keeper, losers: losers };
+    }
+  }
+  _feMergeChecks = [];
+  _feBeginDraft(row.payee, row.pcode, row.desc);
+}
+
+// Permanently fold loser payee names into the keeper — LOG + history baseline
+function _feDoMerge(keeper, losers){
+  if(!keeper || !losers || !losers.length){ _feMergePending = null; _feRender(); return; }
+  var loserSet = {};
+  losers.forEach(function(l){ loserSet[l] = true; });
+  var changed = 0;
+  loadLog();
+  for(var i=0;i<LOG.length;i++){
+    if(loserSet[LOG[i].payee]){ LOG[i].payee = keeper; changed++; }
+  }
+  if(changed) saveLog();
+  var newHist = {};
+  for(var k in _feHistoryCnt){
+    var bits = k.split('|');
+    var p = bits[0];
+    var rest = bits.slice(1).join('|');
+    if(loserSet[p]){ p = keeper; changed++; }
+    var nk = p + '|' + rest;
+    newHist[nk] = (newHist[nk]||0) + _feHistoryCnt[k];
+  }
+  _feHistoryCnt = newHist;
+  try { localStorage.setItem('mx_history_cnt', JSON.stringify(_feHistoryCnt)); } catch(e){}
+  _feInvalidateIndex();
+  _feBuildIndex();
+  _feMergePending = null;
+  toast('MERGED \u2192 ' + keeper + '  (' + changed + ' records)', true);
+  _feRender();
+  _feFocusPrompt();
+}
+function _feDismissMerge(){ _feMergePending = null; _feRender(); _feFocusPrompt(); }
+
+// Render the soft merge-confirm banner (non-blocking)
+function _feRenderMergeBanner(){
+  var el = document.getElementById('fe-merge');
+  if(!el) return;
+  if(!_feMergePending){ el.style.display='none'; el.innerHTML=''; return; }
+  var mp = _feMergePending;
+  var what = mp.losers.length === 1
+    ? '"' + _feEsc(mp.losers[0]) + '"'
+    : mp.losers.length + ' names';
+  el.innerHTML =
+    '<div style="background:#dbeafe;border:3px solid #1d4ed8;border-radius:5px;padding:8px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+    + '<span style="color:#1d4ed8;font-weight:700;font-size:13px;flex:1;min-width:200px;">'
+    + 'MERGE? fold ' + what + ' into <span style="color:#0d9488;">' + _feEsc(mp.keeper) + '</span></span>'
+    + '<button onclick="_feDoMerge(\''+mp.keeper.replace(/\'/g,"\\'")+'\',[\''+mp.losers.map(function(l){return l.replace(/\'/g,"\\'");}).join("','")+'\'])" '
+    + 'style="background:#0d9488;border:none;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:7px 16px;border-radius:4px;cursor:pointer;">YES</button>'
+    + '<button onclick="_feDismissMerge()" '
+    + 'style="background:#fff;border:2px solid #94a3b8;color:#475569;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:6px 16px;border-radius:4px;cursor:pointer;">NOT NOW</button>'
+    + '</div>';
+  el.style.display = 'block';
 }
 
 function _feInsertNew(payee, pcode, desc, isNewPayee){
