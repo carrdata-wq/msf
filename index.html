@@ -1753,8 +1753,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <!-- Mileage history -->
     <div class="card" style="margin-top:8px;">
-      <div class="card-title blue">Recent Mileage Logs</div>
-      <div id="mile-history"></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="card-title blue" style="flex:1;margin:0;">Recent Mileage Logs</div>
+        <button onclick="importMileagePrompt()" title="Import mileage from CSV" style="background:#002a3a;color:#00ffff;border:1px solid #00ffff;padding:7px 12px;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">📥 IMPORT</button>
+        <button onclick="emailMileageCSV()" title="Email mileage log to save it" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 12px;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">📧 EMAIL</button>
+      </div>
+      <div id="mile-history" style="margin-top:6px;"></div>
     </div>
     <!-- Mileage vertical chart -->
     <div class="card" style="margin-top:8px;">
@@ -3778,11 +3782,14 @@ function renderMileHistory(){
   var h='';
   if(!recent.length){document.getElementById('mile-history').innerHTML='<div style="color:var(--dim);font-size:14px;">No mileage logged yet</div>';return;}
   recent.forEach(function(m,i){
-    var prev=miles[miles.indexOf(m)-1];
+    var idx=miles.indexOf(m);
+    var prev=null;
+    for(var j=idx-1;j>=0;j--){ if((miles[j].veh||'')===(m.veh||'')){prev=miles[j];break;} }
     var driven=prev?m.odo-prev.odo:0;
     h+='<div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:6px;">'
       +'<div style="flex:1;font-family:Courier New,monospace;font-size:13px;">'
       +'<span style="color:var(--yellow);">'+m.date+'</span>'
+      +' <span style="color:#ff9933;font-weight:700;">'+(m.veh||'')+'</span>'
       +' <span style="color:#00ffff;">'+m.odo.toLocaleString()+' mi</span>'
       +(driven>0?' <span style="color:#00ff88;">+'+driven.toLocaleString()+'</span>':'')
       +(m.notes?' <span style="color:#aaaacc;font-size:14px;">'+m.notes+'</span>':'')
@@ -3804,33 +3811,195 @@ function renderMileChart(){
   var periods=[];
   for(var i=1;i<mileData.length;i++){
     var prev=mileData[i-1],curr=mileData[i];
+    if((prev.veh||'')!==(curr.veh||''))continue;       // skip cross-vehicle jumps
+    if(curr.date===prev.date)continue;                  // skip same-day pairs (no per-day rate)
     var driven=curr.odo-prev.odo;
+    if(driven<=0)continue;                              // skip bad/negative deltas
     var days=Math.max(1,Math.round((new Date(curr.date)-new Date(prev.date))/(1000*60*60*24)));
-    periods.push({label:curr.date.slice(5),driven:driven,days:days,mpd:driven/days});
+    periods.push({label:curr.date.slice(5),veh:curr.veh||'',driven:driven,days:days,mpd:driven/days});
   }
+  if(!periods.length){el.innerHTML='<div style="color:#888;font-size:13px;padding:8px;">Need 2+ readings on the same vehicle for chart.</div>';return;}
   var maxMpd=Math.max.apply(null,periods.map(function(p){return p.mpd;}));
   var chartH=120;
-  var html='<div style="display:flex;align-items:flex-end;gap:4px;height:'+(chartH+50)+'px;padding:4px 2px 0;overflow-x:auto;">';
+  var html='<div style="display:flex;align-items:flex-end;gap:4px;height:'+(chartH+62)+'px;padding:4px 2px 0;overflow-x:auto;">';
   periods.forEach(function(p){
     var barH=maxMpd>0?Math.max(4,Math.round((p.mpd/maxMpd)*chartH)):4;
     var barColor=p.mpd>70?'#ff4444':p.mpd>50?'#ffaa00':'#00ff88';
     html+='<div style="display:flex;flex-direction:column;align-items:center;min-width:48px;flex:1;">'
       +'<div style="color:'+barColor+';font-size:11px;font-weight:700;margin-bottom:2px;">'+p.mpd.toFixed(0)+'</div>'
       +'<div style="background:'+barColor+';width:80%;height:'+barH+'px;border-radius:3px 3px 0 0;"></div>'
-      +'<div style="color:#aaaacc;font-size:9px;margin-top:3px;text-align:center;">'+p.label+'</div>'
+      +'<div style="color:#ff9933;font-size:9px;margin-top:3px;text-align:center;font-weight:700;">'+p.veh+'</div>'
+      +'<div style="color:#aaaacc;font-size:9px;text-align:center;">'+p.label+'</div>'
       +'<div style="color:#888;font-size:9px;">'+p.driven.toLocaleString()+'mi</div>'
       +'</div>';
   });
   html+='</div>';
-  var totalDriven=mileData[mileData.length-1].odo-mileData[0].odo;
-  var spanDays=Math.max(1,Math.round((new Date(mileData[mileData.length-1].date)-new Date(mileData[0].date))/(1000*60*60*24)));
-  var avgMpd=totalDriven/spanDays;
+  var totalDriven=periods.reduce(function(s,p){return s+p.driven;},0);
+  var spanDays=periods.reduce(function(s,p){return s+p.days;},0);
+  var avgMpd=spanDays>0?totalDriven/spanDays:0;
   html+='<div style="background:#000066;border-radius:4px;padding:7px;margin-top:6px;text-align:center;font-family:Courier New,monospace;">'
     +'<span style="color:#ccccff;font-size:12px;">AVG: </span>'
     +'<span style="color:#ffff00;font-weight:700;font-size:15px;">'+avgMpd.toFixed(1)+' mi/day</span>'
     +'<span style="color:#aaaacc;font-size:11px;"> · '+totalDriven.toLocaleString()+' mi total · ~'+Math.round(avgMpd*365).toLocaleString()+' mi/yr</span>'
     +'</div>';
   el.innerHTML=html;
+}
+
+// ── EMAIL / SAVE MILEAGE LOG ──
+function emailMileageCSV(){
+  var d=load();
+  var miles=((d.fuel&&d.fuel.miles)||[]).slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+  if(!miles.length){toast('No mileage logged to email',false);return;}
+  function q(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"';}
+  var lines=['"DATE","ODOMETER","MILES DRIVEN","VEHICLE","NOTES"'];
+  miles.forEach(function(m,i){
+    var driven=i>0?(m.odo-miles[i-1].odo):0;
+    lines.push(q(m.date)+','+q(m.odo)+','+q(driven>0?driven:'')+','+q(m.veh)+','+q(m.notes));
+  });
+  var totalDriven=miles.length>1?(miles[miles.length-1].odo-miles[0].odo):0;
+  var csv=lines.join('\r\n')
+    +'\r\n'
+    +'\r\n"TOTAL MILES DRIVEN",'+q(totalDriven)
+    +'\r\n"READINGS",'+q(miles.length)
+    +'\r\n"SPAN",'+q(miles[0].date+' to '+miles[miles.length-1].date);
+  var dateStr=today();
+  var subject='NOWMILE.TXT — '+dateStr+' ('+miles.length+' readings)';
+  var toEmail='tristancarrington1@gmail.com';
+  var popupHTML='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">🚗 NOWMILE.TXT — '+miles.length+' readings · '+dateStr+'</div>'
+    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address</div>'
+    +'<textarea id="mile-csv-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+csv+'</textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:8px;">'
+    +'<button onclick="shareMileageCSV()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE</button>'
+    +'<button onclick="downloadMileageCSV()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">⬇ NOWMILE.TXT</button>'
+    +'<button onclick="copyMileageCSV()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📋 COPY</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
+    +'</div></div>';
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
+  overlay.innerHTML=popupHTML;
+  overlay.dataset.subject=subject;
+  overlay.dataset.toEmail=toEmail;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var ta=document.getElementById('mile-csv-text');if(ta){ta.focus();ta.select();}},400);
+}
+function copyMileageCSV(){
+  var ta=document.getElementById('mile-csv-text');if(!ta)return;
+  ta.focus();ta.select();
+  try{document.execCommand('copy');toast('Copied — open Gmail and paste ✓',true);}
+  catch(e){toast('Text selected — long-press and tap COPY',true);}
+}
+function downloadMileageCSV(){
+  var ta=document.getElementById('mile-csv-text');
+  if(!ta)return;
+  var blob=new Blob([ta.value],{type:'text/plain'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='NOWMILE.TXT';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  toast('NOWMILE.TXT downloaded — check Downloads',true);
+}
+function shareMileageCSV(){
+  var ta=document.getElementById('mile-csv-text');if(!ta){toast('No data to share',false);return;}
+  var overlay=ta.closest('.modal-overlay');
+  var subject=(overlay&&overlay.dataset.subject)||'NOWMILE.TXT — '+today();
+  var toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
+  var body=ta.value;
+  ta.focus();ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  if(gmailUrl.length<7800){
+    var win=window.open(gmailUrl,'_blank');
+    if(!win)window.location.href=gmailUrl;
+    toast('✓ Gmail opened with NOWMILE.TXT — tap Send',true);
+  } else {
+    var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject);
+    var win=window.open(u,'_blank');
+    if(!win)window.location.href=u;
+    toast('📋 Copied · Gmail opened — paste body & Send',true);
+  }
+}
+
+// ── IMPORT MILEAGE FROM CSV ──
+function importMileagePrompt(){
+  var popupHTML='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">📥 IMPORT MILEAGE</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">Paste CSV — header row:</div>'
+    +'<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">"DATE","ODOMETER","MILES DRIVEN","VEHICLE","NOTES"</div>'
+    +'<textarea id="mile-import-text" placeholder="Paste your CSV rows here..." style="width:100%;height:180px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;"></textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:8px;">'
+    +'<button onclick="doImportMileage()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">✓ IMPORT</button>'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
+    +'</div></div>';
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
+  overlay.innerHTML=popupHTML;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var ta=document.getElementById('mile-import-text');if(ta)ta.focus();},400);
+}
+function _parseCsvLine(line){
+  var out=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(inQ){
+      if(c==='"'&&line[i+1]==='"'){cur+='"';i++;}
+      else if(c==='"'){inQ=false;}
+      else cur+=c;
+    } else {
+      if(c==='"')inQ=true;
+      else if(c===','){out.push(cur);cur='';}
+      else cur+=c;
+    }
+  }
+  out.push(cur);
+  return out.map(function(s){return s.trim();});
+}
+function doImportMileage(){
+  var ta=document.getElementById('mile-import-text');
+  if(!ta){return;}
+  var raw=(ta.value||'').trim();
+  if(!raw){toast('Nothing to import — paste CSV first',false);return;}
+  var rows=raw.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(!rows.length){toast('No rows found',false);return;}
+  // detect & skip header row
+  var first=_parseCsvLine(rows[0]).map(function(s){return s.toUpperCase();});
+  var hasHeader=first.indexOf('DATE')>=0||first.indexOf('ODOMETER')>=0;
+  var dataRows=hasHeader?rows.slice(1):rows;
+  var d=load();
+  if(!d.fuel)d.fuel={logs:[],miles:[]};
+  if(!d.fuel.miles)d.fuel.miles=[];
+  // existing keys for dedup: date|odo
+  var seen={};
+  d.fuel.miles.forEach(function(m){seen[(m.date||'')+'|'+m.odo+'|'+(m.veh||'')]=true;});
+  var added=0,skipped=0,bad=0;
+  dataRows.forEach(function(line){
+    var c=_parseCsvLine(line);
+    var date=(c[0]||'').trim();
+    var odo=parseFloat((c[1]||'').replace(/[^0-9.\-]/g,''))||0;
+    var veh=((c[3]||'TRUCK').trim()||'TRUCK').toUpperCase();
+    var notes=(c[4]||'').trim();
+    if(!date||!odo){bad++;return;}
+    var key=date+'|'+odo+'|'+veh;
+    if(seen[key]){skipped++;return;}
+    seen[key]=true;
+    d.fuel.miles.push({id:nextId(d.fuel.miles),date:date,odo:odo,veh:veh,notes:notes});
+    added++;
+  });
+  d.fuel.miles.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+  save(d);
+  var overlay=ta.closest('.modal-overlay');
+  if(overlay)overlay.remove();
+  renderMileHistory();
+  var msg='✓ '+added+' added';
+  if(skipped)msg+=' · '+skipped+' dup skipped';
+  if(bad)msg+=' · '+bad+' bad rows';
+  toast(msg,added>0);
 }
 
 function editMileage(id){
