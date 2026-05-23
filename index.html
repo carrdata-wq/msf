@@ -1753,12 +1753,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <!-- Mileage history -->
     <div class="card" style="margin-top:8px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div class="card-title blue" style="flex:1;margin:0;">Recent Mileage Logs</div>
-        <button onclick="importMileagePrompt()" title="Import mileage from CSV" style="background:#002a3a;color:#00ffff;border:1px solid #00ffff;padding:7px 12px;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">📥 IMPORT</button>
-        <button onclick="emailMileageCSV()" title="Email mileage log to save it" style="background:#3a2e00;color:#ffff00;border:1px solid #ffff00;padding:7px 12px;border-radius:4px;font-family:Courier New,monospace;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">📧 EMAIL</button>
-      </div>
-      <div id="mile-history" style="margin-top:6px;"></div>
+      <div class="card-title blue">Recent Mileage Logs</div>
+      <div id="mile-history"></div>
     </div>
     <!-- Mileage vertical chart -->
     <div class="card" style="margin-top:8px;">
@@ -3782,14 +3778,11 @@ function renderMileHistory(){
   var h='';
   if(!recent.length){document.getElementById('mile-history').innerHTML='<div style="color:var(--dim);font-size:14px;">No mileage logged yet</div>';return;}
   recent.forEach(function(m,i){
-    var idx=miles.indexOf(m);
-    var prev=null;
-    for(var j=idx-1;j>=0;j--){ if((miles[j].veh||'')===(m.veh||'')){prev=miles[j];break;} }
+    var prev=miles[miles.indexOf(m)-1];
     var driven=prev?m.odo-prev.odo:0;
     h+='<div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:6px;">'
       +'<div style="flex:1;font-family:Courier New,monospace;font-size:13px;">'
       +'<span style="color:var(--yellow);">'+m.date+'</span>'
-      +' <span style="color:#ff9933;font-weight:700;">'+(m.veh||'')+'</span>'
       +' <span style="color:#00ffff;">'+m.odo.toLocaleString()+' mi</span>'
       +(driven>0?' <span style="color:#00ff88;">+'+driven.toLocaleString()+'</span>':'')
       +(m.notes?' <span style="color:#aaaacc;font-size:14px;">'+m.notes+'</span>':'')
@@ -3802,225 +3795,42 @@ function renderMileHistory(){
   renderMileChart();
 }
 
-// build the period list (gaps between same-vehicle readings) for ONE vehicle
-function _milePeriods(rows){
-  var periods=[];
-  for(var i=1;i<rows.length;i++){
-    var prev=rows[i-1],curr=rows[i];
-    if(curr.date===prev.date)continue;                  // skip same-day pairs
-    var driven=curr.odo-prev.odo;
-    if(driven<=0)continue;                              // skip bad/negative deltas
-    var days=Math.max(1,Math.round((new Date(curr.date)-new Date(prev.date))/(1000*60*60*24)));
-    periods.push({label:curr.date.slice(5),driven:driven,days:days,mpd:driven/days});
-  }
-  return periods;
-}
-// render one vehicle's mountain chart block
-function _mileChartBlock(veh,periods){
-  if(!periods.length)return '';
-  var maxMpd=Math.max.apply(null,periods.map(function(p){return p.mpd;}));
-  var chartH=140;
-  var html='<div style="background:#000044;border:1px solid #1a1a66;border-radius:6px;padding:8px;margin-top:10px;">'
-    +'<div style="color:#ff9933;font-weight:700;font-size:15px;text-align:center;margin-bottom:6px;font-family:Courier New,monospace;">🚗 '+veh+' — Miles Per Day</div>'
-    +'<div style="display:flex;align-items:flex-end;gap:6px;height:'+(chartH+70)+'px;padding:4px 2px 0;overflow-x:auto;">';
-  periods.forEach(function(p){
-    var barH=maxMpd>0?Math.max(6,Math.round((p.mpd/maxMpd)*chartH)):6;
-    var barColor=p.mpd>70?'#ff4444':p.mpd>50?'#ffaa00':'#00ff88';
-    html+='<div style="display:flex;flex-direction:column;align-items:center;min-width:62px;flex:1;">'
-      +'<div style="color:'+barColor+';font-size:15px;font-weight:700;margin-bottom:3px;font-family:Courier New,monospace;">'+p.mpd.toFixed(0)+'</div>'
-      +'<div style="background:'+barColor+';width:78%;height:'+barH+'px;border-radius:4px 4px 0 0;"></div>'
-      +'<div style="color:#ffff66;font-size:13px;margin-top:5px;text-align:center;font-weight:700;font-family:Courier New,monospace;">'+p.label+'</div>'
-      +'<div style="color:#aaccff;font-size:12px;text-align:center;font-family:Courier New,monospace;">'+p.driven.toLocaleString()+' mi</div>'
-      +'</div>';
-  });
-  html+='</div>';
-  var totalDriven=periods.reduce(function(s,p){return s+p.driven;},0);
-  var spanDays=periods.reduce(function(s,p){return s+p.days;},0);
-  var avgMpd=spanDays>0?totalDriven/spanDays:0;
-  html+='<div style="background:#000080;border-radius:5px;padding:9px;margin-top:8px;text-align:center;font-family:Courier New,monospace;">'
-    +'<span style="color:#ccccff;font-size:14px;">AVG: </span>'
-    +'<span style="color:#ffff00;font-weight:700;font-size:19px;">'+avgMpd.toFixed(1)+' mi/day</span>'
-    +'<div style="color:#aaccff;font-size:13px;margin-top:3px;">'+totalDriven.toLocaleString()+' mi total · ~'+Math.round(avgMpd*365).toLocaleString()+' mi/yr</div>'
-    +'</div></div>';
-  return html;
-}
 function renderMileChart(){
   const d=load();
   var mileData=((d.fuel&&d.fuel.miles)||[]).slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
   var el=document.getElementById('mile-chart');
   if(!el)return;
-  if(mileData.length<2){el.innerHTML='<div style="color:#aaccff;font-size:14px;padding:10px;font-family:Courier New,monospace;">Need at least 2 readings for chart.</div>';return;}
-  // group by vehicle, preserve first-seen order
-  var order=[],byVeh={};
-  mileData.forEach(function(m){
-    var v=m.veh||'(no vehicle)';
-    if(!byVeh[v]){byVeh[v]=[];order.push(v);}
-    byVeh[v].push(m);
+  if(mileData.length<2){el.innerHTML='<div style="color:#888;font-size:13px;padding:8px;">Need at least 2 readings for chart.</div>';return;}
+  var periods=[];
+  for(var i=1;i<mileData.length;i++){
+    var prev=mileData[i-1],curr=mileData[i];
+    var driven=curr.odo-prev.odo;
+    var days=Math.max(1,Math.round((new Date(curr.date)-new Date(prev.date))/(1000*60*60*24)));
+    periods.push({label:curr.date.slice(5),driven:driven,days:days,mpd:driven/days});
+  }
+  var maxMpd=Math.max.apply(null,periods.map(function(p){return p.mpd;}));
+  var chartH=120;
+  var html='<div style="display:flex;align-items:flex-end;gap:4px;height:'+(chartH+50)+'px;padding:4px 2px 0;overflow-x:auto;">';
+  periods.forEach(function(p){
+    var barH=maxMpd>0?Math.max(4,Math.round((p.mpd/maxMpd)*chartH)):4;
+    var barColor=p.mpd>70?'#ff4444':p.mpd>50?'#ffaa00':'#00ff88';
+    html+='<div style="display:flex;flex-direction:column;align-items:center;min-width:48px;flex:1;">'
+      +'<div style="color:'+barColor+';font-size:11px;font-weight:700;margin-bottom:2px;">'+p.mpd.toFixed(0)+'</div>'
+      +'<div style="background:'+barColor+';width:80%;height:'+barH+'px;border-radius:3px 3px 0 0;"></div>'
+      +'<div style="color:#aaaacc;font-size:9px;margin-top:3px;text-align:center;">'+p.label+'</div>'
+      +'<div style="color:#888;font-size:9px;">'+p.driven.toLocaleString()+'mi</div>'
+      +'</div>';
   });
-  var html='';
-  order.forEach(function(v){
-    var periods=_milePeriods(byVeh[v]);
-    html+=_mileChartBlock(v,periods);
-  });
-  if(!html){html='<div style="color:#aaccff;font-size:14px;padding:10px;font-family:Courier New,monospace;">Need 2+ readings on the same vehicle for a chart.</div>';}
+  html+='</div>';
+  var totalDriven=mileData[mileData.length-1].odo-mileData[0].odo;
+  var spanDays=Math.max(1,Math.round((new Date(mileData[mileData.length-1].date)-new Date(mileData[0].date))/(1000*60*60*24)));
+  var avgMpd=totalDriven/spanDays;
+  html+='<div style="background:#000066;border-radius:4px;padding:7px;margin-top:6px;text-align:center;font-family:Courier New,monospace;">'
+    +'<span style="color:#ccccff;font-size:12px;">AVG: </span>'
+    +'<span style="color:#ffff00;font-weight:700;font-size:15px;">'+avgMpd.toFixed(1)+' mi/day</span>'
+    +'<span style="color:#aaaacc;font-size:11px;"> · '+totalDriven.toLocaleString()+' mi total · ~'+Math.round(avgMpd*365).toLocaleString()+' mi/yr</span>'
+    +'</div>';
   el.innerHTML=html;
-}
-
-// ── EMAIL / SAVE MILEAGE LOG ──
-function emailMileageCSV(){
-  var d=load();
-  var miles=((d.fuel&&d.fuel.miles)||[]).slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-  if(!miles.length){toast('No mileage logged to email',false);return;}
-  function q(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"';}
-  var lines=['"DATE","ODOMETER","MILES DRIVEN","VEHICLE","NOTES"'];
-  miles.forEach(function(m,i){
-    var driven=i>0?(m.odo-miles[i-1].odo):0;
-    lines.push(q(m.date)+','+q(m.odo)+','+q(driven>0?driven:'')+','+q(m.veh)+','+q(m.notes));
-  });
-  var totalDriven=miles.length>1?(miles[miles.length-1].odo-miles[0].odo):0;
-  var csv=lines.join('\r\n')
-    +'\r\n'
-    +'\r\n"TOTAL MILES DRIVEN",'+q(totalDriven)
-    +'\r\n"READINGS",'+q(miles.length)
-    +'\r\n"SPAN",'+q(miles[0].date+' to '+miles[miles.length-1].date);
-  var dateStr=today();
-  var subject='NOWMILE.TXT — '+dateStr+' ('+miles.length+' readings)';
-  var toEmail='tristancarrington1@gmail.com';
-  var popupHTML='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
-    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">🚗 NOWMILE.TXT — '+miles.length+' readings · '+dateStr+'</div>'
-    +'<div style="color:#ccccff;font-size:14px;margin-bottom:6px;">📧 SHARE → opens Gmail to YOUR address</div>'
-    +'<textarea id="mile-csv-text" readonly style="width:100%;height:200px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;">'+csv+'</textarea>'
-    +'<div style="display:flex;gap:8px;margin-top:8px;">'
-    +'<button onclick="shareMileageCSV()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📧 SHARE</button>'
-    +'<button onclick="downloadMileageCSV()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">⬇ NOWMILE.TXT</button>'
-    +'<button onclick="copyMileageCSV()" style="flex:2;background:#ffff00;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">📋 COPY</button>'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
-    +'</div></div>';
-  var overlay=document.createElement('div');
-  overlay.className='modal-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
-  overlay.innerHTML=popupHTML;
-  overlay.dataset.subject=subject;
-  overlay.dataset.toEmail=toEmail;
-  document.body.appendChild(overlay);
-  setTimeout(function(){var ta=document.getElementById('mile-csv-text');if(ta){ta.focus();ta.select();}},400);
-}
-function copyMileageCSV(){
-  var ta=document.getElementById('mile-csv-text');if(!ta)return;
-  ta.focus();ta.select();
-  try{document.execCommand('copy');toast('Copied — open Gmail and paste ✓',true);}
-  catch(e){toast('Text selected — long-press and tap COPY',true);}
-}
-function downloadMileageCSV(){
-  var ta=document.getElementById('mile-csv-text');
-  if(!ta)return;
-  var blob=new Blob([ta.value],{type:'text/plain'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download='NOWMILE.TXT';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function(){URL.revokeObjectURL(url);},2000);
-  toast('NOWMILE.TXT downloaded — check Downloads',true);
-}
-function shareMileageCSV(){
-  var ta=document.getElementById('mile-csv-text');if(!ta){toast('No data to share',false);return;}
-  var overlay=ta.closest('.modal-overlay');
-  var subject=(overlay&&overlay.dataset.subject)||'NOWMILE.TXT — '+today();
-  var toEmail=(overlay&&overlay.dataset.toEmail)||'tristancarrington1@gmail.com';
-  var body=ta.value;
-  ta.focus();ta.select();
-  try{document.execCommand('copy');}catch(e){}
-  var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-  if(gmailUrl.length<7800){
-    var win=window.open(gmailUrl,'_blank');
-    if(!win)window.location.href=gmailUrl;
-    toast('✓ Gmail opened with NOWMILE.TXT — tap Send',true);
-  } else {
-    var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject);
-    var win=window.open(u,'_blank');
-    if(!win)window.location.href=u;
-    toast('📋 Copied · Gmail opened — paste body & Send',true);
-  }
-}
-
-// ── IMPORT MILEAGE FROM CSV ──
-function importMileagePrompt(){
-  var popupHTML='<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:12px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
-    +'<div style="color:#00ffff;font-size:13px;font-weight:700;margin-bottom:6px;">📥 IMPORT MILEAGE</div>'
-    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">Paste CSV — header row:</div>'
-    +'<div style="color:#ffff00;font-size:11px;margin-bottom:6px;">"DATE","ODOMETER","MILES DRIVEN","VEHICLE","NOTES"</div>'
-    +'<textarea id="mile-import-text" placeholder="Paste your CSV rows here..." style="width:100%;height:180px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;line-height:1.3;"></textarea>'
-    +'<div style="display:flex;gap:8px;margin-top:8px;">'
-    +'<button onclick="doImportMileage()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">✓ IMPORT</button>'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CANCEL</button>'
-    +'</div></div>';
-  var overlay=document.createElement('div');
-  overlay.className='modal-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
-  overlay.innerHTML=popupHTML;
-  document.body.appendChild(overlay);
-  setTimeout(function(){var ta=document.getElementById('mile-import-text');if(ta)ta.focus();},400);
-}
-function _parseCsvLine(line){
-  var out=[],cur='',inQ=false;
-  for(var i=0;i<line.length;i++){
-    var c=line[i];
-    if(inQ){
-      if(c==='"'&&line[i+1]==='"'){cur+='"';i++;}
-      else if(c==='"'){inQ=false;}
-      else cur+=c;
-    } else {
-      if(c==='"')inQ=true;
-      else if(c===','){out.push(cur);cur='';}
-      else cur+=c;
-    }
-  }
-  out.push(cur);
-  return out.map(function(s){return s.trim();});
-}
-function doImportMileage(){
-  var ta=document.getElementById('mile-import-text');
-  if(!ta){return;}
-  var raw=(ta.value||'').trim();
-  if(!raw){toast('Nothing to import — paste CSV first',false);return;}
-  var rows=raw.split(/\r?\n/).filter(function(l){return l.trim();});
-  if(!rows.length){toast('No rows found',false);return;}
-  // detect & skip header row
-  var first=_parseCsvLine(rows[0]).map(function(s){return s.toUpperCase();});
-  var hasHeader=first.indexOf('DATE')>=0||first.indexOf('ODOMETER')>=0;
-  var dataRows=hasHeader?rows.slice(1):rows;
-  var d=load();
-  if(!d.fuel)d.fuel={logs:[],miles:[]};
-  if(!d.fuel.miles)d.fuel.miles=[];
-  // existing keys for dedup: date|odo
-  var seen={};
-  d.fuel.miles.forEach(function(m){seen[(m.date||'')+'|'+m.odo+'|'+(m.veh||'')]=true;});
-  var added=0,skipped=0,bad=0;
-  dataRows.forEach(function(line){
-    var c=_parseCsvLine(line);
-    var date=(c[0]||'').trim();
-    var odo=parseFloat((c[1]||'').replace(/[^0-9.\-]/g,''))||0;
-    var veh=((c[3]||'TRUCK').trim()||'TRUCK').toUpperCase();
-    var notes=(c[4]||'').trim();
-    if(!date||!odo){bad++;return;}
-    var key=date+'|'+odo+'|'+veh;
-    if(seen[key]){skipped++;return;}
-    seen[key]=true;
-    d.fuel.miles.push({id:nextId(d.fuel.miles),date:date,odo:odo,veh:veh,notes:notes});
-    added++;
-  });
-  d.fuel.miles.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-  save(d);
-  var overlay=ta.closest('.modal-overlay');
-  if(overlay)overlay.remove();
-  renderMileHistory();
-  var msg='✓ '+added+' added';
-  if(skipped)msg+=' · '+skipped+' dup skipped';
-  if(bad)msg+=' · '+bad+' bad rows';
-  toast(msg,added>0);
 }
 
 function editMileage(id){
@@ -12547,36 +12357,38 @@ function _feRenderTable(){
     var d = _feDraft;
     var fillingDay = (_feMode === 'fill-day');
     var fillingAmt = (_feMode === 'fill-amt');
-    // DAY field — open { }. Bright when active.
-    var dayTxt = fillingDay ? (_feDraftInput || '') : (d.dd || '');
+    // shared inline-input style — big, bright, cursor obviously sits here
+    var inStyle = 'font-family:Courier New,monospace;font-weight:700;background:#fde047;'
+      + 'border:2px solid #047857;border-radius:3px;color:#000;text-align:center;'
+      + 'outline:none;padding:2px 0;text-transform:none;';
+    // DAY field
     var dayCell;
-    if(d.dd && !fillingDay){
+    if(fillingDay){
+      dayCell = '<input id="fe-maskfield" type="text" inputmode="numeric" maxlength="2" '
+        + 'autocomplete="off" autocorrect="off" spellcheck="false" '
+        + 'oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" '
+        + 'style="'+inStyle+'width:42px;font-size:18px;">';
+    } else if(d.dd){
       dayCell = d.dd;
     } else {
-      var dShow = dayTxt ? dayTxt : '&nbsp;&nbsp;';
-      var dBg = fillingDay ? '#2dd4bf' : '#e8e8e8';
-      var dBd = fillingDay ? '2px solid #047857' : '1px dashed #999';
-      dayCell = '<span style="background:'+dBg+';border:'+dBd+';padding:1px 5px;border-radius:3px;color:#000;">'+dShow+'</span>';
+      dayCell = '<span style="background:#e8e8e8;border:1px dashed #999;padding:1px 8px;border-radius:3px;color:#666;">&nbsp;&nbsp;</span>';
     }
     var dateCell = d.mm + '/' + dayCell + '/' + d.yr;
-    // AMOUNT field — open { }. Bright when active.
+    // AMOUNT field
     var amtCell;
-    if(typeof d.amt === 'number' && !fillingAmt){
+    if(fillingAmt){
+      amtCell = '<input id="fe-maskfield" type="text" inputmode="decimal" maxlength="12" '
+        + 'autocomplete="off" autocorrect="off" spellcheck="false" '
+        + 'oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" '
+        + 'style="'+inStyle+'width:120px;font-size:20px;text-align:right;padding-right:6px;">';
+    } else if(typeof d.amt === 'number'){
       amtCell = _feFmtAmt(d.amt);
     } else {
-      var aTxt = '';
-      if(fillingAmt && _feDraftInput){
-        var rawA = _feDraftInput.replace(/[^0-9]/g,'');
-        aTxt = rawA ? (parseInt(rawA,10)/100).toFixed(2) : '';
-      }
-      var aShow = aTxt ? aTxt : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-      var aBg = fillingAmt ? '#2dd4bf' : '#e8e8e8';
-      var aBd = fillingAmt ? '2px solid #047857' : '1px dashed #999';
-      amtCell = '<span style="background:'+aBg+';border:'+aBd+';padding:1px 6px;border-radius:3px;color:#000;">'+aShow+'</span>';
+      amtCell = '<span style="background:#e8e8e8;border:1px dashed #999;padding:1px 18px;border-radius:3px;color:#666;">&nbsp;</span>';
     }
     var mBorder = '4px solid #1d4ed8';
     html += '<tr style="background:#dbeafe;">'
-      + '<td style="border:'+mBorder+';padding:9px 4px;color:#000;font-size:14px;font-weight:700;white-space:nowrap;">' + dateCell + '</td>'
+      + '<td style="border:'+mBorder+';padding:9px 4px;color:#000;font-size:16px;font-weight:700;white-space:nowrap;">' + dateCell + '</td>'
       + '<td style="border:'+mBorder+';padding:9px 4px;color:#000080;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(d.payee||'') + '</td>'
       + '<td style="border:'+mBorder+';padding:9px 4px;color:#003366;font-weight:700;font-size:14px;white-space:nowrap;">' + _feEsc(d.pcode||'·') + '</td>'
       + '<td style="border:'+mBorder+';padding:9px 4px;color:#000;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _feEsc(d.desc||'·') + '</td>'
@@ -12651,10 +12463,13 @@ function _feRenderPrompt(){
   }
   var inp = document.getElementById('fe-prompt');
   if(inp){
-    if(_feMode === 'fill-day'){ inp.placeholder='DD'; inp.maxLength=2; }
+    var fillMode = (_feMode === 'fill-day' || _feMode === 'fill-amt');
+    inp.readOnly = fillMode;
+    inp.style.opacity = fillMode ? '0.25' : '1';
+    if(_feMode === 'fill-day'){ inp.placeholder=''; }
     else if(_feMode === 'entry-payee'){ inp.placeholder='PAYEE'; inp.maxLength=20; }
     else if(_feMode === 'edit-defa'){ inp.placeholder='MMYR e.g. 0526'; inp.maxLength=6; }
-    else if(_feMode === 'fill-amt'){ inp.placeholder='0.00'; inp.maxLength=12; }
+    else if(_feMode === 'fill-amt'){ inp.placeholder=''; }
     else if(_feMode === 'cmd'){ inp.placeholder='...'; inp.maxLength=4; }
     else if(_feMode === 'edit-amt'){ inp.placeholder='0.00'; inp.maxLength=12; }
     else if(_feMode === 'edit-mm'){ inp.placeholder='MM (or ↵)'; inp.maxLength=2; }
@@ -12701,53 +12516,76 @@ function _feArmIdleTimer(){
   _feClearIdleTimer();
   _feIdleTimer = setTimeout(function(){
     _feIdleTimer = null;
+    if(_feMode === 'edit-newpayee') return;   // full names take time
+    // MASKED LINE fields — read the in-table input
+    if(_feMode === 'fill-day'){
+      var df = document.getElementById('fe-maskfield');
+      var dv = df ? (df.value||'').trim() : '';
+      if(dv) _feApplyDraftDay(dv);
+      return;
+    }
+    if(_feMode === 'fill-amt'){
+      var af = document.getElementById('fe-maskfield');
+      var av = af ? (af.value||'').trim() : '';
+      if(av) _feApplyDraftAmt(av);
+      return;
+    }
     var inp = document.getElementById('fe-prompt');
     if(!inp) return;
     var v = (inp.value||'').trim();
     if(!v) return;
-    if(_feMode === 'edit-newpayee') return;   // full names take time, don't auto-fire
     inp.value = '';
     _feDispatchInput(v);
   }, _feIdleMs);
 }
 
-function _feHandleInput(val){
-  // MASKED LINE — fill-day: mirror digits into the day field, 2 digits auto-jumps
+// ── MASKED LINE input handlers (the cursor lives IN the table cell) ──
+function _feMaskInput(val){
   if(_feMode === 'fill-day'){
-    // typing the day = "leave the merge for next time" — dismiss it quietly
-    if(_feMergePending && val){ _feMergePending = null; _feRenderMergeBanner(); }
-    _feDraftInput = (val||'').replace(/[^0-9]/g,'').slice(0,2);
-    _feRenderTable();
-    if(/^[0-9]{2}$/.test(_feDraftInput)){
+    if(_feMergePending){ _feMergePending = null; _feRenderMergeBanner(); }
+    var digits = (val||'').replace(/[^0-9]/g,'').slice(0,2);
+    var f = document.getElementById('fe-maskfield');
+    if(f && f.value !== digits) f.value = digits;
+    if(/^[0-9]{2}$/.test(digits)){          // 2 digits → jump instantly to AMOUNT
       _feClearIdleTimer();
-      var inpD = document.getElementById('fe-prompt');
-      var dv = _feDraftInput;
-      if(inpD) inpD.value = '';
-      _feDraftInput = '';
-      _feApplyDraftDay(dv);
+      _feApplyDraftDay(digits);
       return;
     }
-    if(val && val.length>0){ _feArmIdleTimer(); } else { _feClearIdleTimer(); }
+    if(digits) _feArmIdleTimer(); else _feClearIdleTimer();
     return;
   }
-  // MASKED LINE — fill-amt: mirror cents-formatted value into the amount field
   if(_feMode === 'fill-amt'){
-    _feDraftInput = val || '';
-    var rawC = (val||'').replace(/[^0-9\-]/g,'');
-    var negC = rawC.indexOf('-')>=0;
-    var digC = rawC.replace(/-/g,'');
-    if(digC){
-      var fmtC = (negC?'-':'') + (parseInt(digC,10)/100).toFixed(2);
-      if(fmtC !== val){
-        var inpC = document.getElementById('fe-prompt');
-        if(inpC){ inpC.value = fmtC; try{ inpC.setSelectionRange(fmtC.length,fmtC.length); }catch(e){} }
-        _feDraftInput = fmtC;
+    var raw = (val||'').replace(/[^0-9]/g,'');
+    var f2 = document.getElementById('fe-maskfield');
+    if(f2 && raw){
+      var fmt = (parseInt(raw,10)/100).toFixed(2);
+      if(f2.value !== fmt){
+        f2.value = fmt;
+        try { f2.setSelectionRange(fmt.length, fmt.length); } catch(e){}
       }
     }
-    _feRenderTable();
-    if(val && val.length>0){ _feArmIdleTimer(); } else { _feClearIdleTimer(); }
+    if(raw) _feArmIdleTimer(); else _feClearIdleTimer();
     return;
   }
+}
+function _feMaskKey(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    _feClearIdleTimer();
+    var f = document.getElementById('fe-maskfield');
+    var v = f ? (f.value||'').trim() : '';
+    if(_feMode === 'fill-day') _feApplyDraftDay(v);
+    else if(_feMode === 'fill-amt') _feApplyDraftAmt(v);
+    return;
+  }
+  if(e.key === 'Escape'){
+    e.preventDefault();
+    _feClearIdleTimer();
+    _feCancelMode();
+  }
+}
+
+function _feHandleInput(val){
   // Live narrowing of pickers as user types
   if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){
     _fePickerFilter = (val||'').toUpperCase();
@@ -13790,7 +13628,8 @@ function _feCloseOverlay(){
 // ───── FOCUS ─────
 function _feFocusPrompt(){
   setTimeout(function(){
-    var inp = document.getElementById('fe-prompt');
+    var id = (_feMode==='fill-day' || _feMode==='fill-amt') ? 'fe-maskfield' : 'fe-prompt';
+    var inp = document.getElementById(id);
     if(inp){ try { inp.focus(); inp.select(); } catch(e){} }
   }, 50);
 }
