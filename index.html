@@ -34,39 +34,66 @@ function doInstallPWA(){
     toast('Tap 3 dots → Add to Home Screen',true);
   }
 }
+// ─────────────────────────────────────────────────────────────
+// MFS NETWORK-FIRST service worker.
+// Anchor (offline): if the internet is down, the app loads from the
+// last saved copy and runs fully — perfect for punching entries fast.
+// Fresh (online): every load checks the network FIRST and grabs the
+// newest pushed version, only falling back to cache if truly offline.
+// No more stale-version nightmare, and no reload dance.
+// ─────────────────────────────────────────────────────────────
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
     var swCode=[
-      "var CACHE='mfs-v3';",
-      "var URLS=['https://carrdata-wq.github.io/msf/'];",
-      "self.addEventListener('install',function(e){",
-      "  e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(URLS);}));",
-      "  self.skipWaiting();",
-      "});",
+      "var CACHE='mfs-netfirst';",
+      "self.addEventListener('install',function(e){ self.skipWaiting(); });",
       "self.addEventListener('activate',function(e){",
       "  e.waitUntil(caches.keys().then(function(keys){",
-      "    return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));",
-      "  }));",
-      "  self.clients.claim();",
+      "    return Promise.all(keys.filter(function(k){return k!==CACHE;})",
+      "      .map(function(k){return caches.delete(k);}));",
+      "  }).then(function(){return self.clients.claim();}));",
       "});",
       "self.addEventListener('fetch',function(e){",
-      "  e.respondWith(caches.match(e.request).then(function(cached){",
-      "    if(cached)return cached;",
-      "    return fetch(e.request).then(function(resp){",
-      "      var clone=resp.clone();",
-      "      caches.open(CACHE).then(function(c){c.put(e.request,clone);});",
+      "  if(e.request.method!=='GET'){return;}",
+      "  e.respondWith(",
+      "    fetch(e.request).then(function(resp){",         // NETWORK FIRST
+      "      if(resp && resp.status===200 && resp.type==='basic'){",
+      "        var clone=resp.clone();",
+      "        caches.open(CACHE).then(function(c){c.put(e.request,clone);});",
+      "      }",
       "      return resp;",
-      "    }).catch(function(){return cached;});",
-      "  }));",
+      "    }).catch(function(){",                          // offline → cached copy
+      "      return caches.match(e.request).then(function(cached){",
+      "        return cached || caches.match('https://carrdata-wq.github.io/msf/');",
+      "      });",
+      "    })",
+      "  );",
       "});"
     ].join('\n');
     var blob=new Blob([swCode],{type:'application/javascript'});
     var swUrl=URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl,{scope:'/'}).then(function(reg){
-      console.log('MFS offline ready');
-    }).catch(function(e){ console.log('SW:',e); });
+    // First, sweep out any OLD cache-first worker + its stale caches,
+    // then register the new network-first one.
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      var hadOld=false;
+      regs.forEach(function(reg){
+        // an old worker exists — unregister so the new one installs clean
+        if(reg.active && reg.active.scriptURL.indexOf('blob:')!==0){ hadOld=true; }
+      });
+      if(window.caches && caches.keys){
+        caches.keys().then(function(keys){
+          keys.forEach(function(k){ if(k!=='mfs-netfirst') caches.delete(k); });
+        }).catch(function(){});
+      }
+      navigator.serviceWorker.register(swUrl,{scope:'./'}).then(function(){
+        console.log('MFS network-first ready');
+      }).catch(function(e){ console.log('SW:',e); });
+    }).catch(function(){
+      navigator.serviceWorker.register(swUrl,{scope:'./'}).catch(function(){});
+    });
   });
 }
+
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
@@ -6186,11 +6213,16 @@ function doBankCSVPreview(file){
       if(amt===0)continue;
       // strip * and special chars from payee
       var cleanPayee=cleanPayeeName(match.payee);
-      _bankRows.push({date:isoDate,rawDesc:rawDesc,payee:cleanPayee,pcode:match.pcode,desc:match.desc,amt:amt});
+      _bankRows.push({date:isoDate,rawDesc:rawDesc,payee:cleanPayee,pcode:match.pcode,desc:match.desc,amt:amt,src:match.src||'default',cnt:match.cnt||0});
     }
-    var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries found ('+skipped+' pending skipped)</div>';
+    var matched=_bankRows.filter(function(r){return r.src==='rule'||r.src==='combo';}).length;
+    var unmatched=_bankRows.length-matched;
+    var html='<div style="color:#ffff00;font-size:13px;margin-bottom:6px;">'+_bankRows.length+' entries ('+skipped+' pending skipped) — '
+      +'<span style="color:#00ff88;">'+matched+' matched</span>, '
+      +'<span style="color:#ffaa00;">'+unmatched+' need a look</span></div>';
     html+='<table style="width:100%;border-collapse:collapse;font-size:14px;">'
       +'<tr style="background:#0000aa;">'
+      +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;"></th>'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">DATE</th>'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PAYEE</th>'
       +'<th style="color:#ffff00;padding:3px;border:1px solid #333388;">PCO</th>'
@@ -6198,20 +6230,84 @@ function doBankCSVPreview(file){
       +'</tr>';
     _bankRows.slice(0,10).forEach(function(r){
       var ac=r.amt>=0?'#00ffff':'#ff6666';
+      var mk=(r.src==='rule'||r.src==='combo')
+        ? '<span style="color:#00ff88;font-weight:700;">\u2713</span>'
+        : '<span style="color:#ffaa00;font-weight:700;">?</span>';
       html+='<tr style="background:#00008a;">'
+        +'<td style="padding:3px;border:1px solid #333388;text-align:center;">'+mk+'</td>'
         +'<td style="padding:3px;color:#ccccff;border:1px solid #333388;font-size:13px;">'+r.date.slice(5)+'</td>'
         +'<td style="padding:3px;color:#ffff00;border:1px solid #333388;font-size:13px;">'+trunc(r.payee,14)+'</td>'
         +'<td style="padding:3px;color:#00ffff;border:1px solid #333388;font-size:13px;">'+r.pcode+'</td>'
         +'<td style="padding:3px;text-align:right;border:1px solid #333388;font-size:13px;color:'+ac+';">'+(r.amt>=0?'+':'-')+'$'+Math.abs(r.amt).toFixed(2)+'</td>'
         +'</tr>';
     });
-    if(_bankRows.length>10)html+='<tr><td colspan="4" style="color:#ccccff;padding:3px;font-size:13px;text-align:center;">...and '+(_bankRows.length-10)+' more</td></tr>';
+    if(_bankRows.length>10)html+='<tr><td colspan="5" style="color:#ccccff;padding:3px;font-size:13px;text-align:center;">...and '+(_bankRows.length-10)+' more</td></tr>';
     html+='</table>';
     document.getElementById('bank-preview').innerHTML=html;
     document.getElementById('bank-status').innerHTML='<span style="color:#00ff88;">✓ Ready to import '+_bankRows.length+' entries</span>';
     document.getElementById('bank-import-btn').style.display='block';
   };
   reader.readAsText(file);
+}
+
+// ── Bank import combo matching — uses the 34-year history (9,786 combos) ──
+var _bankIdxCache = null;
+function _bankGetIndex(){
+  if(_bankIdxCache) return _bankIdxCache;
+  var hist = {};
+  try { hist = JSON.parse(localStorage.getItem('mx_history_cnt')||'{}'); } catch(e){}
+  // payee -> highest-count combo {pcode,desc,cnt}
+  var byPayee = {};
+  for(var k in hist){
+    var bits = k.split('|');
+    if(bits.length !== 3) continue;
+    var p = bits[0];
+    var cnt = hist[k];
+    if(!byPayee[p] || byPayee[p].cnt < cnt){
+      byPayee[p] = { pcode: bits[1], desc: bits[2], cnt: cnt };
+    }
+  }
+  _bankIdxCache = byPayee;
+  return byPayee;
+}
+// Strip bank-statement boilerplate so the merchant name sits at the front
+function _bankStripPrefix(d){
+  d = (d||'').toUpperCase();
+  d = d.replace(/POS PURCHASE/g,' ').replace(/MERCHANT PURCHASE/g,' ')
+       .replace(/DEBIT CARD PURCHASE/g,' ').replace(/RECURRING PAYMENT/g,' ')
+       .replace(/ACH (DEBIT|CREDIT)/g,' ').replace(/POS PUR/g,' ')
+       .replace(/\bVISA\b|\bMASTERCARD\b/g,' ').replace(/TERMINAL \w+/g,' ')
+       .replace(/CARD \d+/g,' ').replace(/SEQ #?\w+/g,' ')
+       .replace(/X{4,}\w*/g,' ')
+       .replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  return d;
+}
+// Match a bank description against the imported combos
+function _bankIndexMatch(rawDesc){
+  var idx = _bankGetIndex();
+  var d = _bankStripPrefix(rawDesc);
+  var words = d.split(' ').filter(function(w){ return w.length>=3 && !/^\d+$/.test(w); });
+  if(!words.length) return null;
+  // try first two words (specific) then first word
+  var tries = [];
+  if(words[1]) tries.push(words[0]+' '+words[1]);
+  if(words[0]) tries.push(words[0]);
+  for(var t=0;t<tries.length;t++){
+    var token = tries[t];
+    var best = null;
+    for(var payee in idx){
+      if(payee.length < 4) continue;
+      // payee starts with the bank's leading word(s) — OR contains it as a run
+      if(payee.indexOf(token)===0 || d.indexOf(payee)===0){
+        var c = idx[payee];
+        if(!best || c.cnt > best.cnt){
+          best = { payee:payee, pcode:c.pcode, desc:c.desc, cnt:c.cnt };
+        }
+      }
+    }
+    if(best) return best;
+  }
+  return null;
 }
 
 function bankAutoMatch(desc){
@@ -6256,13 +6352,18 @@ function bankAutoMatch(desc){
     if(d.indexOf(rules[i].k.toUpperCase())>=0){
       var payee=rules[i].payee;
       if(typeof payee==='function')payee=payee();
-      return{payee:payee,pcode:rules[i].pcode,desc:rules[i].desc};
+      return{payee:payee,pcode:rules[i].pcode,desc:rules[i].desc,src:'rule'};
     }
+  }
+  // No hardcoded rule hit — try the 34-year combo index (9,786 combos)
+  var idxMatch = _bankIndexMatch(desc);
+  if(idxMatch){
+    return { payee: idxMatch.payee, pcode: idxMatch.pcode, desc: idxMatch.desc, src:'combo', cnt: idxMatch.cnt };
   }
   // default — clean up description
   var cleanDesc=desc.replace(/POS PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/MERCHANT PURCHASE.*?TERMINAL\s+\w+\s+/,'').replace(/XXXXXXXXXXXX\w+\s+SEQ\s+#\s+\w+/,'').replace(/[*#&<>]/g,'').trim();
   cleanDesc=cleanDesc.slice(0,30).toUpperCase();
-  return{payee:cleanDesc||'UNKNOWN',pcode:'ROOF',desc:'EXPENSE'};
+  return{payee:cleanDesc||'UNKNOWN',pcode:'ROOF',desc:'EXPENSE',src:'default'};
 }
 
 function extractZelleName(desc){
@@ -6747,8 +6848,9 @@ function doClearLog(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML='<div style="background:#0000cc;border:3px solid #ff6666;border-radius:8px;padding:20px;max-width:360px;width:100%;font-family:Courier New,monospace;text-align:center;">'
     +'<div style="font-size:28px;margin-bottom:10px;">⚠️</div>'
-    +'<div style="color:#ff6666;font-weight:700;font-size:15px;margin-bottom:8px;">DELETE ALL ENTRIES?</div>'
-    +'<div style="color:#ccccff;font-size:13px;margin-bottom:16px;">This removes ALL your ledger data permanently. Backup first!</div>'
+    +'<div style="color:#ff6666;font-weight:700;font-size:15px;margin-bottom:8px;">DELETE ALL LEDGER ENTRIES?</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:8px;">Removes every entry in the ledger — good for clearing test data.</div>'
+    +'<div style="color:#00ff88;font-size:12px;margin-bottom:16px;">✓ Your 34-year payee history &amp; combos are KEPT — only the ledger is cleared.</div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button onclick="confirmClearLog(this)" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:none;border-radius:6px;cursor:pointer;">YES DELETE</button>'
     +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove()" style="flex:1;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:12px;border:1px solid #6666ff;border-radius:6px;cursor:pointer;">CANCEL</button>'
