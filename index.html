@@ -13013,6 +13013,10 @@ function _feAdvanceGuided(){
   switch(step){
     case 'pcode': _feStartPcodePick(); break;
     case 'desc':  _feStartDescPick();  break;
+    case 'mm':    _feStartMM();        break;
+    case 'dd':    _feStartDD();        break;
+    case 'yr':    _feStartYR();        break;
+    case 'amt':   _feStartAMT();       break;
     default:      _feFinishStep();
   }
 }
