@@ -1415,7 +1415,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <div style="padding:6px;display:flex;flex-direction:column;gap:5px;background:#0000b8;">
    <!-- c80 FRAME — single border box around the working area -->
-   <div style="border:2px solid #aaccff;border-radius:3px;padding:6px 7px;background:#0000b8;">
+   <div style="border:2px solid #aaccff;border-radius:3px;padding:6px 3px;background:#0000b8;">
 
     <!-- PROMPT — DOS style: white label, inverse-video input box -->
     <div style="display:flex;align-items:center;gap:8px;">
@@ -12446,21 +12446,21 @@ function _feRenderTable(){
     var inv = 'background:#000000;border:none;color:#ffff55;font-family:Courier New,monospace;'
       + 'font-weight:700;outline:none;padding:0 1px;text-align:center;';
     var dayCell = fillingDay
-      ? '<input id="fe-maskfield" type="text" inputmode="numeric" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:26px;font-size:14px;">'
+      ? '<input id="fe-maskfield" type="text" inputmode="numeric" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:30px;font-size:16px;">'
       : (d.dd || '__');
     var amtCell = fillingAmt
       ? '<input id="fe-maskfield" type="text" inputmode="decimal" maxlength="11" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:88px;font-size:16px;text-align:right;">'
       : (typeof d.amt==='number' ? amtTxt(d.amt) : '____');
     html += '<div style="background:#000088;color:#ffff55;font-weight:700;padding:3px 8px;border-bottom:1px solid #1a1a99;">'
       + '<div style="'+L1+'">'
-        + '<span style="flex:0 0 auto;font-size:13px;">' + d.mm + '/' + dayCell + '/' + d.yr + '</span>'
-        + '<span style="flex:1;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(d.payee||'') + '</span>'
-        + '<span style="flex:0 0 auto;font-size:16px;margin-right:24px;">' + amtCell + '</span>'
+        + '<span style="flex:0 0 auto;font-size:16px;">' + d.mm + '/' + dayCell + '/' + d.yr + '</span>'
+        + '<span style="flex:1;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(d.payee||'') + '</span>'
+        + '<span style="flex:0 0 auto;font-size:11px;color:#88aaff;margin-left:10px;">NEW</span>'
       + '</div>'
       + '<div style="'+L2+'">'
-        + '<span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(d.desc||'') + '</span>'
-        + '<span style="flex:0 0 auto;font-size:13px;margin-right:90px;">' + _feEsc(d.pcode||'') + '</span>'
-        + '<span style="flex:0 0 32px;font-size:10px;text-align:right;color:#88aaff;">NEW</span>'
+        + '<span style="flex:0 0 156px;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(d.desc||'') + '</span>'
+        + '<span style="flex:0 0 76px;font-size:16px;margin-left:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(d.pcode||'') + '</span>'
+        + '<span style="flex:0 0 100px;font-size:16px;margin-left:26px;text-align:right;">' + amtCell + '</span>'
       + '</div>'
       + '</div>';
   }
@@ -12476,19 +12476,19 @@ function _feRenderTable(){
     var col = current ? '#ffff55' : '#ffffff';
     var bg = current ? 'background:#000088;' : '';
     var cnt = e.cnt || 0;
-    var cntStr = cnt ? ' <span style="font-size:10px;color:#88aaff;font-weight:700;">\u00d7' + cnt + '</span>' : '';
+    var cntStr = cnt ? ' <span style="font-size:12px;color:#88aaff;font-weight:700;">\u00d7' + cnt + '</span>' : '';
     var dateStr = _feFmtDate(e.date || '');
     html += '<div data-idx="' + i + '" onclick="_feRowTap(' + i + ')" '
       + 'style="' + bg + 'color:' + col + ';font-weight:700;cursor:pointer;padding:3px 8px;border-bottom:1px solid #1a1a99;">'
       + '<div style="'+L1+'">'
-        + '<span style="flex:0 0 auto;font-size:13px;">' + dateStr + '</span>'
-        + '<span style="flex:1;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.payee||'') + cntStr + '</span>'
-        + '<span style="flex:0 0 auto;font-size:16px;margin-right:24px;">' + amtTxt(e.amt) + '</span>'
+        + '<span style="flex:0 0 auto;font-size:16px;">' + dateStr + '</span>'
+        + '<span style="flex:1;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.payee||'') + cntStr + '</span>'
+        + '<span style="flex:0 0 auto;font-size:11px;color:#7799ee;margin-left:10px;">#' + recno + '</span>'
       + '</div>'
       + '<div style="'+L2+'">'
-        + '<span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.desc||'') + '</span>'
-        + '<span style="flex:0 0 auto;font-size:13px;margin-right:90px;">' + _feEsc(e.pcode||'') + '</span>'
-        + '<span style="flex:0 0 38px;font-size:10px;text-align:right;color:#7799ee;">#' + recno + '</span>'
+        + '<span style="flex:0 0 156px;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.desc||'') + '</span>'
+        + '<span style="flex:0 0 76px;font-size:16px;margin-left:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.pcode||'') + '</span>'
+        + '<span style="flex:0 0 100px;font-size:16px;margin-left:26px;text-align:right;">' + amtTxt(e.amt) + '</span>'
       + '</div>'
       + '</div>';
   }
