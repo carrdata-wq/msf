@@ -12261,6 +12261,7 @@ try{infl_load();}catch(e){}
 var _feSign = -1;                  // session default sign (configurable per session)
 var _feLastCommand = '';           // sticky last typed command
 var _feRowIdx = 0;                 // 0 = LOG[0] = newest = bottom of fading table
+var _feInline = null;              // ThinkPad inline field edit: {idx, field}
 var _feIndexDirty = true;
 var _fePayeeIndex = {};            // UPPER(payee) -> [{pcode, desc, cnt}, ...] sorted by cnt desc
 var _feComboCnt = {};              // "PAYEE|PCODE|DESC" -> running count
@@ -12492,6 +12493,35 @@ function _feRenderTableWide(tbody){
     visibleCount++;
     var current = (!_feDraft && i === _feRowIdx);
     var recno = n - i;
+    // FoxBase masking — if this row has a field being inline-edited,
+    // that field becomes an inverse-video input right on the line.
+    if(_feInline && _feInline.idx === i){
+      var dt = date6(e.date);
+      var inv = 'background:#000000;border:none;color:#ffff55;font-family:Courier New,monospace;'
+        + 'font-weight:700;'+FS+'outline:none;padding:0;';
+      var fld = function(field, txt, w, align){
+        if(_feInline.field === field){
+          var imode = (field==='payee') ? 'autocapitalize="characters" '
+                    : (field==='amt') ? 'inputmode="decimal" ' : 'inputmode="numeric" ';
+          var mx = (field==='payee') ? 25 : (field==='amt') ? 12 : 2;
+          return '<input id="fe-inline-edit" type="text" autocomplete="off" autocorrect="off" spellcheck="false" '
+            + imode + 'maxlength="'+mx+'" value="'+_feEsc(String(txt).trim())+'" '
+            + 'oninput="_feInlineInput()" onkeydown="_feInlineKey(event)" '
+            + 'style="'+inv+'width:'+(w*12.5)+'px;text-align:'+(align||'left')+';">';
+        }
+        return _feEsc(txt);
+      };
+      var rowH = fld('mm',dt.slice(0,2),2,'center')
+        + fld('dd',dt.slice(2,4),2,'center')
+        + fld('yr',dt.slice(4,6),2,'center') + ' '
+        + fld('payee',pad(e.payee||'',25),25,'left') + ' '
+        + _feEsc(pad(e.pcode||'',5)) + ' '
+        + _feEsc(pad(e.desc||'',25)) + ' '
+        + fld('amt',amt12(e.amt),12,'right') + ' '
+        + _feEsc(padL('#'+recno,6));
+      html += '<div style="'+base+'background:#000088;color:#ffff55;">' + rowH + _feCodeStrip(i) + '</div>';
+      continue;
+    }
     var line = date6(e.date) + ' '
       + pad(e.payee||'',25) + ' '
       + pad(e.pcode||'',5) + ' '
@@ -13121,34 +13151,98 @@ function _feQuick(i, action){
   if(i < 0 || i >= LOG.length) return;
   _feRowIdx = i;
   switch(action){
-    case 'day':    _feStartDD(); break;
-    case 'mm':     _feStartMM(); break;
-    case 'yr':     _feStartYR(); break;
-    case 'payee':  _feStartPayeeEdit(); break;
+    case 'day':    _feStartInline(i,'dd'); break;
+    case 'mm':     _feStartInline(i,'mm'); break;
+    case 'yr':     _feStartInline(i,'yr'); break;
+    case 'payee':  _feStartInline(i,'payee'); break;
+    case 'amt':    _feStartInline(i,'amt'); break;
     case 'pcode':  _feStartPcodePick(); break;
     case 'desc':   _feStartDescPick(); break;
-    case 'amt':    _feStartAMT(); break;
     case 'copy':   _feActCopy(); break;
     case 'flip':   _feFlipSign(); break;
     case 'email':  if(LOG[i] && typeof shareLog==='function') shareLog(LOG[i].id); break;
     case 'report': _feQuickReport(); break;
+    case 'del':    _feRowIdx=i; _feConfirmDel(); break;
   }
 }
+// ── FoxBase-style field masking — the field being edited goes inverse-video
+//    right on the line, you type into that spot. Build once, every field uses it.
+function _feStartInline(idx, field){
+  if(idx < 0 || idx >= LOG.length) return;
+  _feRowIdx = idx;
+  _feInline = { idx: idx, field: field };
+  _feRenderTable();
+  setTimeout(function(){
+    var inp = document.getElementById('fe-inline-edit');
+    if(inp){ try { inp.focus(); inp.select(); } catch(e){} }
+  }, 30);
+}
+function _feInlineInput(){
+  if(!_feInline) return;
+  var inp = document.getElementById('fe-inline-edit');
+  if(!inp) return;
+  var f = _feInline.field;
+  if(f==='mm' || f==='dd' || f==='yr'){
+    var digits = inp.value.replace(/[^0-9]/g,'').slice(0,2);
+    if(inp.value !== digits) inp.value = digits;
+    if(digits.length === 2) _feApplyInline();   // 2 digits → apply instantly
+  }
+}
+function _feInlineKey(e){
+  if(e.key === 'Enter'){ e.preventDefault(); _feApplyInline(); }
+  else if(e.key === 'Escape'){ e.preventDefault(); _feCancelInline(); }
+}
+function _feApplyInline(){
+  if(!_feInline){ return; }
+  var inp = document.getElementById('fe-inline-edit');
+  var e = LOG[_feInline.idx];
+  if(!inp || !e){ _feInline=null; _feRenderTable(); _feFocusPrompt(); return; }
+  var val = inp.value, f = _feInline.field;
+  if(f==='mm' || f==='dd' || f==='yr'){
+    var num = parseInt(val.replace(/[^0-9]/g,''),10);
+    var parts = (e.date || _feTodayISO()).split('-');   // [yyyy,mm,dd]
+    if(f==='mm' && num>=1 && num<=12) parts[1] = ('0'+num).slice(-2);
+    else if(f==='dd' && num>=1 && num<=31) parts[2] = ('0'+num).slice(-2);
+    else if(f==='yr' && num>=0 && num<=99) parts[0] = '20'+('0'+num).slice(-2);
+    else { toast('Bad '+f.toUpperCase(),false); }
+    e.date = parts.join('-');
+  } else if(f==='payee'){
+    if(val.trim()) e.payee = val.toUpperCase().trim();
+  } else if(f==='amt'){
+    var n = parseFloat(val.replace(/[^0-9.\-]/g,''));
+    if(!isNaN(n)) e.amt = n;
+  }
+  saveLog();
+  _feInvalidateIndex();
+  _feInline = null;
+  _feRenderTable();
+  _feFocusPrompt();
+}
+function _feCancelInline(){
+  _feInline = null;
+  _feRenderTable();
+  _feFocusPrompt();
+}
+
 // Builds the 11-button code strip for one row (ThinkPad only).
 function _feCodeStrip(i){
   var codes = [
     ['day','D','DAY'],['mm','M','MM'],['yr','Y','YR'],
     ['payee','P','PAYEE'],['pcode','P','PCODE'],['desc','D','DESC'],
     ['amt','A','AMT'],['copy','C','COPY THIS FILE'],['email','E','EMAIL / TEXT'],
-    ['flip','F','FLIP SIGN'],['report','R','REPORT — LAST 50']
+    ['flip','F','FLIP SIGN'],['report','R','REPORT — LAST 50'],['del','X','DELETE FILE']
   ];
   var s = '  ';
   for(var k=0;k<codes.length;k++){
     var c = codes[k];
+    var isDel = (c[0]==='del');
+    var bgc = isDel ? '#440000' : '#001144';
+    var fgc = isDel ? '#ff6666' : '#00ffff';
+    var bdc = isDel ? '1px solid #aa3333' : '1px solid #4466cc';
     s += '<button onclick="event.stopPropagation();_feQuick('+i+',\''+c[0]+'\')" '
       + 'title="'+c[2]+'" '
       + 'style="font-family:Courier New,monospace;font-size:13px;font-weight:700;'
-      + 'background:#001144;color:#00ffff;border:1px solid #4466cc;border-radius:2px;'
+      + 'background:'+bgc+';color:'+fgc+';border:'+bdc+';border-radius:2px;'
       + 'padding:1px 6px;margin:0 1px;cursor:pointer;vertical-align:middle;">' + c[1] + '</button>';
   }
   return s;
@@ -13818,6 +13912,7 @@ function _feBrowse(steps){
   _feFocusPrompt();
 }
 function _feRowTap(idx){
+  _feInline = null;
   _feRowIdx = idx;
   _feRender();
   _feFocusPrompt();
