@@ -13975,10 +13975,11 @@ function _feBrowse(steps){
   _feMode = 'entry-payee';
   _feMiniLabel = 'BROWSE ['+(_feRowIdx+1)+'/'+LOG.length+']';
   _feRender();
-  // scroll the selected row into view inside the list
+  // FoxBase-style browse: the highlight bar moves within the visible window;
+  // 'nearest' scrolls the list ONLY when the bar reaches the top/bottom edge.
   setTimeout(function(){
     var row = document.querySelector('#fe-tbody [data-idx="'+_feRowIdx+'"]');
-    if(row && row.scrollIntoView){ try{ row.scrollIntoView({block:'center'}); }catch(e){} }
+    if(row && row.scrollIntoView){ try{ row.scrollIntoView({block:'nearest'}); }catch(e){} }
   }, 20);
   setTimeout(function(){
     if(_feMiniLabel.indexOf('BROWSE')===0){ _feMiniLabel=''; _feRenderPrompt(); }
