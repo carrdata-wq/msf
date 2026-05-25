@@ -6474,127 +6474,108 @@ function doPhoneBackup(){
     if(typeof toast==='function') toast('Using in-memory '+memCount.toLocaleString()+' (storage had '+CLIENTS.length.toLocaleString()+')',true);
   }
   if(!CLIENTS.length){toast('No phone clients to backup',false);return;}
-  // Clean-export flag (set in confirmMovePhone) — strip X marks so destination won't see them as new
   var cleanExport = !!window._cleanExportPhone;
-  var CHUNK=Math.ceil(CLIENTS.length/5);
-  var dateStr=today().replace(/-/g,'');
-  var files=[];
   function qc(s){
     s=String(s||'').replace(/\n/g,' ').replace(/\r/g,' ').replace(/"/g,"'");
     if(s.indexOf(',')>=0) s='"'+s+'"';
     return s;
   }
-  var header='NAME,PHONE,EMAIL,ADDR,NOTES,CONTACTED,ADATE,X,MTIME\n';
+  var header='NAME,PHONE,EMAIL,ADDR,NOTES,CONTACTED,ADATE,X,MTIME';
   var mtime=new Date().toISOString();
-  // Build 5 chunked .txt files for download (fallback if CSV too big for email body)
-  for(var i=0;i<5;i++){
-    var chunk=CLIENTS.slice(i*CHUNK,(i+1)*CHUNK);
-    if(!chunk.length) break;
-    var lines=[header];
-    chunk.forEach(function(c){
-      var xVal = cleanExport ? '' : (c.x||'');
-      lines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',')+'\n');
-    });
-    files.push({name:'PHONE_BACKUP_'+(cleanExport?'CLEAN_':'')+dateStr+'_'+(i+1)+'.txt',text:lines.join(''),count:chunk.length});
-  }
-  // Build the combined CSV for the email body.
-  var combinedLines=[header];
-  CLIENTS.forEach(function(c){
+  var rows=CLIENTS.map(function(c){
     var xVal = cleanExport ? '' : (c.x||'');
-    combinedLines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',')+'\n');
+    return [qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',');
   });
-  var combinedText=combinedLines.join('');
-  var subject='📱 PHONE BACKUP — '+today()+' ('+CLIENTS.length+' clients'+(cleanExport?' · CLEAN':'')+')';
-  var toEmail='tristancarrington1@gmail.com';
-  var instructions = 'PHONE BACKUP — '+CLIENTS.length+' clients · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
-                   + 'On the other device:\n'
-                   + '  1. Select all text below (between the lines)\n'
-                   + '  2. Copy it\n'
-                   + '  3. Open MFS → Phone Clients → BULK UPLOAD\n'
-                   + '  4. Paste and tap LOAD\n\n';
-  var separator='─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
-  var fullBody=instructions+separator+combinedText+'─────── END CSV ───────\n';
-  var encoded=encodeURIComponent(fullBody);
-  if(encoded.length <= 25000){
-    // Fits — open the email app directly with the data, no file downloads.
-    toast('Opening email — '+CLIENTS.length+' clients…',true);
-    setTimeout(function(){
-      window.location.href='mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encoded;
-    },300);
-  } else {
-    // Too big for an email body — save the 5 chunk files, email asks to attach them.
-    files.forEach(function(f){
-      var blob=new Blob([f.text],{type:'text/plain'});
-      var a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);a.download=f.name;
-      document.body.appendChild(a);a.click();document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    });
-    var body=instructions+'Client list is too large for the email body ('+combinedText.length.toLocaleString()+' chars).\n'
-            +'Attach the '+files.length+' downloaded files from Downloads:\n'
-            +files.map(function(f){return '  • '+f.name+' ('+f.count+' clients)';}).join('\n')+'\n';
-    toast('📱 Too big for email body — saved '+files.length+' files, attach them',true);
-    setTimeout(function(){
-      window.location.href='mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-    },600);
-  }
+  var chunks=_mfsChunkRows(rows);
+  var total=chunks.length;
+  var pieces=chunks.map(function(ch,i){
+    var marker='MFS-PHONE-PART '+(i+1)+' OF '+total+(cleanExport?' CLEAN':'');
+    var body=marker+'\r\n'
+           +'Paste this WHOLE email into MFS - Phone Clients - BULK UPLOAD and tap LOAD. Do the same with every piece - they merge.\r\n'
+           +header+'\r\n'+ch.join('\r\n')+'\r\n';
+    return { idx:i+1, total:total, count:ch.length,
+             subject:'MFS Phone Backup '+(i+1)+'/'+total+' - '+today()+(cleanExport?' CLEAN':''),
+             body:body };
+  });
+  showBackupPieces({ label:'PHONE BACKUP', unit:'clients',
+    totalItems:CLIENTS.length, whereToLoad:'Phone Clients - BULK UPLOAD', pieces:pieces });
 }
 
+// ── Backup pieces overlay — one tap per piece, each opens an email ──
+function showBackupPieces(opts){
+  window._mfsBackupPieces = opts.pieces;
+  var old=document.getElementById('backup-pieces-overlay');
+  if(old) old.remove();
+  var o=document.createElement('div');
+  o.id='backup-pieces-overlay';
+  o.style.cssText='position:fixed;inset:0;background:#000033;z-index:9500;overflow-y:auto;font-family:Courier New,monospace;padding:18px;';
+  var btns='';
+  opts.pieces.forEach(function(p,i){
+    btns+='<button id="bkp-piece-'+i+'" onclick="emailBackupPiece('+i+')" '
+      +'style="display:block;width:100%;margin-bottom:8px;padding:14px;background:#ffff00;color:#000080;'
+      +'font-weight:700;font-size:14px;border:none;border-radius:6px;cursor:pointer;'
+      +'font-family:Courier New,monospace;text-align:left;">'
+      +'\u2709 EMAIL PIECE '+p.idx+' OF '+p.total
+      +'<div style="font-size:11px;font-weight:400;margin-top:3px;">'+p.count+' '+opts.unit+'</div></button>';
+  });
+  var many=opts.pieces.length;
+  o.innerHTML='<div style="max-width:560px;margin:0 auto;">'
+    +'<div style="color:#00ff88;font-weight:700;font-size:17px;margin-bottom:6px;">'+opts.label+' \u2014 '+many+' PIECE'+(many>1?'S':'')+'</div>'
+    +'<div style="color:#ccccff;font-size:13px;line-height:1.5;margin-bottom:14px;">'
+    +opts.totalItems+' '+opts.unit+' total \u2014 cut into '+many+' email-sized piece'+(many>1?'s':'')+'.<br><br>'
+    +'Tap each button: your email opens with that piece ready, just send it. On the other device, open <b>'+opts.whereToLoad+'</b> and paste each email in \u2014 they merge back together. Order does not matter.</div>'
+    +btns
+    +'<button onclick="document.getElementById(\'backup-pieces-overlay\').remove();" '
+    +'style="width:100%;margin-top:6px;padding:11px;background:#660000;color:#fff;font-size:13px;'
+    +'border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">\u21a9 DONE</button>'
+    +'</div>';
+  document.body.appendChild(o);
+}
+function emailBackupPiece(i){
+  var p=(window._mfsBackupPieces||[])[i];
+  if(!p) return;
+  var to='tristancarrington1@gmail.com';
+  var btn=document.getElementById('bkp-piece-'+i);
+  if(btn){ btn.style.background='#006644'; btn.style.color='#ffffff'; }
+  try{
+    window.location.href='mailto:'+to+'?subject='+encodeURIComponent(p.subject)+'&body='+encodeURIComponent(p.body);
+  }catch(e){ toast('Could not open email',false); }
+}
+// Split an array of CSV row-strings into chunks that each fit one email body.
+function _mfsChunkRows(rows){
+  var chunks=[], cur=[], curEnc=0, LIMIT=20000;
+  rows.forEach(function(r){
+    var rEnc=encodeURIComponent(r+'\r\n').length;
+    if(curEnc+rEnc>LIMIT && cur.length){ chunks.push(cur); cur=[]; curEnc=0; }
+    cur.push(r); curEnc+=rEnc;
+  });
+  if(cur.length) chunks.push(cur);
+  return chunks;
+}
 function doBackup() {
   var mxLog=[];
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
   if(!mxLog.length){toast('No entries to backup',false);return;}
-
-  // Clean-export flag (set in confirmMoveAccounting) — strip X marks so
-  // destination doesn't see records as new/edited
   var cleanExport = !!window._cleanExportAcc;
-
-  // Build CSV — Gmail friendly, no JSON
   function qc(s){s=String(s||'');if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)s='"'+s.replace(/"/g,'""')+'"';return s;}
-  var lines=['ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME'];
-  mxLog.forEach(function(e){
+  var header='ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME';
+  var rows=mxLog.map(function(e){
     var xVal = cleanExport ? '' : (e.x||'');
-    lines.push([qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(xVal),qc(e.mtime||'')].join(','));
+    return [qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(xVal),qc(e.mtime||'')].join(',');
   });
-  var backupText=lines.join('\r\n');
-  var dateStr=today().replace(/-/g,'');
-  var filename='mfs-backup-'+(cleanExport?'CLEAN-':'')+dateStr+'.txt';
-
-  // Email-first — matches the Balance Sheet flow: open the email app with the
-  // data already in the body. Only fall back to a file download if the data is
-  // too large for an email body (email/URL size ceiling).
-  var subject='MFS Backup — '+today()+' ('+mxLog.length+' entries'+(cleanExport?' · CLEAN':'')+')';
-  var toEmail='tristancarrington1@gmail.com';
-  var instructions = 'ACCOUNTING BACKUP — '+mxLog.length+' entries · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
-                   + 'On the other device:\n'
-                   + '  1. Select all text below (between the lines)\n'
-                   + '  2. Copy it\n'
-                   + '  3. Open MFS → MOVE ACCOUNTING\n'
-                   + '  4. Paste into the green textarea and tap LOAD IT NOW\n\n';
-  var separator    = '─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
-  var fullBody     = instructions + separator + backupText + '\n─────── END CSV ───────\n';
-  var encoded      = encodeURIComponent(fullBody);
-  if(encoded.length <= 25000){
-    // Fits — open the email app directly with the data, no file download.
-    toast('Opening email — '+mxLog.length+' entries…',true);
-    setTimeout(function(){
-      window.location.href = 'mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encoded;
-    },300);
-  } else {
-    // Too big for an email body — save one file, email asks to attach it.
-    var blob=new Blob([backupText],{type:'text/plain'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');
-    a.href=url;a.download=filename;
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    var body=instructions+'The database is too large for the email body — saved as '
-            +filename+' in Downloads. Attach that file to this email.\n';
-    toast('💾 Too big for email body — saved '+filename+', attach it',true);
-    setTimeout(function(){
-      window.location.href='mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-    },600);
-  }
+  var chunks=_mfsChunkRows(rows);
+  var total=chunks.length;
+  var pieces=chunks.map(function(ch,i){
+    var marker='MFS-BACKUP-PART '+(i+1)+' OF '+total+(cleanExport?' CLEAN':'');
+    var body=marker+'\r\n'
+           +'Paste this WHOLE email into MFS - MOVE ACCOUNTING and tap LOAD IT NOW. Do the same with every piece - they merge.\r\n'
+           +header+'\r\n'+ch.join('\r\n')+'\r\n';
+    return { idx:i+1, total:total, count:ch.length,
+             subject:'MFS Backup '+(i+1)+'/'+total+' - '+today()+(cleanExport?' CLEAN':''),
+             body:body };
+  });
+  showBackupPieces({ label:'ACCOUNTING BACKUP', unit:'entries',
+    totalItems:mxLog.length, whereToLoad:'MOVE ACCOUNTING', pieces:pieces });
 }
 function copyBackupText(){
   var ta=document.getElementById('bkp-share-text');if(!ta)return;
@@ -11573,6 +11554,29 @@ function universalLoadBackupCSV(txt){
     });
   }
   if(!arr.length){toast('No usable rows',false);return;}
+  // Chunked backup piece? merge by ID (accumulate pieces) instead of replacing.
+  if(/MFS-BACKUP-PART/i.test(txt)){
+    var byId={};
+    LOG.forEach(function(e){ if(e && e.id!=null) byId[String(e.id)]=e; });
+    var added=0;
+    arr.forEach(function(r){
+      var k=String(r.id);
+      if(byId[k]===undefined) added++;
+      byId[k]=r;
+    });
+    var merged=Object.keys(byId).map(function(k){return byId[k];});
+    merged.sort(function(a,b){
+      var da=(a.date||''), db=(b.date||'');
+      if(da!==db) return db<da?-1:1;          // newest date first
+      return (b.id||0)-(a.id||0);
+    });
+    localStorage.setItem('mx_log',JSON.stringify(merged));
+    LOG=merged;
+    document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+    try{renderLog();}catch(e){}
+    toast('✓ Piece loaded — '+merged.length+' entries in ledger ('+added+' new)',true);
+    return;
+  }
   if(!confirm('RESTORE ACCOUNTING — '+arr.length+' entries from CSV?\nThis REPLACES your current ledger.\nTap Cancel to abort.'))return;
   localStorage.setItem('mx_log',JSON.stringify(arr));
   LOG=arr;
@@ -12356,7 +12360,10 @@ function _feKeyboardWatch(){
       var wrap = document.getElementById('fe-listwrap');
       if(!wrap) return;
       if(wrap.contains(ev.target)) return;   // already over the list → native scroll
-      wrap.scrollTop += ev.deltaY;           // anywhere else → drive the list
+      var dy = ev.deltaY;
+      if(ev.deltaMode === 1) dy *= 16;                    // line mode → ~16px / line
+      else if(ev.deltaMode === 2) dy *= (wrap.clientHeight || 400);  // page mode
+      wrap.scrollTop += dy;                  // anywhere else → drive the list
     }, { passive:true });
   }
   setTimeout(check, 60);
@@ -13178,7 +13185,7 @@ function _feStartInline(idx, field){
   _feRenderTable();
   setTimeout(function(){
     var inp = document.getElementById('fe-inline-edit');
-    if(inp){ try { inp.focus(); inp.select(); } catch(e){} }
+    if(inp){ try { inp.focus({preventScroll:true}); inp.select(); } catch(e){ try{ inp.focus(); inp.select(); }catch(e2){} } }
   }, 30);
 }
 function _feInlineInput(){
@@ -13572,7 +13579,7 @@ function _feRenderPickerOverlay(){
   _feRenderPickerResults();
   setTimeout(function(){
     var pi = document.getElementById('fe-picker-input');
-    if(pi){ try { pi.value = _fePickerFilter; pi.focus(); } catch(e){} }
+    if(pi){ try { pi.value = _fePickerFilter; pi.focus({preventScroll:true}); } catch(e){ try{ pi.focus(); }catch(e2){} } }
   }, 30);
 }
 // Re-renders ONLY the result buttons — the search input keeps focus.
@@ -14152,12 +14159,13 @@ function _feFocusPrompt(){
   else if(_feMode==='pick-desc' || _feMode==='pick-pcode' || _feMode==='pick-payee') id = 'fe-picker-input';
   // Immediate focus — rides the current user gesture so the mobile
   // keyboard reliably stays/comes up (a delayed focus alone won't).
+  // preventScroll → focus never yanks the ThinkPad scroll position.
   var now = document.getElementById(id);
-  if(now){ try { now.focus(); } catch(e){} }
+  if(now){ try { now.focus({preventScroll:true}); } catch(e){ try{ now.focus(); }catch(e2){} } }
   // Delayed backup — catches cases where the DOM needs to settle first.
   setTimeout(function(){
     var inp = document.getElementById(id);
-    if(inp){ try { inp.focus(); inp.select(); } catch(e){} }
+    if(inp){ try { inp.focus({preventScroll:true}); inp.select(); } catch(e){ try{ inp.focus(); inp.select(); }catch(e2){} } }
   }, 50);
 }
 
