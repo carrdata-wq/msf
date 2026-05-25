@@ -1442,7 +1442,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
     <!-- ENTRY LIST — DOS terminal: blue field, white text, no boxes -->
     <div style="position:relative;margin-top:5px;">
-      <div id="fe-listwrap" style="background:#0000b8;overflow-y:auto;max-height:min(620px,70vh);border-top:1px solid #4466cc;">
+      <div id="fe-listwrap" style="background:#0000b8;overflow-y:auto;overscroll-behavior:contain;max-height:min(620px,70vh);border-top:1px solid #4466cc;">
         <div id="fe-tbody"></div>
       </div>
       <!-- bottom fade — entries dissolve into the blue, signalling more below -->
@@ -12347,6 +12347,18 @@ function _feKeyboardWatch(){
     var fe = document.getElementById('screen-fastentry');
     if(fe && fe.style.display !== 'none') _feRenderTable();
   });
+  // ThinkPad natural browse: a mouse-wheel ANYWHERE on the FAST ENTRY screen
+  // scrolls the entry list — like dragging the list on Android. Touch devices
+  // don't fire 'wheel', so this never affects the Android experience.
+  var feScr = document.getElementById('screen-fastentry');
+  if(feScr){
+    feScr.addEventListener('wheel', function(ev){
+      var wrap = document.getElementById('fe-listwrap');
+      if(!wrap) return;
+      if(wrap.contains(ev.target)) return;   // already over the list → native scroll
+      wrap.scrollTop += ev.deltaY;           // anywhere else → drive the list
+    }, { passive:true });
+  }
   setTimeout(check, 60);
   setTimeout(check, 350);
   check();
@@ -13185,9 +13197,18 @@ function _feInlineInput(){
     return;
   }
   if(f==='amt'){
-    // 0.8s after you stop typing → applies. Enter also fires it. Never sits frozen.
+    // Cents convention — last 2 digits are cents. 2345 → 23.45 (forms live).
+    var hasNeg = inp.value.indexOf('-') >= 0;
+    var d = inp.value.replace(/[^0-9]/g,'');
+    if(d){
+      var fmt = (hasNeg?'-':'') + (parseInt(d,10)/100).toFixed(2);
+      if(inp.value !== fmt){
+        inp.value = fmt;
+        try { inp.setSelectionRange(fmt.length, fmt.length); } catch(ee){}
+      }
+    }
     if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
-    if(inp.value.replace(/[^0-9]/g,'')){
+    if(d){   // 0.8s after you stop typing → applies. Enter also fires it.
       _feInlineTimer = setTimeout(function(){ _feInlineTimer = null; _feApplyInline(); }, 800);
     }
     return;
@@ -13215,10 +13236,10 @@ function _feApplyInline(){
   } else if(f==='payee'){
     if(val.trim()) e.payee = val.toUpperCase().trim();
   } else if(f==='amt'){
-    var raw = val.replace(/[^0-9.\-]/g,'');
-    var neg = raw.indexOf('-') >= 0;
-    var n = parseFloat(raw.replace(/-/g,''));
-    if(!isNaN(n)){
+    var neg = val.indexOf('-') >= 0;
+    var digits = val.replace(/[^0-9]/g,'');
+    if(digits){
+      var n = parseInt(digits,10) / 100;   // cents convention — last 2 digits = cents
       // sign: a typed "-" always wins; otherwise the IRS rule —
       // income-type desc → +, everything else → expense → −
       if(neg) n = -n;
