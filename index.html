@@ -1418,9 +1418,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
    <div style="border:2px solid #aaccff;border-radius:3px;padding:6px 3px;background:#0000b8;">
 
     <!-- PROMPT — DOS style: white label, inverse-video input box -->
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button onclick="goMain()" style="background:#aaccff;border:none;color:#000080;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:4px 8px;border-radius:3px;cursor:pointer;flex-shrink:0;">◀ MENU</button>
       <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-        <span style="color:#ffffff;font-weight:700;font-size:17px;letter-spacing:1px;flex-shrink:0;">WHAT PAYEE</span>
+        <span style="color:#ffffff;font-weight:700;font-size:17px;letter-spacing:1px;flex-shrink:0;">PAYEE</span>
         <span id="fe-mini-label" style="display:none;"></span>
         <input id="fe-prompt" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="4"
                oninput="_feHandleInput(this.value)"
@@ -12909,7 +12910,7 @@ function _feDispatchInput(val){
   if(_feMode === 'entry-payee'){
     if(!v){ _feFocusPrompt(); return; }
     var vu = v.toUpperCase();
-    if(['DEFA','PACK','COPY','FLIP','DEL','MM','DD','YR','AMT','PCOD','DESC','R','B','S','-','?','H'].indexOf(vu) >= 0){
+    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','R','B','S','-','?','H'].indexOf(vu) >= 0){
       _feDispatchCommand(v); return;
     }
     _feLookupAndApply(v);
@@ -12989,6 +12990,7 @@ function _feDispatchCommand(raw){
   _feLastCommand = cmd;
   if(cmd === 'DEFA'){ _feStartDefa(); return; }
   if(cmd === 'PACK'){ _fePack(); return; }
+  if(cmd === 'MENU' || cmd === 'QUIT'){ goMain(); return; }
   if(cmd === 'COPY'){ _feActCopy(); return; }
   if(cmd === 'FLIP'){ _feFlipSign(); return; }
   if(cmd === 'DEL'){ _feActDel(); return; }
@@ -13206,37 +13208,73 @@ function _feStartDescPick(){
 function _feRenderPickerOverlay(){
   var ov = document.getElementById('fe-overlay');
   if(!ov) return;
+  var title = (_feMode === 'pick-pcode' ? 'PCOD' : 'DESC');
+  // Build the overlay shell ONCE — input stays alive while results re-render.
+  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">' + title + ' — type any letters in it (SUP finds ROOFING SUPPLIES) · auto-picks at 1 · ESC cancels</div>'
+    + '<input id="fe-picker-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" '
+      + 'placeholder="TYPE TO FIND..." maxlength="20" '
+      + 'oninput="_feFilterPicker(this.value)" onkeydown="_fePickerInputKey(event)" '
+      + 'style="background:#000000;border:2px solid #ffff00;color:#ffff55;font-family:Courier New,monospace;'
+      + 'font-size:19px;font-weight:700;padding:7px 10px;border-radius:3px;outline:none;'
+      + 'text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;width:100%;box-sizing:border-box;">'
+    + '<div id="fe-picker-results" style="display:flex;flex-wrap:wrap;gap:4px;overflow-y:auto;"></div>'
+    + '</div>';
+  ov.innerHTML = html;
+  ov.style.display = 'flex';
+  ov.style.alignItems = 'flex-start';
+  _feRenderPickerResults();
+  setTimeout(function(){
+    var pi = document.getElementById('fe-picker-input');
+    if(pi){ try { pi.value = _fePickerFilter; pi.focus(); } catch(e){} }
+  }, 30);
+}
+// Re-renders ONLY the result buttons — the search input keeps focus.
+function _feRenderPickerResults(){
+  var box = document.getElementById('fe-picker-results');
+  if(!box) return;
   var q = _fePickerFilter.toUpperCase();
   var matches = _fePickerItems.filter(function(it){
     if(!q) return true;
-    return it.toUpperCase().indexOf(q) === 0;  // prefix match (FoxBase style)
+    return it.toUpperCase().indexOf(q) >= 0;   // contains match
   });
   if(q && matches.length === 1){
     if(_feMode === 'pick-pcode') _feSetPcode(matches[0]);
     else _feSetDesc(matches[0]);
     return;
   }
-  var title = (_feMode === 'pick-pcode' ? 'PCOD' : 'DESC');
   var memVal = (_fePickPayee && _fePickMem[_fePickPayee.toUpperCase()])
     ? _fePickMem[_fePickPayee.toUpperCase()][_feMode === 'pick-pcode' ? 'pcode' : 'desc'] : '';
-  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:80vh;display:flex;flex-direction:column;">'
-    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">' + title + ' — type letters to narrow · auto-applies when 1 left · ESC cancels</div>'
-    + '<div style="display:flex;flex-wrap:wrap;gap:4px;overflow-y:auto;">';
-  matches.slice(0, 100).forEach(function(it){
+  var html = '';
+  matches.slice(0, 120).forEach(function(it){
     var esc = _feEsc(it).replace(/'/g, "\\'");
     var isLast = (memVal && it === memVal && !q);
     var bg = isLast ? '#0d9488' : '#001144';
     var bd = isLast ? '2px solid #2dd4bf' : '1px solid #4466cc';
     var col = isLast ? '#ffffff' : '#00ffff';
     var star = isLast ? '\u2605 ' : '';
-    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:6px 10px;border-radius:3px;cursor:pointer;">' + star + _feEsc(it) + '</button>';
+    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + star + _feEsc(it) + '</button>';
   });
   if(!matches.length){
     html += '<div style="color:#ff6666;padding:8px;">No matches for "' + _feEsc(_fePickerFilter) + '"</div>';
   }
-  html += '</div></div>';
-  ov.innerHTML = html;
-  ov.style.display = 'flex';
+  box.innerHTML = html;
+}
+function _feFilterPicker(val){
+  _fePickerFilter = (val||'').toUpperCase();
+  _feRenderPickerResults();
+}
+function _fePickerInputKey(e){
+  if(e.key === 'Escape'){ e.preventDefault(); _feCancelMode(); return; }
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    var q = _fePickerFilter.toUpperCase();
+    var m = _fePickerItems.filter(function(it){ return !q || it.toUpperCase().indexOf(q) >= 0; });
+    if(m.length >= 1){
+      if(_feMode === 'pick-pcode') _feSetPcode(m[0]);
+      else _feSetDesc(m[0]);
+    }
+  }
 }
 function _feSetItem(val){
   if(_feMode === 'pick-pcode') _feSetPcode(val);
@@ -13245,7 +13283,7 @@ function _feSetItem(val){
 function _feApplyPcodePick(val){
   if(!val){ _feCancelMode(); return; }
   var up = val.toUpperCase();
-  var m = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(up)===0; });
+  var m = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(up)>=0; });
   if(m.length === 1){ _feSetPcode(m[0]); return; }
   if(m.length === 0){ toast('No pcode "'+val+'"',false); _feCancelMode(); return; }
   _fePickerFilter = up; _feRenderPickerOverlay(); _feFocusPrompt();
@@ -13253,7 +13291,7 @@ function _feApplyPcodePick(val){
 function _feApplyDescPick(val){
   if(!val){ _feCancelMode(); return; }
   var up = val.toUpperCase();
-  var m = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(up)===0; });
+  var m = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(up)>=0; });
   if(m.length === 1){ _feSetDesc(m[0]); return; }
   if(m.length === 0){ toast('No desc "'+val+'"',false); _feCancelMode(); return; }
   _fePickerFilter = up; _feRenderPickerOverlay(); _feFocusPrompt();
@@ -13734,7 +13772,9 @@ function _feCloseOverlay(){
 
 // ───── FOCUS ─────
 function _feFocusPrompt(){
-  var id = (_feMode==='fill-day' || _feMode==='fill-amt') ? 'fe-maskfield' : 'fe-prompt';
+  var id = 'fe-prompt';
+  if(_feMode==='fill-day' || _feMode==='fill-amt') id = 'fe-maskfield';
+  else if(_feMode==='pick-desc' || _feMode==='pick-pcode') id = 'fe-picker-input';
   // Immediate focus — rides the current user gesture so the mobile
   // keyboard reliably stays/comes up (a delayed focus alone won't).
   var now = document.getElementById(id);
