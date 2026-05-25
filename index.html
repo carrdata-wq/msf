@@ -6535,11 +6535,27 @@ function emailBackupPiece(i){
   var p=(window._mfsBackupPieces||[])[i];
   if(!p) return;
   var to='tristancarrington1@gmail.com';
-  var btn=document.getElementById('bkp-piece-'+i);
-  if(btn){ btn.style.background='#006644'; btn.style.color='#ffffff'; }
+  var subject=encodeURIComponent(p.subject);
+  var body=encodeURIComponent(p.body);
   try{
-    window.location.href='mailto:'+to+'?subject='+encodeURIComponent(p.subject)+'&body='+encodeURIComponent(p.body);
+    if(window.innerWidth >= 720){
+      // ThinkPad / desktop: Windows mailto: can't carry this much data —
+      // open Gmail's compose window, which accepts the full piece.
+      window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(to)
+                  +'&su='+subject+'&body='+body, '_blank');
+    } else {
+      // Android: mailto: opens the email app directly (working — leave alone).
+      window.location.href='mailto:'+to+'?subject='+subject+'&body='+body;
+    }
   }catch(e){ toast('Could not open email',false); }
+  // Mark this piece DONE — bold green so you never re-send the same one.
+  var btn=document.getElementById('bkp-piece-'+i);
+  if(btn){
+    btn.style.background='#117a3a';
+    btn.style.color='#ffffff';
+    btn.innerHTML='\u2713 SENT \u2014 PIECE '+p.idx+' OF '+p.total
+      +'<div style="font-size:11px;font-weight:400;margin-top:3px;">'+p.count+' done \u00b7 tap again only to re-send</div>';
+  }
 }
 // Split an array of CSV row-strings into chunks that each fit one email body.
 function _mfsChunkRows(rows){
