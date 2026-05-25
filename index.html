@@ -13032,7 +13032,7 @@ function _feDispatchInput(val){
   if(_feMode === 'entry-payee'){
     if(!v){ _feFocusPrompt(); return; }
     var vu = v.toUpperCase();
-    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','R','B','S','-','?','H'].indexOf(vu) >= 0){
+    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','R','S','-','?','H'].indexOf(vu) >= 0){
       _feDispatchCommand(v); return;
     }
     _feLookupAndApply(v);
@@ -13126,7 +13126,6 @@ function _feDispatchCommand(raw){
   if(cmd === '-'){ _feFlipSign(); return; }
   if(cmd === 'S'){ _feToggleSessionSign(); return; }
   if(cmd === 'R'){ showScreen('reports'); return; }
-  if(cmd === 'B'){ _feBrowse(1); return; }
   if(cmd === '?' || cmd === 'H'){ _feShowHelp(); return; }
   // Not a command → treat as a payee lookup (day defaults to today)
   _feLookupAndApply(cmd);
@@ -13563,15 +13562,21 @@ function _feRenderPickerResults(){
   }
   var memVal = (_fePickPayee && _fePickMem[_fePickPayee.toUpperCase()])
     ? _fePickMem[_fePickPayee.toUpperCase()][_feMode === 'pick-pcode' ? 'pcode' : 'desc'] : '';
+  // ThinkPad: when the list is short, label each result A B C ... — press the letter to pick.
+  var wide = window.innerWidth >= 720;
+  var lettered = wide && matches.length >= 1 && matches.length <= 12;
   var html = '';
-  matches.slice(0, 120).forEach(function(it){
+  matches.slice(0, 120).forEach(function(it, idx){
     var esc = _feEsc(it).replace(/'/g, "\\'");
     var isLast = (memVal && it === memVal && !q);
     var bg = isLast ? '#0d9488' : '#001144';
     var bd = isLast ? '2px solid #2dd4bf' : '1px solid #4466cc';
     var col = isLast ? '#ffffff' : '#00ffff';
     var star = isLast ? '\u2605 ' : '';
-    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + star + _feEsc(it) + '</button>';
+    var key = (lettered && idx < 26)
+      ? '<span style="display:inline-block;background:#ffff00;color:#000080;font-weight:700;border-radius:2px;padding:0 5px;margin-right:6px;">' + String.fromCharCode(65+idx) + '</span>'
+      : '';
+    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + key + star + _feEsc(it) + '</button>';
   });
   if(!matches.length){
     html += '<div style="color:#ff6666;padding:8px;">No matches for "' + _feEsc(_fePickerFilter) + '"</div>';
@@ -13594,6 +13599,23 @@ function _fePickerInputKey(e){
       else _feSetDesc(m[0]);
     } else if(_feMode === 'pick-payee' && q){
       _feSetPayeePicked(q);   // no match — accept the typed name as a new payee
+    }
+    return;
+  }
+  // ThinkPad letter-pick: a letter that CAN'T extend the filter (would match
+  // nothing) is a pick — press A/B/C to grab that result. A letter that still
+  // narrows the list just keeps filtering. No clash with typing the search.
+  if(window.innerWidth >= 720 && e.key && e.key.length === 1 && /[a-zA-Z]/.test(e.key)){
+    var qq = _fePickerFilter.toUpperCase();
+    var letter = e.key.toUpperCase();
+    var cur = _fePickerItems.filter(function(it){ return !qq || it.toUpperCase().indexOf(qq) >= 0; });
+    var ext = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(qq + letter) >= 0; });
+    if(ext.length === 0 && cur.length >= 1 && cur.length <= 12){
+      var li = letter.charCodeAt(0) - 65;   // A=0, B=1, ...
+      if(li >= 0 && li < cur.length){
+        e.preventDefault();
+        _feSetItem(cur[li]);
+      }
     }
   }
 }
