@@ -6497,21 +6497,13 @@ function doPhoneBackup(){
     });
     files.push({name:'PHONE_BACKUP_'+(cleanExport?'CLEAN_':'')+dateStr+'_'+(i+1)+'.txt',text:lines.join(''),count:chunk.length});
   }
-  files.forEach(function(f){
-    var blob=new Blob([f.text],{type:'text/plain'});
-    var a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);a.download=f.name;
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
-  });
-  // Build ONE combined CSV for the email body — matches Balance Sheet pattern
+  // Build the combined CSV for the email body.
   var combinedLines=[header];
   CLIENTS.forEach(function(c){
     var xVal = cleanExport ? '' : (c.x||'');
     combinedLines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',')+'\n');
   });
   var combinedText=combinedLines.join('');
-  // Compose Gmail with full CSV in body (or fall back to "attach files" if too big)
   var subject='📱 PHONE BACKUP — '+today()+' ('+CLIENTS.length+' clients'+(cleanExport?' · CLEAN':'')+')';
   var toEmail='tristancarrington1@gmail.com';
   var instructions = 'PHONE BACKUP — '+CLIENTS.length+' clients · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
@@ -6523,26 +6515,29 @@ function doPhoneBackup(){
   var separator='─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
   var fullBody=instructions+separator+combinedText+'─────── END CSV ───────\n';
   var encoded=encodeURIComponent(fullBody);
-  var body;
-  if(encoded.length>25000){
-    body=instructions+'CSV is too large for the email body ('+combinedText.length.toLocaleString()+' chars).\n'
-        +'Attach the '+files.length+' downloaded files from Downloads instead:\n'
-        +files.map(function(f){return '  • '+f.name+' ('+f.count+' clients)';}).join('\n')+'\n';
+  if(encoded.length <= 25000){
+    // Fits — open the email app directly with the data, no file downloads.
+    toast('Opening email — '+CLIENTS.length+' clients…',true);
+    setTimeout(function(){
+      window.location.href='mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encoded;
+    },300);
   } else {
-    body=fullBody;
+    // Too big for an email body — save the 5 chunk files, email asks to attach them.
+    files.forEach(function(f){
+      var blob=new Blob([f.text],{type:'text/plain'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);a.download=f.name;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    });
+    var body=instructions+'Client list is too large for the email body ('+combinedText.length.toLocaleString()+' chars).\n'
+            +'Attach the '+files.length+' downloaded files from Downloads:\n'
+            +files.map(function(f){return '  • '+f.name+' ('+f.count+' clients)';}).join('\n')+'\n';
+    toast('📱 Too big for email body — saved '+files.length+' files, attach them',true);
+    setTimeout(function(){
+      window.location.href='mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    },600);
   }
-  var gmailUrl='https://mail.google.com/mail/?view=cm&fs=1'
-              +'&to='+encodeURIComponent(toEmail)
-              +'&su='+encodeURIComponent(subject)
-              +'&body='+encodeURIComponent(body);
-  toast('📱 Saved '+files.length+' files · '+CLIENTS.length.toLocaleString()+' clients — opening Gmail…',true);
-  setTimeout(function(){
-    try{ window.open(gmailUrl,'_blank'); }
-    catch(e){
-      try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }
-      catch(e2){}
-    }
-  },600);
 }
 
 function doBackup() {
@@ -6565,17 +6560,9 @@ function doBackup() {
   var dateStr=today().replace(/-/g,'');
   var filename='mfs-backup-'+(cleanExport?'CLEAN-':'')+dateStr+'.txt';
 
-  // Download as .txt (CSV content inside) — .csv extension causes Android Chrome
-  // to hand the file to Google Slides/PDF viewer; .txt lets MFS handle paste/import cleanly.
-  var blob=new Blob([backupText],{type:'text/plain'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;a.download=filename;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  // Compose Gmail with full CSV in body — matches Balance Sheet DOWNLOAD & EMAIL pattern.
-  // Tap → email opens with all data → paste on the receiving device. No intermediate popup.
+  // Email-first — matches the Balance Sheet flow: open the email app with the
+  // data already in the body. Only fall back to a file download if the data is
+  // too large for an email body (email/URL size ceiling).
   var subject='MFS Backup — '+today()+' ('+mxLog.length+' entries'+(cleanExport?' · CLEAN':'')+')';
   var toEmail='tristancarrington1@gmail.com';
   var instructions = 'ACCOUNTING BACKUP — '+mxLog.length+' entries · '+today()+(cleanExport?' · CLEAN':'')+'\n\n'
@@ -6586,23 +6573,28 @@ function doBackup() {
                    + '  4. Paste into the green textarea and tap LOAD IT NOW\n\n';
   var separator    = '─────── CSV DATA — COPY EVERYTHING BELOW ───────\n';
   var fullBody     = instructions + separator + backupText + '\n─────── END CSV ───────\n';
-  // Fall back to instructions-only if encoded body would exceed safe URL length
-  var encoded = encodeURIComponent(fullBody);
-  var body = (encoded.length > 25000)
-    ? instructions + 'CSV is too large for the email body — attach the file '+filename+' from Downloads instead, then on the other device save the file, open in a text editor, copy, and paste.\n'
-    : fullBody;
-  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
-               + '&to='   + encodeURIComponent(toEmail)
-               + '&su='   + encodeURIComponent(subject)
-               + '&body=' + encodeURIComponent(body);
-  toast('💾 Saved '+filename+' · '+mxLog.length+' entries — opening Gmail…',true);
-  setTimeout(function(){
-    try{ window.open(gmailUrl,'_blank'); }
-    catch(e){
-      try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }
-      catch(e2){}
-    }
-  },600);
+  var encoded      = encodeURIComponent(fullBody);
+  if(encoded.length <= 25000){
+    // Fits — open the email app directly with the data, no file download.
+    toast('Opening email — '+mxLog.length+' entries…',true);
+    setTimeout(function(){
+      window.location.href = 'mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encoded;
+    },300);
+  } else {
+    // Too big for an email body — save one file, email asks to attach it.
+    var blob=new Blob([backupText],{type:'text/plain'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    var body=instructions+'The database is too large for the email body — saved as '
+            +filename+' in Downloads. Attach that file to this email.\n';
+    toast('💾 Too big for email body — saved '+filename+', attach it',true);
+    setTimeout(function(){
+      window.location.href='mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    },600);
+  }
 }
 function copyBackupText(){
   var ta=document.getElementById('bkp-share-text');if(!ta)return;
@@ -13190,6 +13182,15 @@ function _feInlineInput(){
     if(digits.length === 1){                                // 1 digit → 0.8s, then go
       _feInlineTimer = setTimeout(function(){ _feInlineTimer = null; _feApplyInline(); }, 800);
     }
+    return;
+  }
+  if(f==='amt'){
+    // 0.8s after you stop typing → applies. Enter also fires it. Never sits frozen.
+    if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
+    if(inp.value.replace(/[^0-9]/g,'')){
+      _feInlineTimer = setTimeout(function(){ _feInlineTimer = null; _feApplyInline(); }, 800);
+    }
+    return;
   }
 }
 function _feInlineKey(e){
@@ -13214,8 +13215,16 @@ function _feApplyInline(){
   } else if(f==='payee'){
     if(val.trim()) e.payee = val.toUpperCase().trim();
   } else if(f==='amt'){
-    var n = parseFloat(val.replace(/[^0-9.\-]/g,''));
-    if(!isNaN(n)) e.amt = n;
+    var raw = val.replace(/[^0-9.\-]/g,'');
+    var neg = raw.indexOf('-') >= 0;
+    var n = parseFloat(raw.replace(/-/g,''));
+    if(!isNaN(n)){
+      // sign: a typed "-" always wins; otherwise the IRS rule —
+      // income-type desc → +, everything else → expense → −
+      if(neg) n = -n;
+      else if(typeof _feIsIncomeDesc==='function' && !_feIsIncomeDesc(e.desc)) n = -n;
+      e.amt = n;
+    }
   }
   saveLog();
   _feInvalidateIndex();
