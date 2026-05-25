@@ -12348,6 +12348,11 @@ function _feKeyboardWatch(){
   };
   window.visualViewport.addEventListener('resize', check);
   window.visualViewport.addEventListener('scroll', check);
+  // also re-render the table on a real window resize (wide<->narrow switch)
+  window.addEventListener('resize', function(){
+    var fe = document.getElementById('screen-fastentry');
+    if(fe && fe.style.display !== 'none') _feRenderTable();
+  });
   setTimeout(check, 60);
   setTimeout(check, 350);
   check();
@@ -12434,6 +12439,80 @@ function _feRender(){ _feRenderTable(); _feRenderPrompt(); _feRenderMergeBanner(
 function _feRenderTable(){
   var tbody = document.getElementById('fe-tbody');
   if(!tbody) return;
+  // TWO SYSTEMS: wide screen (ThinkPad) → 80-col dBASE single-line.
+  //              narrow screen (Android) → the 2-line layout (untouched).
+  if(window.innerWidth >= 720) _feRenderTableWide(tbody);
+  else _feRenderTableNarrow(tbody);
+}
+
+// ───── THINKPAD — true dBASE 80-column single-line browse ─────
+// Fields: DDMMYR n6 · PAYEE c25 · PCODE c5 · DESC c25 · AMT n12,2 · file#
+function _feRenderTableWide(tbody){
+  function pad(s,n){ s=String(s==null?'':s); return s.length>n ? s.slice(0,n) : s + new Array(n-s.length+1).join(' '); }
+  function padL(s,n){ s=String(s==null?'':s); return s.length>n ? s.slice(-n) : new Array(n-s.length+1).join(' ') + s; }
+  function date6(iso){
+    if(!iso) return '      ';
+    var p = String(iso).split('-');           // ISO yyyy-mm-dd
+    if(p.length < 3) return pad(iso,6);
+    return p[1] + p[2] + p[0].slice(2);        // MMDDYR
+  }
+  function amt12(a){ return padL((a<0?'-':'') + Math.abs(a||0).toFixed(2), 12); }
+  var FS = 'font-size:20px;';                  // ~30% bigger than the 2-line view
+  var base = 'font-family:Courier New,monospace;'+FS+'white-space:pre;padding:1px 10px;line-height:1.5;font-weight:700;';
+  var html = '';
+  // header
+  html += '<div style="'+base+'color:#ffff55;border-bottom:1px solid #4466cc;">'
+    + pad('DATE',6)+' '+pad('PAYEE',25)+' '+pad('PCOD',5)+' '+pad('DESC',25)+' '+padL('AMOUNT',12)+' '+padL('#',6)
+    + '</div>';
+  // masked draft line
+  if(_feDraft){
+    var d = _feDraft;
+    var fillingDay = (_feMode === 'fill-day');
+    var fillingAmt = (_feMode === 'fill-amt');
+    var inv = 'background:#000000;border:none;color:#ffff55;font-family:Courier New,monospace;font-weight:700;outline:none;'+FS+'padding:0 1px;text-align:center;';
+    var dayCell = fillingDay
+      ? '<input id="fe-maskfield" type="text" inputmode="numeric" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:32px;">'
+      : (d.dd || '__');
+    var amtCell = fillingAmt
+      ? '<input id="fe-maskfield" type="text" inputmode="decimal" maxlength="11" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:120px;text-align:right;">'
+      : (typeof d.amt==='number' ? amt12(d.amt) : '       ____');
+    html += '<div style="'+base+'background:#000088;color:#ffff55;">'
+      + d.mm + dayCell + d.yr + ' '
+      + _feEsc(pad(d.payee||'',25)) + ' '
+      + _feEsc(pad(d.pcode||'',5)) + ' '
+      + _feEsc(pad(d.desc||'',25)) + ' '
+      + amtCell
+      + '</div>';
+  }
+  // committed entries — newest first, dead rows hidden
+  var n = LOG.length, visibleCount = 0;
+  for(var i = 0; i < n; i++){
+    var e = LOG[i];
+    if(e.deleted) continue;
+    visibleCount++;
+    var current = (!_feDraft && i === _feRowIdx);
+    var recno = n - i;
+    var line = date6(e.date) + ' '
+      + pad(e.payee||'',25) + ' '
+      + pad(e.pcode||'',5) + ' '
+      + pad(e.desc||'',25) + ' '
+      + amt12(e.amt) + ' '
+      + padL('#'+recno,6);
+    var col = current ? '#ffff55' : '#ffffff';
+    var bg = current ? 'background:#000088;' : '';
+    html += '<div data-idx="'+i+'" onclick="_feRowTap('+i+')" style="'+base+bg+'color:'+col+';cursor:pointer;">'
+      + _feEsc(line) + '</div>';
+  }
+  if(visibleCount === 0 && !_feDraft){
+    html += '<div style="padding:16px;color:#aaccff;'+FS+'">No entries — type a payee to begin</div>';
+  }
+  tbody.innerHTML = html;
+  var cEl = document.getElementById('fe-count');
+  if(cEl) cEl.textContent = visibleCount ? (visibleCount + ' OF ' + visibleCount) : '';
+}
+
+// ───── ANDROID — 2-line layout (do not disturb) ─────
+function _feRenderTableNarrow(tbody){
   var html = '';
   var L1 = 'display:flex;align-items:baseline;gap:7px;';
   var L2 = 'display:flex;align-items:baseline;gap:7px;margin-top:1px;';
@@ -12572,7 +12651,7 @@ function _feClearIdleTimer(){
 // Type "R" + 2s → Reports. Type "RICH" + 2s → lookup → if not found, ADD NEW?
 // The only exception is edit-newpayee where the user is typing a long
 // proper name like "RICHARDS BUILDING SUPPLY COMPANY" and needs time.
-function _feArmIdleTimer(){
+function _feArmIdleTimer(ms){
   _feClearIdleTimer();
   _feIdleTimer = setTimeout(function(){
     _feIdleTimer = null;
@@ -12596,7 +12675,7 @@ function _feArmIdleTimer(){
     if(!v) return;
     inp.value = '';
     _feDispatchInput(v);
-  }, _feIdleMs);
+  }, ms || _feIdleMs);
 }
 
 // ── MASKED LINE input handlers (the cursor lives IN the table cell) ──
@@ -12611,7 +12690,18 @@ function _feMaskInput(val){
       _feApplyDraftDay(digits);
       return;
     }
-    if(digits) _feArmIdleTimer(); else _feClearIdleTimer();
+    if(digits.length === 1){
+      // Days 4-9 can't START a 2-digit day (max is 31) → fire INSTANTLY, no wait.
+      if(/^[4-9]$/.test(digits)){
+        _feClearIdleTimer();
+        _feApplyDraftDay(digits);
+        return;
+      }
+      // 1,2,3 — could begin a 2-digit day → short 0.6s wait for a 2nd digit
+      _feArmIdleTimer(600);
+      return;
+    }
+    _feClearIdleTimer();
     return;
   }
   if(_feMode === 'fill-amt'){
@@ -12624,7 +12714,7 @@ function _feMaskInput(val){
         try { f2.setSelectionRange(fmt.length, fmt.length); } catch(e){}
       }
     }
-    if(raw) _feArmIdleTimer(); else _feClearIdleTimer();
+    if(raw) _feArmIdleTimer(800); else _feClearIdleTimer();   // 0.8s — snappier
     return;
   }
 }
