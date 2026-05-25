@@ -12501,7 +12501,7 @@ function _feRenderTableWide(tbody){
     var col = current ? '#ffff55' : '#ffffff';
     var bg = current ? 'background:#000088;' : '';
     html += '<div data-idx="'+i+'" onclick="_feRowTap('+i+')" style="'+base+bg+'color:'+col+';cursor:pointer;">'
-      + _feEsc(line) + '</div>';
+      + _feEsc(line) + _feCodeStrip(i) + '</div>';
   }
   if(visibleCount === 0 && !_feDraft){
     html += '<div style="padding:16px;color:#aaccff;'+FS+'">No entries — type a payee to begin</div>';
@@ -12615,6 +12615,7 @@ function _feRenderPrompt(){
     else if(_feMode === 'edit-dd'){ inp.placeholder='DD (or ↵)'; inp.maxLength=2; }
     else if(_feMode === 'edit-yr'){ inp.placeholder='YYYY (or ↵)'; inp.maxLength=4; }
     else if(_feMode === 'edit-newpayee'){ inp.placeholder='FULL NAME'; inp.maxLength=40; }
+    else if(_feMode === 'edit-payee'){ inp.placeholder='NEW PAYEE NAME'; inp.maxLength=40; }
     else if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){ inp.placeholder='TYPE'; inp.maxLength=10; }
     else if(_feMode === 'ask-new'){ inp.placeholder='Y/N'; inp.maxLength=1; }
     else if(_feMode === 'pick-combo'){ inp.placeholder='#'; inp.maxLength=2; }
@@ -12655,7 +12656,7 @@ function _feArmIdleTimer(ms){
   _feClearIdleTimer();
   _feIdleTimer = setTimeout(function(){
     _feIdleTimer = null;
-    if(_feMode === 'edit-newpayee') return;   // full names take time
+    if(_feMode === 'edit-newpayee' || _feMode === 'edit-payee') return;  // names take time
     // MASKED LINE fields — read the in-table input
     if(_feMode === 'fill-day'){
       var df = document.getElementById('fe-maskfield');
@@ -13015,6 +13016,7 @@ function _feDispatchInput(val){
   if(_feMode === 'edit-dd'){ _feApplyDD(v); return; }
   if(_feMode === 'edit-yr'){ _feApplyYR(v); return; }
   if(_feMode === 'edit-amt'){ _feApplyAMT(v); return; }
+  if(_feMode === 'edit-payee'){ _feApplyPayee(v); return; }
   if(_feMode === 'edit-newpayee'){ _feApplyNewPayeeName(v); return; }
   if(_feMode === 'pick-pcode'){ _feApplyPcodePick(v); return; }
   if(_feMode === 'pick-desc'){ _feApplyDescPick(v); return; }
@@ -13104,6 +13106,92 @@ function _feStartMM(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPr
 function _feStartDD(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-dd'; _feMiniLabel='EDIT DD:'; _feRender(); _feFocusPrompt(); }
 function _feStartYR(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-yr'; _feMiniLabel='EDIT YR:'; _feRender(); _feFocusPrompt(); }
 function _feStartAMT(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-amt'; _feMiniLabel='EDIT AMT:'; _feRender(); _feFocusPrompt(); }
+function _feStartPayeeEdit(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-payee'; _feMiniLabel='EDIT PAYEE:'; _feRender(); _feFocusPrompt(); }
+function _feApplyPayee(val){
+  if(!val || !String(val).trim()){ _feCancelMode(); return; }
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  e.payee = String(val).toUpperCase().trim();
+  saveLog();
+  _feInvalidateIndex();
+  _feFinishStep();
+}
+
+// ── THINKPAD per-row quick-code menu (D M Y P P D A C E F R) ──
+function _feQuick(i, action){
+  if(i < 0 || i >= LOG.length) return;
+  _feRowIdx = i;
+  switch(action){
+    case 'day':    _feStartDD(); break;
+    case 'mm':     _feStartMM(); break;
+    case 'yr':     _feStartYR(); break;
+    case 'payee':  _feStartPayeeEdit(); break;
+    case 'pcode':  _feStartPcodePick(); break;
+    case 'desc':   _feStartDescPick(); break;
+    case 'amt':    _feStartAMT(); break;
+    case 'copy':   _feActCopy(); break;
+    case 'flip':   _feFlipSign(); break;
+    case 'email':  if(LOG[i] && typeof shareLog==='function') shareLog(LOG[i].id); break;
+    case 'report': _feQuickReport(); break;
+  }
+}
+// Builds the 11-button code strip for one row (ThinkPad only).
+function _feCodeStrip(i){
+  var codes = [
+    ['day','D','DAY'],['mm','M','MM'],['yr','Y','YR'],
+    ['payee','P','PAYEE'],['pcode','P','PCODE'],['desc','D','DESC'],
+    ['amt','A','AMT'],['copy','C','COPY THIS FILE'],['email','E','EMAIL / TEXT'],
+    ['flip','F','FLIP SIGN'],['report','R','REPORT — LAST 50']
+  ];
+  var s = '  ';
+  for(var k=0;k<codes.length;k++){
+    var c = codes[k];
+    s += '<button onclick="event.stopPropagation();_feQuick('+i+',\''+c[0]+'\')" '
+      + 'title="'+c[2]+'" '
+      + 'style="font-family:Courier New,monospace;font-size:13px;font-weight:700;'
+      + 'background:#001144;color:#00ffff;border:1px solid #4466cc;border-radius:2px;'
+      + 'padding:1px 6px;margin:0 1px;cursor:pointer;vertical-align:middle;">' + c[1] + '</button>';
+  }
+  return s;
+}
+// R = quick report on the last 50 entries — for the user to study recent work.
+function _feQuickReport(){
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  var rows = [];
+  for(var i=0;i<LOG.length && rows.length<50;i++){
+    if(LOG[i].deleted) continue;
+    rows.push(LOG[i]);
+  }
+  var tot = 0, body = '';
+  rows.forEach(function(e){
+    tot += (e.amt||0);
+    var aT = (e.amt<0?'-':'') + Math.abs(e.amt||0).toFixed(2);
+    var aC = e.amt<0 ? '#ff8888' : '#88ff88';
+    body += '<div style="display:flex;gap:8px;font-family:Courier New,monospace;font-size:14px;padding:3px 4px;border-bottom:1px solid #223366;">'
+      + '<span style="flex:0 0 74px;color:#aaccff;">'+_feEsc(_feFmtDate(e.date||''))+'</span>'
+      + '<span style="flex:1;color:#ffffff;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_feEsc(e.payee||'')+'</span>'
+      + '<span style="flex:0 0 150px;color:#88ccff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_feEsc(e.desc||'')+'</span>'
+      + '<span style="flex:0 0 96px;text-align:right;color:'+aC+';font-weight:700;">'+aT+'</span>'
+      + '</div>';
+  });
+  var tT = (tot<0?'-':'') + Math.abs(tot).toFixed(2);
+  ov.innerHTML = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:12px;max-width:780px;width:100%;max-height:86vh;display:flex;flex-direction:column;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:15px;margin-bottom:8px;font-family:Courier New,monospace;">LAST '+rows.length+' ENTRIES — study your recent work</div>'
+    + '<div style="overflow-y:auto;flex:1;">'+body+'</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-family:Courier New,monospace;">'
+    + '<span style="color:#ffff00;font-weight:700;font-size:15px;">RUNNING TOTAL: '+tT+'</span>'
+    + '<button onclick="_feCloseQuickReport()" style="background:#aaccff;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px 22px;border:none;border-radius:5px;cursor:pointer;">◀ BACK TO FAST ENTRY</button>'
+    + '</div></div>';
+  ov.style.display = 'flex';
+  ov.style.alignItems = 'center';
+}
+function _feCloseQuickReport(){
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  _feStartEntryPayee();
+  _feRender();
+  _feFocusPrompt();
+}
 
 function _feApplyMM(val){
   var mm = parseInt(val,10);
