@@ -6464,8 +6464,7 @@ function promptClearCheckmarks(){
 }
 
 function doPhoneBackup(){
-  // Preserve in-memory CLIENTS if it has more records than storage would return
-  // (storage may have silently truncated during a prior import).
+  // Preserve in-memory CLIENTS if it has more records than storage would return.
   var memCount=(CLIENTS&&CLIENTS.length)||0;
   var memSnapshot=memCount?CLIENTS.slice():null;
   loadClients();
@@ -6480,93 +6479,53 @@ function doPhoneBackup(){
     if(s.indexOf(',')>=0) s='"'+s+'"';
     return s;
   }
-  var header='NAME,PHONE,EMAIL,ADDR,NOTES,CONTACTED,ADATE,X,MTIME';
+  var lines=['NAME,PHONE,EMAIL,ADDR,NOTES,CONTACTED,ADATE,X,MTIME'];
   var mtime=new Date().toISOString();
-  var rows=CLIENTS.map(function(c){
+  CLIENTS.forEach(function(c){
     var xVal = cleanExport ? '' : (c.x||'');
-    return [qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(',');
+    lines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(','));
   });
-  var chunks=_mfsChunkRows(rows);
-  var total=chunks.length;
-  var pieces=chunks.map(function(ch,i){
-    var marker='MFS-PHONE-PART '+(i+1)+' OF '+total+(cleanExport?' CLEAN':'');
-    var body=marker+'\r\n'
-           +'Paste this WHOLE email into MFS - Phone Clients - BULK UPLOAD and tap LOAD. Do the same with every piece - they merge.\r\n'
-           +header+'\r\n'+ch.join('\r\n')+'\r\n';
-    return { idx:i+1, total:total, count:ch.length,
-             subject:'MFS Phone Backup '+(i+1)+'/'+total+' - '+today()+(cleanExport?' CLEAN':''),
-             body:body };
-  });
-  showBackupPieces({ label:'PHONE BACKUP', unit:'clients',
-    totalItems:CLIENTS.length, whereToLoad:'Phone Clients - BULK UPLOAD', pieces:pieces });
+  var dateStr=today().replace(/-/g,'');
+  var filename='MFS-PHONE-'+(cleanExport?'CLEAN-':'')+dateStr+'.txt';
+  backupToGoogleDrive(lines.join('\r\n'), filename, CLIENTS.length+' phone clients', 'Phone Clients - BULK UPLOAD');
 }
 
-// ── Backup pieces overlay — one tap per piece, each opens an email ──
-function showBackupPieces(opts){
-  window._mfsBackupPieces = opts.pieces;
-  var old=document.getElementById('backup-pieces-overlay');
+// ── ONE FILE -> GOOGLE DRIVE: saves the whole database as a single file
+//    and opens Drive so it can be dropped straight into Google's free cloud. ──
+function backupToGoogleDrive(text, filename, label, whereToLoad){
+  // 1. Save the entire database as ONE file.
+  var blob=new Blob([text],{type:'text/plain'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
+  // 2. Open Google Drive so the file can be dragged in.
+  try{ window.open('https://drive.google.com/drive/my-drive','_blank'); }catch(e){}
+  // 3. Show the 3-step instruction.
+  showDriveBackupHelp(filename, label, whereToLoad);
+}
+function showDriveBackupHelp(filename, label, whereToLoad){
+  var old=document.getElementById('drive-backup-overlay');
   if(old) old.remove();
   var o=document.createElement('div');
-  o.id='backup-pieces-overlay';
-  o.style.cssText='position:fixed;inset:0;background:#000033;z-index:9500;overflow-y:auto;font-family:Courier New,monospace;padding:18px;';
-  var btns='';
-  opts.pieces.forEach(function(p,i){
-    btns+='<button id="bkp-piece-'+i+'" onclick="emailBackupPiece('+i+')" '
-      +'style="display:block;width:100%;margin-bottom:8px;padding:14px;background:#ffff00;color:#000080;'
-      +'font-weight:700;font-size:14px;border:none;border-radius:6px;cursor:pointer;'
-      +'font-family:Courier New,monospace;text-align:left;">'
-      +'\u2709 EMAIL PIECE '+p.idx+' OF '+p.total
-      +'<div style="font-size:11px;font-weight:400;margin-top:3px;">'+p.count+' '+opts.unit+'</div></button>';
-  });
-  var many=opts.pieces.length;
+  o.id='drive-backup-overlay';
+  o.style.cssText='position:fixed;inset:0;background:#000033;z-index:9500;overflow-y:auto;font-family:Courier New,monospace;padding:20px;';
   o.innerHTML='<div style="max-width:560px;margin:0 auto;">'
-    +'<div style="color:#00ff88;font-weight:700;font-size:17px;margin-bottom:6px;">'+opts.label+' \u2014 '+many+' PIECE'+(many>1?'S':'')+'</div>'
-    +'<div style="color:#ccccff;font-size:13px;line-height:1.5;margin-bottom:14px;">'
-    +opts.totalItems+' '+opts.unit+' total \u2014 cut into '+many+' email-sized piece'+(many>1?'s':'')+'.<br><br>'
-    +'Tap each button: your email opens with that piece ready, just send it. On the other device, open <b>'+opts.whereToLoad+'</b> and paste each email in \u2014 they merge back together. Order does not matter.</div>'
-    +btns
-    +'<button onclick="document.getElementById(\'backup-pieces-overlay\').remove();" '
-    +'style="width:100%;margin-top:6px;padding:11px;background:#660000;color:#fff;font-size:13px;'
+    +'<div style="color:#00ff88;font-weight:700;font-size:18px;margin-bottom:10px;">\u2601 BACKUP TO GOOGLE DRIVE</div>'
+    +'<div style="color:#ffff66;font-size:14px;font-weight:700;margin-bottom:4px;">\u2713 Saved as one file: '+filename+'</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:14px;">Your whole '+label+' is in this single file, now in your Downloads.</div>'
+    +'<div style="background:#001144;border:2px solid #00ff88;border-radius:6px;padding:14px;color:#ffffff;font-size:14px;line-height:1.8;margin-bottom:14px;">'
+    +'<b style="color:#00ff88;">Get it safely into Google\u2019s cloud:</b><br>'
+    +'<b style="color:#ffff66;">1.</b> Google Drive just opened in a new tab.<br>'
+    +'<b style="color:#ffff66;">2.</b> Drag <b>'+filename+'</b> from the download bar into the Drive window.<br>'
+    +'<b style="color:#ffff66;">3.</b> Done \u2014 your database is on Google, safe even if this laptop is lost.</div>'
+    +'<div style="color:#aaccff;font-size:12px;margin-bottom:14px;">To restore later: download the file from Drive, open MFS \u2192 '+whereToLoad+', paste or load it.</div>'
+    +'<button onclick="document.getElementById(\'drive-backup-overlay\').remove();" '
+    +'style="width:100%;padding:13px;background:#aaccff;color:#000080;font-weight:700;font-size:15px;'
     +'border:none;border-radius:6px;cursor:pointer;font-family:Courier New,monospace;">\u21a9 DONE</button>'
     +'</div>';
   document.body.appendChild(o);
-}
-function emailBackupPiece(i){
-  var p=(window._mfsBackupPieces||[])[i];
-  if(!p) return;
-  var to='tristancarrington1@gmail.com';
-  var subject=encodeURIComponent(p.subject);
-  var body=encodeURIComponent(p.body);
-  try{
-    if(window.innerWidth >= 720){
-      // ThinkPad / desktop: Windows mailto: can't carry this much data —
-      // open Gmail's compose window, which accepts the full piece.
-      window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(to)
-                  +'&su='+subject+'&body='+body, '_blank');
-    } else {
-      // Android: mailto: opens the email app directly (working — leave alone).
-      window.location.href='mailto:'+to+'?subject='+subject+'&body='+body;
-    }
-  }catch(e){ toast('Could not open email',false); }
-  // Mark this piece DONE — bold green so you never re-send the same one.
-  var btn=document.getElementById('bkp-piece-'+i);
-  if(btn){
-    btn.style.background='#117a3a';
-    btn.style.color='#ffffff';
-    btn.innerHTML='\u2713 SENT \u2014 PIECE '+p.idx+' OF '+p.total
-      +'<div style="font-size:11px;font-weight:400;margin-top:3px;">'+p.count+' done \u00b7 tap again only to re-send</div>';
-  }
-}
-// Split an array of CSV row-strings into chunks that each fit one email body.
-function _mfsChunkRows(rows){
-  var chunks=[], cur=[], curEnc=0, LIMIT=20000;
-  rows.forEach(function(r){
-    var rEnc=encodeURIComponent(r+'\r\n').length;
-    if(curEnc+rEnc>LIMIT && cur.length){ chunks.push(cur); cur=[]; curEnc=0; }
-    cur.push(r); curEnc+=rEnc;
-  });
-  if(cur.length) chunks.push(cur);
-  return chunks;
 }
 function doBackup() {
   var mxLog=[];
@@ -6574,24 +6533,14 @@ function doBackup() {
   if(!mxLog.length){toast('No entries to backup',false);return;}
   var cleanExport = !!window._cleanExportAcc;
   function qc(s){s=String(s||'');if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)s='"'+s.replace(/"/g,'""')+'"';return s;}
-  var header='ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME';
-  var rows=mxLog.map(function(e){
+  var lines=['ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME'];
+  mxLog.forEach(function(e){
     var xVal = cleanExport ? '' : (e.x||'');
-    return [qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(xVal),qc(e.mtime||'')].join(',');
+    lines.push([qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(xVal),qc(e.mtime||'')].join(','));
   });
-  var chunks=_mfsChunkRows(rows);
-  var total=chunks.length;
-  var pieces=chunks.map(function(ch,i){
-    var marker='MFS-BACKUP-PART '+(i+1)+' OF '+total+(cleanExport?' CLEAN':'');
-    var body=marker+'\r\n'
-           +'Paste this WHOLE email into MFS - MOVE ACCOUNTING and tap LOAD IT NOW. Do the same with every piece - they merge.\r\n'
-           +header+'\r\n'+ch.join('\r\n')+'\r\n';
-    return { idx:i+1, total:total, count:ch.length,
-             subject:'MFS Backup '+(i+1)+'/'+total+' - '+today()+(cleanExport?' CLEAN':''),
-             body:body };
-  });
-  showBackupPieces({ label:'ACCOUNTING BACKUP', unit:'entries',
-    totalItems:mxLog.length, whereToLoad:'MOVE ACCOUNTING', pieces:pieces });
+  var dateStr=today().replace(/-/g,'');
+  var filename='MFS-ACCOUNTING-'+(cleanExport?'CLEAN-':'')+dateStr+'.txt';
+  backupToGoogleDrive(lines.join('\r\n'), filename, mxLog.length+' entries', 'MOVE ACCOUNTING');
 }
 function copyBackupText(){
   var ta=document.getElementById('bkp-share-text');if(!ta)return;
