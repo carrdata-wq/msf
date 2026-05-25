@@ -12262,6 +12262,7 @@ var _feSign = -1;                  // session default sign (configurable per ses
 var _feLastCommand = '';           // sticky last typed command
 var _feRowIdx = 0;                 // 0 = LOG[0] = newest = bottom of fading table
 var _feInline = null;              // ThinkPad inline field edit: {idx, field}
+var _feInlineTimer = null;         // single-digit auto-fire timer for inline edits
 var _feIndexDirty = true;
 var _fePayeeIndex = {};            // UPPER(payee) -> [{pcode, desc, cnt}, ...] sorted by cnt desc
 var _feComboCnt = {};              // "PAYEE|PCODE|DESC" -> running count
@@ -12627,7 +12628,7 @@ function _feRenderPrompt(){
   }
   var modeEl = document.getElementById('fe-mode');
   if(modeEl){
-    var labels = { 'entry-payee':'PAYEE','fill-day':'DAY','fill-amt':'AMT','edit-defa':'DEFA','cmd':'CMD','edit-mm':'MM','edit-dd':'DD','edit-yr':'YR','edit-amt':'AMT','pick-pcode':'PCOD','pick-desc':'DESC','pick-combo':'COMBO','ask-new':'NEW?' };
+    var labels = { 'entry-payee':'PAYEE','fill-day':'DAY','fill-amt':'AMT','edit-defa':'DEFA','cmd':'CMD','edit-mm':'MM','edit-dd':'DD','edit-yr':'YR','edit-amt':'AMT','pick-pcode':'PCOD','pick-desc':'DESC','pick-payee':'PAYEE','pick-combo':'COMBO','ask-new':'NEW?' };
     modeEl.textContent = labels[_feMode] || _feMode.toUpperCase();
   }
   var inp = document.getElementById('fe-prompt');
@@ -12646,7 +12647,7 @@ function _feRenderPrompt(){
     else if(_feMode === 'edit-yr'){ inp.placeholder='YYYY (or ↵)'; inp.maxLength=4; }
     else if(_feMode === 'edit-newpayee'){ inp.placeholder='FULL NAME'; inp.maxLength=40; }
     else if(_feMode === 'edit-payee'){ inp.placeholder='NEW PAYEE NAME'; inp.maxLength=40; }
-    else if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){ inp.placeholder='TYPE'; inp.maxLength=10; }
+    else if(_feMode === 'pick-pcode' || _feMode === 'pick-desc' || _feMode === 'pick-payee'){ inp.placeholder='TYPE'; inp.maxLength=30; }
     else if(_feMode === 'ask-new'){ inp.placeholder='Y/N'; inp.maxLength=1; }
     else if(_feMode === 'pick-combo'){ inp.placeholder='#'; inp.maxLength=2; }
   }
@@ -13154,7 +13155,7 @@ function _feQuick(i, action){
     case 'day':    _feStartInline(i,'dd'); break;
     case 'mm':     _feStartInline(i,'mm'); break;
     case 'yr':     _feStartInline(i,'yr'); break;
-    case 'payee':  _feStartInline(i,'payee'); break;
+    case 'payee':  _feStartPayeePick(); break;
     case 'amt':    _feStartInline(i,'amt'); break;
     case 'pcode':  _feStartPcodePick(); break;
     case 'desc':   _feStartDescPick(); break;
@@ -13185,15 +13186,20 @@ function _feInlineInput(){
   if(f==='mm' || f==='dd' || f==='yr'){
     var digits = inp.value.replace(/[^0-9]/g,'').slice(0,2);
     if(inp.value !== digits) inp.value = digits;
-    if(digits.length === 2) _feApplyInline();   // 2 digits → apply instantly
+    if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
+    if(digits.length === 2){ _feApplyInline(); return; }   // 2 digits → instant
+    if(digits.length === 1){                                // 1 digit → 0.8s, then go
+      _feInlineTimer = setTimeout(function(){ _feInlineTimer = null; _feApplyInline(); }, 800);
+    }
   }
 }
 function _feInlineKey(e){
-  if(e.key === 'Enter'){ e.preventDefault(); _feApplyInline(); }
+  if(e.key === 'Enter'){ e.preventDefault(); if(_feInlineTimer){clearTimeout(_feInlineTimer);_feInlineTimer=null;} _feApplyInline(); }
   else if(e.key === 'Escape'){ e.preventDefault(); _feCancelInline(); }
 }
 function _feApplyInline(){
   if(!_feInline){ return; }
+  if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
   var inp = document.getElementById('fe-inline-edit');
   var e = LOG[_feInline.idx];
   if(!inp || !e){ _feInline=null; _feRenderTable(); _feFocusPrompt(); return; }
@@ -13219,6 +13225,7 @@ function _feApplyInline(){
   _feFocusPrompt();
 }
 function _feCancelInline(){
+  if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
   _feInline = null;
   _feRenderTable();
   _feFocusPrompt();
@@ -13459,6 +13466,44 @@ function _feGetAllDescs(){
   arr.sort();
   return arr;
 }
+// All known payees — from the live combo index, the 34-yr history, and the LOG.
+function _feGetAllPayees(){
+  var seen = {}, arr = [];
+  function add(p){ p = (p||'').trim(); if(p && !seen[p]){ seen[p]=1; arr.push(p); } }
+  for(var k in _feComboCnt){ add(k.split('|')[0]); }
+  if(typeof _feHistoryCnt !== 'undefined'){ for(var k2 in _feHistoryCnt){ add(k2.split('|')[0]); } }
+  for(var i=0;i<LOG.length;i++){ if(!LOG[i].deleted) add(LOG[i].payee); }
+  arr.sort();
+  return arr;
+}
+// Payee EDIT — opens the quick picker against the payee dictionary.
+function _feStartPayeePick(){
+  if(LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
+  _fePickPayee = LOG[_feRowIdx] ? LOG[_feRowIdx].payee : '';
+  _feMode = 'pick-payee';
+  _feMiniLabel = 'PAYEE:';
+  _fePickerItems = _feGetAllPayees();
+  _fePickerFilter = '';
+  _feRender(); _feRenderPickerOverlay(); _feFocusPrompt();
+}
+function _feSetPayeePicked(payee){
+  _fePickerFilter = '';
+  var ov = document.getElementById('fe-overlay'); if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  var e = LOG[_feRowIdx]; if(!e){ _feCancelMode(); return; }
+  var newP = String(payee).toUpperCase().trim();
+  if(!newP){ _feCancelMode(); return; }
+  // shift the combo count: payee changes, pcode/desc stay
+  var oldKey = (e.payee||'').toUpperCase()+'|'+(e.pcode||'')+'|'+(e.desc||'');
+  e.payee = newP;
+  var newKey = newP+'|'+(e.pcode||'')+'|'+(e.desc||'');
+  if(oldKey !== newKey){
+    _feComboCnt[oldKey] = Math.max(0,(_feComboCnt[oldKey]||1)-1);
+    _feComboCnt[newKey] = (_feComboCnt[newKey]||0)+1;
+    _feSaveComboCnt();
+  }
+  saveLog(); _feInvalidateIndex();
+  _feFinishStep();
+}
 
 function _feStartPcodePick(){
   if(!_feDraft && LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
@@ -13480,7 +13525,7 @@ function _feStartDescPick(){
 function _feRenderPickerOverlay(){
   var ov = document.getElementById('fe-overlay');
   if(!ov) return;
-  var title = (_feMode === 'pick-pcode' ? 'PCOD' : 'DESC');
+  var title = (_feMode === 'pick-pcode' ? 'PCOD' : (_feMode === 'pick-payee' ? 'PAYEE' : 'DESC'));
   // Build the overlay shell ONCE — input stays alive while results re-render.
   var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;">'
     + '<div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">' + title + ' — type any letters in it (SUP finds ROOFING SUPPLIES) · auto-picks at 1 · ESC cancels</div>'
@@ -13512,6 +13557,7 @@ function _feRenderPickerResults(){
   });
   if(q && matches.length === 1){
     if(_feMode === 'pick-pcode') _feSetPcode(matches[0]);
+    else if(_feMode === 'pick-payee') _feSetPayeePicked(matches[0]);
     else _feSetDesc(matches[0]);
     return;
   }
@@ -13544,13 +13590,17 @@ function _fePickerInputKey(e){
     var m = _fePickerItems.filter(function(it){ return !q || it.toUpperCase().indexOf(q) >= 0; });
     if(m.length >= 1){
       if(_feMode === 'pick-pcode') _feSetPcode(m[0]);
+      else if(_feMode === 'pick-payee') _feSetPayeePicked(m[0]);
       else _feSetDesc(m[0]);
+    } else if(_feMode === 'pick-payee' && q){
+      _feSetPayeePicked(q);   // no match — accept the typed name as a new payee
     }
   }
 }
 function _feSetItem(val){
   if(_feMode === 'pick-pcode') _feSetPcode(val);
   else if(_feMode === 'pick-desc') _feSetDesc(val);
+  else if(_feMode === 'pick-payee') _feSetPayeePicked(val);
 }
 function _feApplyPcodePick(val){
   if(!val){ _feCancelMode(); return; }
@@ -14047,7 +14097,7 @@ function _feCloseOverlay(){
 function _feFocusPrompt(){
   var id = 'fe-prompt';
   if(_feMode==='fill-day' || _feMode==='fill-amt') id = 'fe-maskfield';
-  else if(_feMode==='pick-desc' || _feMode==='pick-pcode') id = 'fe-picker-input';
+  else if(_feMode==='pick-desc' || _feMode==='pick-pcode' || _feMode==='pick-payee') id = 'fe-picker-input';
   // Immediate focus — rides the current user gesture so the mobile
   // keyboard reliably stays/comes up (a delayed focus alone won't).
   var now = document.getElementById(id);
