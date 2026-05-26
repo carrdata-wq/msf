@@ -3789,7 +3789,12 @@ function renderMileChart(){
     var v=(m.veh||'TRUCK').toUpperCase();
     (byVeh[v]=byVeh[v]||[]).push(m);
   });
-  var vehList=Object.keys(byVeh).sort();
+  var retiredMap=(d.fuel && d.fuel.retired)||{};
+  var vehList=Object.keys(byVeh).sort(function(a,b){
+    var ra=retiredMap[a]?1:0, rb=retiredMap[b]?1:0;
+    if(ra!==rb) return ra-rb;          // active vehicles first, retired sink to bottom
+    return a.localeCompare(b);          // then alphabetical within each group
+  });
   var out='';
   vehList.forEach(function(veh){ out += _renderOneMileChart(veh, byVeh[veh]); });
   el.innerHTML=out;
