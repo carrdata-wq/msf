@@ -3790,10 +3790,13 @@ function renderMileChart(){
     (byVeh[v]=byVeh[v]||[]).push(m);
   });
   var retiredMap=(d.fuel && d.fuel.retired)||{};
+  function _lastDate(arr){ var x=''; arr.forEach(function(m){ if((m.date||'')>x) x=m.date||''; }); return x; }
   var vehList=Object.keys(byVeh).sort(function(a,b){
     var ra=retiredMap[a]?1:0, rb=retiredMap[b]?1:0;
-    if(ra!==rb) return ra-rb;          // active vehicles first, retired sink to bottom
-    return a.localeCompare(b);          // then alphabetical within each group
+    if(ra!==rb) return ra-rb;                         // active first, retired sink to bottom
+    var la=_lastDate(byVeh[a]), lb=_lastDate(byVeh[b]);
+    if(la!==lb) return lb<la?-1:1;                    // present truck (newest reading) on top
+    return a.localeCompare(b);
   });
   var out='';
   vehList.forEach(function(veh){ out += _renderOneMileChart(veh, byVeh[veh]); });
@@ -3833,7 +3836,7 @@ function _renderOneMileChart(veh, entries){
   periods.forEach(function(p){
     var barH=Math.max(4,Math.round((p.mpd/maxMpd)*chartH));
     var barColor=p.mpd>70?'#ff4444':p.mpd>50?'#ffaa00':'#00ff88';
-    html+='<div style="display:flex;flex-direction:column;align-items:center;min-width:48px;flex:1;">'
+    html+='<div style="display:flex;flex-direction:column;align-items:center;width:54px;flex:0 0 54px;">'
       +'<div style="color:'+barColor+';font-size:11px;font-weight:700;margin-bottom:2px;">'+p.mpd.toFixed(0)+'</div>'
       +'<div style="background:'+barColor+';width:80%;height:'+barH+'px;border-radius:3px 3px 0 0;"></div>'
       +'<div style="color:#aaaacc;font-size:9px;margin-top:3px;text-align:center;">'+p.label+'</div>'
