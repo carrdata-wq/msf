@@ -3753,10 +3753,16 @@ function renderMileHistory(){
   var h='';
   if(!recent.length){document.getElementById('mile-history').innerHTML='<div style="color:var(--dim);font-size:14px;">No mileage logged yet</div>';return;}
   recent.forEach(function(m,i){
-    var prev=miles[miles.indexOf(m)-1];
+    // "driven" must compare against the previous reading OF THE SAME CAR.
+    var mv=(m.veh||'TRUCK').toUpperCase();
+    var sameVeh=miles.filter(function(x){return (x.veh||'TRUCK').toUpperCase()===mv;})
+                      .sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+    var mi=sameVeh.indexOf(m);
+    var prev=mi>0?sameVeh[mi-1]:null;
     var driven=prev?m.odo-prev.odo:0;
     h+='<div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:6px;">'
       +'<div style="flex:1;font-family:Courier New,monospace;font-size:13px;">'
+      +'<span style="color:#ffaa00;font-weight:700;">'+mv+'</span> '
       +'<span style="color:var(--yellow);">'+m.date+'</span>'
       +' <span style="color:#00ffff;">'+m.odo.toLocaleString()+' mi</span>'
       +(driven>0?' <span style="color:#00ff88;">+'+driven.toLocaleString()+'</span>':'')
@@ -3772,10 +3778,42 @@ function renderMileHistory(){
 
 function renderMileChart(){
   const d=load();
-  var mileData=((d.fuel&&d.fuel.miles)||[]).slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+  var all=((d.fuel&&d.fuel.miles)||[]).slice();
   var el=document.getElementById('mile-chart');
   if(!el)return;
-  if(mileData.length<2){el.innerHTML='<div style="color:#888;font-size:13px;padding:8px;">Need at least 2 readings for chart.</div>';return;}
+  if(!all.length){ el.innerHTML='<div style="color:#888;font-size:13px;padding:8px;">No mileage logged yet.</div>'; return; }
+  // Group by vehicle — one chart per car. Odometer math must stay within a
+  // single vehicle, or two cars' readings get diffed against each other.
+  var byVeh={};
+  all.forEach(function(m){
+    var v=(m.veh||'TRUCK').toUpperCase();
+    (byVeh[v]=byVeh[v]||[]).push(m);
+  });
+  var vehList=Object.keys(byVeh).sort();
+  var out='';
+  vehList.forEach(function(veh){ out += _renderOneMileChart(veh, byVeh[veh]); });
+  el.innerHTML=out;
+}
+function _renderOneMileChart(veh, entries){
+  var mileData=entries.slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+  var d=load();
+  var retired=(d.fuel && d.fuel.retired && d.fuel.retired[veh])||'';
+  var vEsc=veh.replace(/'/g,"\\'");
+  var headColor=retired?'#cccc88':'#ffff00';
+  var tag=retired
+    ? ' <span style="color:#ff9999;font-size:12px;">\u26b0 RETIRED '+_mmddyy(retired)+'</span>'
+    : ' <button onclick="retireVehicle(\''+vEsc+'\')" style="background:#440000;color:#ff8888;border:1px solid #aa3333;border-radius:3px;font-size:10px;font-weight:700;padding:2px 7px;cursor:pointer;font-family:Courier New,monospace;margin-left:6px;">RETIRE</button>';
+  var head='<div style="color:'+headColor+';font-weight:700;font-size:14px;font-family:Courier New,monospace;margin:14px 0 4px;border-bottom:1px solid #4466cc;padding-bottom:2px;">\ud83d\ude97 '+veh+tag+'</div>';
+  if(retired && mileData.length){
+    head+='<div style="color:#ffcc66;font-family:Courier New,monospace;font-size:13px;font-weight:700;margin-bottom:4px;">Final odometer: '
+         +mileData[mileData.length-1].odo.toLocaleString()+' mi &nbsp;\u00b7&nbsp; last run '+_mmddyy(retired)+'</div>';
+  }
+  var footer=retired
+    ? '<div style="text-align:right;margin-top:2px;"><button onclick="unretireVehicle(\''+vEsc+'\')" style="background:none;border:none;color:#6688cc;font-size:10px;cursor:pointer;text-decoration:underline;font-family:Courier New,monospace;">un-retire</button></div>'
+    : '';
+  if(mileData.length<2){
+    return head+'<div style="color:#888;font-size:13px;padding:4px 8px;">Need at least 2 readings for '+veh+'.</div>'+footer;
+  }
   var periods=[];
   for(var i=1;i<mileData.length;i++){
     var prev=mileData[i-1],curr=mileData[i];
@@ -3784,10 +3822,11 @@ function renderMileChart(){
     periods.push({label:curr.date.slice(5),driven:driven,days:days,mpd:driven/days});
   }
   var maxMpd=Math.max.apply(null,periods.map(function(p){return p.mpd;}));
+  if(!(maxMpd>0)) maxMpd=1;
   var chartH=120;
-  var html='<div style="display:flex;align-items:flex-end;gap:4px;height:'+(chartH+50)+'px;padding:4px 2px 0;overflow-x:auto;">';
+  var html=head+'<div style="display:flex;align-items:flex-end;gap:4px;height:'+(chartH+50)+'px;padding:4px 2px 0;overflow-x:auto;'+(retired?'opacity:0.78;':'')+'">';
   periods.forEach(function(p){
-    var barH=maxMpd>0?Math.max(4,Math.round((p.mpd/maxMpd)*chartH)):4;
+    var barH=Math.max(4,Math.round((p.mpd/maxMpd)*chartH));
     var barColor=p.mpd>70?'#ff4444':p.mpd>50?'#ffaa00':'#00ff88';
     html+='<div style="display:flex;flex-direction:column;align-items:center;min-width:48px;flex:1;">'
       +'<div style="color:'+barColor+';font-size:11px;font-weight:700;margin-bottom:2px;">'+p.mpd.toFixed(0)+'</div>'
@@ -3804,8 +3843,33 @@ function renderMileChart(){
     +'<span style="color:#ccccff;font-size:12px;">AVG: </span>'
     +'<span style="color:#ffff00;font-weight:700;font-size:15px;">'+avgMpd.toFixed(1)+' mi/day</span>'
     +'<span style="color:#aaaacc;font-size:11px;"> · '+totalDriven.toLocaleString()+' mi total · ~'+Math.round(avgMpd*365).toLocaleString()+' mi/yr</span>'
-    +'</div>';
-  el.innerHTML=html;
+    +'</div>'+footer;
+  return html;
+}
+// MM/DD/YY display from an ISO date
+function _mmddyy(iso){
+  var p=String(iso||'').split('-');
+  return (p.length===3) ? (p[1]+'/'+p[2]+'/'+p[0].slice(2)) : iso;
+}
+function retireVehicle(veh){
+  var s=prompt('Date '+veh+' was retired (MMDDYY):','');
+  if(s==null) return;
+  s=String(s).replace(/[^0-9]/g,'');
+  if(s.length!==6){ toast('Enter the date as MMDDYY — 6 digits',false); return; }
+  var iso='20'+s.slice(4,6)+'-'+s.slice(0,2)+'-'+s.slice(2,4);
+  var d=load();
+  if(!d.fuel) d.fuel={logs:[],miles:[]};
+  if(!d.fuel.retired) d.fuel.retired={};
+  d.fuel.retired[veh]=iso;
+  save(d);
+  toast('\u26b0 '+veh+' marked retired '+_mmddyy(iso),true);
+  renderMileHistory();
+}
+function unretireVehicle(veh){
+  var d=load();
+  if(d.fuel && d.fuel.retired){ delete d.fuel.retired[veh]; save(d); }
+  toast(veh+' un-retired',true);
+  renderMileHistory();
 }
 
 function editMileage(id){
@@ -7410,20 +7474,28 @@ function _balParseText(text){
   if(!text) return [];
   var items = [];
 
-  // Try CSV first (new format)
-  var rawLines = text.split(/\r?\n/);
+  // Try CSV first (new format). The header may not be line 1 — a pasted Gmail
+  // email can have intro lines, separators, or '>' quote marks above it, so
+  // scan for the DATE,PAYEE header anywhere and strip any leading '>' quoting.
+  var rawLines = text.split(/\r?\n/).map(function(l){ return l.replace(/^[>\s]*>+\s?/,''); });
   var lines = rawLines.filter(function(l){return l.trim().length;});
-  if(lines.length >= 2 && /^\s*DATE\s*,\s*PAYEE\s*,/i.test(lines[0])){
-    var header = _balCSVLine(lines[0]).map(function(h){return h.trim().toUpperCase();});
+  var hdrIdx = -1;
+  for(var h=0;h<lines.length;h++){
+    var up = lines[h].toUpperCase().replace(/["\s]/g,'');
+    if(up.indexOf('DATE,PAYEE') >= 0){ hdrIdx = h; break; }
+  }
+  if(hdrIdx >= 0 && hdrIdx < lines.length - 1){
+    var header = _balCSVLine(lines[hdrIdx]).map(function(h){return h.trim().toUpperCase().replace(/"/g,'');});
+    var amtCol = header.indexOf('AMOUNT'); if(amtCol < 0) amtCol = header.indexOf('AMT');
     var idx = {
       date:   header.indexOf('DATE'),
       payee:  header.indexOf('PAYEE'),
       pcode:  header.indexOf('PCODE'),
-      amount: header.indexOf('AMOUNT'),
+      amount: amtCol,
       desc:   header.indexOf('DESC'),
       x:      header.indexOf('X')
     };
-    for(var i=1;i<lines.length;i++){
+    for(var i=hdrIdx+1;i<lines.length;i++){
       var cols = _balCSVLine(lines[i]);
       var item = {
         date:  idx.date  >=0 ? (cols[idx.date] ||'').trim() : '',
@@ -12890,7 +12962,10 @@ function _feBeginDraft(payee, pcode, desc){
     setTimeout(_feAdvanceGuided, 80);
     return;
   }
-  _feEnterFillDay();
+  // Payee + combo resolved — skip the day prompt (date defaults to today)
+  // and move the cursor straight to AMOUNT so the entry finishes fast.
+  _feDraft.dd = ('0'+new Date().getDate()).slice(-2);
+  _feEnterFillAmt();
 }
 
 function _feEnterFillDay(){
@@ -13039,9 +13114,11 @@ function _feFinishStep(){
     setTimeout(_feAdvanceGuided, 80);
     return;
   }
-  // pickers done — if a draft is waiting, go fill its masked line
+  // pickers done — new payee with pcode+desc set: skip the day prompt
+  // (date defaults to today) and move the cursor straight to AMOUNT.
   if(_feDraft && _feDraft.amt === null && !_feDraft.dd){
-    _feEnterFillDay();
+    _feDraft.dd = ('0'+new Date().getDate()).slice(-2);
+    _feEnterFillAmt();
     return;
   }
   _feStartEntryPayee();
@@ -13058,7 +13135,9 @@ function _feAdvanceGuided(){
   if(!_feGuidedFlow || _feGuidedFlow.length === 0){
     _feGuidedFlow = [];
     if(_feDraft && _feDraft.amt === null && !_feDraft.dd){
-      _feEnterFillDay();   // new payee finished pcode/desc → fill the masked line
+      // new payee finished pcode/desc → skip day (today), straight to AMOUNT
+      _feDraft.dd = ('0'+new Date().getDate()).slice(-2);
+      _feEnterFillAmt();
       return;
     }
     _feStartEntryPayee();
@@ -13565,8 +13644,10 @@ function _feRenderPickerResults(){
   var memVal = (_fePickPayee && _fePickMem[_fePickPayee.toUpperCase()])
     ? _fePickMem[_fePickPayee.toUpperCase()][_feMode === 'pick-pcode' ? 'pcode' : 'desc'] : '';
   // ThinkPad: when the list is short, label each result A B C ... — press the letter to pick.
-  var wide = window.innerWidth >= 720;
-  var lettered = wide && matches.length >= 1 && matches.length <= 12;
+  // ThinkPad: letter-pick on every picker. Android: letter-pick on the
+  // pcode and desc pickers too (faster than tapping), payee stays tap-only.
+  var letterPickOK = (window.innerWidth >= 720) || _feMode === 'pick-pcode' || _feMode === 'pick-desc';
+  var lettered = letterPickOK && matches.length >= 1 && matches.length <= 12;
   var html = '';
   matches.slice(0, 120).forEach(function(it, idx){
     var esc = _feEsc(it).replace(/'/g, "\\'");
@@ -13586,7 +13667,28 @@ function _feRenderPickerResults(){
   box.innerHTML = html;
 }
 function _feFilterPicker(val){
-  _fePickerFilter = (val||'').toUpperCase();
+  val = (val||'').toUpperCase();
+  var prev = _fePickerFilter;
+  // Android soft keyboards don't fire reliable keydown letters — so the
+  // letter-pick also rides the input event. If exactly one letter was just
+  // appended and it can't extend the filter (matches nothing), treat it as a
+  // pick of the result at that letter's slot. ThinkPad pcode/desc + Android.
+  var letterPickOK = (window.innerWidth >= 720) || _feMode === 'pick-pcode' || _feMode === 'pick-desc';
+  if(letterPickOK && val.length === prev.length + 1 && val.indexOf(prev) === 0){
+    var added = val.charAt(val.length - 1);
+    if(/[A-Z]/.test(added)){
+      var prevMatches = _fePickerItems.filter(function(it){ return !prev || it.toUpperCase().indexOf(prev) >= 0; });
+      var extMatches  = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(val) >= 0; });
+      if(extMatches.length === 0 && prevMatches.length >= 1 && prevMatches.length <= 12){
+        var li = added.charCodeAt(0) - 65;   // A=0, B=1, ...
+        if(li >= 0 && li < prevMatches.length){
+          _feSetItem(prevMatches[li]);
+          return;
+        }
+      }
+    }
+  }
+  _fePickerFilter = val;
   _feRenderPickerResults();
 }
 function _fePickerInputKey(e){
@@ -13607,7 +13709,9 @@ function _fePickerInputKey(e){
   // ThinkPad letter-pick: a letter that CAN'T extend the filter (would match
   // nothing) is a pick — press A/B/C to grab that result. A letter that still
   // narrows the list just keeps filtering. No clash with typing the search.
-  if(window.innerWidth >= 720 && e.key && e.key.length === 1 && /[a-zA-Z]/.test(e.key)){
+  // Letter-pick: ThinkPad on all pickers; Android on pcode/desc pickers too.
+  var letterPickOK = (window.innerWidth >= 720) || _feMode === 'pick-pcode' || _feMode === 'pick-desc';
+  if(letterPickOK && e.key && e.key.length === 1 && /[a-zA-Z]/.test(e.key)){
     var qq = _fePickerFilter.toUpperCase();
     var letter = e.key.toUpperCase();
     var cur = _fePickerItems.filter(function(it){ return !qq || it.toUpperCase().indexOf(qq) >= 0; });
@@ -13709,6 +13813,13 @@ function _feLookupAndApply(query){
   var topPayee = matches[0];
   var combos = _fePayeeIndex[topPayee];
   var topCombo = combos[0];
+  // ONE payee with ONE combo — it's clearly a single file. Go straight into
+  // fast entry, no picker, regardless of how many times it's been used.
+  if(matches.length === 1 && combos.length === 1 && topCombo){
+    _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
+    toast(topPayee, true);
+    return;
+  }
   // 25-uses rule — auto-apply when ONLY one payee matched AND top combo cnt >= threshold
   if(matches.length === 1 && topCombo && topCombo.cnt >= _feAutoApplyThreshold){
     _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
