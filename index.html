@@ -1730,6 +1730,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field"><label>Notes (optional)</label><input type="text" id="mile-notes" placeholder="e.g. Monthly reading"></div>
       <button class="btn btn-green" onclick="addMileage()">✓ SAVE MILEAGE</button>
+      <button onclick="backupMfsData()" style="width:100%;margin-top:6px;padding:11px;background:#ffaa00;color:#000;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">💾 BACKUP ALL MILEAGE + DATA</button>
       <button class="btn btn-dim" onclick="fuelShow('')">◀ Back</button>
     </div>
     <!-- Mileage history -->
@@ -3732,6 +3733,36 @@ function addFuel() {
   document.getElementById('fuel-notes').value='';
   toast('⛽ Gas saved + posted to accounting ✓',true);
   fuelShow('');
+}
+
+function backupMfsData(){
+  try {
+    var dump = {};
+    for(var i=0;i<localStorage.length;i++){
+      var k = localStorage.key(i);
+      dump[k] = localStorage.getItem(k);
+    }
+    var dateStr = today().replace(/-/g,'');
+    var content = JSON.stringify(dump, null, 2);
+    // Download as both .json (for backup) and .txt (for Android email)
+    ['.json','.txt'].forEach(function(ext){
+      var blob = new Blob([content], {type:'text/plain'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'MFS-ALLDATA-' + dateStr + ext;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
+    });
+    var miles = 0, fuel = 0;
+    try {
+      var m = JSON.parse(dump['mfs']||'{}');
+      miles = ((m.fuel&&m.fuel.miles)||[]).length;
+      fuel  = ((m.fuel&&m.fuel.logs )||[]).length;
+    } catch(e){}
+    toast('💾 Backed up — '+miles+' mileage + '+fuel+' fuel-ups + everything else',true);
+  } catch(e){
+    toast('Backup error: '+e.message, false);
+  }
 }
 
 function addMileage(){
