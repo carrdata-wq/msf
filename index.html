@@ -3876,7 +3876,8 @@ function _renderOneMileChart(veh, entries){
   if(!(maxMpd>0)) maxMpd=1;
   var chartH=120;
   var html=head+'<div style="display:flex;align-items:flex-end;gap:4px;height:'+(chartH+50)+'px;padding:4px 2px 0;overflow-x:auto;'+(retired?'opacity:0.78;':'')+'">';
-  periods.forEach(function(p){
+  // NEWEST on the LEFT, OLDEST on the RIGHT — matches the other mountain charts
+  periods.slice().reverse().forEach(function(p){
     var barH=Math.max(4,Math.round((p.mpd/maxMpd)*chartH));
     var barColor=p.mpd>70?'#ff4444':p.mpd>50?'#ffaa00':'#00ff88';
     html+='<div style="display:flex;flex-direction:column;align-items:center;width:54px;flex:0 0 54px;">'
@@ -4207,9 +4208,9 @@ function renderFuelStats() {
     var maxMpd=Math.max.apply(null,periods.map(function(p){return p.mpd;}));
     var chartH=120;
     h+='<div style="background:#000044;border:2px solid #00ffff;border-radius:6px;padding:12px;margin-bottom:10px;">';
-    h+='<div style="color:#00ffff;font-weight:700;font-size:14px;margin-bottom:10px;text-align:center;">📊 MILES PER DAY — MOUNTAIN CHART</div>';
+    h+='<div style="color:#00ffff;font-weight:700;font-size:14px;margin-bottom:10px;text-align:center;">📊 MILES PER DAY — MOUNTAIN CHART · NEWEST LEFT</div>';
     h+='<div style="display:flex;align-items:flex-end;gap:4px;height:'+(chartH+50)+'px;overflow-x:auto;">';
-    periods.forEach(function(p){
+    periods.slice().reverse().forEach(function(p){
       var barH=maxMpd>0?Math.max(4,Math.round((p.mpd/maxMpd)*chartH)):4;
       var barColor=p.mpd>70?'#ff4444':p.mpd>50?'#ffaa00':'#00ff88';
       h+='<div style="display:flex;flex-direction:column;align-items:center;min-width:48px;flex:1;">'
