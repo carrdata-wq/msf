@@ -3780,7 +3780,13 @@ function addMileage(){
   document.getElementById('mile-odo').value='';
   document.getElementById('mile-notes').value='';
   renderMileHistory();
-  toast('🚗 Mileage saved ✓',true);
+  // Re-render chart explicitly and scroll it into view so the user sees the update
+  renderMileChart();
+  setTimeout(function(){
+    var chart=document.getElementById('mile-chart');
+    if(chart && chart.scrollIntoView) chart.scrollIntoView({behavior:'smooth',block:'start'});
+  },100);
+  toast('🚗 Mileage saved ✓ — chart updated',true);
 }
 
 function renderMileHistory(){
@@ -3847,7 +3853,7 @@ function _renderOneMileChart(veh, entries){
   var headColor=retired?'#cccc88':'#ffff00';
   var tag=retired
     ? ' <span style="color:#ff9999;font-size:12px;">\u26b0 RETIRED '+_mmddyy(retired)+'</span>'
-    : ' <button onclick="retireVehicle(\''+vEsc+'\')" style="background:#440000;color:#ff8888;border:1px solid #aa3333;border-radius:3px;font-size:10px;font-weight:700;padding:2px 7px;cursor:pointer;font-family:Courier New,monospace;margin-left:6px;">RETIRE</button>';
+    : '';
   var head='<div style="color:'+headColor+';font-weight:700;font-size:14px;font-family:Courier New,monospace;margin:14px 0 4px;border-bottom:1px solid #4466cc;padding-bottom:2px;">\ud83d\ude97 '+veh+tag+'</div>';
   if(retired && mileData.length){
     head+='<div style="color:#ffcc66;font-family:Courier New,monospace;font-size:13px;font-weight:700;margin-bottom:4px;">Final odometer: '
