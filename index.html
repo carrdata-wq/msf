@@ -10393,56 +10393,138 @@ function shareLog(id){
   window._shareSubject = subject;
   _shareDoCopy();
 }
-//  PHONE CLIENTS MODULE
+//  PHONE CLIENTS MODULE — IndexedDB-backed storage (no 5 MB cap)
 var CLIENTS=[];
-// Chunked storage: avoids single-key quota / string-size limits on Android Chrome.
-// Saves as mx_clients_0, mx_clients_1, ... and tracks count in mx_clients_n.
-// Reads legacy mx_clients single-key if no chunks present (one-time migration).
-function loadClients(){
+var _idbDb=null, _idbReady=false, _idbPendingWrites=0;
+
+// Open/create the IndexedDB database
+function _idbOpen(cb){
+  if(_idbDb){ cb(_idbDb); return; }
+  if(!window.indexedDB){ cb(null); return; }
   try{
-    var n=parseInt(localStorage.getItem('mx_clients_n')||'0',10);
-    if(n>0){
-      var arr=[];
-      for(var i=0;i<n;i++){
-        var part=localStorage.getItem('mx_clients_'+i);
-        if(part){ try{ arr=arr.concat(JSON.parse(part)); }catch(e){} }
+    var req=indexedDB.open('mfs_phones',1);
+    req.onupgradeneeded=function(e){
+      var db=e.target.result;
+      if(!db.objectStoreNames.contains('clients')){
+        db.createObjectStore('clients',{keyPath:'id',autoIncrement:false});
       }
-      CLIENTS=arr;
-    } else {
-      // Legacy single-key fallback
-      var s=localStorage.getItem('mx_clients');
-      CLIENTS=s?JSON.parse(s):[];
-    }
-  }catch(e){CLIENTS=[];}
+    };
+    req.onsuccess=function(e){ _idbDb=e.target.result; cb(_idbDb); };
+    req.onerror=function(){ cb(null); };
+  }catch(e){ cb(null); }
 }
-function saveClients(){
-  var CHUNK_SIZE=500; // records per localStorage key
-  // Clear any prior chunks before writing fresh ones
-  try{
-    var prevN=parseInt(localStorage.getItem('mx_clients_n')||'0',10);
-    for(var p=0;p<prevN;p++) localStorage.removeItem('mx_clients_'+p);
-    localStorage.removeItem('mx_clients_n');
-    localStorage.removeItem('mx_clients'); // remove legacy key too
-  }catch(e){}
-  if(!CLIENTS||!CLIENTS.length){return true;}
-  var n=Math.ceil(CLIENTS.length/CHUNK_SIZE);
-  var savedCount=0;
-  try{
+
+// Read all clients from IDB
+function _idbReadAll(cb){
+  _idbOpen(function(db){
+    if(!db){ cb([]); return; }
+    try{
+      var tx=db.transaction('clients','readonly');
+      var store=tx.objectStore('clients');
+      var req=store.getAll();
+      req.onsuccess=function(){ cb(req.result||[]); };
+      req.onerror=function(){ cb([]); };
+    }catch(e){ cb([]); }
+  });
+}
+
+// Replace all clients in IDB with the given array
+function _idbWriteAll(arr,cb){
+  _idbOpen(function(db){
+    if(!db){ if(cb)cb(false); return; }
+    try{
+      var tx=db.transaction('clients','readwrite');
+      var store=tx.objectStore('clients');
+      store.clear();
+      var maxId=0;
+      arr.forEach(function(c){
+        if(!c.id || typeof c.id!=='number') c.id=(++maxId);
+        else if(c.id>maxId) maxId=c.id;
+      });
+      // Ensure no duplicate ids
+      var used={};
+      arr.forEach(function(c){
+        while(used[c.id]) c.id++;
+        used[c.id]=true;
+        store.put(c);
+      });
+      tx.oncomplete=function(){ if(cb)cb(true); };
+      tx.onerror=function(){ if(cb)cb(false); };
+    }catch(e){ if(cb)cb(false); }
+  });
+}
+
+// One-time migration: copy existing localStorage chunks into IDB, then clear chunks
+function _idbMigrate(cb){
+  if(localStorage.getItem('mx_clients_migrated_idb')==='1'){ cb(); return; }
+  var n=0;
+  try{ n=parseInt(localStorage.getItem('mx_clients_n')||'0',10); }catch(e){}
+  var arr=[];
+  if(n>0){
     for(var i=0;i<n;i++){
-      var chunk=CLIENTS.slice(i*CHUNK_SIZE,(i+1)*CHUNK_SIZE);
-      localStorage.setItem('mx_clients_'+i,JSON.stringify(chunk));
-      savedCount+=chunk.length;
+      var part=localStorage.getItem('mx_clients_'+i);
+      if(part){ try{ arr=arr.concat(JSON.parse(part)); }catch(e){} }
     }
-    localStorage.setItem('mx_clients_n',String(n));
-    return true;
-  }catch(e){
-    // Quota or other error — show user what got saved vs. what's in memory
-    if(typeof toast==='function'){
-      toast('⚠ STORAGE LIMIT HIT — '+savedCount.toLocaleString()+' of '+CLIENTS.length.toLocaleString()+' saved. BACKUP NOW before reload!',false);
-    }
-    return false;
+  } else {
+    var s=localStorage.getItem('mx_clients');
+    if(s){ try{ arr=JSON.parse(s); }catch(e){} }
   }
+  if(!arr.length){
+    try{ localStorage.setItem('mx_clients_migrated_idb','1'); }catch(e){}
+    cb();
+    return;
+  }
+  _idbWriteAll(arr,function(ok){
+    if(ok){
+      try{
+        for(var i=0;i<n;i++) localStorage.removeItem('mx_clients_'+i);
+        localStorage.removeItem('mx_clients_n');
+        localStorage.removeItem('mx_clients');
+        localStorage.setItem('mx_clients_migrated_idb','1');
+      }catch(e){}
+    }
+    cb();
+  });
 }
+
+// Sync interface preserved — CLIENTS array is the source of truth in memory,
+// populated by the bootstrap below at page load.
+function loadClients(){ /* CLIENTS already in memory from IDB bootstrap */ }
+
+// Sync interface preserved — updates in-memory and schedules async IDB write
+function saveClients(){
+  if(!_idbReady){
+    // Bootstrap hasn't finished yet — queue a retry
+    setTimeout(saveClients,100);
+    return true;
+  }
+  _idbPendingWrites++;
+  _idbWriteAll(CLIENTS,function(ok){
+    _idbPendingWrites--;
+    if(!ok && typeof toast==='function'){
+      toast('⚠ Phone storage write failed',false);
+    }
+  });
+  return true;
+}
+
+// Bootstrap: load existing data into CLIENTS at page load
+(function _idbBootstrap(){
+  _idbMigrate(function(){
+    _idbReadAll(function(arr){
+      CLIENTS=arr||[];
+      _idbReady=true;
+      // Re-render the phone list if it's currently visible
+      try{
+        if(typeof phoneShowList==='function' && document.getElementById('phone-list')){
+          var visible=document.getElementById('phone-list-page');
+          if(visible && visible.style.display!=='none') phoneShowList();
+        }
+      }catch(e){}
+    });
+  });
+})();
+
 function nextClientId(){return CLIENTS.length?Math.max.apply(null,CLIENTS.map(function(c){return c.id||0;}))+1:1;}
 
 function phoneLoadFile(){
