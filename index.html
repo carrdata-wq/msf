@@ -6564,8 +6564,20 @@ function doPhoneBackup(){
     lines.push([qc(c.name||''),qc(c.phone||''),qc(c.email||''),qc(c.addr||''),qc(c.notes||''),qc(c.contacted||''),qc(c.adate||''),qc(xVal),qc(c.mtime||mtime)].join(','));
   });
   var dateStr=today().replace(/-/g,'');
-  var filename='MFS-PHONE-'+(cleanExport?'CLEAN-':'')+dateStr+'.csv';
-  backupToGoogleDrive(lines.join('\r\n'), filename, CLIENTS.length+' phone clients', 'Phone Clients - BULK UPLOAD');
+  var baseName='MFS-PHONE-'+(cleanExport?'CLEAN-':'')+dateStr;
+  var content=lines.join('\r\n');
+  // Save BOTH .csv (for ThinkPad/desktop BULK UPLOAD) and .txt (for Android Gmail workflow).
+  // Same content, different extensions — covers both devices in one backup.
+  ['.csv','.txt'].forEach(function(ext){
+    var blob=new Blob([content],{type:'text/plain'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download=baseName+ext;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
+  });
+  try{ window.open('https://drive.google.com/drive/my-drive','_blank'); }catch(e){}
+  showDriveBackupHelp(baseName+'.csv  +  '+baseName+'.txt', CLIENTS.length+' phone clients', 'Phone Clients - BULK UPLOAD');
 }
 
 // ── ONE FILE -> GOOGLE DRIVE: saves the whole database as a single file
