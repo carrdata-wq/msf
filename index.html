@@ -6694,8 +6694,25 @@ function doPhoneBackup(){
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
   });
-  try{ window.open('https://drive.google.com/drive/my-drive','_blank'); }catch(e){}
-  showDriveBackupHelp(baseName+'.csv  +  '+baseName+'.txt', CLIENTS.length+' phone clients', 'Phone Clients - BULK UPLOAD');
+  // Copy data to clipboard and open Gmail pre-addressed — no Drive
+  var _toEmail='tristancarrington1@gmail.com';
+  var _subject='📞 Phone Backup — '+today()+' ('+CLIENTS.length+' clients)';
+  var _instr='PHONE CLIENTS · '+today()+' · '+CLIENTS.length+' records\n\n'
+           + 'Files saved to Downloads: '+baseName+'.csv / .txt\n\n'
+           + 'Your full phone list is ALREADY ON YOUR CLIPBOARD.\n'
+           + '   • Tap into the body below, PASTE (Ctrl+V), then Send.\n'
+           + '   • On Android: open this email → select all → copy → MFS → IMPORT → paste → LOAD.\n';
+  function _openGmail(){
+    var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(_toEmail)+'&su='+encodeURIComponent(_subject)+'&body='+encodeURIComponent(_instr);
+    try{ window.open(u,'_blank'); }catch(e){ window.location.href=u; }
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(content).then(function(){
+      toast('📋 Copied '+CLIENTS.length+' clients — Gmail opening, paste & Send',true); _openGmail();
+    }).catch(function(){
+      toast('Files saved · Gmail opening — paste from Downloads file',true); _openGmail();
+    });
+  } else { toast('Files saved · Gmail opening',true); _openGmail(); }
 }
 
 // ── ONE FILE -> GOOGLE DRIVE: saves the whole database as a single file
@@ -6748,7 +6765,35 @@ function doBackup() {
   });
   var dateStr=today().replace(/-/g,'');
   var filename='MFS-ACCOUNTING-'+(cleanExport?'CLEAN-':'')+dateStr+'.txt';
-  backupToGoogleDrive(lines.join('\r\n'), filename, mxLog.length+' entries', 'MOVE ACCOUNTING');
+  var content=lines.join('\r\n');
+  // 1) Download the file to Downloads
+  try{
+    var blob=new Blob([content],{type:'text/plain'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
+  }catch(e){}
+  // 2) Copy to clipboard and 3) open Gmail pre-addressed (no Drive)
+  var _toEmail='tristancarrington1@gmail.com';
+  var _subject='💰 Accounting Backup — '+today()+' ('+mxLog.length+' entries)';
+  var _instr='ACCOUNTING · '+today()+' · '+mxLog.length+' entries\n\n'
+           + 'File saved to Downloads: '+filename+'\n\n'
+           + 'Your accounting CSV is ALREADY ON YOUR CLIPBOARD.\n'
+           + '   • Tap into the body below, PASTE (Ctrl+V), then Send.\n'
+           + '   • On Android: open this email → select all → copy → MFS → MOVE ACCOUNTING → paste → LOAD.\n';
+  function _openGmail(){
+    var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(_toEmail)+'&su='+encodeURIComponent(_subject)+'&body='+encodeURIComponent(_instr);
+    try{ window.open(u,'_blank'); }catch(e){ window.location.href=u; }
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(content).then(function(){
+      toast('📋 Copied '+mxLog.length+' entries — Gmail opening, paste & Send',true); _openGmail();
+    }).catch(function(){
+      toast('File saved · Gmail opening — paste from Downloads file',true); _openGmail();
+    });
+  } else { toast('File saved · Gmail opening',true); _openGmail(); }
 }
 function copyBackupText(){
   var ta=document.getElementById('bkp-share-text');if(!ta)return;
