@@ -2874,7 +2874,7 @@ function renderCombinedCosts(){
         +'<div style="position:absolute;left:2px;bottom:18px;color:#888;font-size:9px;">$'+minVal.toFixed(2)+'</div>'
         +'<div style="display:flex;align-items:flex-end;height:'+chartH+'px;gap:1px;padding-left:42px;overflow-x:auto;">';
 
-      history.forEach(function(p,i){
+      history.slice().reverse().forEach(function(p,i){
         // If range is tiny (all values nearly same), give each bar a baseline height so they're visible
         var h01=range>0.01?(p.cpd-minVal)/range:0.5;
         var barH=Math.max(8,Math.round(h01*(chartH-10)));
