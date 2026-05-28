@@ -1730,7 +1730,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="field"><label>Notes (optional)</label><input type="text" id="mile-notes" placeholder="e.g. Monthly reading"></div>
       <button class="btn btn-green" onclick="addMileage()">✓ SAVE MILEAGE</button>
-      <button onclick="backupMfsData()" style="width:100%;margin-top:6px;padding:11px;background:#ffaa00;color:#000;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">💾 BACKUP ALL MILEAGE + DATA</button>
+      <button onclick="backupMfsData()" style="width:100%;margin-top:6px;padding:13px;background:#00ff88;color:#000080;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">↓ DOWNLOAD &amp; EMAIL MILEAGE TO ME</button>
       <button class="btn btn-dim" onclick="fuelShow('')">◀ Back</button>
     </div>
     <!-- Mileage history -->
@@ -3798,7 +3798,27 @@ function backupMfsData(){
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
     });
-    toast('💾 Mileage backed up — '+miles.length+' readings → CSV + TXT in Downloads',true);
+
+    // Auto-open Gmail with the mileage data in the body (same method as the Balance Sheet)
+    var toEmail = 'tristancarrington1@gmail.com';
+    var subject = '🚗 Vehicle Mileage — '+today()+' ('+miles.length+' readings)';
+    var instructions = 'VEHICLE MILEAGE — '+miles.length+' readings · '+today()+'\n\n'
+                     + 'Files also saved to Downloads: MFS-MILEAGE-'+dateStr+'.csv / .txt\n\n';
+    var separator = '─────── MILEAGE DATA ───────\n';
+    var fullBody  = instructions + separator + txt.join('\n') + '\n─────── END ───────\n';
+    var encoded = encodeURIComponent(fullBody);
+    var body = encoded.length > 25000
+      ? instructions + 'Mileage list too long for email body — attach MFS-MILEAGE-'+dateStr+'.csv from Downloads instead.\n'
+      : fullBody;
+    var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+                 + '&to='   + encodeURIComponent(toEmail)
+                 + '&su='   + encodeURIComponent(subject)
+                 + '&body=' + encodeURIComponent(body);
+    toast('💾 '+miles.length+' readings saved — opening Gmail…',true);
+    setTimeout(function(){
+      try{ window.open(gmailUrl,'_blank'); }
+      catch(e){ try{ window.open('mailto:'+toEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank'); }catch(e2){} }
+    }, 600);
   } catch(e){
     toast('Backup error: '+e.message, false);
   }
