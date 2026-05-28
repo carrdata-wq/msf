@@ -3766,29 +3766,39 @@ function addFuel() {
 
 function backupMfsData(){
   try {
-    var dump = {};
-    for(var i=0;i<localStorage.length;i++){
-      var k = localStorage.key(i);
-      dump[k] = localStorage.getItem(k);
-    }
+    var d = load();
+    var miles = (d.fuel && d.fuel.miles) ? d.fuel.miles.slice() : [];
+    // sort by vehicle then date so MILES DRIVEN computes correctly per vehicle
+    miles.sort(function(a,b){
+      var va=(a.veh||'').toUpperCase(), vb=(b.veh||'').toUpperCase();
+      if(va!==vb) return va<vb?-1:1;
+      return (a.date||'').localeCompare(b.date||'');
+    });
+    function q(s){ s=String(s==null?'':s).replace(/"/g,"'").replace(/[\r\n]+/g,' '); return s.indexOf(',')>=0?'"'+s+'"':s; }
+    var csv = ['DATE,VEHICLE,ODOMETER,MILES_DRIVEN,NOTES'];
+    var txt = ['MFS VEHICLE MILEAGE — '+today(), ''];
+    var lastVeh=null, lastOdo=null;
+    miles.forEach(function(m){
+      var driven='';
+      if(m.veh===lastVeh && lastOdo!=null){ var dv=(m.odo||0)-lastOdo; if(dv>0) driven=dv; }
+      csv.push([q(m.date),q(m.veh),q(m.odo),q(driven),q(m.notes)].join(','));
+      txt.push((m.date||'')+'  '+(m.veh||'')+'  '+(m.odo||0).toLocaleString()+' mi'+(driven?'  (+'+driven.toLocaleString()+')':'')+(m.notes?'  — '+m.notes:''));
+      lastVeh=m.veh; lastOdo=m.odo||0;
+    });
     var dateStr = today().replace(/-/g,'');
-    var content = JSON.stringify(dump, null, 2);
-    // Download as both .json (for backup) and .txt (for Android email)
-    ['.json','.txt'].forEach(function(ext){
-      var blob = new Blob([content], {type:'text/plain'});
+    var files = [
+      {name:'MFS-MILEAGE-'+dateStr+'.csv', body:csv.join('\r\n')},
+      {name:'MFS-MILEAGE-'+dateStr+'.txt', body:txt.join('\r\n')}
+    ];
+    files.forEach(function(f){
+      var blob = new Blob([f.body], {type:'text/plain'});
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
-      a.href = url; a.download = 'MFS-ALLDATA-' + dateStr + ext;
+      a.href = url; a.download = f.name;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
     });
-    var miles = 0, fuel = 0;
-    try {
-      var m = JSON.parse(dump['mfs']||'{}');
-      miles = ((m.fuel&&m.fuel.miles)||[]).length;
-      fuel  = ((m.fuel&&m.fuel.logs )||[]).length;
-    } catch(e){}
-    toast('💾 Backed up — '+miles+' mileage + '+fuel+' fuel-ups + everything else',true);
+    toast('💾 Mileage backed up — '+miles.length+' readings → CSV + TXT in Downloads',true);
   } catch(e){
     toast('Backup error: '+e.message, false);
   }
