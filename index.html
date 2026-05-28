@@ -2747,60 +2747,41 @@ function renderCombinedCosts(){
   var days=allDates.length>=2?Math.max(1,Math.round((new Date(allDates[allDates.length-1])-new Date(allDates[0]))/(1000*60*60*24))):365;
   var cpd=tAll/days;
 
-  // ── CPD HISTORY SNAPSHOT (one per day, like an ETF closing price) ──
+  // ── ROLLING 30-DAY MOVING AVERAGE (the real cost — computed fresh from the log) ──
   var todayKey=today();
+  var DAY=86400000;
+  var todayT=new Date(todayKey).getTime();
+  // every spending entry as {t, amt}
+  var spend=gasE.concat(grocE).concat(restE).map(function(e){
+    return {t:new Date(e.date||'').getTime(),amt:Math.abs(e.amt)};
+  }).filter(function(e){return !isNaN(e.t);});
+  // trailing-30-day total ending at a given time
+  function roll30(endT){
+    var s=0,lo=endT-30*DAY;
+    for(var k=0;k<spend.length;k++){ if(spend[k].t>lo && spend[k].t<=endT) s+=spend[k].amt; }
+    return s;
+  }
+  // The real "today" number = last 30 days / 30
+  cpd=roll30(todayT)/30;
+  function roll30cat(entries){var s=0,lo=todayT-30*DAY;for(var k=0;k<entries.length;k++){var t=new Date(entries[k].date||'').getTime();if(!isNaN(t)&&t>lo&&t<=todayT)s+=Math.abs(entries[k].amt);}return s;}
+  var gas30=roll30cat(gasE),groc30=roll30cat(grocE),rest30=roll30cat(restE);
+  // Build the trend: trailing-30-day $/day at each month-end across the data range
   var history=[];
-  try{history=JSON.parse(localStorage.getItem('mx_cpd_history')||'[]');}catch(e){history=[];}
-
-  // First-time backfill: if no history yet (or only today's), seed it from the accounting log
-  // by computing the running daily average at the end of each month in the data.
-  if(history.length<=1 && allDates.length>=2){
-    var firstDate=new Date(allDates[0]);
-    var lastDate=new Date(allDates[allDates.length-1]);
-    // Combine all spending entries with their dates and amounts
-    var combined=gasE.concat(grocE).concat(restE).map(function(e){
-      return {date:e.date||'',amt:Math.abs(e.amt)};
-    }).filter(function(e){return e.date;});
-    combined.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
-
-    // Walk month-by-month, computing running daily average up to the end of each month
-    var snapshots=[];
-    var runTot=0;
-    var ci=0;
-    var cur=new Date(firstDate.getFullYear(),firstDate.getMonth(),1);
-    var todayDate=new Date(todayKey);
-    var end=new Date(lastDate.getFullYear(),lastDate.getMonth()+1,0); // last day of last month with data
-    if(end>todayDate) end=todayDate;                                  // never snapshot the future
-    while(cur<=end){
-      var monthEnd=new Date(cur.getFullYear(),cur.getMonth()+1,0);
-      if(monthEnd>todayDate) monthEnd=todayDate;                      // current month stops at today
-      var monthEndStr=monthEnd.getFullYear()+'-'+('0'+(monthEnd.getMonth()+1)).slice(-2)+'-'+('0'+monthEnd.getDate()).slice(-2);
-      // Add all entries up to monthEnd
-      while(ci<combined.length && combined[ci].date<=monthEndStr){
-        runTot+=combined[ci].amt;
-        ci++;
-      }
-      var elapsed=Math.max(1,Math.round((monthEnd-firstDate)/(1000*60*60*24)));
-      if(runTot>0){
-        snapshots.push({date:monthEndStr,cpd:runTot/elapsed});
-      }
-      cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+  if(allDates.length>=2){
+    var d0=new Date(allDates[0]);
+    var cursor=new Date(d0.getFullYear(),d0.getMonth()+1,0); // first month-end
+    while(cursor.getTime()<=todayT){
+      var ds=cursor.getFullYear()+'-'+('0'+(cursor.getMonth()+1)).slice(-2)+'-'+('0'+cursor.getDate()).slice(-2);
+      history.push({date:ds,cpd:roll30(cursor.getTime())/30});
+      cursor=new Date(cursor.getFullYear(),cursor.getMonth()+2,0); // next month-end
     }
-    if(snapshots.length){
-      history=snapshots;
+    // final point = today's live rolling-30 average
+    if(!history.length || history[history.length-1].date!==todayKey){
+      history.push({date:todayKey,cpd:cpd});
+    } else {
+      history[history.length-1].cpd=cpd;
     }
   }
-
-  // Update or append today's snapshot
-  var foundToday=false;
-  for(var hi=0;hi<history.length;hi++){
-    if(history[hi].date===todayKey){history[hi].cpd=cpd;foundToday=true;break;}
-  }
-  if(!foundToday){history.push({date:todayKey,cpd:cpd});}
-  // Sort + cap at 180 entries
-  history.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
-  if(history.length>180)history=history.slice(history.length-180);
-  try{localStorage.setItem('mx_cpd_history',JSON.stringify(history));}catch(e){}
 
   var old=document.getElementById('combined-overlay');if(old)old.remove();
   var overlay=document.createElement('div');
@@ -2809,24 +2790,24 @@ function renderCombinedCosts(){
   var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
     +'<button onclick="document.getElementById(\'combined-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">💰 Combined Daily Costs</span>'
-    +'<span style="color:#00ff88;font-size:10px;margin-left:auto;">build 0528-FIX</span>'
+    +'<span style="color:#00ff88;font-size:10px;margin-left:auto;">build 0528-REAL</span>'
     +'</div>'
     +'<div style="padding:12px;font-family:Courier New,monospace;">'
     // 3 category cards
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
     +'<div style="background:#000044;border:2px solid #ff6666;border-radius:6px;padding:10px;text-align:center;">'
     +'<div style="color:#ff6666;font-weight:700;font-size:13px;">⛽ GAS</div>'
-    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tGas/days).toFixed(2)+'</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(gas30/30).toFixed(2)+'</div>'
     +'<div style="color:#ccccff;font-size:13px;">per day</div>'
     +'<div style="color:#ff6666;font-size:14px;margin-top:4px;">$'+tGas.toFixed(0)+' total</div></div>'
     +'<div style="background:#000044;border:2px solid #00ff88;border-radius:6px;padding:10px;text-align:center;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:13px;">🛒 GROCERY</div>'
-    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tGroc/days).toFixed(2)+'</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(groc30/30).toFixed(2)+'</div>'
     +'<div style="color:#ccccff;font-size:13px;">per day</div>'
     +'<div style="color:#00ff88;font-size:14px;margin-top:4px;">$'+tGroc.toFixed(0)+' total</div></div>'
     +'<div style="background:#000044;border:2px solid #ffaa00;border-radius:6px;padding:10px;text-align:center;">'
     +'<div style="color:#ffaa00;font-weight:700;font-size:13px;">🍽️ FOOD</div>'
-    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(tRest/days).toFixed(2)+'</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(rest30/30).toFixed(2)+'</div>'
     +'<div style="color:#ccccff;font-size:13px;">per day</div>'
     +'<div style="color:#ffaa00;font-size:14px;margin-top:4px;">$'+tRest.toFixed(0)+' total</div></div>'
     +'</div>';
@@ -2950,7 +2931,7 @@ function renderCombinedCosts(){
 
   // big combined total
   h+='<div style="background:#000022;border:3px solid #ffff00;border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">'
-    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">COMBINED AVERAGE DAILY COST</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">REAL DAILY COST · LAST 30-DAY AVERAGE</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:28px;">$'+cpd.toFixed(2)+'</div>'
     +'<div style="color:#00ff88;font-size:14px;margin-top:8px;">'
     +'$'+(cpd*7).toFixed(2)+' / week &nbsp;·&nbsp; '
