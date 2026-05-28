@@ -2867,8 +2867,8 @@ function renderCombinedCosts(){
         var labelEvery=Math.max(1,Math.ceil(barCount/6));
         var showLabel=(i%labelEvery===0)||i===barCount-1;
         var lbl=showLabel?'<div style="font-size:9px;color:#aaa;text-align:center;margin-top:3px;white-space:nowrap;line-height:1.1;">'+p.date.slice(5)+'</div>':'<div style="height:13px;"></div>';
-        h+='<div style="flex:1;min-width:8px;display:flex;flex-direction:column;align-items:center;cursor:pointer;" title="'+p.date+': $'+p.cpd.toFixed(2)+'">'
-          +'<div style="width:100%;background:'+col+';height:'+barH+'px;border-radius:2px 2px 0 0;border:'+border+';"></div>'
+        h+='<div style="flex:0 0 38px;width:38px;display:flex;flex-direction:column;align-items:center;cursor:pointer;" title="'+p.date+': $'+p.cpd.toFixed(2)+'">'
+          +'<div style="width:70%;background:'+col+';height:'+barH+'px;border-radius:2px 2px 0 0;border:'+border+';"></div>'
           +lbl
           +'</div>';
       });
