@@ -2768,9 +2768,12 @@ function renderCombinedCosts(){
     var runTot=0;
     var ci=0;
     var cur=new Date(firstDate.getFullYear(),firstDate.getMonth(),1);
+    var todayDate=new Date(todayKey);
     var end=new Date(lastDate.getFullYear(),lastDate.getMonth()+1,0); // last day of last month with data
+    if(end>todayDate) end=todayDate;                                  // never snapshot the future
     while(cur<=end){
       var monthEnd=new Date(cur.getFullYear(),cur.getMonth()+1,0);
+      if(monthEnd>todayDate) monthEnd=todayDate;                      // current month stops at today
       var monthEndStr=monthEnd.getFullYear()+'-'+('0'+(monthEnd.getMonth()+1)).slice(-2)+'-'+('0'+monthEnd.getDate()).slice(-2);
       // Add all entries up to monthEnd
       while(ci<combined.length && combined[ci].date<=monthEndStr){
