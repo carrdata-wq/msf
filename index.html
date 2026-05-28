@@ -5274,17 +5274,11 @@ function doViewData(){
 
 function doEmailData(){
   loadLog();
-  var total=LOG.reduce(function(s,e){return s+e.amt;},0);
-  var inc=LOG.filter(function(e){return e.amt>=0;}).reduce(function(s,e){return s+e.amt;},0);
-  var exp=LOG.filter(function(e){return e.amt<0;}).reduce(function(s,e){return s+e.amt;},0);
-  var body='MFS REPORT '+today()+'\n';
-  body+='ENTRIES: '+LOG.length+'\n';
-  body+='INCOME: +$'+inc.toFixed(2)+'\n';
-  body+='EXPENSE: -$'+Math.abs(exp).toFixed(2)+'\n';
-  body+='NET: '+(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2)+'\n\n';
-  body+='DATE,PAYEE,PCODE,DESC,AMOUNT,TYPE\n';
+  function q(s){ s=String(s==null?'':s).replace(/"/g,"'").replace(/[\r\n]+/g,' '); return s.indexOf(',')>=0?'"'+s+'"':s; }
+  // Use the SAME header the importer recognizes (ID,DATE,PAYEE,...) so Android will accept it
+  var body='ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME\n';
   LOG.forEach(function(e){
-    body+=(e.date||'')+','+(e.payee||'')+','+(e.pcode||'')+','+(e.desc||'')+','+Math.abs(e.amt).toFixed(2)+','+(e.amt>=0?'INCOME':'EXPENSE')+'\n';
+    body+=[q(e.id||''),q(e.date||''),q(e.payee||''),q(e.pcode||''),q(e.desc||''),(e.amt||0),q(e.x||''),q(e.mtime||'')].join(',')+'\n';
   });
   document.getElementById('email-txt').value=body;
   document.getElementById('email-overlay').style.display='flex';
@@ -5292,6 +5286,33 @@ function doEmailData(){
     var ta=document.getElementById('email-txt');
     ta.focus();ta.select();
   },300);
+}
+
+// Copy the accounting CSV to clipboard and open Gmail pre-addressed (same flow as phone/balance)
+function acctCopyAndEmail(){
+  var ta=document.getElementById('email-txt');
+  if(!ta||!ta.value){toast('Nothing to email',false);return;}
+  var data=ta.value;
+  var toEmail='tristancarrington1@gmail.com';
+  var subject='💰 Accounting Backup — '+today()+' ('+(LOG?LOG.length:0)+' entries)';
+  function openGmail(pasted){
+    var instr='ACCOUNTING BACKUP · '+today()+'\n\n'
+            +(pasted?'Data is on your clipboard — tap in the body below and PASTE (Ctrl+V), then Send.\nOn Android: open this email → select all → copy → MFS → MOVE ACCOUNTING → paste → LOAD.\n':'');
+    var u='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(toEmail)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(instr);
+    try{ window.open(u,'_blank'); }catch(e){ window.location.href=u; }
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(data).then(function(){
+      toast('📋 Copied — Gmail opening, paste & Send',true); openGmail(true);
+    }).catch(function(){
+      ta.focus();ta.select();
+      toast('Text selected — copy it, then paste into Gmail',true); openGmail(true);
+    });
+  } else {
+    ta.focus();ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    toast('📋 Copied — Gmail opening, paste & Send',true); openGmail(true);
+  }
 }
 
 function doOpenFiles(){
@@ -14532,6 +14553,7 @@ function _feFocusPrompt(){
   <div style="background:#0000cc;border:2px solid #ffaa00;border-radius:8px;padding:14px;width:100%;max-width:400px;font-family:Courier New,monospace;">
     <div style="color:#ffaa00;font-weight:700;font-size:13px;margin-bottom:8px;">📧 LONG-PRESS → SELECT ALL → COPY → PASTE INTO EMAIL</div>
     <textarea id="email-txt" readonly="" style="width:100%;height:200px;background:#000033;border:2px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:14px;padding:8px;border-radius:4px;outline:none;resize:none;"></textarea>
+    <button onclick="acctCopyAndEmail()" style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:13px;border:none;border-radius:6px;cursor:pointer;margin-top:8px;">↓ COPY &amp; OPEN GMAIL TO ME</button>
     <button onclick="document.getElementById('email-overlay').style.display='none'" style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;margin-top:8px;">CLOSE</button>
   </div>
 </div>
