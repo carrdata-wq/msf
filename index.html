@@ -442,11 +442,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     padding: 10px 12px !important;
     min-height: 0 !important;
   }
-  /* Main menu — taller rows on Android, but not so tall that the 8th item
-     gets cut off below the footer buttons. 16px keeps tap targets generous
-     while letting the full 8-item list fit cleanly above the footer. */
+  /* Main menu — comfortable rows on Android, but compact enough that the
+     extra LOAD COMBO tile plus items 1-8 all clear the footer buttons
+     without scrolling. */
   #screen-main .menu-item {
-    padding: 16px 12px !important;
+    padding: 9px 12px !important;
   }
   /* Catch the 3 inline-styled "highlight" tiles on the main menu (Balance Sheet,
      MOVE ACCOUNTING, MOVE PHONE) — they all have inline cyan/green borders that
@@ -783,6 +783,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #screen-accounting-sub .menu-item {
     padding: 12px 12px;
   }
+  /* Main module menu — compact rows so FAST ENTRY + LOAD COMBO + items 1-8
+     and the footer buttons all fit on one screen without scrolling. The
+     !important overrides the inline min-height on the highlight tiles. */
+  #screen-main .menu-item { min-height: 0 !important; padding: 8px 12px !important; }
+  #screen-main .menu-item .ms { font-size: 13px !important; margin-top: 0 !important; }
 }
 </style>
 <style id="ReanimatedPredefinedWebAnimationsStyle"></style><style id="ReanimatedCustomWebAnimationsStyle"></style><style id="ReanimatedCSSStyleTag"></style><style id="pc-row-style">
@@ -892,7 +897,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-num" style="color:#00ff88;font-size:22px;">📚</div><div class="menu-icon" style="font-size:28px;">⬇</div>
       <div class="menu-label">
         <div class="ml" style="color:#00ff88;font-size:14px;font-weight:700;letter-spacing:1px;">LOAD COMBO DATABASE</div>
-        <div class="ms" style="color:#88ffaa;">Install 34-yr payee auto-match · run once per device</div>
+        <div class="ms" style="color:#88ffaa;">34-yr payee auto-match · run once per device</div>
       </div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
@@ -13416,6 +13421,11 @@ function _feDispatchInput(val){
   if(_feMode === 'entry-payee'){
     if(!v){ _feFocusPrompt(); return; }
     var vu = v.toUpperCase();
+    // Lone "X" on the PAYEE bar = FoxBase kill: void the LAST file entered and
+    // jump straight back to a fresh PAYEE prompt (no confirm). An "X" inside a
+    // longer name is just a normal letter — this only fires when the entire
+    // bar is a single X, so it never eats a payee you're actually typing.
+    if(vu === 'X'){ _feVoidLast(); return; }
     if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','R','S','-','?','H'].indexOf(vu) >= 0){
       _feDispatchCommand(v); return;
     }
@@ -14209,11 +14219,27 @@ function _feLookupAndApply(query){
     toast(topPayee, true);
     return;
   }
-  // 25-uses rule — auto-apply when ONLY one payee matched AND top combo cnt >= threshold
-  if(matches.length === 1 && topCombo && topCombo.cnt >= _feAutoApplyThreshold){
-    _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
-    toast('AUTO ' + topPayee + ' ×' + topCombo.cnt, true);
-    return;
+  // DOMINANT-MATCH throughput (FoxBase 25-uses rule, generalized). The typed
+  // letters can appear inside several payees as a substring, but if the BEST
+  // match's name STARTS with what you typed, its top combo is past the 25-use
+  // threshold, and nothing else that also starts with your text comes close,
+  // just throughput it: payee + top pcode/desc fill instantly, so you only key
+  // DAY then AMOUNT. e.g. type ABC → ABC SUPPLY ×212 flies straight in.
+  if(topCombo && topCombo.cnt >= _feAutoApplyThreshold && topPayee.indexOf(q) === 0){
+    var rivalCnt = 0;
+    for(var mi = 1; mi < matches.length; mi++){
+      if(matches[mi].indexOf(q) === 0){
+        // matches are sorted prefix-first then cnt-desc, so the first OTHER
+        // prefix match is the strongest rival for the typed text.
+        rivalCnt = (_fePayeeIndex[matches[mi]][0]||{}).cnt || 0;
+        break;
+      }
+    }
+    if(topPayee === q || rivalCnt === 0 || topCombo.cnt >= rivalCnt * 3){
+      _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
+      toast('AUTO ' + topPayee + ' ×' + topCombo.cnt, true);
+      return;
+    }
   }
   _feShowComboPicker(matches, q);
 }
@@ -14536,6 +14562,38 @@ function _feConfirmDel(){
   _feStartEntryPayee();
   _feRender();
   toast('Marked dead — type PACK when ready to sweep', true);
+  _feFocusPrompt();
+}
+
+// Lone "X" at the PAYEE prompt — FoxBase-style instant kill of the LAST file
+// entered (newest non-deleted row). No confirm dialog: it marks the row dead
+// and drops you straight back to a fresh PAYEE prompt, ready for the redo.
+// Mirrors _feConfirmDel's cleanup so combo counts stay accurate; PACK sweeps
+// the dead row out for good later, same as a normal delete.
+function _feVoidLast(){
+  var idx = 0;
+  while(idx < LOG.length && LOG[idx].deleted) idx++;
+  if(idx >= LOG.length){
+    toast('No file to void', false);
+    _feStartEntryPayee(); _feRender(); _feFocusPrompt();
+    return;
+  }
+  var e = LOG[idx];
+  var killed = e.payee || '(blank)';
+  var key = (e.payee||'').toUpperCase() + '|' + (e.pcode||'') + '|' + (e.desc||'');
+  if(_feComboCnt[key]) _feComboCnt[key] = Math.max(0, _feComboCnt[key] - 1);
+  if(_feComboCnt[key] === 0) delete _feComboCnt[key];
+  _feSaveComboCnt();
+  e.deleted = true;
+  e.payee = ''; e.pcode = ''; e.desc = ''; e.amt = 0;
+  saveLog();
+  _feInvalidateIndex();
+  _feRowIdx = 0;
+  while(_feRowIdx < LOG.length && LOG[_feRowIdx].deleted) _feRowIdx++;
+  if(_feRowIdx >= LOG.length) _feRowIdx = 0;
+  _feStartEntryPayee();
+  _feRender();
+  toast('VOIDED ' + killed + ' — start again', true);
   _feFocusPrompt();
 }
 // PACK — the utility sweep: physically removes all dead rows, rebuilds the index.
