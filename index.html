@@ -12619,6 +12619,7 @@ var _feMaxRows = 8;
 var _feIdleTimer = null;           // FoxBase auto-fire: type letters, pause, dispatch
 var _feIdleMs = 1000;              // 1 second — at terminal speed, 2s felt like 10 hours
 var _feGuidedFlow = [];            // queue of steps when adding a new payee
+var _feGuidedAmt = false;          // true when a guided new-payee flow must end at the AMOUNT field
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 var _feDefMM = '';                 // default month (2-digit) — set via DEFA, persisted
 var _feDefYR = '';                 // default year (2-digit)  — set via DEFA, persisted
@@ -13238,6 +13239,7 @@ function _feCancelMode(){
   _fePendingNewPayee = '';
   _feKeyMap = [];
   _feGuidedFlow = [];
+  _feGuidedAmt = false;
   _feIsNewPayeeName = false;
   _feClearIdleTimer();
   var ov = document.getElementById('fe-overlay');
@@ -13261,6 +13263,7 @@ function _feStartEntryPayee(){
   _feDraft = null;
   _feDraftInput = '';
   _feGuidedFlow = [];
+  _feGuidedAmt = false;
   _feMiniLabel = 'PAYEE';
 }
 
@@ -13443,6 +13446,13 @@ function _feFinishStep(){
     _feEnterFillAmt();
     return;
   }
+  // NEW-PAYEE (non-draft) flow just finished PCOD → DESC on the freshly
+  // inserted row → land on AMOUNT so the user types the amount; after that
+  // _feApplyAMT → _feFinishStep loops back to PAYEE (top) on its own.
+  if(_feGuidedAmt){
+    _feGuidedAmt = false;
+    if(LOG.length){ _feRowIdx = 0; _feStartAMT(); return; }
+  }
   _feStartEntryPayee();
   _feRender();
   _feFocusPrompt();
@@ -13450,6 +13460,7 @@ function _feFinishStep(){
 
 function _feStartGuidedFlow(){
   _feGuidedFlow = ['pcode','desc'];
+  _feGuidedAmt = true;   // after PCOD → DESC, stop on AMOUNT (not back to PAYEE)
   setTimeout(_feAdvanceGuided, 80);
 }
 
@@ -14340,7 +14351,7 @@ function _feInsertNew(payee, pcode, desc, isNewPayee){
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.innerHTML=''; ov.style.display='none'; }
   _feRender();
-  // NEW PAYEE: walk through PCOD → DESC → MM → DD → YR → AMT
+  // NEW PAYEE: walk through PCOD → DESC → AMT, then loop back to PAYEE.
   // EXISTING PAYEE: just jump to AMT (date/pcode/desc come from the matched combo)
   if(isNewPayee){
     _feStartGuidedFlow();
@@ -14406,7 +14417,7 @@ function _feSubmitNewPayee(){
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.innerHTML=''; ov.style.display='none'; }
   _feIsNewPayeeName = false;
-  // Insert and start guided flow: PCOD → DESC → MM → DD → YR → AMT
+  // Insert and start guided flow: PCOD → DESC → AMT → loop to PAYEE
   _feInsertNew(name, '', '', true);
 }
 
