@@ -2732,11 +2732,23 @@ function renderDayByDay(){
   document.body.appendChild(overlay);
 }
 
-function renderCombinedCosts(){
+function renderCombinedCosts(ccYear){
+  ccYear=ccYear||'ALL';
   loadLog();
   var gasE=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('TRUCK GAS')>=0;});
   var grocE=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('FOOD GROCERY')>=0;});
   var restE=LOG.filter(function(e){return(e.desc||'').toUpperCase().indexOf('JOB FOOD COST')>=0;});
+
+  // ── YEAR DRILL-DOWN ──
+  // Discover which years exist in the data (for the tab bar), then optionally
+  // filter every category down to the selected year.
+  var __yrSet={};
+  gasE.concat(grocE).concat(restE).forEach(function(e){var y=(e.date||'').slice(0,4);if(y)__yrSet[y]=1;});
+  var ccYears=Object.keys(__yrSet).sort();
+  if(ccYear!=='ALL'){
+    var __inYr=function(e){return (e.date||'').slice(0,4)===ccYear;};
+    gasE=gasE.filter(__inYr); grocE=grocE.filter(__inYr); restE=restE.filter(__inYr);
+  }
 
   var tGas=gasE.reduce(function(s,e){return s+Math.abs(e.amt);},0);
   var tGroc=grocE.reduce(function(s,e){return s+Math.abs(e.amt);},0);
@@ -2748,7 +2760,14 @@ function renderCombinedCosts(){
   var cpd=tAll/days;
 
   // ── ROLLING 30-DAY MOVING AVERAGE (the real cost — computed fresh from the log) ──
-  var todayKey=today();
+  // ── ANCHOR DATE ──
+  // ALL  → anchor on the real "today" (live dashboard).
+  // a year → anchor on that year's end (or today if it's the current year),
+  //          so the trend/30-day windows describe THAT year, not right now.
+  var realToday=today();
+  var curYr=realToday.slice(0,4);
+  var liveMode=(ccYear==='ALL');
+  var todayKey=liveMode?realToday:(ccYear===curYr?realToday:ccYear+'-12-31');
   var DAY=86400000;
   var todayT=new Date(todayKey).getTime();
   // every spending entry as {t, amt}
@@ -2765,6 +2784,13 @@ function renderCombinedCosts(){
   cpd=roll30(todayT)/30;
   function roll30cat(entries){var s=0,lo=todayT-30*DAY;for(var k=0;k<entries.length;k++){var t=new Date(entries[k].date||'').getTime();if(!isNaN(t)&&t>lo&&t<=todayT)s+=Math.abs(entries[k].amt);}return s;}
   var gas30=roll30cat(gasE),groc30=roll30cat(grocE),rest30=roll30cat(restE);
+  // Per-day basis shown on the cards + big total:
+  //   ALL  → trailing-30 (the live "right now" rate)
+  //   year → that year's full average (year total / days of data in range)
+  var gasPD =liveMode?(gas30/30) :(days>0?tGas/days :0);
+  var grocPD=liveMode?(groc30/30):(days>0?tGroc/days:0);
+  var restPD=liveMode?(rest30/30):(days>0?tRest/days:0);
+  if(!liveMode) cpd=days>0?tAll/days:0;
   // Build the trend: trailing-30-day $/day at each month-end across the data range
   var history=[];
   if(allDates.length>=2){
@@ -2790,24 +2816,32 @@ function renderCombinedCosts(){
   var h='<div style="background:#0000cc;border-bottom:2px solid #ffff00;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">'
     +'<button onclick="document.getElementById(\'combined-overlay\').remove();" style="background:#00ff88;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ BACK</button>'
     +'<span style="color:#ffff00;font-weight:700;font-size:13px;">💰 Combined Daily Costs</span>'
+    +'<span style="color:#88ddff;font-size:11px;font-weight:700;">'+(ccYear==='ALL'?'ALL-TIME':ccYear)+'</span>'
     +'<span style="color:#00ff88;font-size:10px;margin-left:auto;">build 0528-REAL</span>'
+    +'</div>'
+    // ── YEAR TAB BAR (drill-down) ──
+    +'<div style="display:flex;gap:4px;overflow-x:auto;padding:6px 10px;background:#000099;border-bottom:1px solid #ffff00;position:sticky;top:37px;z-index:49;-webkit-overflow-scrolling:touch;">'
+    +['ALL'].concat(ccYears).map(function(y){
+        var on=(y===ccYear);
+        return '<button onclick="renderCombinedCosts(\''+y+'\')" style="flex:0 0 auto;background:'+(on?'#ffff00':'#000044')+';color:'+(on?'#000080':'#ffff00')+';border:1px solid #ffff00;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:5px 14px;border-radius:4px;cursor:pointer;white-space:nowrap;">'+y+'</button>';
+      }).join('')
     +'</div>'
     +'<div style="padding:12px;font-family:Courier New,monospace;">'
     // 3 category cards
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
     +'<div style="background:#000044;border:2px solid #ff6666;border-radius:6px;padding:10px;text-align:center;">'
     +'<div style="color:#ff6666;font-weight:700;font-size:13px;">⛽ GAS</div>'
-    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(gas30/30).toFixed(2)+'</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+gasPD.toFixed(2)+'</div>'
     +'<div style="color:#ccccff;font-size:13px;">per day</div>'
     +'<div style="color:#ff6666;font-size:14px;margin-top:4px;">$'+tGas.toFixed(0)+' total</div></div>'
     +'<div style="background:#000044;border:2px solid #00ff88;border-radius:6px;padding:10px;text-align:center;">'
     +'<div style="color:#00ff88;font-weight:700;font-size:13px;">🛒 GROCERY</div>'
-    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(groc30/30).toFixed(2)+'</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+grocPD.toFixed(2)+'</div>'
     +'<div style="color:#ccccff;font-size:13px;">per day</div>'
     +'<div style="color:#00ff88;font-size:14px;margin-top:4px;">$'+tGroc.toFixed(0)+' total</div></div>'
     +'<div style="background:#000044;border:2px solid #ffaa00;border-radius:6px;padding:10px;text-align:center;">'
     +'<div style="color:#ffaa00;font-weight:700;font-size:13px;">🍽️ FOOD</div>'
-    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+(rest30/30).toFixed(2)+'</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:16px;">$'+restPD.toFixed(2)+'</div>'
     +'<div style="color:#ccccff;font-size:13px;">per day</div>'
     +'<div style="color:#ffaa00;font-size:14px;margin-top:4px;">$'+tRest.toFixed(0)+' total</div></div>'
     +'</div>';
@@ -2879,8 +2913,8 @@ function renderCombinedCosts(){
 
     // Reset / rebuild buttons
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
-      +'<button onclick="if(confirm(\'Rebuild trend from accounting history?\')){localStorage.removeItem(\'mx_cpd_history\');document.getElementById(\'combined-overlay\').remove();renderCombinedCosts();}" style="background:#002200;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">↻ Rebuild from history</button>'
-      +'<button onclick="if(confirm(\'Clear ALL trend history?\')){localStorage.setItem(\'mx_cpd_history\',\'[]\');document.getElementById(\'combined-overlay\').remove();renderCombinedCosts();}" style="background:#220000;color:#ff6666;border:1px solid #ff4444;font-family:Courier New,monospace;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">✕ Clear</button>'
+      +'<button onclick="if(confirm(\'Rebuild trend from accounting history?\')){localStorage.removeItem(\'mx_cpd_history\');document.getElementById(\'combined-overlay\').remove();renderCombinedCosts(\''+ccYear+'\');}" style="background:#002200;color:#00ff88;border:1px solid #00ff88;font-family:Courier New,monospace;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">↻ Rebuild from history</button>'
+      +'<button onclick="if(confirm(\'Clear ALL trend history?\')){localStorage.setItem(\'mx_cpd_history\',\'[]\');document.getElementById(\'combined-overlay\').remove();renderCombinedCosts(\''+ccYear+'\');}" style="background:#220000;color:#ff6666;border:1px solid #ff4444;font-family:Courier New,monospace;font-size:10px;padding:3px 8px;border-radius:3px;cursor:pointer;">✕ Clear</button>'
       +'</div>'
       +'</div>';
   }
@@ -2931,7 +2965,7 @@ function renderCombinedCosts(){
 
   // big combined total
   h+='<div style="background:#000022;border:3px solid #ffff00;border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">'
-    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">REAL DAILY COST · LAST 30-DAY AVERAGE</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">'+(liveMode?'REAL DAILY COST · LAST 30-DAY AVERAGE':ccYear+' DAILY AVERAGE · '+days+' days of data')+'</div>'
     +'<div style="color:#ffff00;font-weight:700;font-size:28px;">$'+cpd.toFixed(2)+'</div>'
     +'<div style="color:#00ff88;font-size:14px;margin-top:8px;">'
     +'$'+(cpd*7).toFixed(2)+' / week &nbsp;·&nbsp; '
