@@ -13447,11 +13447,17 @@ function _feFinishStep(){
     return;
   }
   // NEW-PAYEE (non-draft) flow just finished PCOD → DESC on the freshly
-  // inserted row → land on AMOUNT so the user types the amount; after that
-  // _feApplyAMT → _feFinishStep loops back to PAYEE (top) on its own.
+  // inserted row → peg the AMOUNT field ON that row's bar line (same inline
+  // edit every other amount throughput uses), not the top command prompt.
+  // After it commits, _feApplyInline loops back to PAYEE (top).
   if(_feGuidedAmt){
+    if(LOG.length){
+      _feRowIdx = 0;
+      _feMode = 'entry-payee';
+      _feStartInline(0, 'amt');
+      return;
+    }
     _feGuidedAmt = false;
-    if(LOG.length){ _feRowIdx = 0; _feStartAMT(); return; }
   }
   _feStartEntryPayee();
   _feRender();
@@ -13622,6 +13628,13 @@ function _feApplyInline(){
   } else if(f==='amt'){
     var neg = val.indexOf('-') >= 0;
     var digits = val.replace(/[^0-9]/g,'');
+    if(_feGuidedAmt && !digits){
+      // new-payee flow must capture an amount — keep the field open
+      toast('Enter an amount',false);
+      var ai = document.getElementById('fe-inline-edit');
+      if(ai){ try{ ai.focus(); }catch(e){} }
+      return;
+    }
     if(digits){
       var n = parseInt(digits,10) / 100;   // cents convention — last 2 digits = cents
       // sign: a typed "-" always wins; otherwise the IRS rule —
@@ -13633,12 +13646,22 @@ function _feApplyInline(){
   }
   saveLog();
   _feInvalidateIndex();
+  if(_feGuidedAmt){
+    // new-payee flow: amount captured on the row → loop back to PAYEE (top)
+    _feGuidedAmt = false;
+    _feInline = null;
+    _feStartEntryPayee();
+    _feRender();
+    _feFocusPrompt();
+    return;
+  }
   _feInline = null;
   _feRenderTable();
   _feFocusPrompt();
 }
 function _feCancelInline(){
   if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
+  _feGuidedAmt = false;
   _feInline = null;
   _feRenderTable();
   _feFocusPrompt();
