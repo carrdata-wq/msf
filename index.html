@@ -13529,7 +13529,13 @@ function _feDispatchCommand(raw){
 function _feStartMM(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-mm'; _feMiniLabel='EDIT MM:'; _feRender(); _feFocusPrompt(); }
 function _feStartDD(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-dd'; _feMiniLabel='EDIT DD:'; _feRender(); _feFocusPrompt(); }
 function _feStartYR(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-yr'; _feMiniLabel='EDIT YR:'; _feRender(); _feFocusPrompt(); }
-function _feStartAMT(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-amt'; _feMiniLabel='EDIT AMT:'; _feRender(); _feFocusPrompt(); }
+function _feStartAMT(){
+  if(LOG.length===0){ toast('No entry yet',false); _feFocusPrompt(); return; }
+  if(_feRowIdx < 0 || _feRowIdx >= LOG.length) _feRowIdx = 0;
+  // Edit the amount INLINE on the entry's row (where the amount is pegged) —
+  // same as every other amount throughput, not on the top command prompt.
+  _feStartInline(_feRowIdx, 'amt');
+}
 function _feStartPayeeEdit(){ if(LOG.length===0){toast('No entry yet',false);_feFocusPrompt();return;} _feMode='edit-payee'; _feMiniLabel='EDIT PAYEE:'; _feRender(); _feFocusPrompt(); }
 function _feApplyPayee(val){
   if(!val || !String(val).trim()){ _feCancelMode(); return; }
