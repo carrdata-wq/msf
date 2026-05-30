@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v6</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v8</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -1748,6 +1748,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="field"><label>Notes (optional)</label><input type="text" id="mile-notes" placeholder="e.g. Monthly reading"></div>
       <button class="btn btn-green" onclick="addMileage()">✓ SAVE MILEAGE</button>
       <button onclick="backupMfsData()" style="width:100%;margin-top:6px;padding:13px;background:#00ff88;color:#000080;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">↓ DOWNLOAD &amp; EMAIL MILEAGE TO ME</button>
+      <button onclick="uploadMileage()" style="width:100%;margin-top:6px;padding:13px;background:#00aaff;color:#001a33;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">↑ UPLOAD / RESTORE MILEAGE</button>
+      <input type="file" id="mileage-file-input" accept=".csv,.txt" style="display:none" onchange="mileageReadFile(this)">
       <button class="btn btn-dim" onclick="fuelShow('')">◀ Back</button>
     </div>
     <!-- Mileage history -->
@@ -3815,6 +3817,74 @@ function addFuel() {
   fuelShow('');
 }
 
+// ── MILEAGE UPLOAD / RESTORE ── reads back the CSV produced by the mileage
+// download (header DATE,VEHICLE,ODOMETER,MILES_DRIVEN,NOTES) and merges it into
+// d.fuel.miles. MILES_DRIVEN is recomputed automatically, so it's ignored on
+// import. Rows already present (same date+vehicle+odometer) are skipped, so
+// re-uploading the same file can't create duplicates.
+function uploadMileage(){ var i=document.getElementById('mileage-file-input'); if(i) i.click(); }
+function _mileageCSVSplit(line){
+  var res=[], cur='', inQ=false;
+  for(var i=0;i<line.length;i++){
+    var ch=line[i];
+    if(inQ){ if(ch==='"'){ if(line[i+1]==='"'){ cur+='"'; i++; } else inQ=false; } else cur+=ch; }
+    else { if(ch==='"') inQ=true; else if(ch===',') { res.push(cur); cur=''; } else cur+=ch; }
+  }
+  res.push(cur);
+  return res;
+}
+function _parseMileageCSV(text){
+  var lines=String(text||'').split(/\r?\n/);
+  var headerIdx=-1, cols=null;
+  for(var i=0;i<lines.length;i++){
+    if(/DATE/i.test(lines[i]) && /VEHICLE/i.test(lines[i]) && /ODOMETER/i.test(lines[i])){
+      headerIdx=i; cols=_mileageCSVSplit(lines[i]).map(function(c){return c.trim().toUpperCase();}); break;
+    }
+  }
+  var di=cols?cols.indexOf('DATE'):0, vi=cols?cols.indexOf('VEHICLE'):1, oi=cols?cols.indexOf('ODOMETER'):2, ni=cols?cols.indexOf('NOTES'):4;
+  if(di<0)di=0; if(vi<0)vi=1; if(oi<0)oi=2; if(ni<0)ni=4;
+  var out=[];
+  for(var j=headerIdx+1; j<lines.length; j++){
+    var ln=lines[j]; if(!ln||!ln.trim()) continue;
+    var f=_mileageCSVSplit(ln);
+    var date=(f[di]||'').trim();
+    var veh=(f[vi]||'').trim().toUpperCase();
+    var odo=parseFloat(String(f[oi]||'').replace(/[^0-9.\-]/g,''))||0;
+    var notes=(f[ni]||'').trim();
+    if(!date && !veh && !odo) continue;
+    out.push({date:date, veh:veh, odo:odo, notes:notes});
+  }
+  return out;
+}
+function mileageReadFile(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var rows=_parseMileageCSV(e.target.result);
+      if(!rows.length){ toast('No mileage rows found in that file',false); input.value=''; return; }
+      var d=load();
+      if(!d.fuel) d.fuel={logs:[]};
+      if(!d.fuel.miles) d.fuel.miles=[];
+      var seen={};
+      d.fuel.miles.forEach(function(m){ seen[(m.date||'')+'|'+(m.veh||'').toUpperCase()+'|'+(m.odo||0)]=true; });
+      var added=0;
+      rows.forEach(function(r){
+        var key=(r.date||'')+'|'+(r.veh||'').toUpperCase()+'|'+(r.odo||0);
+        if(seen[key]) return;
+        seen[key]=true;
+        d.fuel.miles.push({ id:nextId(d.fuel.miles), date:r.date, odo:r.odo, veh:r.veh, notes:r.notes });
+        added++;
+      });
+      d.fuel.miles.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+      save(d);
+      toast('\u2713 Restored '+added+' mileage row'+(added===1?'':'s')+(rows.length-added>0?' ('+(rows.length-added)+' already there)':''), true);
+      if(typeof fuelShow==='function') fuelShow('mileage');
+    }catch(err){ toast('Could not read that mileage file',false); }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
 function backupMfsData(){
   try {
     var d = load();
@@ -14065,9 +14135,16 @@ function _feRenderPickerResults(){
     html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + key + star + _feEsc(it) + '</button>';
   });
   if(!matches.length){
-    html += '<div style="color:#ff6666;padding:8px;">No matches for "' + _feEsc(_fePickerFilter) + '"</div>';
+    html += '<div style="color:#ff6666;padding:8px;width:100%;">No match — tap <b>+ ADD NEW</b> to create "' + _feEsc(_fePickerFilter) + '"</div>';
   }
-  box.innerHTML = html;
+  // + ADD NEW button (pcode/desc) — ALWAYS available, even before you type, so
+  // creating a brand-new value is reliable and never fights the letter-pick.
+  var addBtn = '';
+  if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){
+    var albl = _fePickerFilter ? ('+ ADD "' + _feEsc(_fePickerFilter) + '"') : '+ ADD NEW';
+    addBtn = '<button onclick="_feShowAddNew()" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + albl + '</button>';
+  }
+  box.innerHTML = addBtn + html;
 }
 function _feFilterPicker(val){
   val = (val||'').toUpperCase();
@@ -14104,8 +14181,11 @@ function _fePickerInputKey(e){
       if(_feMode === 'pick-pcode') _feSetPcode(m[0]);
       else if(_feMode === 'pick-payee') _feSetPayeePicked(m[0]);
       else _feSetDesc(m[0]);
-    } else if(_feMode === 'pick-payee' && q){
-      _feSetPayeePicked(q);   // no match — accept the typed name as a new payee
+    } else if(q){
+      // No match — accept the typed text as a NEW value (payee / pcode / desc).
+      if(_feMode === 'pick-payee') _feSetPayeePicked(q);
+      else if(_feMode === 'pick-pcode'){ _feAddNewPcode(q); toast('+ NEW PCODE ' + q, true); _feSetPcode(q); }
+      else if(_feMode === 'pick-desc'){ _feAddNewDesc(q); toast('+ NEW DESC ' + q, true); _feSetDesc(q); }
     }
     return;
   }
@@ -14132,6 +14212,39 @@ function _feSetItem(val){
   if(_feMode === 'pick-pcode') _feSetPcode(val);
   else if(_feMode === 'pick-desc') _feSetDesc(val);
   else if(_feMode === 'pick-payee') _feSetPayeePicked(val);
+}
+
+// Swap the picker results for a CLEAN add-new field. This input has no filter
+// and no letter-pick, so you can type the whole new pcode/desc without the
+// picker grabbing a keystroke and selecting an existing item by mistake.
+function _feShowAddNew(){
+  var box = document.getElementById('fe-picker-results');
+  if(!box) return;
+  var kind = (_feMode === 'pick-pcode') ? 'PCODE' : (_feMode === 'pick-desc' ? 'DESC' : 'PAYEE');
+  var pre = _feEsc(_fePickerFilter || '');
+  box.innerHTML =
+    '<div style="width:100%;background:#001a00;border:2px solid #00ff88;border-radius:5px;padding:10px;box-sizing:border-box;">'
+    + '<div style="color:#00ff88;font-weight:700;font-size:12px;margin-bottom:6px;">+ ADD NEW ' + kind + ' — type it, then SAVE</div>'
+    + '<input id="fe-addnew-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" value="' + pre + '" '
+    + 'oninput="this.value=this.value.toUpperCase()" onkeydown="_feAddNewKey(event)" '
+    + 'style="width:100%;box-sizing:border-box;background:#000;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:19px;font-weight:700;padding:7px 10px;border-radius:3px;outline:none;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">'
+    + '<div style="display:flex;gap:6px;">'
+    + '<button onclick="_feCommitAddNew()" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>'
+    + '<button onclick="_feRenderPickerResults()" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">BACK</button>'
+    + '</div></div>';
+  setTimeout(function(){ var i = document.getElementById('fe-addnew-input'); if(i){ try{ i.focus(); var L = i.value.length; i.setSelectionRange(L, L); }catch(e){} } }, 20);
+}
+function _feAddNewKey(e){
+  if(e.key === 'Enter'){ e.preventDefault(); _feCommitAddNew(); }
+  else if(e.key === 'Escape'){ e.preventDefault(); _feRenderPickerResults(); var pi = document.getElementById('fe-picker-input'); if(pi){ try{ pi.focus(); }catch(err){} } }
+}
+function _feCommitAddNew(){
+  var i = document.getElementById('fe-addnew-input');
+  var v = i ? (i.value || '').trim().toUpperCase() : '';
+  if(!v){ if(i){ try{ i.focus(); }catch(e){} } return; }
+  if(_feMode === 'pick-pcode'){ _feAddNewPcode(v); toast('+ NEW PCODE ' + v, true); _feSetPcode(v); }
+  else if(_feMode === 'pick-desc'){ _feAddNewDesc(v); toast('+ NEW DESC ' + v, true); _feSetDesc(v); }
+  else if(_feMode === 'pick-payee'){ _feSetPayeePicked(v); }
 }
 function _feApplyPcodePick(val){
   if(!val){ _feCancelMode(); return; }
