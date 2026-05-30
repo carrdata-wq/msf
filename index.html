@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v8</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v9</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -12707,6 +12707,7 @@ var _feIdleTimer = null;           // FoxBase auto-fire: type letters, pause, di
 var _feIdleMs = 1000;              // 1 second — at terminal speed, 2s felt like 10 hours
 var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feGuidedAmt = false;          // true when a guided new-payee flow must end at the AMOUNT field
+var _feGuidedDay = false;          // true when the new-payee flow should ask DAY (DD) before AMOUNT
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 var _feDefMM = '';                 // default month (2-digit) — set via DEFA, persisted
 var _feDefYR = '';                 // default year (2-digit)  — set via DEFA, persisted
@@ -13327,6 +13328,7 @@ function _feCancelMode(){
   _feKeyMap = [];
   _feGuidedFlow = [];
   _feGuidedAmt = false;
+  _feGuidedDay = false;
   _feIsNewPayeeName = false;
   _feClearIdleTimer();
   var ov = document.getElementById('fe-overlay');
@@ -13351,6 +13353,7 @@ function _feStartEntryPayee(){
   _feDraftInput = '';
   _feGuidedFlow = [];
   _feGuidedAmt = false;
+  _feGuidedDay = false;
   _feMiniLabel = 'PAYEE';
 }
 
@@ -13546,10 +13549,15 @@ function _feFinishStep(){
     if(LOG.length){
       _feRowIdx = 0;
       _feMode = 'entry-payee';
-      _feStartInline(0, 'amt');
+      // Ask the DAY (DD) on the row first — same inline editor as every other
+      // field — then chain to the AMOUNT. Day still defaults to today, so a
+      // plain Enter keeps today and moves straight on to the amount.
+      _feGuidedDay = true;
+      _feStartInline(0, 'dd');
       return;
     }
     _feGuidedAmt = false;
+    _feGuidedDay = false;
   }
   _feStartEntryPayee();
   _feRender();
@@ -13744,9 +13752,18 @@ function _feApplyInline(){
   }
   saveLog();
   _feInvalidateIndex();
+  if(_feGuidedDay && f === 'dd'){
+    // new-payee flow: DAY captured on the row → now peg the AMOUNT on the same
+    // row. _feGuidedAmt stays true so the amount then loops back to PAYEE.
+    _feGuidedDay = false;
+    _feInline = null;
+    _feStartInline(0, 'amt');
+    return;
+  }
   if(_feGuidedAmt){
     // new-payee flow: amount captured on the row → loop back to PAYEE (top)
     _feGuidedAmt = false;
+    _feGuidedDay = false;
     _feInline = null;
     _feStartEntryPayee();
     _feRender();
@@ -13760,6 +13777,7 @@ function _feApplyInline(){
 function _feCancelInline(){
   if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
   _feGuidedAmt = false;
+  _feGuidedDay = false;
   _feInline = null;
   _feRenderTable();
   _feFocusPrompt();
