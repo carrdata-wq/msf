@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v4</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v5</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -14136,10 +14136,37 @@ function _feSetItem(val){
 function _feApplyPcodePick(val){
   if(!val){ _feCancelMode(); return; }
   var up = val.toUpperCase();
+  // An exact match wins immediately — even when it's also a substring of longer
+  // codes (e.g. typing 5811 when 58110 also exists) — so a full code commits.
+  var exact = _fePickerItems.filter(function(it){ return it.toUpperCase() === up; });
+  if(exact.length >= 1){ _feSetPcode(exact[0]); return; }
   var m = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(up)>=0; });
   if(m.length === 1){ _feSetPcode(m[0]); return; }
-  if(m.length === 0){ toast('No pcode "'+val+'"',false); _feCancelMode(); return; }
+  if(m.length === 0){
+    // NEW PCODE — not on the list yet. Instead of rejecting it, add it to the
+    // master pcode list (so it's there from now on) and use it on this entry.
+    _feAddNewPcode(up);
+    toast('+ NEW PCODE ' + up, true);
+    _feSetPcode(up);
+    return;
+  }
   _fePickerFilter = up; _feRenderPickerOverlay(); _feFocusPrompt();
+}
+
+// Save a brand-new pcode to the master list (localStorage mx_pcodes) and into
+// the accounting picker, so it shows up in every pcode dropdown from now on.
+function _feAddNewPcode(code){
+  if(!code) return;
+  try {
+    var list = JSON.parse(localStorage.getItem('mx_pcodes')||'[]');
+    if(list.indexOf(code) < 0){ list.push(code); localStorage.setItem('mx_pcodes', JSON.stringify(list)); }
+  } catch(e){}
+  var sel = document.getElementById('p-pcode');
+  if(sel){
+    var have = false;
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value === code){ have = true; break; } }
+    if(!have){ var o = document.createElement('option'); o.value = code; o.textContent = code; sel.appendChild(o); }
+  }
 }
 function _feApplyDescPick(val){
   if(!val){ _feCancelMode(); return; }
