@@ -783,11 +783,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   #screen-accounting-sub .menu-item {
     padding: 12px 12px;
   }
-  /* Main module menu — compact rows so FAST ENTRY + LOAD COMBO + items 1-8
-     and the footer buttons all fit on one screen without scrolling. The
-     !important overrides the inline min-height on the highlight tiles. */
-  #screen-main .menu-item { min-height: 0 !important; padding: 8px 12px !important; }
-  #screen-main .menu-item .ms { font-size: 13px !important; margin-top: 0 !important; }
+  /* Main module menu — force every row to ONE tight line so FAST ENTRY +
+     LOAD COMBO + items 1-8 AND the footer all fit on screen without scrolling,
+     even at 110-150% browser zoom. nowrap+ellipsis stops the long captions
+     wrapping to a 2nd/3rd line; the smaller icon/padding reclaim the rest. */
+  #screen-main .menu-item { min-height: 0 !important; padding: 4px 12px !important; }
+  #screen-main .menu-label { min-width: 0 !important; }
+  #screen-main .menu-item .ml { font-size: 13px !important; line-height: 1.2 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #screen-main .menu-item .ms { font-size: 11px !important; margin-top: 0 !important; line-height: 1.2 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #screen-main .menu-item .menu-icon { font-size: 18px !important; }
 }
 </style>
 <style id="ReanimatedPredefinedWebAnimationsStyle"></style><style id="ReanimatedCustomWebAnimationsStyle"></style><style id="ReanimatedCSSStyleTag"></style><style id="pc-row-style">
@@ -882,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module</div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v4</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
