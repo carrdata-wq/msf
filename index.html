@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v10</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v12</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -11705,9 +11705,12 @@ function universalLoad(){
     +'<textarea id="universal-paste" placeholder="Paste anything from your MFS emails here…" style="width:100%;height:160px;background:#000022;border:1px solid #00ffff;color:#ffffff;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;outline:none;"></textarea>'
     +'<div id="universal-detect" style="color:#ffaa00;font-size:12px;margin-top:6px;min-height:18px;"></div>'
     +'<div style="display:flex;gap:6px;margin-top:8px;">'
-    +'<button onclick="universalLoadGo()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:14px;padding:11px;border:none;border-radius:4px;cursor:pointer;">📥 LOAD</button>'
+    +'<button onclick="universalLoadGo()" style="flex:2;background:#00ff88;color:#000080;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:4px;cursor:pointer;">📥 LOAD (REPLACE)</button>'
+    +'<button onclick="universalLoadGo(true)" style="flex:2;background:#00aaff;color:#001a33;font-weight:700;font-size:13px;padding:11px;border:none;border-radius:4px;cursor:pointer;">🔀 MERGE</button>'
     +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:4px;cursor:pointer;">CLOSE</button>'
-    +'</div></div>';
+    +'</div>'
+    +'<div style="color:#88ccff;font-size:11px;margin-top:5px;line-height:1.35;">REPLACE = swap in the pasted set (overwrites). MERGE = add new accounting rows on top &amp; skip duplicates — erases nothing. Use MERGE to combine two devices.</div>'
+    +'</div>';
   var overlay=document.createElement('div');
   overlay.className='modal-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto;';
@@ -11800,12 +11803,17 @@ function handleUniversalFile(evt){
   r.readAsText(file);
 }
 
-function universalLoadGo(){
+function universalLoadGo(merge){
   var ta=document.getElementById('universal-paste');
   if(!ta)return;
   var txt=(ta.value||'').trim();
   if(!txt){toast('Paste something first',false);return;}
   var kind=universalSniff(txt);
+  if(merge){
+    if(kind==='backup-csv'){ universalMergeBackupCSV(txt); return; }
+    toast('MERGE is for the accounting CSV — use LOAD for this one',false);
+    return;
+  }
   if(kind==='backup')              universalLoadBackup(txt);
   else if(kind==='backup-csv')     universalLoadBackupCSV(txt);
   else if(kind==='lists')          universalLoadLists(txt);
@@ -12012,6 +12020,101 @@ function universalLoadBackupCSV(txt){
   document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
   try{renderLog();}catch(e){}
   toast('✓ Ledger restored — '+arr.length+' entries (CSV)',true);
+}
+// MERGE an accounting CSV into the current ledger instead of replacing it.
+// Adds only rows not already present (matched by content: date+payee+pcode+
+// desc+amount, so it's safe across two devices that number IDs independently),
+// keeps everything that's already there, then re-numbers IDs uniquely. Nothing
+// is erased — this is the two-device combine.
+function universalMergeBackupCSV(txt){
+  function splitRow(s){
+    var out=[],cur='',inq=false;
+    for(var i=0;i<s.length;i++){
+      var ch=s[i];
+      if(inq){
+        if(ch==='"'&&s[i+1]==='"'){cur+='"';i++;}
+        else if(ch==='"'){inq=false;}
+        else cur+=ch;
+      } else {
+        if(ch==='"')inq=true;
+        else if(ch===','){out.push(cur);cur='';}
+        else cur+=ch;
+      }
+    }
+    out.push(cur);
+    return out;
+  }
+  var allLines=txt.split(/\r?\n/);
+  var dataLineRe=/^"[^"]*","(\d{4})-(\d{2})-(\d{2})","[^"]*","[^"]*","[^"]*",-?\d+(?:\.\d+)?\s*"?$/;
+  var startIdx=-1, endIdx=-1;
+  for(var li=0;li<allLines.length;li++){
+    var ln=allLines[li].trim();
+    if(!ln) continue;
+    var lo=ln.toLowerCase();
+    var isHeader=(lo.indexOf('"id"')>=0 && lo.indexOf('"payee"')>=0 && lo.indexOf('"amt"')>=0)
+                 || (lo.indexOf('payee')>=0 && lo.indexOf('amt')>=0 && lo.indexOf('date')>=0 && lo.indexOf(',')>=0);
+    if(startIdx<0 && (isHeader || dataLineRe.test(ln))) startIdx=li;
+    if(startIdx>=0 && dataLineRe.test(ln)) endIdx=li;
+  }
+  if(startIdx<0){toast('No CSV data found in pasted text',false);return;}
+  var lines=allLines.slice(startIdx,(endIdx>=startIdx?endIdx+1:allLines.length)).filter(function(l){return l.trim();});
+  if(lines.length<1){toast('CSV is empty',false);return;}
+  var firstParts=splitRow(lines[0]);
+  var hasHeader=firstParts.some(function(p){return /^(id|date|payee|pcode|desc|amt|amount|type)$/i.test(p.trim());});
+  if(!hasHeader) lines.unshift('"ID","DATE","PAYEE","PCODE","DESC","AMT"');
+  if(lines.length<2){toast('CSV has no data rows',false);return;}
+  var hdr=splitRow(lines[0]).map(function(h){return h.trim().toLowerCase();});
+  var idx={ id:hdr.indexOf('id'), date:hdr.indexOf('date'), payee:hdr.indexOf('payee'),
+            pcode:hdr.indexOf('pcode'), desc:hdr.indexOf('desc'),
+            amt:hdr.indexOf('amt')>=0?hdr.indexOf('amt'):hdr.indexOf('amount'), type:hdr.indexOf('type') };
+  if(idx.payee<0||idx.amt<0){toast('CSV missing PAYEE or AMT column',false);return;}
+  var arr=[];
+  for(var i=1;i<lines.length;i++){
+    var c=splitRow(lines[i]);
+    var amt=parseFloat(c[idx.amt])||0;
+    if(idx.type>=0 && c[idx.type]){
+      var t=(c[idx.type]||'').toUpperCase();
+      if(t==='EXPENSE' && amt>0) amt=-amt;
+      if(t==='INCOME' && amt<0) amt=Math.abs(amt);
+    }
+    arr.push({
+      id: idx.id>=0 ? (parseInt(c[idx.id],10)||i) : i,
+      date: idx.date>=0?(c[idx.date]||''):'',
+      payee:(c[idx.payee]||'').trim(),
+      pcode:idx.pcode>=0?(c[idx.pcode]||'').trim():'',
+      desc: idx.desc>=0?(c[idx.desc]||'').trim():'',
+      amt: amt
+    });
+  }
+  if(!arr.length){toast('No usable rows',false);return;}
+  // content key — same entry on either device collapses to one
+  function ckey(e){
+    return (e.date||'')+'|'+(e.payee||'').toUpperCase().trim()+'|'+(e.pcode||'').toUpperCase().trim()
+         + '|'+(e.desc||'').toUpperCase().trim()+'|'+(Number(e.amt)||0).toFixed(2);
+  }
+  var seen={};
+  LOG.forEach(function(e){ seen[ckey(e)]=true; });
+  var toAdd=[], dup=0;
+  arr.forEach(function(r){ var k=ckey(r); if(seen[k]){dup++;return;} seen[k]=true; toAdd.push(r); });
+  if(!toAdd.length){
+    toast('Nothing new — all '+arr.length+' rows already in your ledger',true);
+    document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+    return;
+  }
+  if(!confirm('MERGE ACCOUNTING — add '+toAdd.length+' new entr'+(toAdd.length===1?'y':'ies')+' to your current '+LOG.length+'?\n('+dup+' duplicate'+(dup===1?'':'s')+' skipped.) Nothing is erased.\nTap Cancel to abort.')) return;
+  var merged=LOG.concat(toAdd);
+  merged.sort(function(a,b){
+    var da=(a.date||''), db=(b.date||'');
+    if(da!==db) return db<da?-1:1;            // newest date first
+    return (b.id||0)-(a.id||0);
+  });
+  for(var mi=0; mi<merged.length; mi++){ merged[mi].id = merged.length-mi; }  // fresh unique ids
+  localStorage.setItem('mx_log',JSON.stringify(merged));
+  LOG=merged;
+  document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+  try{renderLog();}catch(e){}
+  if(typeof _feInvalidateIndex==='function') _feInvalidateIndex();
+  toast('\u2713 Merged — '+toAdd.length+' added, '+merged.length+' total ('+dup+' dup skipped)',true);
 }
 function universalLoadBackup(txt){
   try{
@@ -13550,10 +13653,17 @@ function _feFinishStep(){
       _feRowIdx = 0;
       _feMode = 'entry-payee';
       // Ask the DAY (DD) on the row first — same inline editor as every other
-      // field — then chain to the AMOUNT. Day still defaults to today, so a
-      // plain Enter keeps today and moves straight on to the amount.
+      // field — then chain to the AMOUNT. Day defaults to today and AUTO-PASSES
+      // to the amount if you don't change it (so on Android you don't have to
+      // hunt for an Enter key on the number pad). Start typing a day and the
+      // auto-pass cancels and uses what you type.
       _feGuidedDay = true;
       _feStartInline(0, 'dd');
+      if(_feInlineTimer){ clearTimeout(_feInlineTimer); }
+      _feInlineTimer = setTimeout(function(){
+        _feInlineTimer = null;
+        if(_feInline && _feInline.field === 'dd' && _feGuidedDay) _feApplyInline();
+      }, 1500);
       return;
     }
     _feGuidedAmt = false;
