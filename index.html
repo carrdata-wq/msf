@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v16</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v18</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -13155,7 +13155,7 @@ function _feRenderTableWide(tbody){
                     : (field==='amt') ? 'inputmode="decimal" ' : 'inputmode="numeric" ';
           var mx = (field==='payee') ? 25 : (field==='amt') ? 12 : 2;
           return '<input id="fe-inline-edit" type="text" autocomplete="off" autocorrect="off" spellcheck="false" '
-            + imode + 'maxlength="'+mx+'" value="'+_feEsc(String(txt).trim())+'" '
+            + imode + 'maxlength="'+mx+'" value="'+(_feInline.blank?'':_feEsc(String(txt).trim()))+'" '
             + 'oninput="_feInlineInput()" onkeydown="_feInlineKey(event)" '
             + 'style="'+inv+'width:'+(w*12.5)+'px;text-align:'+(align||'left')+';">';
         }
@@ -13723,11 +13723,10 @@ function _feFinishStep(){
     setTimeout(_feAdvanceGuided, 80);
     return;
   }
-  // pickers done — new payee with pcode+desc set: skip the day prompt
-  // (date defaults to today) and move the cursor straight to AMOUNT.
+  // pickers done — new payee (draft) with pcode+desc set: ask the DAY first
+  // (empty = today, so a plain Enter keeps today), then chain to AMOUNT.
   if(_feDraft && _feDraft.amt === null && !_feDraft.dd){
-    _feDraft.dd = ('0'+new Date().getDate()).slice(-2);
-    _feEnterFillAmt();
+    _feEnterFillDay();
     return;
   }
   // NEW-PAYEE (non-draft) flow just finished PCOD → DESC on the freshly
@@ -13744,12 +13743,7 @@ function _feFinishStep(){
       // hunt for an Enter key on the number pad). Start typing a day and the
       // auto-pass cancels and uses what you type.
       _feGuidedDay = true;
-      _feStartInline(0, 'dd');
-      if(_feInlineTimer){ clearTimeout(_feInlineTimer); }
-      _feInlineTimer = setTimeout(function(){
-        _feInlineTimer = null;
-        if(_feInline && _feInline.field === 'dd' && _feGuidedDay) _feApplyInline();
-      }, 1500);
+      _feStartInline(0, 'dd', true);   // EMPTY day field — WAITS for you to type a day; type it (or Enter = today), then it goes to AMOUNT
       return;
     }
     _feGuidedAmt = false;
@@ -13771,9 +13765,8 @@ function _feAdvanceGuided(){
   if(!_feGuidedFlow || _feGuidedFlow.length === 0){
     _feGuidedFlow = [];
     if(_feDraft && _feDraft.amt === null && !_feDraft.dd){
-      // new payee finished pcode/desc → skip day (today), straight to AMOUNT
-      _feDraft.dd = ('0'+new Date().getDate()).slice(-2);
-      _feEnterFillAmt();
+      // new payee finished pcode/desc → ask DAY first (empty = today), then AMOUNT
+      _feEnterFillDay();
       return;
     }
     _feStartEntryPayee();
@@ -13865,10 +13858,10 @@ function _feQuick(i, action){
 }
 // ── FoxBase-style field masking — the field being edited goes inverse-video
 //    right on the line, you type into that spot. Build once, every field uses it.
-function _feStartInline(idx, field){
+function _feStartInline(idx, field, blank){
   if(idx < 0 || idx >= LOG.length) return;
   _feRowIdx = idx;
-  _feInline = { idx: idx, field: field };
+  _feInline = { idx: idx, field: field, blank: !!blank };
   _feRenderTable();
   setTimeout(function(){
     var inp = document.getElementById('fe-inline-edit');
@@ -13920,9 +13913,11 @@ function _feApplyInline(){
   if(!inp || !e){ _feInline=null; _feRenderTable(); _feFocusPrompt(); return; }
   var val = inp.value, f = _feInline.field;
   if(f==='mm' || f==='dd' || f==='yr'){
-    var num = parseInt(val.replace(/[^0-9]/g,''),10);
+    var raw = val.replace(/[^0-9]/g,'');
+    var num = parseInt(raw,10);
     var parts = (e.date || _feTodayISO()).split('-');   // [yyyy,mm,dd]
-    if(f==='mm' && num>=1 && num<=12) parts[1] = ('0'+num).slice(-2);
+    if(f==='dd' && !raw){ /* empty day = keep today (already on the row) — no error */ }
+    else if(f==='mm' && num>=1 && num<=12) parts[1] = ('0'+num).slice(-2);
     else if(f==='dd' && num>=1 && num<=31) parts[2] = ('0'+num).slice(-2);
     else if(f==='yr' && num>=0 && num<=99) parts[0] = '20'+('0'+num).slice(-2);
     else { toast('Bad '+f.toUpperCase(),false); }
