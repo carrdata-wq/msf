@@ -14645,6 +14645,17 @@ function _feShiftCnt(entry, oldPc, newPc, oldDc, newDc){
 }
 
 // ───── PAYEE LOOKUP & INSERT ─────
+// True if q is a prefix of the whole name OR the start of ANY word inside it.
+// Lets "BALB" fly straight into "CHAVEZ BALBINO LUCATERO" — you type the
+// distinctive word of a vendor, not always its first word.
+function _feWordStart(name, q){
+  if(!name || !q) return false;
+  name = String(name).toUpperCase(); q = String(q).toUpperCase();
+  if(name.indexOf(q) === 0) return true;
+  var words = name.split(/[^A-Z0-9]+/);
+  for(var i=0;i<words.length;i++){ if(words[i] && words[i].indexOf(q) === 0) return true; }
+  return false;
+}
 function _feLookupAndApply(query){
   if(_feIndexDirty) _feBuildIndex();
   var q = query.toUpperCase();
@@ -14653,10 +14664,11 @@ function _feLookupAndApply(query){
     _feAskAddNew(query);
     return;
   }
-  // Sort: prefix matches first, then top-combo cnt desc
+  // Sort: whole-name prefix first, then word-start (BALB→BALBINO), then plain
+  // substring; ties broken by top-combo cnt desc.
   matches.sort(function(a,b){
-    var ap = a.indexOf(q)===0 ? 0 : 1;
-    var bp = b.indexOf(q)===0 ? 0 : 1;
+    var ap = a.indexOf(q)===0 ? 0 : (_feWordStart(a,q) ? 1 : 2);
+    var bp = b.indexOf(q)===0 ? 0 : (_feWordStart(b,q) ? 1 : 2);
     if(ap !== bp) return ap - bp;
     var aCnt = (_fePayeeIndex[a][0]||{}).cnt || 0;
     var bCnt = (_fePayeeIndex[b][0]||{}).cnt || 0;
@@ -14673,17 +14685,17 @@ function _feLookupAndApply(query){
     return;
   }
   // DOMINANT-MATCH throughput (FoxBase 25-uses rule, generalized). The typed
-  // letters can appear inside several payees as a substring, but if the BEST
-  // match's name STARTS with what you typed, its top combo is past the 25-use
-  // threshold, and nothing else that also starts with your text comes close,
-  // just throughput it: payee + top pcode/desc fill instantly, so you only key
-  // DAY then AMOUNT. e.g. type ABC → ABC SUPPLY ×212 flies straight in.
-  if(topCombo && topCombo.cnt >= _feAutoApplyThreshold && topPayee.indexOf(q) === 0){
+  // letters can sit anywhere in several payees, but if the BEST match has a
+  // WORD that starts with what you typed (BALB→BALBINO), its top combo is past
+  // the 25-use threshold, and nothing else that also word-starts your text
+  // comes close (3×), just throughput it: payee + top pcode/desc fill instantly,
+  // so you only key DAY then AMOUNT. e.g. BALB → CHAVEZ BALBINO LUCATERO ×55.
+  if(topCombo && topCombo.cnt >= _feAutoApplyThreshold && _feWordStart(topPayee, q)){
     var rivalCnt = 0;
     for(var mi = 1; mi < matches.length; mi++){
-      if(matches[mi].indexOf(q) === 0){
-        // matches are sorted prefix-first then cnt-desc, so the first OTHER
-        // prefix match is the strongest rival for the typed text.
+      if(_feWordStart(matches[mi], q)){
+        // matches are sorted prefix→word-start→substring then cnt-desc, so the
+        // first OTHER word-start match is the strongest rival for the typed text.
         rivalCnt = (_fePayeeIndex[matches[mi]][0]||{}).cnt || 0;
         break;
       }
