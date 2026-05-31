@@ -13397,7 +13397,7 @@ function _feMaskInput(val){
         try { f2.setSelectionRange(fmt.length, fmt.length); } catch(e){}
       }
     }
-    if(raw) _feArmIdleTimer(800); else _feClearIdleTimer();   // 0.8s — snappier
+    if(raw) _feArmIdleTimer(2000); else _feClearIdleTimer();   // 2s — room for long amounts; Enter commits instantly
     return;
   }
 }
