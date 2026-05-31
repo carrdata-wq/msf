@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v12</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v13</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -1462,6 +1462,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
     <!-- MERGE-CONFIRM banner (self-cleaning picker) -->
     <div id="fe-merge" style="display:none;margin:4px 0 2px;"></div>
+
+    <!-- YEAR TABS — ALL + each year in the ledger; filters the list below -->
+    <div id="fe-year-tabs" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 2px;"></div>
 
     <!-- ENTRY LIST — DOS terminal: blue field, white text, no boxes -->
     <div style="position:relative;margin-top:5px;">
@@ -12811,6 +12814,7 @@ var _feIdleMs = 1000;              // 1 second — at terminal speed, 2s felt li
 var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feGuidedAmt = false;          // true when a guided new-payee flow must end at the AMOUNT field
 var _feGuidedDay = false;          // true when the new-payee flow should ask DAY (DD) before AMOUNT
+var _feYearFilter = 'ALL';         // Fast Entry list filter: 'ALL' or a 4-digit year
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 var _feDefMM = '';                 // default month (2-digit) — set via DEFA, persisted
 var _feDefYR = '';                 // default year (2-digit)  — set via DEFA, persisted
@@ -13000,7 +13004,40 @@ function _feUpdateCombosLoaded(){
 function _feInvalidateIndex(){ _feIndexDirty = true; }
 
 // ───── RENDERING ─────
-function _feRender(){ _feRenderTable(); _feRenderPrompt(); _feRenderMergeBanner(); }
+function _feRender(){ _feRenderTable(); _feRenderYearTabs(); _feRenderPrompt(); _feRenderMergeBanner(); }
+function _feRenderYearTabs(){
+  var box = document.getElementById('fe-year-tabs');
+  if(!box) return;
+  var years = {}, total = 0;
+  for(var i=0;i<LOG.length;i++){
+    var e = LOG[i];
+    if(e.deleted) continue;
+    total++;
+    var y = (e.date||'').slice(0,4);
+    if(/^\d{4}$/.test(y)) years[y] = (years[y]||0) + 1;
+  }
+  var ylist = Object.keys(years).sort().reverse();   // newest year first
+  var tabs = ['ALL'].concat(ylist);
+  // if the active year's rows all vanished, fall back to ALL
+  if(_feYearFilter !== 'ALL' && tabs.indexOf(_feYearFilter) < 0) _feYearFilter = 'ALL';
+  var html = '';
+  tabs.forEach(function(t){
+    var active = (_feYearFilter === t);
+    var label = (t === 'ALL') ? ('ALL \u00b7 ' + total) : (t + ' \u00b7 ' + years[t]);
+    html += '<button onclick="_feSetYear(\''+t+'\')" style="'
+      + 'font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:5px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;'
+      + (active ? 'background:#ffff55;color:#000080;border:2px solid #ffff55;' : 'background:#000070;color:#88ccff;border:2px solid #4466cc;')
+      + '">' + label + '</button>';
+  });
+  box.innerHTML = html;
+}
+function _feSetYear(y){
+  _feYearFilter = y;
+  _feRenderYearTabs();
+  _feRenderTable();
+  var lw = document.getElementById('fe-listwrap'); if(lw) lw.scrollTop = 0;
+  _feFocusPrompt();
+}
 
 function _feRenderTable(){
   var tbody = document.getElementById('fe-tbody');
@@ -13055,6 +13092,7 @@ function _feRenderTableWide(tbody){
   for(var i = 0; i < n; i++){
     var e = LOG[i];
     if(e.deleted) continue;
+    if(_feYearFilter !== 'ALL' && (e.date||'').slice(0,4) !== _feYearFilter) continue;
     visibleCount++;
     var current = (!_feDraft && i === _feRowIdx);
     var recno = n - i;
@@ -13145,6 +13183,7 @@ function _feRenderTableNarrow(tbody){
   for(var i = 0; i < n; i++){
     var e = LOG[i];
     if(e.deleted) continue;
+    if(_feYearFilter !== 'ALL' && (e.date||'').slice(0,4) !== _feYearFilter) continue;
     visibleCount++;
     var current = (!_feDraft && i === _feRowIdx);
     var recno = n - i;
