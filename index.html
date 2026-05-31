@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v14</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v15</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -12105,13 +12105,13 @@ function universalMergeBackupCSV(txt){
     return;
   }
   if(!confirm('MERGE ACCOUNTING — add '+toAdd.length+' new entr'+(toAdd.length===1?'y':'ies')+' to your current '+LOG.length+'?\n('+dup+' duplicate'+(dup===1?'':'s')+' skipped.) Nothing is erased.\nTap Cancel to abort.')) return;
-  var merged=LOG.concat(toAdd);
-  merged.sort(function(a,b){
-    var da=(a.date||''), db=(b.date||'');
-    if(da!==db) return db<da?-1:1;            // newest date first
-    return (b.id||0)-(a.id||0);
-  });
-  for(var mi=0; mi<merged.length; mi++){ merged[mi].id = merged.length-mi; }  // fresh unique ids
+  // Put the NEW rows on TOP (highest record #) so they show at the top of the
+  // ENTRY# (record-number) view — that's "what just came in" from the bank.
+  // Sort the new batch newest-date-first among themselves; leave the existing
+  // entries untouched below.
+  toAdd.sort(function(a,b){ var da=String(a.date||''),db=String(b.date||''); if(da!==db) return db<da?-1:1; return 0; });
+  toAdd.forEach(function(r,k){ if(r.id==null) r.id = Date.now()+k; });
+  var merged = toAdd.concat(LOG);
   localStorage.setItem('mx_log',JSON.stringify(merged));
   LOG=merged;
   document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
@@ -12815,6 +12815,7 @@ var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feGuidedAmt = false;          // true when a guided new-payee flow must end at the AMOUNT field
 var _feGuidedDay = false;          // true when the new-payee flow should ask DAY (DD) before AMOUNT
 var _feYearFilter = 'ALL';         // Fast Entry list filter: 'ALL' or a 4-digit year
+var _feSortMode = 'recno';         // Fast Entry list sort: 'recno' (append order, new on top) or 'date'
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 var _feDefMM = '';                 // default month (2-digit) — set via DEFA, persisted
 var _feDefYR = '';                 // default year (2-digit)  — set via DEFA, persisted
@@ -13032,7 +13033,8 @@ function _feRenderYearTabs(){
   var tabs = ['ALL'].concat(ylist);
   // if the active year's rows all vanished, fall back to ALL
   if(_feYearFilter !== 'ALL' && tabs.indexOf(_feYearFilter) < 0) _feYearFilter = 'ALL';
-  var html = '';
+  var sortLbl = (_feSortMode === 'date') ? 'DATE' : 'REC#';
+  var html = '<button onclick="_feToggleSort()" style="font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:5px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;background:#003a00;color:#00ff88;border:2px solid #00ff88;">\u21c5 SORT: ' + sortLbl + '</button>';
   tabs.forEach(function(t){
     var active = (_feYearFilter === t);
     var label = (t === 'ALL') ? ('ALL \u00b7 ' + total) : (t + ' \u00b7 ' + years[t]);
@@ -13049,6 +13051,34 @@ function _feSetYear(y){
   _feRenderTable();
   var lw = document.getElementById('fe-listwrap'); if(lw) lw.scrollTop = 0;
   _feFocusPrompt();
+}
+function _feToggleSort(){
+  _feSortMode = (_feSortMode === 'date') ? 'recno' : 'date';
+  _feRenderYearTabs();
+  _feRenderTable();
+  var lw = document.getElementById('fe-listwrap'); if(lw) lw.scrollTop = 0;
+  _feFocusPrompt();
+}
+// Build the list of LOG indices to display: year-filtered, non-deleted, in the
+// chosen order. 'recno' = append order (newest-ADDED on top, so freshly loaded
+// bank rows are right at the top regardless of their date). 'date' = by the
+// transaction date, newest first.
+function _feDisplayOrder(){
+  var n = LOG.length, order = [];
+  for(var i=0;i<n;i++){
+    var e = LOG[i];
+    if(!e || e.deleted) continue;
+    if(_feYearFilter !== 'ALL' && _feYearOf(e.date) !== _feYearFilter) continue;
+    order.push(i);
+  }
+  if(_feSortMode === 'date'){
+    order.sort(function(a,b){
+      var da=String(LOG[a].date||''), db=String(LOG[b].date||'');
+      if(da!==db) return db<da?-1:1;   // newest date first
+      return a-b;                       // tie → append order
+    });
+  }
+  return order;   // 'recno' mode keeps LOG (append) order, newest-added on top
 }
 
 function _feRenderTable(){
@@ -13099,12 +13129,12 @@ function _feRenderTableWide(tbody){
       + amtCell
       + '</div>';
   }
-  // committed entries — newest first, dead rows hidden
+  // committed entries — ordered by the toggle (record # = append order, or date)
   var n = LOG.length, visibleCount = 0;
-  for(var i = 0; i < n; i++){
+  var _order = _feDisplayOrder();
+  for(var _p = 0; _p < _order.length; _p++){
+    var i = _order[_p];
     var e = LOG[i];
-    if(e.deleted) continue;
-    if(_feYearFilter !== 'ALL' && _feYearOf(e.date) !== _feYearFilter) continue;
     visibleCount++;
     var current = (!_feDraft && i === _feRowIdx);
     var recno = n - i;
@@ -13192,10 +13222,10 @@ function _feRenderTableNarrow(tbody){
   // ── COMMITTED ENTRIES — 2-line DOS rows ──
   var n = LOG.length;
   var visibleCount = 0;
-  for(var i = 0; i < n; i++){
+  var _order = _feDisplayOrder();
+  for(var _p = 0; _p < _order.length; _p++){
+    var i = _order[_p];
     var e = LOG[i];
-    if(e.deleted) continue;
-    if(_feYearFilter !== 'ALL' && _feYearOf(e.date) !== _feYearFilter) continue;
     visibleCount++;
     var current = (!_feDraft && i === _feRowIdx);
     var recno = n - i;
