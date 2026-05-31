@@ -886,7 +886,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="main-title">▓ MASTER FINANCIAL SYSTEM</div>
       <span id="online-status" style="font-size:13px;padding:2px 6px;border-radius:3px;background:#006600;color:#00ff88;font-family:Courier New,monospace;">●ON</span>
     </div>
-    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v13</span></div>
+    <div class="main-sub">Select Module <span style="opacity:.6;font-size:11px;">· FIT v14</span></div>
   </div>
   <div class="main-box">
     <div class="menu-item" onclick="openFastEntry()" style="background:#003300;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
@@ -13005,16 +13005,28 @@ function _feInvalidateIndex(){ _feIndexDirty = true; }
 
 // ───── RENDERING ─────
 function _feRender(){ _feRenderTable(); _feRenderYearTabs(); _feRenderPrompt(); _feRenderMergeBanner(); }
+// Pull a 4-digit year out of a date in ANY common format: ISO yyyy-mm-dd,
+// US mm/dd/yyyy or mm-dd-yyyy, 2-digit years, etc. Returns '' if none found.
+// This is why the tabs work even on imported bank-statement dates.
+function _feYearOf(date){
+  var s = String(date||'').trim();
+  var iso = s.match(/^(\d{4})[-\/]\d{1,2}[-\/]\d{1,2}/);
+  if(iso) return iso[1];
+  var us = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/);
+  if(us){ var y = us[3]; return y.length === 2 ? ('20' + y) : y; }
+  var any = s.match(/(\d{4})/);
+  return any ? any[1] : '';
+}
 function _feRenderYearTabs(){
   var box = document.getElementById('fe-year-tabs');
   if(!box) return;
   var years = {}, total = 0;
   for(var i=0;i<LOG.length;i++){
     var e = LOG[i];
-    if(e.deleted) continue;
+    if(!e || e.deleted) continue;
     total++;
-    var y = (e.date||'').slice(0,4);
-    if(/^\d{4}$/.test(y)) years[y] = (years[y]||0) + 1;
+    var y = _feYearOf(e.date);
+    if(y) years[y] = (years[y]||0) + 1;
   }
   var ylist = Object.keys(years).sort().reverse();   // newest year first
   var tabs = ['ALL'].concat(ylist);
@@ -13092,7 +13104,7 @@ function _feRenderTableWide(tbody){
   for(var i = 0; i < n; i++){
     var e = LOG[i];
     if(e.deleted) continue;
-    if(_feYearFilter !== 'ALL' && (e.date||'').slice(0,4) !== _feYearFilter) continue;
+    if(_feYearFilter !== 'ALL' && _feYearOf(e.date) !== _feYearFilter) continue;
     visibleCount++;
     var current = (!_feDraft && i === _feRowIdx);
     var recno = n - i;
@@ -13183,7 +13195,7 @@ function _feRenderTableNarrow(tbody){
   for(var i = 0; i < n; i++){
     var e = LOG[i];
     if(e.deleted) continue;
-    if(_feYearFilter !== 'ALL' && (e.date||'').slice(0,4) !== _feYearFilter) continue;
+    if(_feYearFilter !== 'ALL' && _feYearOf(e.date) !== _feYearFilter) continue;
     visibleCount++;
     var current = (!_feDraft && i === _feRowIdx);
     var recno = n - i;
