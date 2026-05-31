@@ -12802,6 +12802,7 @@ var _feMode = 'entry-payee';
 var _feMiniLabel = '';
 var _fePickerItems = [];
 var _fePickerFilter = '';
+var _fePickerDelMode = false;      // PCODE/DESC picker: tap-to-delete from master list
 var _fePendingNewPayee = '';
 var _feKeyMap = [];                // combo picker key shortcuts
 var _feComboPickerRows = [];       // flat list of combo rows in picker order
@@ -14289,10 +14290,20 @@ function _feStartDescPick(){
 function _feRenderPickerOverlay(){
   var ov = document.getElementById('fe-overlay');
   if(!ov) return;
+  _fePickerDelMode = false;   // always open in normal pick mode
   var title = (_feMode === 'pick-pcode' ? 'PCOD' : (_feMode === 'pick-payee' ? 'PAYEE' : 'DESC'));
+  // DELETE toggle — only on the PCODE and DESC pickers (not payee).
+  var delToggle = '';
+  if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){
+    delToggle = '<button id="fe-picker-del-toggle" onclick="_feTogglePickerDel()" '
+      + 'style="background:#330000;border:1px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:3px;cursor:pointer;flex-shrink:0;">&#128465; DELETE</button>';
+  }
   // Build the overlay shell ONCE — input stays alive while results re-render.
   var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;">'
-    + '<div style="color:#ffff00;font-weight:700;font-size:12px;margin-bottom:6px;">' + title + ' — type any letters in it (SUP finds ROOFING SUPPLIES) · auto-picks at 1 · ESC cancels</div>'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:12px;flex:1;min-width:0;">' + title + ' — type any letters in it (SUP finds ROOFING SUPPLIES) · auto-picks at 1 · ESC cancels</div>'
+    + delToggle
+    + '</div>'
     + '<input id="fe-picker-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" '
       + 'placeholder="TYPE TO FIND..." maxlength="20" '
       + 'oninput="_feFilterPicker(this.value)" onkeydown="_fePickerInputKey(event)" '
@@ -14319,6 +14330,23 @@ function _feRenderPickerResults(){
     if(!q) return true;
     return it.toUpperCase().indexOf(q) >= 0;   // contains match
   });
+  // DELETE MODE — tap an item to remove it from the master list. No auto-pick,
+  // no letter-pick, no ADD NEW. Items render red with an ✕.
+  if(_fePickerDelMode){
+    var kindD = (_feMode === 'pick-pcode') ? 'PCODE' : 'DESC';
+    var htmlD = '<div style="width:100%;color:#ffaaaa;font-weight:700;font-size:12px;padding:4px 2px 8px;">'
+      + '&#128465; DELETE MODE — tap a ' + kindD + ' to remove it from the master list (your saved entries are NOT changed)</div>';
+    matches.slice(0, 200).forEach(function(it){
+      var esc = _feEsc(it).replace(/'/g, "\\'");
+      htmlD += '<button onclick="_feDeleteItem(\'' + esc + '\')" style="background:#3a0000;border:1px solid #ff5555;color:#ff9999;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">&#10006; ' + _feEsc(it) + '</button>';
+    });
+    if(!matches.length){
+      htmlD += '<div style="color:#ff6666;padding:8px;width:100%;">Nothing matches "' + _feEsc(_fePickerFilter) + '"</div>';
+    }
+    var doneBtn = '<button onclick="_feTogglePickerDel()" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">&#10004; DONE</button>';
+    box.innerHTML = doneBtn + htmlD;
+    return;
+  }
   if(q && matches.length === 1){
     if(_feMode === 'pick-pcode') _feSetPcode(matches[0]);
     else if(_feMode === 'pick-payee') _feSetPayeePicked(matches[0]);
@@ -14361,6 +14389,8 @@ function _feRenderPickerResults(){
 function _feFilterPicker(val){
   val = (val||'').toUpperCase();
   var prev = _fePickerFilter;
+  // In DELETE mode, typing only narrows the list — never picks or deletes.
+  if(_fePickerDelMode){ _fePickerFilter = val; _feRenderPickerResults(); return; }
   // Android soft keyboards don't fire reliable keydown letters — so the
   // letter-pick also rides the input event. If exactly one letter was just
   // appended and it can't extend the filter (matches nothing), treat it as a
@@ -14385,6 +14415,8 @@ function _feFilterPicker(val){
 }
 function _fePickerInputKey(e){
   if(e.key === 'Escape'){ e.preventDefault(); _feCancelMode(); return; }
+  // In DELETE mode, Enter/letters never pick or delete — only typing filters.
+  if(_fePickerDelMode){ return; }
   if(e.key === 'Enter'){
     e.preventDefault();
     var q = _fePickerFilter.toUpperCase();
@@ -14424,6 +14456,50 @@ function _feSetItem(val){
   if(_feMode === 'pick-pcode') _feSetPcode(val);
   else if(_feMode === 'pick-desc') _feSetDesc(val);
   else if(_feMode === 'pick-payee') _feSetPayeePicked(val);
+}
+
+// Flip the PCODE/DESC picker between normal pick and tap-to-delete.
+function _feTogglePickerDel(){
+  _fePickerDelMode = !_fePickerDelMode;
+  var btn = document.getElementById('fe-picker-del-toggle');
+  if(btn){
+    if(_fePickerDelMode){
+      btn.style.background='#ff5555'; btn.style.color='#000000'; btn.style.borderColor='#ffaaaa';
+      btn.innerHTML='&#128465; DELETING…';
+    } else {
+      btn.style.background='#330000'; btn.style.color='#ff8888'; btn.style.borderColor='#ff5555';
+      btn.innerHTML='&#128465; DELETE';
+    }
+  }
+  _feRenderPickerResults();
+  var pi = document.getElementById('fe-picker-input'); if(pi){ try{ pi.focus({preventScroll:true}); }catch(e){} }
+}
+
+// Remove a pcode/desc from the MASTER pick list only. Past ledger entries that
+// already used it are left untouched — this just cleans up the picker.
+function _feDeleteItem(val){
+  if(!val) return;
+  var isPcode = (_feMode === 'pick-pcode');
+  var kind = isPcode ? 'PCODE' : 'DESC';
+  if(!confirm('Delete ' + kind + ' "' + val + '" from the master list?\n\n(Your saved entries are NOT changed.)')) return;
+  var key = isPcode ? 'mx_pcodes' : 'mx_descs';
+  try {
+    var list = JSON.parse(localStorage.getItem(key) || '[]');
+    list = list.filter(function(x){ return String(x).toUpperCase() !== String(val).toUpperCase(); });
+    localStorage.setItem(key, JSON.stringify(list));
+  } catch(e){}
+  if(isPcode){
+    var sel = document.getElementById('p-pcode');
+    if(sel){ for(var i=sel.options.length-1; i>=0; i--){ if(String(sel.options[i].value).toUpperCase() === String(val).toUpperCase()) sel.remove(i); } }
+  } else {
+    if(typeof _descList !== 'undefined'){
+      for(var j=_descList.length-1; j>=0; j--){ if(String(_descList[j]).toUpperCase() === String(val).toUpperCase()) _descList.splice(j,1); }
+    }
+  }
+  // Drop it from the live picker list so it disappears immediately.
+  _fePickerItems = _fePickerItems.filter(function(x){ return String(x).toUpperCase() !== String(val).toUpperCase(); });
+  toast('Deleted ' + kind + ' ' + val, true);
+  _feRenderPickerResults();
 }
 
 // Swap the picker results for a CLEAN add-new field. This input has no filter
