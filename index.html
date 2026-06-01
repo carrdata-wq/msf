@@ -13232,7 +13232,7 @@ function _feRenderTableWide(tbody){
       ? '<input id="fe-maskfield" type="text" inputmode="decimal" maxlength="11" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:120px;text-align:right;">'
       : (typeof d.amt==='number' ? amt12(d.amt) : '       ____');
     var qtyCell = fillingQty
-      ? ' <span style="color:#00ffff;">QTY:</span><input id="fe-maskfield" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:64px;text-align:right;">'
+      ? ' <span style="color:#00ffff;">QTY:</span><input id="fe-maskfield" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false" value="1" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:64px;text-align:right;">'
       : (typeof d.qty==='number' ? ' <span style="color:#88ddff;">Q\u00d7'+d.qty+'</span>' : '');
     html += '<div style="'+base+'background:#000088;color:#ffff55;">'
       + d.mm + dayCell + d.yr + ' '
@@ -13321,7 +13321,7 @@ function _feRenderTableNarrow(tbody){
       ? '<input id="fe-maskfield" type="text" inputmode="decimal" maxlength="11" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:88px;font-size:16px;text-align:right;">'
       : (typeof d.amt==='number' ? amtTxt(d.amt) : '____');
     var qtyCell = fillingQty
-      ? '<span style="color:#00ffff;font-size:14px;">QTY:</span><input id="fe-maskfield" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:54px;font-size:16px;text-align:right;">'
+      ? '<span style="color:#00ffff;font-size:14px;">QTY:</span><input id="fe-maskfield" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false" value="1" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:54px;font-size:16px;text-align:right;">'
       : (typeof d.qty==='number' ? '<span style="color:#88ddff;font-size:14px;">Q\u00d7'+d.qty+'</span>' : '');
     html += '<div style="background:#000088;color:#ffff55;font-weight:700;padding:3px 8px;border-bottom:1px solid #1a1a99;">'
       + '<div style="'+L1+'">'
@@ -13795,6 +13795,11 @@ function _feEnterFillQty(){
   _feMiniLabel = 'QTY';
   _feRender();
   _feFocusPrompt();
+  // Default is 1 (pre-filled + selected by _feFocusPrompt). Give a wait window
+  // so you can type a different count; if you don't touch it, it advances as 1.
+  var qf = document.getElementById('fe-maskfield');
+  if(qf){ try{ qf.focus({preventScroll:true}); qf.select(); }catch(e){} }
+  _feArmIdleTimer(2500);
 }
 function _feApplyDraftQty(val){
   if(!_feDraft){ _feStartEntryPayee(); _feRender(); _feFocusPrompt(); return; }
@@ -14053,7 +14058,7 @@ function _feEditQty(i){
   _feRowIdx = i;
   var ov = document.getElementById('fe-overlay');
   if(!ov) return;
-  var cur = (e.qty && e.qty>0) ? e.qty : '';
+  var cur = (e.qty && e.qty>0) ? e.qty : 1;   // default 1 — accept with SAVE/Enter or overtype
   ov.innerHTML = '<div style="background:#000033;border:2px solid #00ffff;border-radius:6px;padding:14px;max-width:380px;width:100%;font-family:Courier New,monospace;align-self:flex-start;margin-top:8px;box-sizing:border-box;">'
     + '<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:4px;">\uD83D\uDCE6 QTY (units) — ' + _feEsc((e.payee||'').slice(0,24)) + '</div>'
     + '<div style="color:#aaccff;font-size:11px;margin-bottom:8px;">How many units this purchase covered. Blank or 0 clears it (counts as 1 in reports).</div>'
@@ -14861,12 +14866,25 @@ function _feSetPcode(pcode){
   _feRememberPick(_fePickPayee, 'pcode', pcode);
   if(_feDraft){                       // MASKED LINE: write into the draft
     _feDraft.pcode = pcode;
+    if(_feIsInvePcode(pcode)){
+      // INVENTORY → desc is always INVENTORY; auto-fill it and skip the DESC picker.
+      _feDraft.desc = 'INVENTORY';
+      _feRememberPick(_fePickPayee, 'desc', 'INVENTORY');
+      _feGuidedFlow = (_feGuidedFlow||[]).filter(function(s){ return s !== 'desc'; });
+    }
     _feFinishStep();
     return;
   }
   var e = LOG[_feRowIdx]; if(!e){ _feGuidedFlow=[]; _feCancelMode(); return; }
-  _feShiftCnt(e, e.pcode, pcode, e.desc, e.desc);
+  var _newDesc = _feIsInvePcode(pcode) ? 'INVENTORY' : e.desc;
+  _feShiftCnt(e, e.pcode, pcode, e.desc, _newDesc);
   e.pcode = pcode;
+  if(_feIsInvePcode(pcode)){
+    e.desc = 'INVENTORY';
+    _feRememberPick(_fePickPayee, 'desc', 'INVENTORY');
+    if(e.amt !== 0){ var _abs = Math.abs(e.amt); e.amt = _feIsIncomeDesc('INVENTORY') ? _abs : -_abs; }
+    _feGuidedFlow = (_feGuidedFlow||[]).filter(function(s){ return s !== 'desc'; });
+  }
   saveLog(); _feInvalidateIndex();
   _feFinishStep();
 }
