@@ -8557,6 +8557,7 @@ function runAuditDesc(){
 
 function _rptIsInve(e){ return String(e.pcode||'').toUpperCase().trim()==='INVE'; }
 function _invPickItem(name){
+  var f=document.getElementById('inv-filter'); if(f) f.value='';   // drilling in: clear the text filter
   var s=document.getElementById('inv-item');
   if(s){ s.value=String(name||'').toUpperCase(); runInve(); }
   var sc=document.getElementById('screen-reports'); if(sc) sc.scrollTop=0;
@@ -8572,6 +8573,7 @@ function rptInve(){
   var html='<div style="font-family:Courier New,monospace;">'
     +'<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">📦 INVENTORY ITEMS — UNITS &amp; UNIT PRICE</div>'
+    +'<input id="inv-filter" type="text" oninput="runInve()" placeholder="FILTER — type e.g. GROUND  (&#39;text&#39;$payee)" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#000000;border:1px solid #ffaa00;color:#ffaa00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;text-transform:uppercase;">'
     +'<select id="inv-item" onchange="runInve()" style="width:100%;box-sizing:border-box;background:#001a1a;border:1px solid #00ffaa;color:#00ffaa;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;">'+itemOpts+'</select>'
     +'<div style="display:flex;gap:6px;">'
     +'<select id="inv-yr" onchange="runInve()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
@@ -8587,8 +8589,8 @@ function rptInve(){
 }
 function runInve(){
   loadLog();
-  var yrEl=document.getElementById('inv-yr'), sEl=document.getElementById('inv-sort'), iEl=document.getElementById('inv-item');
-  var yr=yrEl?yrEl.value:'', sortBy=sEl?sEl.value:'spent', item=iEl?(iEl.value||'').toUpperCase():'';
+  var yrEl=document.getElementById('inv-yr'), sEl=document.getElementById('inv-sort'), iEl=document.getElementById('inv-item'), fEl=document.getElementById('inv-filter');
+  var yr=yrEl?yrEl.value:'', sortBy=sEl?sEl.value:'spent', item=iEl?(iEl.value||'').toUpperCase():'', filt=fEl?(fEl.value||'').trim().toUpperCase():'';
   var rows=LOG.filter(function(e){ return _rptIsInve(e) && !e.x && (!yr||(e.date||'').startsWith(yr)); });
   var out=document.getElementById('inv-output');
   if(!out) return;
@@ -8596,8 +8598,14 @@ function runInve(){
   function money(n){return '$'+Math.abs(n).toFixed(2);}
   var bd='1px solid #223344';
   var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
-  // ── ONE ITEM picked → study it by DATE and CNT (each purchase, oldest first) ──
-  if(item){
+  // FoxBase 'text'$payee — a substring filter on the item name. When set it
+  // overrides the dropdown and shows every matching item, aggregated.
+  if(filt){
+    rows=rows.filter(function(e){ return (e.payee||'').toUpperCase().indexOf(filt)>=0; });
+    if(!rows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO ITEMS CONTAIN "'+_feEsc(filt)+'"</div>'; return; }
+  }
+  // ── ONE ITEM picked (and no text filter) → study it by DATE and CNT ──
+  if(item && !filt){
     var dRows=rows.filter(function(e){ return (e.payee||'').toUpperCase()===item; });
     dRows.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
     if(!dRows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO PURCHASES FOR THIS ITEM IN '+(yr||'ALL YRS')+'</div>'; return; }
@@ -8657,7 +8665,7 @@ function runInve(){
   var totSpent=items.reduce(function(s,x){return s+x.spent;},0);
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
     +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
-    +'<div style="color:#00ffff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">Inventory Items &nbsp;&nbsp; '+(yr||'ALL YRS')+' &nbsp;·&nbsp; '+items.length+' items</div>'
+    +'<div style="color:#00ffff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">Inventory Items &nbsp;&nbsp; '+(yr||'ALL YRS')+(filt?' &nbsp;·&nbsp; <span style="color:#ffaa00;">\u201c'+_feEsc(filt)+'\u201d</span>':'')+' &nbsp;·&nbsp; '+items.length+' items</div>'
     +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
     +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
     +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">ITEM</th>'
