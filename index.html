@@ -1705,6 +1705,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT</button>
       <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC</button>
     </div>
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button onclick="rptInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS (UNITS &amp; UNIT$)</button>
+    </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
 </div>
@@ -5282,9 +5285,9 @@ function doExportCSV(){
   if(!mxLog.length){toast('No entries to export',false);return;}
   // Build REAL CSV — round-trips cleanly (signed amount, no separate TYPE column)
   function q(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"';}
-  var lines=['"ID","DATE","PAYEE","PCODE","DESC","AMT"'];
+  var lines=['"ID","DATE","PAYEE","PCODE","DESC","AMT","QTY"'];
   mxLog.forEach(function(e){
-    lines.push(q(e.id)+','+q(e.date)+','+q(e.payee)+','+q(e.pcode)+','+q(e.desc)+','+(typeof e.amt==='number'?e.amt.toFixed(2):'0.00'));
+    lines.push(q(e.id)+','+q(e.date)+','+q(e.payee)+','+q(e.pcode)+','+q(e.desc)+','+(typeof e.amt==='number'?e.amt.toFixed(2):'0.00')+','+(e.qty?e.qty:''));
   });
   var backupText=lines.join('\r\n');
   const filename='NOWACC.TXT';
@@ -6078,31 +6081,45 @@ function parseBulkFile(text,filename){
       if(arr[0]&&arr[0].name) return{type:'clients',data:arr};
     }catch(e){}
   }
-  // Accounting CSV backup — ID,DATE,PAYEE header
+  // Accounting CSV backup — ID,DATE,PAYEE header (header-aware so an added QTY
+  // column is read by name and never shifts the X/MTIME positions on re-import)
   if(text.toUpperCase().indexOf('ID,DATE,PAYEE')>=0){
     var lines=text.split(/\r?\n/);
-    var rows=[];
-    for(var i=1;i<lines.length;i++){
-      if(!lines[i].trim())continue;
-      var cols=[];var cur='';var inq=false;
-      for(var ci=0;ci<lines[i].length;ci++){
-        var ch=lines[i][ci];
+    function _splitCsvLine(line){
+      var cols=[],cur='',inq=false;
+      for(var ci=0;ci<line.length;ci++){
+        var ch=line[ci];
         if(ch==='"'){inq=!inq;}
         else if(ch===','&&!inq){cols.push(cur);cur='';}
         else cur+=ch;
       }
-      cols.push(cur);
+      cols.push(cur); return cols;
+    }
+    var hdr=_splitCsvLine(lines[0]).map(function(h){return h.replace(/"/g,'').trim().toUpperCase();});
+    var iID=hdr.indexOf('ID'), iDATE=hdr.indexOf('DATE'), iPAYEE=hdr.indexOf('PAYEE'),
+        iPCODE=hdr.indexOf('PCODE'), iDESC=hdr.indexOf('DESC'), iAMT=hdr.indexOf('AMT'),
+        iX=hdr.indexOf('X'), iMT=hdr.indexOf('MTIME'), iQTY=hdr.indexOf('QTY');
+    // Legacy fixed-position fallback if header names aren't found
+    if(iID<0){ iID=0; iDATE=1; iPAYEE=2; iPCODE=3; iDESC=4; iAMT=5; iX=6; iMT=7; }
+    var rows=[];
+    for(var i=1;i<lines.length;i++){
+      if(!lines[i].trim())continue;
+      var cols=_splitCsvLine(lines[i]);
       if(cols.length<6)continue;
-      rows.push({
-        id:parseFloat(cols[0])||Date.now()+Math.random(),
-        date:(cols[1]||'').trim(),
-        payee:(cols[2]||'').trim().toUpperCase(),
-        pcode:(cols[3]||'').trim().toUpperCase(),
-        desc:(cols[4]||'').trim().toUpperCase(),
-        amt:parseFloat(cols[5])||0,
-        x:(cols[6]||'').trim(),
-        mtime:(cols[7]||'').trim()
-      });
+      function gv(idx){ return (idx>=0 && idx<cols.length) ? (cols[idx]||'') : ''; }
+      var qn=parseInt(gv(iQTY),10);
+      var row={
+        id:parseFloat(gv(iID))||Date.now()+Math.random(),
+        date:gv(iDATE).trim(),
+        payee:gv(iPAYEE).trim().toUpperCase(),
+        pcode:gv(iPCODE).trim().toUpperCase(),
+        desc:gv(iDESC).trim().toUpperCase(),
+        amt:parseFloat(gv(iAMT))||0,
+        x:gv(iX).trim(),
+        mtime:gv(iMT).trim()
+      };
+      if(!isNaN(qn) && qn>0) row.qty=qn;
+      rows.push(row);
     }
     return{type:'accounting',data:rows.filter(function(r){return r.payee;})};
   }
@@ -6882,10 +6899,10 @@ function doBackup() {
   if(!mxLog.length){toast('No entries to backup',false);return;}
   var cleanExport = !!window._cleanExportAcc;
   function qc(s){s=String(s||'');if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0)s='"'+s.replace(/"/g,'""')+'"';return s;}
-  var lines=['ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME'];
+  var lines=['ID,DATE,PAYEE,PCODE,DESC,AMT,X,MTIME,QTY'];
   mxLog.forEach(function(e){
     var xVal = cleanExport ? '' : (e.x||'');
-    lines.push([qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(xVal),qc(e.mtime||'')].join(','));
+    lines.push([qc(e.id),qc(e.date),qc(e.payee),qc(e.pcode),qc(e.desc),qc(e.amt),qc(xVal),qc(e.mtime||''),qc(e.qty||'')].join(','));
   });
   var dateStr=today().replace(/-/g,'');
   var filename='MFS-ACCOUNTING-'+(cleanExport?'CLEAN-':'')+dateStr+'.txt';
@@ -8536,6 +8553,91 @@ function runAuditDesc(){
     +'</table></div>';
 
   document.getElementById('aud-output').innerHTML=h;
+}
+
+function _rptIsInve(e){ return String(e.pcode||'').toUpperCase().trim()==='INVE'; }
+function rptInve(){
+  loadLog();
+  var inve=LOG.filter(function(e){ return _rptIsInve(e) && !e.x; });
+  if(!inve.length){ document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO INVENTORY (INVE) ENTRIES YET</div>'; return; }
+  var yrs=[...new Set(inve.map(function(e){return(e.date||'').slice(0,4);}))].filter(Boolean).sort().reverse();
+  var yrOpts='<option value="">ALL YRS</option>'+yrs.map(function(y){return'<option value="'+y+'">'+y+'</option>';}).join('');
+  var html='<div style="font-family:Courier New,monospace;">'
+    +'<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
+    +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">📦 INVENTORY ITEMS — UNITS &amp; UNIT PRICE</div>'
+    +'<div style="display:flex;gap:6px;">'
+    +'<select id="inv-yr" onchange="runInve()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
+    +'<select id="inv-sort" onchange="runInve()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'
+      +'<option value="spent">TOP SPEND</option><option value="units">MOST UNITS</option><option value="buys">MOST BUYS</option><option value="unit">UNIT $</option><option value="name">A–Z</option>'
+    +'</select>'
+    +'</div></div>'
+    +'<div id="inv-output"></div>'
+    +'</div>';
+  document.getElementById('rpt-content').innerHTML=html;
+  document.getElementById('screen-reports').scrollTop=0;
+  runInve();
+}
+function runInve(){
+  loadLog();
+  var yrEl=document.getElementById('inv-yr'), sEl=document.getElementById('inv-sort');
+  var yr=yrEl?yrEl.value:'', sortBy=sEl?sEl.value:'spent';
+  var rows=LOG.filter(function(e){ return _rptIsInve(e) && !e.x && (!yr||(e.date||'').startsWith(yr)); });
+  var out=document.getElementById('inv-output');
+  if(!out) return;
+  if(!rows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO DATA</div>'; return; }
+  // For INVE entries the item name lives in the PAYEE field; group on it.
+  var map={};
+  rows.forEach(function(e){
+    var it=(e.payee||'UNKNOWN').toUpperCase();
+    if(!map[it]) map[it]={buys:0,units:0,spent:0};
+    map[it].buys++;
+    map[it].units += (e.qty&&e.qty>0)?e.qty:1;   // no count on old rows = 1 unit
+    map[it].spent += Math.abs(e.amt||0);
+  });
+  var items=Object.keys(map).map(function(k){ var m=map[k]; return {item:k,buys:m.buys,units:m.units,spent:m.spent,unit:m.units?m.spent/m.units:0}; });
+  items.sort(function(a,b){
+    if(sortBy==='name') return a.item.localeCompare(b.item);
+    if(sortBy==='units') return b.units-a.units;
+    if(sortBy==='buys') return b.buys-a.buys;
+    if(sortBy==='unit') return b.unit-a.unit;
+    return b.spent-a.spent;
+  });
+  var totBuys=items.reduce(function(s,x){return s+x.buys;},0);
+  var totUnits=items.reduce(function(s,x){return s+x.units;},0);
+  var totSpent=items.reduce(function(s,x){return s+x.spent;},0);
+  var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  function money(n){return '$'+Math.abs(n).toFixed(2);}
+  var bd='1px solid #223344';
+  var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
+    +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
+    +'<div style="color:#00ffff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">Inventory Items &nbsp;&nbsp; '+(yr||'ALL YRS')+' &nbsp;·&nbsp; '+items.length+' items</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
+    +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">ITEM</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">BUYS</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNITS</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">SPENT</th>'
+    +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNIT$</th>'
+    +'</tr>';
+  items.forEach(function(x){
+    h+='<tr style="border-bottom:'+bd+';">'
+      +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">'+_feEsc(x.item)+'</td>'
+      +'<td style="color:#aaccff;padding:3px;border:'+bd+';text-align:right;">'+x.buys+'</td>'
+      +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+x.units+'</td>'
+      +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(x.spent)+'</td>'
+      +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;">'+money(x.unit)+'</td>'
+      +'</tr>';
+  });
+  h+='<tr style="background:#001a1a;border-top:2px solid #00ffff;font-weight:700;">'
+    +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;">TOTAL</td>'
+    +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+totBuys+'</td>'
+    +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+totUnits+'</td>'
+    +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(totSpent)+'</td>'
+    +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(totUnits?totSpent/totUnits:0)+'</td>'
+    +'</tr></table>'
+    +'<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-top:8px;line-height:1.5;">UNIT$ = total spent ÷ units. Rows entered before quantities count as 1 unit each. Flip the YEAR to compare a unit\u2019s price across years (inflation).</div>'
+    +'</div>';
+  out.innerHTML=h;
 }
 
 function rptMasterDesc(){
@@ -12815,6 +12917,7 @@ var _feIdleMs = 1000;              // 1 second — at terminal speed, 2s felt li
 var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feGuidedAmt = false;          // true when a guided new-payee flow must end at the AMOUNT field
 var _feGuidedDay = false;          // true when the new-payee flow should ask DAY (DD) before AMOUNT
+var _feGuidedQty = false;          // true when a new INVE entry must capture QTY after AMOUNT, then loop to PAYEE
 var _feYearFilter = 'ALL';         // Fast Entry list filter: 'ALL' or a 4-digit year
 var _feSortMode = 'recno';         // Fast Entry list sort: 'recno' (append order, new on top) or 'date'
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
@@ -13120,6 +13223,7 @@ function _feRenderTableWide(tbody){
     var d = _feDraft;
     var fillingDay = (_feMode === 'fill-day');
     var fillingAmt = (_feMode === 'fill-amt');
+    var fillingQty = (_feMode === 'fill-qty');
     var inv = 'background:#000000;border:none;color:#ffff55;font-family:Courier New,monospace;font-weight:700;outline:none;'+FS+'padding:0 1px;text-align:center;';
     var dayCell = fillingDay
       ? '<input id="fe-maskfield" type="text" inputmode="numeric" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:32px;">'
@@ -13127,12 +13231,15 @@ function _feRenderTableWide(tbody){
     var amtCell = fillingAmt
       ? '<input id="fe-maskfield" type="text" inputmode="decimal" maxlength="11" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:120px;text-align:right;">'
       : (typeof d.amt==='number' ? amt12(d.amt) : '       ____');
+    var qtyCell = fillingQty
+      ? ' <span style="color:#00ffff;">QTY:</span><input id="fe-maskfield" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:64px;text-align:right;">'
+      : (typeof d.qty==='number' ? ' <span style="color:#88ddff;">Q\u00d7'+d.qty+'</span>' : '');
     html += '<div style="'+base+'background:#000088;color:#ffff55;">'
       + d.mm + dayCell + d.yr + ' '
       + _feEsc(pad(d.payee||'',25)) + ' '
       + _feEsc(pad(d.pcode||'',5)) + ' '
       + _feEsc(pad(d.desc||'',25)) + ' '
-      + amtCell
+      + amtCell + qtyCell
       + '</div>';
   }
   // committed entries — ordered by the toggle (record # = append order, or date)
@@ -13182,7 +13289,7 @@ function _feRenderTableWide(tbody){
     var col = current ? '#ffff55' : '#ffffff';
     var bg = current ? 'background:#000088;' : '';
     html += '<div data-idx="'+i+'" onclick="_feRowTap('+i+')" style="'+base+bg+'color:'+col+';cursor:pointer;">'
-      + _feEsc(line) + _feCodeStrip(i) + '</div>';
+      + _feEsc(line) + (e.qty ? ' <span style="color:#88ddff;">Q\u00d7'+e.qty+'</span>' : '') + _feCodeStrip(i) + '</div>';
   }
   if(visibleCount === 0 && !_feDraft){
     html += '<div style="padding:16px;color:#aaccff;'+FS+'">No entries — type a payee to begin</div>';
@@ -13204,6 +13311,7 @@ function _feRenderTableNarrow(tbody){
     var d = _feDraft;
     var fillingDay = (_feMode === 'fill-day');
     var fillingAmt = (_feMode === 'fill-amt');
+    var fillingQty = (_feMode === 'fill-qty');
     var inv = 'background:#000000;border:none;color:#ffff55;font-family:Courier New,monospace;'
       + 'font-weight:700;outline:none;padding:0 1px;text-align:center;';
     var dayCell = fillingDay
@@ -13212,6 +13320,9 @@ function _feRenderTableNarrow(tbody){
     var amtCell = fillingAmt
       ? '<input id="fe-maskfield" type="text" inputmode="decimal" maxlength="11" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:88px;font-size:16px;text-align:right;">'
       : (typeof d.amt==='number' ? amtTxt(d.amt) : '____');
+    var qtyCell = fillingQty
+      ? '<span style="color:#00ffff;font-size:14px;">QTY:</span><input id="fe-maskfield" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false" oninput="_feMaskInput(this.value)" onkeydown="_feMaskKey(event)" style="'+inv+'width:54px;font-size:16px;text-align:right;">'
+      : (typeof d.qty==='number' ? '<span style="color:#88ddff;font-size:14px;">Q\u00d7'+d.qty+'</span>' : '');
     html += '<div style="background:#000088;color:#ffff55;font-weight:700;padding:3px 8px;border-bottom:1px solid #1a1a99;">'
       + '<div style="'+L1+'">'
         + '<span style="flex:0 0 auto;font-size:16px;">' + d.mm + '/' + dayCell + '/' + d.yr + '</span>'
@@ -13222,6 +13333,7 @@ function _feRenderTableNarrow(tbody){
         + '<span style="flex:0 0 156px;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(d.desc||'') + '</span>'
         + '<span style="flex:0 0 76px;font-size:16px;margin-left:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(d.pcode||'') + '</span>'
         + '<span style="flex:0 0 100px;font-size:16px;margin-left:26px;text-align:right;">' + amtCell + '</span>'
+        + (qtyCell ? '<span style="flex:0 0 auto;margin-left:10px;text-align:right;">' + qtyCell + '</span>' : '')
       + '</div>'
       + '</div>';
   }
@@ -13240,6 +13352,38 @@ function _feRenderTableNarrow(tbody){
     var cnt = e.cnt || 0;
     var cntStr = cnt ? ' <span style="font-size:12px;color:#88aaff;font-weight:700;">\u00d7' + cnt + '</span>' : '';
     var dateStr = _feFmtDate(e.date || '');
+    // INLINE FIELD EDIT (Android too) — the field being edited becomes an
+    // inverse-video input right on the row, so the soft keyboard comes up.
+    if(_feInline && _feInline.idx === i){
+      var invn = 'background:#000000;border:none;color:#ffff55;font-family:Courier New,monospace;font-weight:700;outline:none;padding:0 1px;';
+      var nfld = function(field, txt, w, align){
+        if(_feInline.field === field){
+          var imode = (field==='payee') ? 'autocapitalize="characters" ' : (field==='amt') ? 'inputmode="decimal" ' : 'inputmode="numeric" ';
+          var mx = (field==='payee') ? 25 : (field==='amt') ? 12 : 2;
+          return '<input id="fe-inline-edit" type="text" autocomplete="off" autocorrect="off" spellcheck="false" '
+            + imode + 'maxlength="'+mx+'" value="'+(_feInline.blank?'':_feEsc(String(txt).trim()))+'" '
+            + 'oninput="_feInlineInput()" onkeydown="_feInlineKey(event)" '
+            + 'style="'+invn+'width:'+w+'px;font-size:16px;text-align:'+(align||'left')+';">';
+        }
+        return _feEsc(txt);
+      };
+      var iso = (e.date||'').split('-');                 // [yyyy,mm,dd]
+      var yy=(iso[0]||'').slice(2), mm=iso[1]||'', dd=iso[2]||'';
+      var amtVal = (e.amt<0?'-':'') + Math.abs(e.amt||0).toFixed(2);
+      html += '<div data-idx="'+i+'" style="'+bg+'color:#ffff55;font-weight:700;padding:3px 8px;border-bottom:1px solid #1a1a99;">'
+        + '<div style="'+L1+'">'
+          + '<span style="flex:0 0 auto;font-size:16px;">' + nfld('mm',mm,24,'center')+'/'+nfld('dd',dd,24,'center')+'/'+nfld('yr',yy,24,'center') + '</span>'
+          + '<span style="flex:1;font-size:19px;overflow:hidden;white-space:nowrap;">' + nfld('payee',e.payee||'',150,'left') + '</span>'
+          + '<span style="flex:0 0 auto;font-size:11px;color:#7799ee;margin-left:10px;">#'+recno+'</span>'
+        + '</div>'
+        + '<div style="'+L2+'">'
+          + '<span style="flex:0 0 156px;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.desc||'') + '</span>'
+          + '<span style="flex:0 0 76px;font-size:16px;margin-left:16px;">' + _feEsc(e.pcode||'') + '</span>'
+          + '<span style="flex:0 0 100px;font-size:16px;margin-left:26px;text-align:right;">' + (_feInline.field==='amt' ? nfld('amt',amtVal,84,'right') : amtTxt(e.amt)) + '</span>'
+        + '</div>'
+        + '</div>';
+      continue;
+    }
     html += '<div data-idx="' + i + '" onclick="_feRowTap(' + i + ')" '
       + 'style="' + bg + 'color:' + col + ';font-weight:700;cursor:pointer;padding:3px 8px;border-bottom:1px solid #1a1a99;">'
       + '<div style="'+L1+'">'
@@ -13251,6 +13395,7 @@ function _feRenderTableNarrow(tbody){
         + '<span style="flex:0 0 156px;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.desc||'') + '</span>'
         + '<span style="flex:0 0 76px;font-size:16px;margin-left:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _feEsc(e.pcode||'') + '</span>'
         + '<span style="flex:0 0 100px;font-size:16px;margin-left:26px;text-align:right;">' + amtTxt(e.amt) + '</span>'
+        + (e.qty ? '<span style="flex:0 0 auto;font-size:13px;color:#88ddff;margin-left:8px;">Q\u00d7'+e.qty+'</span>' : '')
       + '</div>'
       + '</div>';
   }
@@ -13279,15 +13424,16 @@ function _feRenderPrompt(){
   }
   var modeEl = document.getElementById('fe-mode');
   if(modeEl){
-    var labels = { 'entry-payee':'PAYEE','fill-day':'DAY','fill-amt':'AMT','edit-defa':'DEFA','cmd':'CMD','edit-mm':'MM','edit-dd':'DD','edit-yr':'YR','edit-amt':'AMT','pick-pcode':'PCOD','pick-desc':'DESC','pick-payee':'PAYEE','pick-combo':'COMBO','ask-new':'NEW?' };
+    var labels = { 'entry-payee':'PAYEE','fill-day':'DAY','fill-amt':'AMT','fill-qty':'QTY','edit-defa':'DEFA','cmd':'CMD','edit-mm':'MM','edit-dd':'DD','edit-yr':'YR','edit-amt':'AMT','pick-pcode':'PCOD','pick-desc':'DESC','pick-payee':'PAYEE','pick-combo':'COMBO','ask-new':'NEW?' };
     modeEl.textContent = labels[_feMode] || _feMode.toUpperCase();
   }
   var inp = document.getElementById('fe-prompt');
   if(inp){
-    var fillMode = (_feMode === 'fill-day' || _feMode === 'fill-amt');
+    var fillMode = (_feMode === 'fill-day' || _feMode === 'fill-amt' || _feMode === 'fill-qty');
     inp.readOnly = fillMode;
     inp.style.opacity = fillMode ? '0.25' : '1';
     if(_feMode === 'fill-day'){ inp.placeholder=''; }
+    else if(_feMode === 'fill-qty'){ inp.placeholder=''; }
     else if(_feMode === 'entry-payee'){ inp.placeholder='PAYEE'; inp.maxLength=20; }
     else if(_feMode === 'edit-defa'){ inp.placeholder='MMYR e.g. 0526'; inp.maxLength=6; }
     else if(_feMode === 'fill-amt'){ inp.placeholder=''; }
@@ -13352,6 +13498,12 @@ function _feArmIdleTimer(ms){
       if(av) _feApplyDraftAmt(av);
       return;
     }
+    if(_feMode === 'fill-qty'){
+      var qf = document.getElementById('fe-maskfield');
+      var qv = qf ? (qf.value||'').trim() : '';
+      if(qv) _feApplyDraftQty(qv);   // blank → wait; Enter with blank = qty 1
+      return;
+    }
     var inp = document.getElementById('fe-prompt');
     if(!inp) return;
     var v = (inp.value||'').trim();
@@ -13400,6 +13552,13 @@ function _feMaskInput(val){
     if(raw) _feArmIdleTimer(2000); else _feClearIdleTimer();   // 2s — room for long amounts; Enter commits instantly
     return;
   }
+  if(_feMode === 'fill-qty'){
+    var qd = (val||'').replace(/[^0-9]/g,'').slice(0,6);
+    var fq = document.getElementById('fe-maskfield');
+    if(fq && fq.value !== qd) fq.value = qd;
+    if(qd) _feArmIdleTimer(2000); else _feClearIdleTimer();
+    return;
+  }
 }
 function _feMaskKey(e){
   if(e.key === 'Enter'){
@@ -13409,6 +13568,7 @@ function _feMaskKey(e){
     var v = f ? (f.value||'').trim() : '';
     if(_feMode === 'fill-day') _feApplyDraftDay(v);
     else if(_feMode === 'fill-amt') _feApplyDraftAmt(v);
+    else if(_feMode === 'fill-qty') _feApplyDraftQty(v);
     return;
   }
   if(e.key === 'Escape'){
@@ -13519,6 +13679,7 @@ function _feCancelMode(){
   _feGuidedFlow = [];
   _feGuidedAmt = false;
   _feGuidedDay = false;
+  _feGuidedQty = false;
   _feIsNewPayeeName = false;
   _feClearIdleTimer();
   var ov = document.getElementById('fe-overlay');
@@ -13544,6 +13705,7 @@ function _feStartEntryPayee(){
   _feGuidedFlow = [];
   _feGuidedAmt = false;
   _feGuidedDay = false;
+  _feGuidedQty = false;
   _feMiniLabel = 'PAYEE';
 }
 
@@ -13616,6 +13778,30 @@ function _feApplyDraftAmt(val){
   if(neg) amt = -amt;
   else if(!_feIsIncomeDesc(_feDraft.desc)) amt = -amt;
   _feDraft.amt = amt;
+  // INVENTORY items get a quantity count (how many units) before saving, so you
+  // can later study unit counts and price-per-unit (inflation). All others commit.
+  if(_feIsInvePcode(_feDraft.pcode)) _feEnterFillQty();
+  else _feCommitDraft();
+}
+
+// INVE = inventory pcode. Quantity capture only applies to these.
+function _feIsInvePcode(pc){ return String(pc||'').toUpperCase().trim() === 'INVE'; }
+
+function _feEnterFillQty(){
+  _feMode = 'fill-qty';
+  _feDraftInput = '';
+  var inp = document.getElementById('fe-prompt');
+  if(inp) inp.value = '';
+  _feMiniLabel = 'QTY';
+  _feRender();
+  _feFocusPrompt();
+}
+function _feApplyDraftQty(val){
+  if(!_feDraft){ _feStartEntryPayee(); _feRender(); _feFocusPrompt(); return; }
+  var s = String(val||'').replace(/[^0-9]/g,'');
+  var q = s ? parseInt(s,10) : 1;     // blank = 1 unit
+  if(isNaN(q) || q < 1) q = 1;
+  _feDraft.qty = q;
   _feCommitDraft();
 }
 
@@ -13632,6 +13818,7 @@ function _feCommitDraft(){
     date: '20' + d.yr + '-' + d.mm + '-' + d.dd,
     amt: (typeof d.amt === 'number') ? d.amt : 0
   };
+  if(typeof d.qty === 'number' && d.qty > 0) entry.qty = d.qty;   // inventory unit count
   var key = d.payee.toUpperCase() + '|' + (d.pcode||'') + '|' + (d.desc||'');
   _feComboCnt[key] = (_feComboCnt[key] || 0) + 1;
   entry.cnt = _feComboCnt[key];
@@ -13650,7 +13837,7 @@ function _feCommitDraft(){
   }
   if(!found) _fePayeeIndex[pu].push({pcode:d.pcode||'',desc:d.desc||'',cnt:_feComboCnt[key]});
   _fePayeeIndex[pu].sort(function(a,b){ return b.cnt - a.cnt; });
-  toast('SAVED  ' + d.payee + '  ' + _feFmtAmt(entry.amt), true);
+  toast('SAVED  ' + d.payee + '  ' + _feFmtAmt(entry.amt) + (entry.qty ? '  Q\u00d7' + entry.qty : ''), true);
   _feDraft = null;
   _feRowIdx = 0;
   _feStartEntryPayee();
@@ -13848,6 +14035,7 @@ function _feQuick(i, action){
     case 'yr':     _feStartInline(i,'yr'); break;
     case 'payee':  _feStartPayeePick(); break;
     case 'amt':    _feStartInline(i,'amt'); break;
+    case 'qty':    _feEditQty(i); break;
     case 'pcode':  _feStartPcodePick(); break;
     case 'desc':   _feStartDescPick(); break;
     case 'copy':   _feActCopy(); break;
@@ -13857,6 +14045,58 @@ function _feQuick(i, action){
     case 'del':    _feRowIdx=i; _feConfirmDel(); break;
   }
 }
+// Q quick-code — edit the quantity (units) on an inventory row. Also lets you
+// backfill counts on older INVE rows so the inventory report sharpens up.
+function _feEditQty(i){
+  var e = LOG[i];
+  if(!e){ toast('Entry not found',false); return; }
+  _feRowIdx = i;
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  var cur = (e.qty && e.qty>0) ? e.qty : '';
+  ov.innerHTML = '<div style="background:#000033;border:2px solid #00ffff;border-radius:6px;padding:14px;max-width:380px;width:100%;font-family:Courier New,monospace;align-self:flex-start;margin-top:8px;box-sizing:border-box;">'
+    + '<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:4px;">\uD83D\uDCE6 QTY (units) — ' + _feEsc((e.payee||'').slice(0,24)) + '</div>'
+    + '<div style="color:#aaccff;font-size:11px;margin-bottom:8px;">How many units this purchase covered. Blank or 0 clears it (counts as 1 in reports).</div>'
+    + '<input id="fe-qty-edit" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" value="' + cur + '" '
+    + 'onkeydown="_feQtyEditKey(event,' + i + ')" '
+    + 'style="width:100%;background:#000000;border:1px solid #00ffff;color:#ffff55;font-family:Courier New,monospace;font-size:22px;font-weight:700;text-align:right;padding:8px;border-radius:4px;outline:none;box-sizing:border-box;">'
+    + '<div style="display:flex;gap:8px;margin-top:10px;">'
+    + '<button onclick="_feSaveQtyEdit(' + i + ')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px;border-radius:4px;cursor:pointer;">\u2713 SAVE</button>'
+    + '<button onclick="_feCloseQtyEdit()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px;border-radius:4px;cursor:pointer;">ESC</button>'
+    + '</div></div>';
+  ov.style.display = 'flex';
+  ov.style.alignItems = 'flex-start';
+  setTimeout(function(){ var q=document.getElementById('fe-qty-edit'); if(q){ try{ q.focus({preventScroll:true}); q.select(); }catch(e){ try{ q.focus(); }catch(e2){} } } }, 40);
+}
+function _feQtyEditKey(e, i){
+  if(e.key === 'Enter'){ e.preventDefault(); _feSaveQtyEdit(i); }
+  else if(e.key === 'Escape'){ e.preventDefault(); _feCloseQtyEdit(); }
+}
+function _feSaveQtyEdit(i){
+  var e = LOG[i];
+  var q = document.getElementById('fe-qty-edit');
+  if(!e || !q){ _feCloseQtyEdit(); return; }
+  var s = (q.value||'').replace(/[^0-9]/g,'');
+  var n = s ? parseInt(s,10) : 0;
+  if(!n || n < 1){ delete e.qty; toast('QTY cleared', true); }
+  else { e.qty = n; toast('QTY \u00d7' + n + ' saved', true); }
+  saveLog();
+  _feCloseQtyEdit();
+}
+function _feCloseQtyEdit(){
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  if(_feGuidedQty){
+    // reached via a new INVENTORY entry → continue the rapid loop back to PAYEE
+    _feGuidedQty = false;
+    _feStartEntryPayee();
+    _feRender();
+    _feFocusPrompt();
+    return;
+  }
+  _feRenderTable();
+  _feFocusPrompt();
+}
 // ── FoxBase-style field masking — the field being edited goes inverse-video
 //    right on the line, you type into that spot. Build once, every field uses it.
 function _feStartInline(idx, field, blank){
@@ -13864,6 +14104,10 @@ function _feStartInline(idx, field, blank){
   _feRowIdx = idx;
   _feInline = { idx: idx, field: field, blank: !!blank };
   _feRenderTable();
+  // Immediate focus rides the current tap gesture so the Android soft keyboard
+  // comes up reliably (a delayed focus alone often won't on mobile).
+  var nowi = document.getElementById('fe-inline-edit');
+  if(nowi){ try { nowi.focus({preventScroll:true}); nowi.select(); } catch(e){ try{ nowi.focus(); }catch(e2){} } }
   setTimeout(function(){
     var inp = document.getElementById('fe-inline-edit');
     if(inp){ try { inp.focus({preventScroll:true}); inp.select(); } catch(e){ try{ inp.focus(); inp.select(); }catch(e2){} } }
@@ -13955,10 +14199,17 @@ function _feApplyInline(){
     return;
   }
   if(_feGuidedAmt){
-    // new-payee flow: amount captured on the row → loop back to PAYEE (top)
+    // new-payee flow: amount captured on the row → if it's an INVENTORY row,
+    // capture QTY (units) next, THEN loop back to PAYEE; otherwise loop now.
     _feGuidedAmt = false;
     _feGuidedDay = false;
     _feInline = null;
+    var row0 = LOG[0];
+    if(row0 && String(row0.pcode||'').toUpperCase().trim() === 'INVE'){
+      _feGuidedQty = true;       // _feCloseQtyEdit will loop back to PAYEE
+      _feEditQty(0);
+      return;
+    }
     _feStartEntryPayee();
     _feRender();
     _feFocusPrompt();
@@ -13972,6 +14223,7 @@ function _feCancelInline(){
   if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
   _feGuidedAmt = false;
   _feGuidedDay = false;
+  _feGuidedQty = false;
   _feInline = null;
   _feRenderTable();
   _feFocusPrompt();
@@ -13985,6 +14237,11 @@ function _feCodeStrip(i){
     ['amt','A','AMT'],['copy','C','COPY THIS FILE'],['email','E','EMAIL THIS ENTRY TO ME'],
     ['flip','F','FLIP SIGN'],['report','R','REPORT — LAST 50'],['del','X','DELETE FILE']
   ];
+  // Inventory rows get a Q (quantity / units) editor, right after AMT.
+  var _e = LOG[i];
+  if(_e && String(_e.pcode||'').toUpperCase().trim()==='INVE'){
+    codes.splice(7, 0, ['qty','Q','QTY — units bought']);
+  }
   var s = '  ';
   for(var k=0;k<codes.length;k++){
     var c = codes[k];
@@ -15144,7 +15401,7 @@ function _feCloseOverlay(){
 // ───── FOCUS ─────
 function _feFocusPrompt(){
   var id = 'fe-prompt';
-  if(_feMode==='fill-day' || _feMode==='fill-amt') id = 'fe-maskfield';
+  if(_feMode==='fill-day' || _feMode==='fill-amt' || _feMode==='fill-qty') id = 'fe-maskfield';
   else if(_feMode==='pick-desc' || _feMode==='pick-pcode' || _feMode==='pick-payee') id = 'fe-picker-input';
   // Immediate focus — rides the current user gesture so the mobile
   // keyboard reliably stays/comes up (a delayed focus alone won't).
