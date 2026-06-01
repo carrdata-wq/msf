@@ -8562,6 +8562,16 @@ function _invPickItem(name){
   if(s){ s.value=String(name||'').toUpperCase(); runInve(); }
   var sc=document.getElementById('screen-reports'); if(sc) sc.scrollTop=0;
 }
+// Highlight the embedded matched fragment inside an item name (FoxBase $ feel).
+function _invHi(name, filt){
+  name=String(name||'');
+  if(!filt) return _feEsc(name);
+  var idx=name.toUpperCase().indexOf(String(filt).toUpperCase());
+  if(idx<0) return _feEsc(name);
+  return _feEsc(name.slice(0,idx))
+    +'<span style="background:#ffaa00;color:#000000;font-weight:700;">'+_feEsc(name.slice(idx,idx+filt.length))+'</span>'
+    +_feEsc(name.slice(idx+filt.length));
+}
 function rptInve(){
   loadLog();
   var inve=LOG.filter(function(e){ return _rptIsInve(e) && !e.x; });
@@ -8677,7 +8687,7 @@ function runInve(){
   items.forEach(function(x){
     var ev=_feEsc(x.item).replace(/"/g,'&quot;');
     h+='<tr data-item="'+ev+'" onclick="_invPickItem(this.getAttribute(\'data-item\'))" style="border-bottom:'+bd+';cursor:pointer;">'
-      +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">'+_feEsc(x.item)+'</td>'
+      +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">'+_invHi(x.item,filt)+'</td>'
       +'<td style="color:#aaccff;padding:3px;border:'+bd+';text-align:right;">'+x.buys+'</td>'
       +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+x.units+'</td>'
       +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(x.spent)+'</td>'
