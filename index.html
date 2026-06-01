@@ -8556,15 +8556,23 @@ function runAuditDesc(){
 }
 
 function _rptIsInve(e){ return String(e.pcode||'').toUpperCase().trim()==='INVE'; }
+function _invPickItem(name){
+  var s=document.getElementById('inv-item');
+  if(s){ s.value=String(name||'').toUpperCase(); runInve(); }
+  var sc=document.getElementById('screen-reports'); if(sc) sc.scrollTop=0;
+}
 function rptInve(){
   loadLog();
   var inve=LOG.filter(function(e){ return _rptIsInve(e) && !e.x; });
   if(!inve.length){ document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO INVENTORY (INVE) ENTRIES YET</div>'; return; }
   var yrs=[...new Set(inve.map(function(e){return(e.date||'').slice(0,4);}))].filter(Boolean).sort().reverse();
   var yrOpts='<option value="">ALL YRS</option>'+yrs.map(function(y){return'<option value="'+y+'">'+y+'</option>';}).join('');
+  var itemsList=[...new Set(inve.map(function(e){return(e.payee||'').toUpperCase();}))].filter(Boolean).sort();
+  var itemOpts='<option value="">— ALL ITEMS —</option>'+itemsList.map(function(it){var ev=_feEsc(it).replace(/"/g,'&quot;');return'<option value="'+ev+'">'+_feEsc(it)+'</option>';}).join('');
   var html='<div style="font-family:Courier New,monospace;">'
     +'<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">📦 INVENTORY ITEMS — UNITS &amp; UNIT PRICE</div>'
+    +'<select id="inv-item" onchange="runInve()" style="width:100%;box-sizing:border-box;background:#001a1a;border:1px solid #00ffaa;color:#00ffaa;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;">'+itemOpts+'</select>'
     +'<div style="display:flex;gap:6px;">'
     +'<select id="inv-yr" onchange="runInve()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
     +'<select id="inv-sort" onchange="runInve()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'
@@ -8579,12 +8587,54 @@ function rptInve(){
 }
 function runInve(){
   loadLog();
-  var yrEl=document.getElementById('inv-yr'), sEl=document.getElementById('inv-sort');
-  var yr=yrEl?yrEl.value:'', sortBy=sEl?sEl.value:'spent';
+  var yrEl=document.getElementById('inv-yr'), sEl=document.getElementById('inv-sort'), iEl=document.getElementById('inv-item');
+  var yr=yrEl?yrEl.value:'', sortBy=sEl?sEl.value:'spent', item=iEl?(iEl.value||'').toUpperCase():'';
   var rows=LOG.filter(function(e){ return _rptIsInve(e) && !e.x && (!yr||(e.date||'').startsWith(yr)); });
   var out=document.getElementById('inv-output');
   if(!out) return;
   if(!rows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO DATA</div>'; return; }
+  function money(n){return '$'+Math.abs(n).toFixed(2);}
+  var bd='1px solid #223344';
+  var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  // ── ONE ITEM picked → study it by DATE and CNT (each purchase, oldest first) ──
+  if(item){
+    var dRows=rows.filter(function(e){ return (e.payee||'').toUpperCase()===item; });
+    dRows.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+    if(!dRows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO PURCHASES FOR THIS ITEM IN '+(yr||'ALL YRS')+'</div>'; return; }
+    var dBuys=dRows.length, dUnits=0, dSpent=0;
+    var dh='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
+      +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
+      +'<div style="color:#00ffaa;font-weight:700;font-size:15px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'+_feEsc(item)+'</div>'
+      +'<div style="color:#88aaff;font-size:12px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'+(yr||'ALL YRS')+'</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
+      +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">DATE</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">CNT</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">AMT</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNIT$</th>'
+      +'</tr>';
+    dRows.forEach(function(e){
+      var cnt=(e.qty&&e.qty>0)?e.qty:1;
+      var amt=Math.abs(e.amt||0);
+      dUnits+=cnt; dSpent+=amt;
+      dh+='<tr style="border-bottom:'+bd+';">'
+        +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;">'+_feEsc(_feFmtDate(e.date||''))+'</td>'
+        +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+cnt+'</td>'
+        +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(amt)+'</td>'
+        +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;">'+money(cnt?amt/cnt:0)+'</td>'
+        +'</tr>';
+    });
+    dh+='<tr style="background:#001a1a;border-top:2px solid #00ffff;font-weight:700;">'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;">'+dBuys+' BUYS</td>'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+dUnits+'</td>'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(dSpent)+'</td>'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(dUnits?dSpent/dUnits:0)+'</td>'
+      +'</tr></table>'
+      +'<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-top:8px;line-height:1.5;">Oldest first — watch UNIT$ move over time. CNT is the count you entered (older rows = 1). Pick “— ALL ITEMS —” to go back.</div>'
+      +'</div>';
+    out.innerHTML=dh;
+    return;
+  }
   // For INVE entries the item name lives in the PAYEE field; group on it.
   var map={};
   rows.forEach(function(e){
@@ -8605,9 +8655,6 @@ function runInve(){
   var totBuys=items.reduce(function(s,x){return s+x.buys;},0);
   var totUnits=items.reduce(function(s,x){return s+x.units;},0);
   var totSpent=items.reduce(function(s,x){return s+x.spent;},0);
-  var today2=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
-  function money(n){return '$'+Math.abs(n).toFixed(2);}
-  var bd='1px solid #223344';
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
     +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
     +'<div style="color:#00ffff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">Inventory Items &nbsp;&nbsp; '+(yr||'ALL YRS')+' &nbsp;·&nbsp; '+items.length+' items</div>'
@@ -8620,7 +8667,8 @@ function runInve(){
     +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNIT$</th>'
     +'</tr>';
   items.forEach(function(x){
-    h+='<tr style="border-bottom:'+bd+';">'
+    var ev=_feEsc(x.item).replace(/"/g,'&quot;');
+    h+='<tr data-item="'+ev+'" onclick="_invPickItem(this.getAttribute(\'data-item\'))" style="border-bottom:'+bd+';cursor:pointer;">'
       +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">'+_feEsc(x.item)+'</td>'
       +'<td style="color:#aaccff;padding:3px;border:'+bd+';text-align:right;">'+x.buys+'</td>'
       +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+x.units+'</td>'
@@ -14556,7 +14604,7 @@ function _feRenderPickerOverlay(){
   var title = (_feMode === 'pick-pcode' ? 'PCOD' : (_feMode === 'pick-payee' ? 'PAYEE' : 'DESC'));
   // DELETE toggle — only on the PCODE and DESC pickers (not payee).
   var delToggle = '';
-  if(_feMode === 'pick-pcode' || _feMode === 'pick-desc'){
+  if(_feMode === 'pick-pcode' || _feMode === 'pick-desc' || _feMode === 'pick-payee'){
     delToggle = '<button id="fe-picker-del-toggle" onclick="_feTogglePickerDel()" '
       + 'style="background:#330000;border:1px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:3px;cursor:pointer;flex-shrink:0;">&#128465; DELETE</button>';
   }
@@ -14595,7 +14643,7 @@ function _feRenderPickerResults(){
   // DELETE MODE — tap an item to remove it from the master list. No auto-pick,
   // no letter-pick, no ADD NEW. Items render red with an ✕.
   if(_fePickerDelMode){
-    var kindD = (_feMode === 'pick-pcode') ? 'PCODE' : 'DESC';
+    var kindD = (_feMode === 'pick-pcode') ? 'PCODE' : (_feMode === 'pick-payee' ? 'PAYEE' : 'DESC');
     var htmlD = '<div style="width:100%;color:#ffaaaa;font-weight:700;font-size:12px;padding:4px 2px 8px;">'
       + '&#128465; DELETE MODE — tap a ' + kindD + ' to remove it from the master list (your saved entries are NOT changed)</div>';
     matches.slice(0, 200).forEach(function(it){
@@ -14741,6 +14789,24 @@ function _feTogglePickerDel(){
 // already used it are left untouched — this just cleans up the picker.
 function _feDeleteItem(val){
   if(!val) return;
+  // PAYEE delete — purge from the picker's sources (combos + history). Saved
+  // entries are untouched; if the payee is still used by a saved row it may
+  // reappear in the list later.
+  if(_feMode === 'pick-payee'){
+    var up = String(val).toUpperCase();
+    var inUse = LOG.some(function(e){ return !e.deleted && String(e.payee||'').toUpperCase() === up; });
+    var pmsg = 'Delete PAYEE "' + val + '" from the picker list?\n\n(Your saved entries are NOT changed.)';
+    if(inUse) pmsg += '\n\nNOTE: this payee is used by saved entries, so it may reappear.';
+    if(!confirm(pmsg)) return;
+    for(var ck in _feComboCnt){ if(ck.split('|')[0].toUpperCase() === up) delete _feComboCnt[ck]; }
+    _feSaveComboCnt();
+    if(typeof _feHistoryCnt !== 'undefined'){ for(var hk in _feHistoryCnt){ if(hk.split('|')[0].toUpperCase() === up) delete _feHistoryCnt[hk]; } }
+    _fePickerItems = _fePickerItems.filter(function(x){ return String(x).toUpperCase() !== up; });
+    _feInvalidateIndex();
+    toast('Deleted PAYEE ' + val, true);
+    _feRenderPickerResults();
+    return;
+  }
   var isPcode = (_feMode === 'pick-pcode');
   var kind = isPcode ? 'PCODE' : 'DESC';
   if(!confirm('Delete ' + kind + ' "' + val + '" from the master list?\n\n(Your saved entries are NOT changed.)')) return;
@@ -14782,6 +14848,10 @@ function _feShowAddNew(){
     + '<button onclick="_feCommitAddNew()" style="flex:2;background:#006600;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">SAVE</button>'
     + '<button onclick="_feRenderPickerResults()" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:9px;border:none;border-radius:4px;cursor:pointer;">BACK</button>'
     + '</div></div>';
+  // Immediate focus rides the tap so the Android keyboard opens (a delayed
+  // focus alone often won't); the timeout is a backup that also places caret.
+  var nowa = document.getElementById('fe-addnew-input');
+  if(nowa){ try{ nowa.focus({preventScroll:true}); var L0=nowa.value.length; nowa.setSelectionRange(L0,L0); }catch(e){} }
   setTimeout(function(){ var i = document.getElementById('fe-addnew-input'); if(i){ try{ i.focus(); var L = i.value.length; i.setSelectionRange(L, L); }catch(e){} } }, 20);
 }
 function _feAddNewKey(e){
