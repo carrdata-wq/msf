@@ -1060,20 +1060,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive & merge from other device</div></div>
         <div class="menu-arrow" style="color:#ffaa00;">›</div>
       </div>
-      <div class="menu-item" onclick="doExportCSV()">
-        <div class="menu-icon">📄</div>
-        <div class="menu-label"><div class="ml" style="color:#00ff88;">EXPORT CSV</div><div class="ms">Accounting to Excel / FoxBase</div></div>
-        <div class="menu-arrow" style="color:#00ff88;">›</div>
-      </div>
       <div class="menu-item" onclick="exportMasters()">
         <div class="menu-icon">🔄</div>
         <div class="menu-label"><div class="ml" style="color:#ffaa00;">SHARE LISTS</div><div class="ms">Share payee & desc master lists</div></div>
         <div class="menu-arrow" style="color:#ffaa00;">›</div>
-      </div>
-      <div class="menu-item" onclick="universalLoad()">
-        <div class="menu-icon">📥</div>
-        <div class="menu-label"><div class="ml" style="color:#00ffff;">LOAD TO WHATEVER</div><div class="ms">Load any backup or data file</div></div>
-        <div class="menu-arrow" style="color:#00ffff;">›</div>
       </div>
       <div class="menu-item" onclick="openCleanDownloads()" style="background:#330000;border:2px solid #ff4444;margin:4px 0;">
         <div class="menu-icon" style="font-size:26px;">🗑️</div>
@@ -1150,26 +1140,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-num">10</div><div class="menu-icon">🔍</div>
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">Find Duplicates</div><div class="ms">Check · Select · Delete dupes</div></div>
       <div class="menu-arrow" style="color:#ff88ff;">›</div>
-    </div>
-    <div class="menu-item" onclick="doSyncExport('android')">
-      <div class="menu-num">11</div><div class="menu-icon">📱</div>
-      <div class="menu-label"><div class="ml" style="color:#00ff88;">ANDROID SYNC TO THINKPAD</div><div class="ms">Export changes · Send to ThinkPad</div></div>
-      <div class="menu-arrow" style="color:#00ff88;">›</div>
-    </div>
-    <div class="menu-item" onclick="doSyncExport('thinkpad')">
-      <div class="menu-num">12</div><div class="menu-icon">💻</div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">THINKPAD TO ANDROID SYNC</div><div class="ms">Export changes · Send to Android</div></div>
-      <div class="menu-arrow" style="color:#00ffff;">›</div>
-    </div>
-    <div class="menu-item" onclick="doSyncImport()">
-      <div class="menu-num">13</div><div class="menu-icon">📥</div>
-      <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive · Merge · Update from other device</div></div>
-      <div class="menu-arrow" style="color:#ffaa00;">›</div>
-    </div>
-    <div class="menu-item" onclick="bulkCsvImport()">
-      <div class="menu-num">14</div><div class="menu-icon">📦</div>
-      <div class="menu-label"><div class="ml" style="color:#ffff00;">BULK IMPORT</div><div class="ms">Load all P1-P26 files at once</div></div>
-      <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
   </div>
   <input type="file" id="sync-file-input" accept=".json" style="display:none" onchange="doSyncRead(this)">
