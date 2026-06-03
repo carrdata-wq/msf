@@ -11354,13 +11354,28 @@ function renderAllClients(){
 function _parseAddr(addr){
   addr = (addr||'').trim();
   if(!addr) return {street:'', city:'', state:'', zip:''};
-  var parts = addr.split(',').map(function(s){return s.trim();});
+  var parts = addr.split(',').map(function(s){return s.trim();}).filter(Boolean);
   var street = '', tail = '';
   if(parts.length >= 2){
+    // Comma-delimited: first chunk is the street, the rest is city/state/zip.
     street = parts[0];
     tail = parts.slice(1).join(' ').trim();
   } else {
-    tail = parts[0];
+    // NO comma. Could be a street on its own, or a run-together full address.
+    var one = parts[0] || '';
+    if(/^\d/.test(one)){
+      // Starts with a house number → the leading text is a STREET, not a city.
+      // Only peel an explicit trailing STATE/ZIP off as the locale.
+      var w = one.split(/\s+/).filter(Boolean);
+      var loc = [];
+      if(w.length && /^\d{5}(-\d{4})?$/.test(w[w.length-1])) loc.unshift(w.pop());
+      if(w.length && /^[A-Z]{2}$/i.test(w[w.length-1])) loc.unshift(w.pop());
+      street = w.join(' ');
+      tail = loc.join(' ');
+    } else {
+      // No leading number → treat the whole thing as city/state/zip locale.
+      tail = one;
+    }
   }
   var words = tail.split(/\s+/).filter(Boolean);
   var zip = '', state = '', city = '';
@@ -11398,10 +11413,17 @@ function phoneShowForm(id){
       document.getElementById('cli-email').value=c.email||'';
       // Parse the addr field — prefer explicit pieces if they exist, else parse
       var addrParts = _parseAddr(c.addr||'');
-      document.getElementById('cli-addr').value = c.street || addrParts.street;
-      document.getElementById('cli-city').value = c.city || addrParts.city;
-      document.getElementById('cli-state').value = c.state || addrParts.state;
-      document.getElementById('cli-zip').value = c.zip || addrParts.zip;
+      var fStreet = (c.street||'').trim() || addrParts.street;
+      var fCity   = (c.city||'').trim()   || addrParts.city;
+      var fState  = (c.state||'').trim()  || addrParts.state;
+      var fZip    = (c.zip||'').trim()    || addrParts.zip;
+      // Self-heal older records where a street got saved into City (no street set,
+      // City begins with a house number) — shift it back into Street.
+      if(!fStreet && /^\d/.test(fCity)){ fStreet = fCity; fCity = ''; }
+      document.getElementById('cli-addr').value = fStreet;
+      document.getElementById('cli-city').value = fCity;
+      document.getElementById('cli-state').value = fState;
+      document.getElementById('cli-zip').value = fZip;
       document.getElementById('cli-notes').value=c.notes||'';
       document.getElementById('cli-contacted').value=c.contacted||'';
       document.getElementById('phone-form-title').textContent='EDIT CLIENT';
