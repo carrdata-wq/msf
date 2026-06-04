@@ -1669,27 +1669,27 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
   <div style="padding:10px;">
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptShow('pcode')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY PCODE</button>
-      <button onclick="rptShow('desc')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">BY DESC</button>
-      <button onclick="rptShow('payee')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">BY PAYEE</button>
-      <button onclick="rptShow('yr')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffaa00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffaa00;border-radius:4px;cursor:pointer;">BY YR</button>
+      <button onclick="rptShow('pcode')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY PCODE <span style="font-size:10px;opacity:0.8;">[P]</span></button>
+      <button onclick="rptShow('desc')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">BY DESC <span style="font-size:10px;opacity:0.8;">[D]</span></button>
+      <button onclick="rptShow('payee')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">BY PAYEE <span style="font-size:10px;opacity:0.8;">[A]</span></button>
+      <button onclick="rptShow('yr')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffaa00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffaa00;border-radius:4px;cursor:pointer;">BY YR <span style="font-size:10px;opacity:0.8;">[Y]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptShow('mon')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">BY MON</button>
-      <button onclick="rptShow('type')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">+/- TYPE</button>
-      <button onclick="rptShow('date')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY DATE</button>
-      <button onclick="rptShow('amt')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT</button>
+      <button onclick="rptShow('mon')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">BY MON <span style="font-size:10px;opacity:0.8;">[M]</span></button>
+      <button onclick="rptShow('type')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">+/- TYPE <span style="font-size:10px;opacity:0.8;">[T]</span></button>
+      <button onclick="rptShow('date')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY DATE <span style="font-size:10px;opacity:0.8;">[E]</span></button>
+      <button onclick="rptShow('amt')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff6666;border-radius:4px;cursor:pointer;">BY AMT <span style="font-size:10px;opacity:0.8;">[$]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE</button>
+      <button onclick="rptYearCompare()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📊 YR COMPARE <span style="font-size:10px;opacity:0.8;">[C]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptMasterDesc()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📋 MASTER DESC RPT</button>
-      <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT</button>
-      <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC</button>
+      <button onclick="rptMasterDesc()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">📋 MASTER DESC RPT <span style="font-size:10px;opacity:0.8;">[S]</span></button>
+      <button onclick="rptAuditDesc()" style="flex:1;padding:12px 6px;background:#003333;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">🔍 AUDIT RPT <span style="font-size:10px;opacity:0.8;">[U]</span></button>
+      <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC <span style="font-size:10px;opacity:0.8;">[I]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS (UNITS &amp; UNIT$)</button>
+      <button onclick="rptInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS (UNITS &amp; UNIT$) <span style="font-size:10px;opacity:0.8;">[V]</span></button>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
@@ -14012,6 +14012,9 @@ function _feCommitDraft(){
   entry.cnt = _feComboCnt[key];
   _feSaveComboCnt();
   LOG.unshift(entry);
+  // Scroll list to top to show new entry as working line
+  var listwrap = document.getElementById('fe-listwrap');
+  if(listwrap) listwrap.scrollTop = 0;
   saveLog();
   _feInvalidateIndex();
   // incremental payee-index update
