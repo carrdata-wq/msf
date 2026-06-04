@@ -9060,6 +9060,30 @@ function rptYearCompare(){
   document.getElementById('screen-reports').scrollTop=0;
 }
 
+/* ===== Reports Keyboard Shortcuts (P=Pcode, D=Desc, A=Payee, Y=Year, M=Mon, T=Type, E=date, $=Amt, C=Compare, S=Master, U=Audit, I=IRS, V=Inventory) ===== */
+function handleReportKeypress(e) {
+  var screen = document.getElementById('screen-reports');
+  if (!screen || screen.style.display === 'none') return;
+  var key = e.key ? e.key.toLowerCase() : '';
+  var shortcuts = {
+    'p': function() { rptShow('pcode'); },
+    'd': function() { rptShow('desc'); },
+    'a': function() { rptShow('payee'); },
+    'y': function() { rptShow('yr'); },
+    'm': function() { rptShow('mon'); },
+    't': function() { rptShow('type'); },
+    'e': function() { rptShow('date'); },
+    '$': function() { rptShow('amt'); },
+    'c': function() { rptYearCompare(); },
+    's': function() { rptMasterDesc(); },
+    'u': function() { rptAuditDesc(); },
+    'i': function() { rptIrsDesc(); },
+    'v': function() { rptInve(); },
+  };
+  if (shortcuts[key]) { e.preventDefault(); shortcuts[key](); }
+}
+document.addEventListener('keydown', handleReportKeypress);
+
 function rptShow(type){
   loadLog();
   // FoxBase style — payee needs type-ahead prompt first
