@@ -1692,6 +1692,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS (UNITS &amp; UNIT$) <span style="font-size:10px;opacity:0.8;">[V]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button onclick="rptSearchInve()" style="flex:1;padding:12px 6px;background:#003a3a;color:#00ffcc;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffcc;border-radius:4px;cursor:pointer;">🔎 SEARCH INVENTORY <span style="font-size:10px;opacity:0.8;">[G]</span></button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="rptSearchPayee()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">🔎 SEARCH PAYEE <span style="font-size:10px;opacity:0.8;">[F]</span></button>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
@@ -9082,6 +9085,7 @@ function handleReportKeypress(e) {
     'u': function() { rptAuditDesc(); },
     'i': function() { rptIrsDesc(); },
     'v': function() { rptInve(); },
+    'g': function() { rptSearchInve(); },
   };
   if (shortcuts[key]) { e.preventDefault(); shortcuts[key](); }
 }
@@ -9746,6 +9750,65 @@ function rptSearchPayee(){
   var avgStr = (avgAmt >= 0 ? '+' : '') + (avgAmt).toFixed(2);
   html += '<tr style="border-top:2px solid #ffff00;color:#ffff00;font-weight:700;background:#0000aa;"><td style="padding:6px;">TOTAL</td><td style="padding:6px;"></td><td style="padding:6px;text-align:right;color:#ffff88;">' + totalStr + '</td><td style="padding:6px;"></td><td style="padding:6px;"></td></tr>';
   html += '<tr style="color:#ffff00;background:#000080;"><td style="padding:6px;">AVERAGE</td><td style="padding:6px;"></td><td style="padding:6px;text-align:right;color:#88ff88;">' + avgStr + '</td><td style="padding:6px;"></td><td style="padding:6px;"></td></tr>';
+  
+  html += '</table></div>';
+  document.getElementById('rpt-content').innerHTML = html;
+  document.getElementById('screen-reports').scrollTop = 0;
+}
+
+// ===== SEARCH INVENTORY: find all inventory transactions for an item, sorted by date =====
+function rptSearchInve(){
+  var term = prompt('Search inventory item (e.g., 2X SPRAY):');
+  if(!term) return;
+  var search = term.toUpperCase().trim();
+  if(!search) return;
+  
+  loadLog();
+  var matches = [];
+  for(var i=0; i<LOG.length; i++){
+    if(LOG[i].pcode === 'INVE' && !LOG[i].x && LOG[i].payee && LOG[i].payee.toUpperCase().indexOf(search) >= 0){
+      matches.push(LOG[i]);
+    }
+  }
+  
+  if(matches.length === 0){
+    document.getElementById('rpt-content').innerHTML = '<div style="color:#ccccff;padding:20px;text-align:center;font-family:Courier New,monospace;">No inventory items found for "' + search + '"</div>';
+    return;
+  }
+  
+  // Sort by date descending (newest first)
+  matches.sort(function(a,b){
+    return (b.date||'').localeCompare(a.date||'');
+  });
+  
+  // Calculate totals: total units (qty), total cost (amt), average cost per unit
+  var totalUnits = 0;
+  var totalCost = 0;
+  for(var i=0; i<matches.length; i++){
+    var e = matches[i];
+    totalUnits += (e.qty || 1); // qty defaults to 1 unit
+    totalCost += Math.abs(e.amt); // cost is absolute value
+  }
+  var avgCostPerUnit = totalUnits > 0 ? (totalCost / totalUnits) : 0;
+  
+  // Build HTML table
+  var html = '<div style="color:#ffffff;font-size:12px;padding:10px;font-family:Courier New,monospace;">';
+  html += '<div style="margin-bottom:10px;color:#00ffcc;font-weight:700;">INVENTORY: ' + search + ' (' + matches.length + ' buys)</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+  html += '<tr style="border-bottom:2px solid #00aa99;color:#00ffcc;font-weight:700;"><td style="padding:6px;">DATE</td><td style="padding:6px;text-align:center;">QTY</td><td style="padding:6px;text-align:right;">UNIT $</td><td style="padding:6px;text-align:right;">TOTAL $</td><td style="padding:6px;">DESC</td></tr>';
+  
+  for(var i=0; i<matches.length; i++){
+    var e = matches[i];
+    var dateStr = (e.date || '').substring(0,10);
+    var qty = e.qty || 1;
+    var unitCost = totalUnits > 0 ? Math.abs(e.amt) / qty : 0;
+    var totalStr = Math.abs(e.amt).toFixed(2);
+    html += '<tr style="border-bottom:1px solid #0a2a2a;"><td style="padding:4px;color:#00ccaa;">' + dateStr + '</td><td style="padding:4px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:4px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:4px;text-align:right;color:#ffaa88;">$' + totalStr + '</td><td style="padding:4px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+  }
+  
+  // Totals row
+  html += '<tr style="border-top:2px solid #00ffcc;color:#00ffcc;font-weight:700;background:#002a2a;"><td style="padding:6px;">TOTAL</td><td style="padding:6px;text-align:center;color:#ffff88;">' + totalUnits + ' units</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;text-align:right;color:#ffff88;">$' + totalCost.toFixed(2) + '</td><td style="padding:6px;"></td></tr>';
+  html += '<tr style="color:#00ffcc;background:#001a1a;"><td style="padding:6px;">AVG COST/UNIT</td><td style="padding:6px;text-align:center;"></td><td style="padding:6px;text-align:right;color:#88ff88;">$' + avgCostPerUnit.toFixed(2) + '</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;"></td></tr>';
   
   html += '</table></div>';
   document.getElementById('rpt-content').innerHTML = html;
