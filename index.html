@@ -14946,13 +14946,9 @@ function _feRenderPickerResults(){
   var q = _fePickerFilter.toUpperCase();
   var matches = _fePickerItems.filter(function(it){
     if(!q) return true;
-    return it.toUpperCase().indexOf(q) >= 0;   // contains match
+    // Remove spaces from payee name for matching (CAR LOAN BAMBIO matches CARL)
+    return it.toUpperCase().replace(/\s+/g,'').indexOf(q) >= 0;
   });
-  
-  // DEBUG: Log payee count data
-  console.log('DEBUG: _fePickerFilter=', _fePickerFilter, '_feMode=', _feMode);
-  console.log('DEBUG: _fePayeeCount=', _fePayeeCount);
-  console.log('DEBUG: matches before sort=', matches);
   
   // Sort matches by frequency (most-used first) for payee picker
   if(_feMode === 'pick-payee'){
@@ -14962,7 +14958,6 @@ function _feRenderPickerResults(){
       console.log('  Sorting: ' + a + '(' + cntA + ') vs ' + b + '(' + cntB + ')');
       return cntB - cntA;  // highest count first
     });
-    console.log('DEBUG: matches after sort=', matches);
   }
   // DELETE MODE — tap an item to remove it from the master list. No auto-pick,
   // no letter-pick, no ADD NEW. Items render red with an ✕.
@@ -15028,6 +15023,8 @@ function _feRenderPickerResults(){
 }
 function _feFilterPicker(val){
   val = (val||'').toUpperCase();
+  // Remove spaces for matching (CAR L = CARL, works like FoxBase 4-letter shortcut)
+  val = val.replace(/\s+/g, '');
   var prev = _fePickerFilter;
   // In DELETE mode, typing only narrows the list — never picks or deletes.
   if(_fePickerDelMode){ _fePickerFilter = val; _feRenderPickerResults(); return; }
@@ -15039,8 +15036,8 @@ function _feFilterPicker(val){
   if(letterPickOK && val.length === prev.length + 1 && val.indexOf(prev) === 0){
     var added = val.charAt(val.length - 1);
     if(/[A-Z]/.test(added)){
-      var prevMatches = _fePickerItems.filter(function(it){ return !prev || it.toUpperCase().indexOf(prev) >= 0; });
-      var extMatches  = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(val) >= 0; });
+      var prevMatches = _fePickerItems.filter(function(it){ return !prev || it.toUpperCase().replace(/\s+/g,'').indexOf(prev) >= 0; });
+      var extMatches  = _fePickerItems.filter(function(it){ return it.toUpperCase().replace(/\s+/g,'').indexOf(val) >= 0; });
       if(extMatches.length === 0 && prevMatches.length >= 1 && prevMatches.length <= 12){
         var li = added.charCodeAt(0) - 65;   // A=0, B=1, ...
         if(li >= 0 && li < prevMatches.length){
@@ -15345,8 +15342,9 @@ function _feLookupAndApply(query){
     var ap = a.indexOf(q)===0 ? 0 : (_feWordStart(a,q) ? 1 : 2);
     var bp = b.indexOf(q)===0 ? 0 : (_feWordStart(b,q) ? 1 : 2);
     if(ap !== bp) return ap - bp;
-    var aCnt = (_fePayeeIndex[a][0]||{}).cnt || 0;
-    var bCnt = (_fePayeeIndex[b][0]||{}).cnt || 0;
+    // Sort by TOTAL payee count, not just top combo
+    var aCnt = _fePayeeCount[a] || 0;
+    var bCnt = _fePayeeCount[b] || 0;
     return bCnt - aCnt;
   });
   var topPayee = matches[0];
