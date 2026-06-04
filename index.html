@@ -15328,6 +15328,18 @@ function _feWordStart(name, q){
   for(var i=0;i<words.length;i++){ if(words[i] && words[i].indexOf(q) === 0) return true; }
   return false;
 }
+// Quick payee picker — pick payee and go straight to day entry
+function _fePickPayeeQuick(payee){
+  var ov = document.getElementById('fe-overlay');
+  if(ov) ov.style.display = 'none';
+  var combos = _fePayeeIndex[payee.toUpperCase()];
+  var topCombo = combos && combos.length > 0 ? combos[0] : null;
+  if(topCombo){
+    _feBeginDraft(payee, topCombo.pcode, topCombo.desc);
+    toast(payee, true);
+  }
+}
+
 function _feLookupAndApply(query){
   if(_feIndexDirty) _feBuildIndex();
   var q = query.toUpperCase();
@@ -15350,36 +15362,33 @@ function _feLookupAndApply(query){
   var topPayee = matches[0];
   var combos = _fePayeeIndex[topPayee];
   var topCombo = combos[0];
-  // ONE payee with ONE combo — it's clearly a single file. Go straight into
-  // fast entry, no picker, regardless of how many times it's been used.
-  if(matches.length === 1 && combos.length === 1 && topCombo){
+  
+  // If only ONE payee matches, OR top payee has high count, go straight to draft
+  if(matches.length === 1 && topCombo){
     _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
     toast(topPayee, true);
     return;
   }
-  // DOMINANT-MATCH throughput (FoxBase 25-uses rule, generalized). The typed
-  // letters can sit anywhere in several payees, but if the BEST match has a
-  // WORD that starts with what you typed (BALB→BALBINO), its top combo is past
-  // the 25-use threshold, and nothing else that also word-starts your text
-  // comes close (3×), just throughput it: payee + top pcode/desc fill instantly,
-  // so you only key DAY then AMOUNT. e.g. BALB → CHAVEZ BALBINO LUCATERO ×55.
-  if(topCombo && topCombo.cnt >= _feAutoApplyThreshold && _feWordStart(topPayee, q)){
-    var rivalCnt = 0;
-    for(var mi = 1; mi < matches.length; mi++){
-      if(_feWordStart(matches[mi], q)){
-        // matches are sorted prefix→word-start→substring then cnt-desc, so the
-        // first OTHER word-start match is the strongest rival for the typed text.
-        rivalCnt = (_fePayeeIndex[matches[mi]][0]||{}).cnt || 0;
-        break;
-      }
-    }
-    if(topPayee === q || rivalCnt === 0 || topCombo.cnt >= rivalCnt * 3){
-      _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
-      toast('AUTO ' + topPayee + ' ×' + topCombo.cnt, true);
-      return;
-    }
-  }
-  _feShowComboPicker(matches, q);
+  
+  // Multiple payees: show simple picker with payee names + counts
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:500px;width:100%;max-height:82vh;display:flex;flex-direction:column;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">PAYEE — tap to pick</div>'
+    + '<div style="overflow-y:auto;flex:1;">';
+  matches.slice(0, 20).forEach(function(p, idx){
+    var cnt = _fePayeeCount[p] || 0;
+    var k = idx < 9 ? String(idx+1) : String.fromCharCode(65 + (idx - 9));
+    html += '<button onclick="_fePickPayeeQuick(\'' + p.replace(/'/g, "\\'") + '\')" style="width:100%;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:13px;padding:10px;border-radius:3px;cursor:pointer;margin-bottom:4px;">'
+      + '<span style="display:inline-block;width:24px;color:#ffff00;font-weight:700;">[' + k + ']</span> '
+      + '<span style="color:#00ffff;font-weight:700;flex:1;">' + p + '</span> '
+      + '<span style="color:#88ff88;">(' + cnt + ')</span>'
+      + '</button>';
+  });
+  html += '</div></div>';
+  ov.innerHTML = html;
+  ov.style.display = 'flex';
+  ov.style.alignItems = 'flex-start';
 }
 
 function _feShowComboPicker(payees, q){
