@@ -9778,13 +9778,15 @@ function rptSearchInve(){
     return (b.date||'').localeCompare(a.date||'');
   });
   
-  // Calculate totals: total units (qty), total cost (amt), average cost per unit
+  // Calculate totals: total units (qty), total cost (qty × unit cost for each row), average cost per unit
   var totalUnits = 0;
   var totalCost = 0;
   for(var i=0; i<matches.length; i++){
     var e = matches[i];
-    totalUnits += (e.qty || 1); // qty defaults to 1 unit
-    totalCost += Math.abs(e.amt); // cost is absolute value
+    var qty = e.qty || 1;
+    var unitCost = Math.abs(e.amt);
+    totalUnits += qty;
+    totalCost += (qty * unitCost);
   }
   var avgCostPerUnit = totalUnits > 0 ? (totalCost / totalUnits) : 0;
   
@@ -9792,15 +9794,16 @@ function rptSearchInve(){
   var html = '<div style="color:#ffffff;font-size:14px;padding:10px;font-family:Courier New,monospace;">';
   html += '<div style="margin-bottom:10px;color:#00ffcc;font-weight:700;font-size:16px;">INVENTORY: ' + search + ' (' + matches.length + ' buys)</div>';
   html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-  html += '<tr style="border-bottom:2px solid #00aa99;color:#00ffcc;font-weight:700;font-size:14px;"><td style="padding:8px;">DATE</td><td style="padding:8px;text-align:center;">QTY</td><td style="padding:8px;text-align:right;">UNIT $</td><td style="padding:8px;text-align:right;">TOTAL $</td><td style="padding:8px;">DESC</td></tr>';
+  html += '<tr style="border-bottom:2px solid #00aa99;color:#00ffcc;font-weight:700;font-size:14px;"><td style="padding:8px;">DATE</td><td style="padding:8px;text-align:center;">QTY</td><td style="padding:8px;text-align:right;">UNIT $</td><td style="padding:8px;text-align:right;">SUBTOTAL</td><td style="padding:8px;">DESC</td></tr>';
   
   for(var i=0; i<matches.length; i++){
     var e = matches[i];
     var dateStr = (e.date || '').substring(0,10);
     var qty = e.qty || 1;
-    var unitCost = totalUnits > 0 ? Math.abs(e.amt) / qty : 0;
-    var totalStr = Math.abs(e.amt).toFixed(2);
-    html += '<tr style="border-bottom:1px solid #0a2a2a;font-size:13px;"><td style="padding:6px;color:#00ccaa;">' + dateStr + '</td><td style="padding:6px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:6px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:6px;text-align:right;color:#ffaa88;">$' + totalStr + '</td><td style="padding:6px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+    var unitCost = Math.abs(e.amt);  // unit cost is what was entered
+    var subtotal = qty * unitCost;   // qty × unit cost = subtotal
+    var subtotalStr = subtotal.toFixed(2);
+    html += '<tr style="border-bottom:1px solid #0a2a2a;font-size:13px;"><td style="padding:6px;color:#00ccaa;">' + dateStr + '</td><td style="padding:6px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:6px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:6px;text-align:right;color:#ffaa88;">$' + subtotalStr + '</td><td style="padding:6px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
   }
   
   // Totals row
