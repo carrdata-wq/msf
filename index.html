@@ -13421,13 +13421,17 @@ function _feBuildIndex(){
   });
   Object.keys(_fePayeeIndex).forEach(function(p){
     _fePayeeIndex[p].sort(function(a,b){ return b.cnt - a.cnt; });
-    // Calculate total count for this payee
-    var totalCnt = 0;
-    for(var i=0; i<_fePayeeIndex[p].length; i++){
-      totalCnt += (_fePayeeIndex[p][i].cnt || 0);
-    }
-    _fePayeeCount[p] = totalCnt;
   });
+  
+  // Populate _fePayeeCount by counting transactions directly from LOG
+  _fePayeeCount = {};
+  for(var i=0; i<LOG.length; i++){
+    var payee = LOG[i].payee ? LOG[i].payee.toUpperCase() : '';
+    if(payee){
+      _fePayeeCount[payee] = (_fePayeeCount[payee] || 0) + 1;
+    }
+  }
+  
   if(changed) saveLog();
   _feIndexDirty = false;
   _feUpdateCombosLoaded();
@@ -14945,13 +14949,20 @@ function _feRenderPickerResults(){
     return it.toUpperCase().indexOf(q) >= 0;   // contains match
   });
   
+  // DEBUG: Log payee count data
+  console.log('DEBUG: _fePickerFilter=', _fePickerFilter, '_feMode=', _feMode);
+  console.log('DEBUG: _fePayeeCount=', _fePayeeCount);
+  console.log('DEBUG: matches before sort=', matches);
+  
   // Sort matches by frequency (most-used first) for payee picker
   if(_feMode === 'pick-payee'){
     matches.sort(function(a, b){
       var cntA = _fePayeeCount[a.toUpperCase()] || 0;
       var cntB = _fePayeeCount[b.toUpperCase()] || 0;
+      console.log('  Sorting: ' + a + '(' + cntA + ') vs ' + b + '(' + cntB + ')');
       return cntB - cntA;  // highest count first
     });
+    console.log('DEBUG: matches after sort=', matches);
   }
   // DELETE MODE — tap an item to remove it from the master list. No auto-pick,
   // no letter-pick, no ADD NEW. Items render red with an ✕.
