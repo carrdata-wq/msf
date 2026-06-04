@@ -897,14 +897,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
-    <div class="menu-item" onclick="loadComboDatabase()" style="background:#002a14;border:3px solid #00ff88;margin:2px 0;min-height:54px;">
-      <div class="menu-num" style="color:#00ff88;font-size:22px;">📚</div><div class="menu-icon" style="font-size:28px;">⬇</div>
-      <div class="menu-label">
-        <div class="ml" style="color:#00ff88;font-size:14px;font-weight:700;letter-spacing:1px;">LOAD COMBO DATABASE</div>
-        <div class="ms" style="color:#88ffaa;">34-yr payee auto-match · run once per device</div>
-      </div>
-      <div class="menu-arrow" style="color:#00ff88;">›</div>
-    </div>
     <div class="menu-item" onclick="openModule('accounting')">
       <div class="menu-num">1</div><div class="menu-icon">💰</div>
       <div class="menu-label"><div class="ml">Accounting</div><div class="ms">Payee · Desc · Pcode · Amount</div></div>
@@ -936,31 +928,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
     <div class="menu-item" onclick="openTransferMenu()">
       <div class="menu-num">6</div><div class="menu-icon">🔄</div>
-      <div class="menu-label"><div class="ml" style="color:#ffff00;">DATA MANAGER</div><div class="ms">Backup · Restore · Sync · Move Data</div></div>
+      <div class="menu-label"><div class="ml" style="color:#ffff00;">DOWNLOADS</div><div class="ms">Upload · Download · Backup · Sync · ZIP</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
-    </div>
-    <div class="menu-item" onclick="confirmMoveAccounting()" style="background:#002200;border:3px solid #00ff88;margin:2px 0;min-height:50px;">
-      <div class="menu-num">7</div><div class="menu-icon" style="font-size:28px;">💰</div>
-      <div class="menu-label">
-        <div class="ml" style="color:#00ff88;font-size:14px;">MOVE ACCOUNTING</div>
-        <div class="ms" style="color:#aaffaa;">ThinkPad ↔ Android · Paste or Download</div>
-      </div>
-      <div class="menu-arrow" style="color:#00ff88;">›</div>
-    </div>
-    <div class="menu-item" onclick="confirmMovePhone()" style="background:#002200;border:3px solid #00ffff;margin:2px 0;min-height:50px;">
-      <div class="menu-num">8</div><div class="menu-icon" style="font-size:28px;">📱</div>
-      <div class="menu-label">
-        <div class="ml" style="color:#00ffff;font-size:14px;">MOVE PHONE LIST</div>
-        <div class="ms" style="color:#aaffff;">ThinkPad ↔ Android · Paste or Download</div>
-      </div>
-      <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
   </div>
   <!-- spacer so footer buttons don't cover menu items -->
   <div style="height:0px;"></div>
   <div class="main-footer">
-    <button class="foot-btn" onclick="doBackup()" style="color:#00ffff;border-color:#00ffff;">⬇ BACKUP ACCOUNTING</button>
-    <button class="foot-btn" onclick="doPhoneBackup()" style="color:#00ff88;border-color:#00ff88;">📱 PHONE BACKUP</button>
     <button class="foot-btn" onclick="window.close()" style="color:#ff6666;border-color:#ff6666;">✕ EXIT</button>
   </div>
   <div style="padding:6px 10px;">
@@ -1016,57 +990,101 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 <div id="screen-transfer" class="screen" style="display:none;background:#0000cc;font-family:Courier New,monospace;">
   <div style="background:#000080;border-bottom:2px solid #ffff00;padding:10px;display:flex;align-items:center;gap:10px;">
     <button onclick="goMain()" style="background:#ffff00;color:#000080;font-weight:700;padding:8px 12px;border:none;border-radius:4px;font-family:Courier New,monospace;cursor:pointer;">◀ MENU</button>
-    <span style="flex:1;text-align:center;color:#ffff00;font-weight:700;font-size:15px;">📂 DATA MANAGER</span>
+    <span style="flex:1;text-align:center;color:#ffff00;font-weight:700;font-size:15px;">📂 DOWNLOADS</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
     <div class="main-box" style="margin-top:10px;">
-      <div class="menu-item" onclick="doBackup()">
-        <div class="menu-icon">⬇️</div>
-        <div class="menu-label"><div class="ml" style="color:#00ff88;">BACKUP EVERYTHING</div><div class="ms">Full backup to Downloads</div></div>
+      <!-- MASTER FULL BACKUP -->
+      <div class="menu-item" onclick="downloadAllZip()" style="background:#003322;border:3px solid #00ff88;margin:2px 0 8px;min-height:54px;">
+        <div class="menu-icon" style="font-size:26px;">🗜️</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;font-size:15px;font-weight:700;">⬇ BACKUP ALL → ZIP</div><div class="ms" style="color:#88ffaa;">One file · everything · to your Downloads drive</div></div>
         <div class="menu-arrow" style="color:#00ff88;">›</div>
       </div>
-      <div class="menu-item" onclick="bulkCsvImport()">
-        <div class="menu-icon">📦</div>
-        <div class="menu-label"><div class="ml" style="color:#ffff00;">BULK IMPORT</div><div class="ms">Select all P1-P26 files at once</div></div>
-        <div class="menu-arrow" style="color:#ffff00;">›</div>
+
+      <div style="color:#ffff00;font-size:11px;font-weight:700;letter-spacing:1px;margin:6px 2px 2px;">⬇ DOWNLOAD / BACKUP</div>
+      <div class="menu-item" onclick="doBackup()">
+        <div class="menu-num">1</div><div class="menu-icon">⬇️</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">BACKUP EVERYTHING</div><div class="ms">Accounting backup to Downloads + email</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
       </div>
-      <div class="menu-item" onclick="universalLoad()">
-        <div class="menu-icon">📥</div>
-        <div class="menu-label"><div class="ml" style="color:#00ffff;">RESTORE / LOAD FILE</div><div class="ms">Load backup or pasted data</div></div>
-        <div class="menu-arrow" style="color:#00ffff;">›</div>
+      <div class="menu-item" onclick="doPhoneBackup()">
+        <div class="menu-num">2</div><div class="menu-icon">📱</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">PHONE BACKUP</div><div class="ms">Phone clients to Downloads + email</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
+      </div>
+      <div class="menu-item" onclick="backupMfsData()">
+        <div class="menu-num">3</div><div class="menu-icon">🚗</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">MILEAGE BACKUP</div><div class="ms">Vehicle mileage to Downloads + email</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
       </div>
       <div class="menu-item" onclick="doExportCSV()">
-        <div class="menu-icon">📄</div>
-        <div class="menu-label"><div class="ml" style="color:#ccccff;">EXPORT CSV</div><div class="ms">Accounting to Excel/CSV</div></div>
+        <div class="menu-num">4</div><div class="menu-icon">📄</div>
+        <div class="menu-label"><div class="ml" style="color:#ccccff;">EXPORT CSV</div><div class="ms">Accounting to Excel / CSV</div></div>
         <div class="menu-arrow" style="color:#ccccff;">›</div>
       </div>
       <div class="menu-item" onclick="emailClientsCSV()">
-        <div class="menu-icon">✉️</div>
+        <div class="menu-num">5</div><div class="menu-icon">✉️</div>
         <div class="menu-label"><div class="ml" style="color:#ccccff;">EMAIL CLIENTS</div><div class="ms">Send phone clients list</div></div>
         <div class="menu-arrow" style="color:#ccccff;">›</div>
       </div>
+      <div class="menu-item" onclick="exportMasters()">
+        <div class="menu-num">6</div><div class="menu-icon">🔄</div>
+        <div class="menu-label"><div class="ml" style="color:#ffaa00;">SHARE LISTS</div><div class="ms">Payee &amp; desc master lists</div></div>
+        <div class="menu-arrow" style="color:#ffaa00;">›</div>
+      </div>
+
+      <div style="color:#ffff00;font-size:11px;font-weight:700;letter-spacing:1px;margin:8px 2px 2px;">🔁 DEVICE SYNC</div>
       <div class="menu-item" onclick="doSyncExport('android')">
-        <div class="menu-icon">📱</div>
+        <div class="menu-num">7</div><div class="menu-icon">📱</div>
         <div class="menu-label"><div class="ml" style="color:#00ff88;">ANDROID → THINKPAD</div><div class="ms">Export ✔ changes to send to ThinkPad</div></div>
         <div class="menu-arrow" style="color:#00ff88;">›</div>
       </div>
       <div class="menu-item" onclick="doSyncExport('thinkpad')">
-        <div class="menu-icon">💻</div>
+        <div class="menu-num">8</div><div class="menu-icon">💻</div>
         <div class="menu-label"><div class="ml" style="color:#00ffff;">THINKPAD → ANDROID</div><div class="ms">Export ✔ changes to send to Android</div></div>
         <div class="menu-arrow" style="color:#00ffff;">›</div>
       </div>
       <div class="menu-item" onclick="doSyncImport()">
-        <div class="menu-icon">🔁</div>
-        <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive & merge from other device</div></div>
+        <div class="menu-num">9</div><div class="menu-icon">🔁</div>
+        <div class="menu-label"><div class="ml" style="color:#ffaa00;">LOAD SYNC FILE</div><div class="ms">Receive &amp; merge from other device</div></div>
         <div class="menu-arrow" style="color:#ffaa00;">›</div>
       </div>
-      <div class="menu-item" onclick="exportMasters()">
-        <div class="menu-icon">🔄</div>
-        <div class="menu-label"><div class="ml" style="color:#ffaa00;">SHARE LISTS</div><div class="ms">Share payee & desc master lists</div></div>
-        <div class="menu-arrow" style="color:#ffaa00;">›</div>
+
+      <div style="color:#ffff00;font-size:11px;font-weight:700;letter-spacing:1px;margin:8px 2px 2px;">📥 UPLOAD / LOAD IN</div>
+      <div class="menu-item" onclick="confirmMoveAccounting()">
+        <div class="menu-num">10</div><div class="menu-icon">💰</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">MOVE ACCOUNTING</div><div class="ms">Guided: backup → paste → load</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
       </div>
+      <div class="menu-item" onclick="confirmMovePhone()">
+        <div class="menu-num">11</div><div class="menu-icon">📱</div>
+        <div class="menu-label"><div class="ml" style="color:#00ffff;">MOVE PHONE LIST</div><div class="ms">Guided: backup → import files</div></div>
+        <div class="menu-arrow" style="color:#00ffff;">›</div>
+      </div>
+      <div class="menu-item" onclick="universalLoad()">
+        <div class="menu-num">12</div><div class="menu-icon">📥</div>
+        <div class="menu-label"><div class="ml" style="color:#00ffff;">RESTORE / LOAD FILE</div><div class="ms">Load any backup or pasted data</div></div>
+        <div class="menu-arrow" style="color:#00ffff;">›</div>
+      </div>
+      <div class="menu-item" onclick="uploadMileage()">
+        <div class="menu-num">13</div><div class="menu-icon">🚗</div>
+        <div class="menu-label"><div class="ml" style="color:#00ffff;">RESTORE MILEAGE</div><div class="ms">Load a mileage CSV back in</div></div>
+        <div class="menu-arrow" style="color:#00ffff;">›</div>
+      </div>
+      <div class="menu-item" onclick="bulkCsvImport()">
+        <div class="menu-num">14</div><div class="menu-icon">📦</div>
+        <div class="menu-label"><div class="ml" style="color:#ffff00;">BULK IMPORT</div><div class="ms">Select all P1-P26 files at once</div></div>
+        <div class="menu-arrow" style="color:#ffff00;">›</div>
+      </div>
+      <div class="menu-item" onclick="loadComboDatabase()">
+        <div class="menu-num">15</div><div class="menu-icon">📚</div>
+        <div class="menu-label"><div class="ml" style="color:#00ff88;">LOAD COMBO DATABASE</div><div class="ms">Install 34-yr payee database on this device</div></div>
+        <div class="menu-arrow" style="color:#00ff88;">›</div>
+      </div>
+
+      <div style="color:#ff6666;font-size:11px;font-weight:700;letter-spacing:1px;margin:8px 2px 2px;">🗑 MAINTENANCE</div>
       <div class="menu-item" onclick="openCleanDownloads()" style="background:#330000;border:2px solid #ff4444;margin:4px 0;">
-        <div class="menu-icon" style="font-size:26px;">🗑️</div>
+        <div class="menu-num">16</div><div class="menu-icon" style="font-size:26px;">🗑️</div>
         <div class="menu-label"><div class="ml" style="color:#ff6666;font-size:15px;">CLEAN DOWNLOADS FOLDER</div><div class="ms" style="color:#ffaaaa;">Remove old backup files quickly</div></div>
         <div class="menu-arrow" style="color:#ff6666;">›</div>
       </div>
@@ -1130,11 +1148,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-num">9b</div><div class="menu-icon">⚡</div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">INDEX COMBOS</div><div class="ms">Scan LOG · Build pcode + desc + payee combo list</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
-    </div>
-    <div class="menu-item" onclick="loadComboDatabase()">
-      <div class="menu-num">9c</div><div class="menu-icon">📚</div>
-      <div class="menu-label"><div class="ml" style="color:#00ff88;">LOAD COMBO DATABASE</div><div class="ms">Install the 34-year payee database on THIS device</div></div>
-      <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
     <div class="menu-item" onclick="doFindDups()">
       <div class="menu-num">10</div><div class="menu-icon">🔍</div>
@@ -6870,6 +6883,78 @@ function showDriveBackupHelp(filename, label, whereToLoad){
     +'</div>';
   document.body.appendChild(o);
 }
+/* ===== MASTER FULL BACKUP → single .zip to Downloads (no library, offline-safe) ===== */
+function _crc32(bytes){
+  var c, crc=0xFFFFFFFF;
+  if(!_crc32.tab){
+    _crc32.tab=new Uint32Array(256);
+    for(var n=0;n<256;n++){ c=n; for(var k=0;k<8;k++){ c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);} _crc32.tab[n]=c>>>0; }
+  }
+  for(var i=0;i<bytes.length;i++){ crc=(_crc32.tab[(crc^bytes[i])&0xFF]^(crc>>>8))>>>0; }
+  return (crc^0xFFFFFFFF)>>>0;
+}
+function _makeZip(files){
+  var enc=new TextEncoder();
+  var chunks=[], central=[], offset=0;
+  function u16(n){ return [n&0xFF,(n>>>8)&0xFF]; }
+  function u32(n){ n=n>>>0; return [n&0xFF,(n>>>8)&0xFF,(n>>>16)&0xFF,(n>>>24)&0xFF]; }
+  files.forEach(function(f){
+    var nameBytes=enc.encode(f.name);
+    var data=f.bytes, crc=_crc32(data);
+    var lh=[];
+    lh=lh.concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),
+                 u32(crc),u32(data.length),u32(data.length),u16(nameBytes.length),u16(0));
+    var localHeader=new Uint8Array(lh.length+nameBytes.length);
+    localHeader.set(lh,0); localHeader.set(nameBytes,lh.length);
+    chunks.push(localHeader); chunks.push(data);
+    var cd=[];
+    cd=cd.concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),
+                 u32(crc),u32(data.length),u32(data.length),
+                 u16(nameBytes.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset));
+    var cdRec=new Uint8Array(cd.length+nameBytes.length);
+    cdRec.set(cd,0); cdRec.set(nameBytes,cd.length);
+    central.push(cdRec);
+    offset += localHeader.length + data.length;
+  });
+  var centralStart=offset, centralLen=0;
+  central.forEach(function(c){ centralLen+=c.length; });
+  var eo=[];
+  eo=eo.concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),
+               u32(centralLen),u32(centralStart),u16(0));
+  central.forEach(function(c){ chunks.push(c); });
+  chunks.push(new Uint8Array(eo));
+  var total=0; chunks.forEach(function(c){ total+=c.length; });
+  var out=new Uint8Array(total), pos=0;
+  chunks.forEach(function(c){ out.set(c,pos); pos+=c.length; });
+  return out;
+}
+function downloadAllZip(){
+  try{
+    var enc=new TextEncoder(), files=[];
+    var ls={};
+    for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); ls[k]=localStorage.getItem(k); }
+    files.push({name:'localstorage.json', bytes:enc.encode(JSON.stringify(ls,null,1))});
+    var cli=(typeof CLIENTS!=='undefined'&&CLIENTS)?CLIENTS:[];
+    files.push({name:'clients.json', bytes:enc.encode(JSON.stringify(cli))});
+    var logN=(typeof mxLog!=='undefined'&&mxLog)?mxLog.length:0;
+    var readme='MFS FULL BACKUP \u2014 '+today()+'\r\n\r\n'
+      +'Accounting entries: '+logN+'\r\n'
+      +'Phone clients: '+cli.length+'\r\n\r\n'
+      +'TO RESTORE: open MFS > DOWNLOADS > RESTORE / LOAD FILE and load the files\r\n'
+      +'from this zip. localstorage.json holds accounting, masters, combos and\r\n'
+      +'settings; clients.json holds the phone list.\r\n';
+    files.push({name:'README.txt', bytes:enc.encode(readme)});
+    var zip=_makeZip(files);
+    var blob=new Blob([zip],{type:'application/zip'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='MFS-FULL-BACKUP-'+today().replace(/-/g,'')+'.zip';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+    toast('\u2713 Full backup saved to Downloads ('+logN+' entries \u00b7 '+cli.length+' clients)',true);
+  }catch(e){ toast('Backup ZIP failed: '+e.message,false); }
+}
+
 function doBackup() {
   var mxLog=[];
   try{mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]');}catch(e){}
