@@ -9729,24 +9729,24 @@ function rptSearchPayee(){
   var avgAmt = totalAmt / matches.length;
   
   // Build HTML table
-  var html = '<div style="color:#ffffff;font-size:12px;padding:10px;font-family:Courier New,monospace;">';
-  html += '<div style="margin-bottom:10px;color:#ffff00;font-weight:700;">SEARCH: ' + search + ' (' + matches.length + ' entries)</div>';
-  html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-  html += '<tr style="border-bottom:2px solid #4466cc;color:#ffff00;font-weight:700;"><td style="padding:6px;">DATE</td><td style="padding:6px;">PAYEE</td><td style="padding:6px;text-align:right;">AMOUNT</td><td style="padding:6px;">PCODE</td><td style="padding:6px;">DESC</td></tr>';
+  var html = '<div style="color:#ffffff;font-size:14px;padding:10px;font-family:Courier New,monospace;">';
+  html += '<div style="margin-bottom:10px;color:#ffff00;font-weight:700;font-size:16px;">SEARCH: ' + search + ' (' + matches.length + ' entries)</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+  html += '<tr style="border-bottom:2px solid #4466cc;color:#ffff00;font-weight:700;font-size:14px;"><td style="padding:8px;">DATE</td><td style="padding:8px;">PAYEE</td><td style="padding:8px;text-align:right;">AMOUNT</td><td style="padding:8px;">PCODE</td><td style="padding:8px;">DESC</td></tr>';
   
   for(var i=0; i<matches.length; i++){
     var e = matches[i];
     var dateStr = (e.date || '').substring(0,10);
     var amtStr = (e.amt >= 0 ? '+' : '') + (e.amt).toFixed(2);
     var payeeColor = (e.payee === matches[0].payee) ? '#ffff88' : '#ffaa88'; // highlight exact match
-    html += '<tr style="border-bottom:1px solid #1a1a4a;"><td style="padding:4px;color:#aaccff;">' + dateStr + '</td><td style="padding:4px;color:' + payeeColor + ';">' + e.payee + '</td><td style="padding:4px;text-align:right;color:#88ff88;">' + amtStr + '</td><td style="padding:4px;color:#ffaa00;">' + (e.pcode||'') + '</td><td style="padding:4px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+    html += '<tr style="border-bottom:1px solid #1a1a4a;font-size:13px;"><td style="padding:6px;color:#aaccff;">' + dateStr + '</td><td style="padding:6px;color:' + payeeColor + ';">' + e.payee + '</td><td style="padding:6px;text-align:right;color:#88ff88;">' + amtStr + '</td><td style="padding:6px;color:#ffaa00;">' + (e.pcode||'') + '</td><td style="padding:6px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
   }
   
   // Totals and averages row
   var totalStr = (totalAmt >= 0 ? '+' : '') + (totalAmt).toFixed(2);
   var avgStr = (avgAmt >= 0 ? '+' : '') + (avgAmt).toFixed(2);
-  html += '<tr style="border-top:2px solid #ffff00;color:#ffff00;font-weight:700;background:#0000aa;"><td style="padding:6px;">TOTAL</td><td style="padding:6px;"></td><td style="padding:6px;text-align:right;color:#ffff88;">' + totalStr + '</td><td style="padding:6px;"></td><td style="padding:6px;"></td></tr>';
-  html += '<tr style="color:#ffff00;background:#000080;"><td style="padding:6px;">AVERAGE</td><td style="padding:6px;"></td><td style="padding:6px;text-align:right;color:#88ff88;">' + avgStr + '</td><td style="padding:6px;"></td><td style="padding:6px;"></td></tr>';
+  html += '<tr style="border-top:2px solid #ffff00;color:#ffff00;font-weight:700;background:#0000aa;font-size:13px;"><td style="padding:8px;">TOTAL</td><td style="padding:8px;"></td><td style="padding:8px;text-align:right;color:#ffff88;">' + totalStr + '</td><td style="padding:8px;"></td><td style="padding:8px;"></td></tr>';
+  html += '<tr style="color:#ffff00;background:#000080;font-size:13px;"><td style="padding:8px;">AVERAGE</td><td style="padding:8px;"></td><td style="padding:8px;text-align:right;color:#88ff88;">' + avgStr + '</td><td style="padding:8px;"></td><td style="padding:8px;"></td></tr>';
   
   html += '</table></div>';
   document.getElementById('rpt-content').innerHTML = html;
@@ -9789,10 +9789,10 @@ function rptSearchInve(){
   var avgCostPerUnit = totalUnits > 0 ? (totalCost / totalUnits) : 0;
   
   // Build HTML table
-  var html = '<div style="color:#ffffff;font-size:12px;padding:10px;font-family:Courier New,monospace;">';
-  html += '<div style="margin-bottom:10px;color:#00ffcc;font-weight:700;">INVENTORY: ' + search + ' (' + matches.length + ' buys)</div>';
-  html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-  html += '<tr style="border-bottom:2px solid #00aa99;color:#00ffcc;font-weight:700;"><td style="padding:6px;">DATE</td><td style="padding:6px;text-align:center;">QTY</td><td style="padding:6px;text-align:right;">UNIT $</td><td style="padding:6px;text-align:right;">TOTAL $</td><td style="padding:6px;">DESC</td></tr>';
+  var html = '<div style="color:#ffffff;font-size:14px;padding:10px;font-family:Courier New,monospace;">';
+  html += '<div style="margin-bottom:10px;color:#00ffcc;font-weight:700;font-size:16px;">INVENTORY: ' + search + ' (' + matches.length + ' buys)</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+  html += '<tr style="border-bottom:2px solid #00aa99;color:#00ffcc;font-weight:700;font-size:14px;"><td style="padding:8px;">DATE</td><td style="padding:8px;text-align:center;">QTY</td><td style="padding:8px;text-align:right;">UNIT $</td><td style="padding:8px;text-align:right;">TOTAL $</td><td style="padding:8px;">DESC</td></tr>';
   
   for(var i=0; i<matches.length; i++){
     var e = matches[i];
@@ -9800,12 +9800,12 @@ function rptSearchInve(){
     var qty = e.qty || 1;
     var unitCost = totalUnits > 0 ? Math.abs(e.amt) / qty : 0;
     var totalStr = Math.abs(e.amt).toFixed(2);
-    html += '<tr style="border-bottom:1px solid #0a2a2a;"><td style="padding:4px;color:#00ccaa;">' + dateStr + '</td><td style="padding:4px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:4px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:4px;text-align:right;color:#ffaa88;">$' + totalStr + '</td><td style="padding:4px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+    html += '<tr style="border-bottom:1px solid #0a2a2a;font-size:13px;"><td style="padding:6px;color:#00ccaa;">' + dateStr + '</td><td style="padding:6px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:6px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:6px;text-align:right;color:#ffaa88;">$' + totalStr + '</td><td style="padding:6px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
   }
   
   // Totals row
-  html += '<tr style="border-top:2px solid #00ffcc;color:#00ffcc;font-weight:700;background:#002a2a;"><td style="padding:6px;">TOTAL</td><td style="padding:6px;text-align:center;color:#ffff88;">' + totalUnits + ' units</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;text-align:right;color:#ffff88;">$' + totalCost.toFixed(2) + '</td><td style="padding:6px;"></td></tr>';
-  html += '<tr style="color:#00ffcc;background:#001a1a;"><td style="padding:6px;">AVG COST/UNIT</td><td style="padding:6px;text-align:center;"></td><td style="padding:6px;text-align:right;color:#88ff88;">$' + avgCostPerUnit.toFixed(2) + '</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;"></td></tr>';
+  html += '<tr style="border-top:2px solid #00ffcc;color:#00ffcc;font-weight:700;background:#002a2a;font-size:13px;"><td style="padding:8px;">TOTAL</td><td style="padding:8px;text-align:center;color:#ffff88;">' + totalUnits + ' units</td><td style="padding:8px;text-align:right;"></td><td style="padding:8px;text-align:right;color:#ffff88;">$' + totalCost.toFixed(2) + '</td><td style="padding:8px;"></td></tr>';
+  html += '<tr style="color:#00ffcc;background:#001a1a;font-size:13px;"><td style="padding:8px;">AVG COST/UNIT</td><td style="padding:8px;text-align:center;"></td><td style="padding:8px;text-align:right;color:#88ff88;">$' + avgCostPerUnit.toFixed(2) + '</td><td style="padding:8px;text-align:right;"></td><td style="padding:8px;"></td></tr>';
   
   html += '</table></div>';
   document.getElementById('rpt-content').innerHTML = html;
