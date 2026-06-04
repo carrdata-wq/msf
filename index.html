@@ -1689,10 +1689,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC <span style="font-size:10px;opacity:0.8;">[I]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS (UNITS &amp; UNIT$) <span style="font-size:10px;opacity:0.8;">[V]</span></button>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptSearchInve()" style="flex:1;padding:12px 6px;background:#003a3a;color:#00ffcc;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffcc;border-radius:4px;cursor:pointer;">🔎 SEARCH INVENTORY <span style="font-size:10px;opacity:0.8;">[G]</span></button>
+      <button onclick="rptSearchInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS <span style="font-size:10px;opacity:0.8;">[V]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="rptSearchPayee()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">🔎 SEARCH PAYEE <span style="font-size:10px;opacity:0.8;">[F]</span></button>
@@ -9084,7 +9081,7 @@ function handleReportKeypress(e) {
     's': function() { rptMasterDesc(); },
     'u': function() { rptAuditDesc(); },
     'i': function() { rptIrsDesc(); },
-    'v': function() { rptInve(); },
+    'v': function() { rptSearchInve(); },
     'g': function() { rptSearchInve(); },
   };
   if (shortcuts[key]) { e.preventDefault(); shortcuts[key](); }
@@ -9805,6 +9802,10 @@ function rptSearchInve(){
     var totalStr = Math.abs(e.amt).toFixed(2);
     html += '<tr style="border-bottom:1px solid #0a2a2a;"><td style="padding:4px;color:#00ccaa;">' + dateStr + '</td><td style="padding:4px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:4px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:4px;text-align:right;color:#ffaa88;">$' + totalStr + '</td><td style="padding:4px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
   }
+  
+  // Totals row
+  html += '<tr style="border-top:2px solid #00ffcc;color:#00ffcc;font-weight:700;background:#002a2a;"><td style="padding:6px;">TOTAL</td><td style="padding:6px;text-align:center;color:#ffff88;">' + totalUnits + ' units</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;text-align:right;color:#ffff88;">$' + totalCost.toFixed(2) + '</td><td style="padding:6px;"></td></tr>';
+  html += '<tr style="color:#00ffcc;background:#001a1a;"><td style="padding:6px;">AVG COST/UNIT</td><td style="padding:6px;text-align:center;"></td><td style="padding:6px;text-align:right;color:#88ff88;">$' + avgCostPerUnit.toFixed(2) + '</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;"></td></tr>';
   
   html += '</table></div>';
   document.getElementById('rpt-content').innerHTML = html;
