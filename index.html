@@ -9806,10 +9806,6 @@ function rptSearchInve(){
     html += '<tr style="border-bottom:1px solid #0a2a2a;"><td style="padding:4px;color:#00ccaa;">' + dateStr + '</td><td style="padding:4px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:4px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:4px;text-align:right;color:#ffaa88;">$' + totalStr + '</td><td style="padding:4px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
   }
   
-  // Totals row
-  html += '<tr style="border-top:2px solid #00ffcc;color:#00ffcc;font-weight:700;background:#002a2a;"><td style="padding:6px;">TOTAL</td><td style="padding:6px;text-align:center;color:#ffff88;">' + totalUnits + ' units</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;text-align:right;color:#ffff88;">$' + totalCost.toFixed(2) + '</td><td style="padding:6px;"></td></tr>';
-  html += '<tr style="color:#00ffcc;background:#001a1a;"><td style="padding:6px;">AVG COST/UNIT</td><td style="padding:6px;text-align:center;"></td><td style="padding:6px;text-align:right;color:#88ff88;">$' + avgCostPerUnit.toFixed(2) + '</td><td style="padding:6px;text-align:right;"></td><td style="padding:6px;"></td></tr>';
-  
   html += '</table></div>';
   document.getElementById('rpt-content').innerHTML = html;
   document.getElementById('screen-reports').scrollTop = 0;
