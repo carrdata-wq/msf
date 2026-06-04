@@ -9721,28 +9721,57 @@ function rptSearchPayee(){
     return (b.date||'').localeCompare(a.date||'');
   });
   
-  // Calculate totals and averages
+  // Group by month (YYYY-MM)
+  var monthMap = {};
+  var months = [];
+  for(var i=0; i<matches.length; i++){
+    var e = matches[i];
+    var monthKey = (e.date || '').substring(0,7); // YYYY-MM
+    if(!monthMap[monthKey]){
+      monthMap[monthKey] = {total: 0, count: 0, rows: []};
+      months.push(monthKey);
+    }
+    monthMap[monthKey].total += e.amt;
+    monthMap[monthKey].count++;
+    monthMap[monthKey].rows.push(e);
+  }
+  
+  // Calculate grand totals
   var totalAmt = 0;
   for(var i=0; i<matches.length; i++){
     totalAmt += matches[i].amt;
   }
   var avgAmt = totalAmt / matches.length;
   
-  // Build HTML table
+  // Build HTML table grouped by month
   var html = '<div style="color:#ffffff;font-size:14px;padding:10px;font-family:Courier New,monospace;">';
   html += '<div style="margin-bottom:10px;color:#ffff00;font-weight:700;font-size:16px;">SEARCH: ' + search + ' (' + matches.length + ' entries)</div>';
   html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
   html += '<tr style="border-bottom:2px solid #4466cc;color:#ffff00;font-weight:700;font-size:14px;"><td style="padding:8px;">DATE</td><td style="padding:8px;">PAYEE</td><td style="padding:8px;text-align:right;">AMOUNT</td><td style="padding:8px;">PCODE</td><td style="padding:8px;">DESC</td></tr>';
   
-  for(var i=0; i<matches.length; i++){
-    var e = matches[i];
-    var dateStr = (e.date || '').substring(0,10);
-    var amtStr = (e.amt >= 0 ? '+' : '') + (e.amt).toFixed(2);
-    var payeeColor = (e.payee === matches[0].payee) ? '#ffff88' : '#ffaa88'; // highlight exact match
-    html += '<tr style="border-bottom:1px solid #1a1a4a;font-size:13px;"><td style="padding:6px;color:#aaccff;">' + dateStr + '</td><td style="padding:6px;color:' + payeeColor + ';">' + e.payee + '</td><td style="padding:6px;text-align:right;color:#88ff88;">' + amtStr + '</td><td style="padding:6px;color:#ffaa00;">' + (e.pcode||'') + '</td><td style="padding:6px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+  // Iterate through each month
+  for(var m=0; m<months.length; m++){
+    var monthKey = months[m];
+    var monthData = monthMap[monthKey];
+    
+    // Show month header
+    html += '<tr style="background:#0000cc;border-bottom:1px solid #4466cc;"><td style="padding:8px;color:#00ffff;font-weight:700;">■ ' + monthKey + '</td><td colspan="4" style="text-align:right;color:#00ffff;font-weight:700;"></td></tr>';
+    
+    // Show transactions for this month
+    for(var i=0; i<monthData.rows.length; i++){
+      var e = monthData.rows[i];
+      var dateStr = (e.date || '').substring(0,10);
+      var amtStr = (e.amt >= 0 ? '+' : '') + (e.amt).toFixed(2);
+      var payeeColor = (e.payee === matches[0].payee) ? '#ffff88' : '#ffaa88';
+      html += '<tr style="border-bottom:1px solid #1a1a4a;font-size:13px;"><td style="padding:6px;color:#aaccff;">' + dateStr + '</td><td style="padding:6px;color:' + payeeColor + ';">' + e.payee + '</td><td style="padding:6px;text-align:right;color:#88ff88;">' + amtStr + '</td><td style="padding:6px;color:#ffaa00;">' + (e.pcode||'') + '</td><td style="padding:6px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+    }
+    
+    // Month subtotal
+    var monthTotalStr = (monthData.total >= 0 ? '+' : '') + (monthData.total).toFixed(2);
+    html += '<tr style="border-bottom:1px solid #334466;background:#001a3a;color:#00ccff;font-weight:700;font-size:12px;"><td style="padding:6px;">MONTH SUBTOTAL</td><td style="padding:6px;"></td><td style="padding:6px;text-align:right;color:#88ffff;">' + monthTotalStr + '</td><td style="padding:6px;">(' + monthData.count + ')</td><td style="padding:6px;"></td></tr>';
   }
   
-  // Totals and averages row
+  // Grand totals
   var totalStr = (totalAmt >= 0 ? '+' : '') + (totalAmt).toFixed(2);
   var avgStr = (avgAmt >= 0 ? '+' : '') + (avgAmt).toFixed(2);
   html += '<tr style="border-top:2px solid #ffff00;color:#ffff00;font-weight:700;background:#0000aa;font-size:13px;"><td style="padding:8px;">TOTAL</td><td style="padding:8px;"></td><td style="padding:8px;text-align:right;color:#ffff88;">' + totalStr + '</td><td style="padding:8px;"></td><td style="padding:8px;"></td></tr>';
