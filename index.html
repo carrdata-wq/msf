@@ -1691,6 +1691,9 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="rptInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS (UNITS &amp; UNIT$) <span style="font-size:10px;opacity:0.8;">[V]</span></button>
     </div>
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
+      <button onclick="rptSearchPayee()" style="flex:1;padding:12px 6px;background:#330033;color:#ff88ff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ff88ff;border-radius:4px;cursor:pointer;">🔎 SEARCH PAYEE <span style="font-size:10px;opacity:0.8;">[F]</span></button>
+    </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
 </div>
@@ -9079,6 +9082,7 @@ function handleReportKeypress(e) {
     'u': function() { rptAuditDesc(); },
     'i': function() { rptIrsDesc(); },
     'v': function() { rptInve(); },
+    'f': function() { rptSearchPayee(); },
   };
   if (shortcuts[key]) { e.preventDefault(); shortcuts[key](); }
 }
@@ -9691,6 +9695,50 @@ function rptDrill(type,key){
 
 // kept for backwards-compat — just redirect to rptDrill
 function rptDrillMonth(type,key,mon){rptDrill('mon',mon);}
+
+// ===== SEARCH PAYEE: find all transactions matching a payee search term, sorted by date =====
+function rptSearchPayee(){
+  var term = prompt('Search payee (e.g., RAY):');
+  if(!term) return;
+  var search = term.toUpperCase().trim();
+  if(!search) return;
+  
+  loadLog();
+  var matches = [];
+  for(var i=0; i<LOG.length; i++){
+    if(LOG[i].payee && LOG[i].payee.toUpperCase().indexOf(search) >= 0){
+      matches.push(LOG[i]);
+    }
+  }
+  
+  if(matches.length === 0){
+    document.getElementById('rpt-content').innerHTML = '<div style="color:#ccccff;padding:20px;text-align:center;font-family:Courier New,monospace;">No transactions found for "' + search + '"</div>';
+    return;
+  }
+  
+  // Sort by date descending (newest first)
+  matches.sort(function(a,b){
+    return (b.date||'').localeCompare(a.date||'');
+  });
+  
+  // Build HTML table
+  var html = '<div style="color:#ffffff;font-size:12px;padding:10px;font-family:Courier New,monospace;">';
+  html += '<div style="margin-bottom:10px;color:#ffff00;font-weight:700;">SEARCH: ' + search + ' (' + matches.length + ' entries)</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+  html += '<tr style="border-bottom:2px solid #4466cc;color:#ffff00;font-weight:700;"><td style="padding:6px;">DATE</td><td style="padding:6px;">PAYEE</td><td style="padding:6px;text-align:right;">AMOUNT</td><td style="padding:6px;">PCODE</td><td style="padding:6px;">DESC</td></tr>';
+  
+  for(var i=0; i<matches.length; i++){
+    var e = matches[i];
+    var dateStr = (e.date || '').substring(0,10);
+    var amtStr = (e.amt >= 0 ? '+' : '') + (e.amt).toFixed(2);
+    var payeeColor = (e.payee === matches[0].payee) ? '#ffff88' : '#ffaa88'; // highlight exact match
+    html += '<tr style="border-bottom:1px solid #1a1a4a;"><td style="padding:4px;color:#aaccff;">' + dateStr + '</td><td style="padding:4px;color:' + payeeColor + ';">' + e.payee + '</td><td style="padding:4px;text-align:right;color:#88ff88;">' + amtStr + '</td><td style="padding:4px;color:#ffaa00;">' + (e.pcode||'') + '</td><td style="padding:4px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+  }
+  
+  html += '</table></div>';
+  document.getElementById('rpt-content').innerHTML = html;
+  document.getElementById('screen-reports').scrollTop = 0;
+}
 
 function showAdd(type){document.getElementById('box-'+type).style.display='block';document.getElementById('new-'+type).value='';document.getElementById('new-'+type).focus();}
 function cancelAdd(type){document.getElementById('box-'+type).style.display='none';}
