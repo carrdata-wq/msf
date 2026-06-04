@@ -9071,7 +9071,7 @@ function handleReportKeypress(e) {
   var shortcuts = {
     'p': function() { rptShow('pcode'); },
     'd': function() { rptShow('desc'); },
-    'a': function() { rptShow('payee'); },
+    'a': function() { rptSearchPayee(); },
     'y': function() { rptShow('yr'); },
     'm': function() { rptShow('mon'); },
     't': function() { rptShow('type'); },
@@ -9082,7 +9082,6 @@ function handleReportKeypress(e) {
     'u': function() { rptAuditDesc(); },
     'i': function() { rptIrsDesc(); },
     'v': function() { rptInve(); },
-    'f': function() { rptSearchPayee(); },
   };
   if (shortcuts[key]) { e.preventDefault(); shortcuts[key](); }
 }
@@ -9721,6 +9720,13 @@ function rptSearchPayee(){
     return (b.date||'').localeCompare(a.date||'');
   });
   
+  // Calculate totals and averages
+  var totalAmt = 0;
+  for(var i=0; i<matches.length; i++){
+    totalAmt += matches[i].amt;
+  }
+  var avgAmt = totalAmt / matches.length;
+  
   // Build HTML table
   var html = '<div style="color:#ffffff;font-size:12px;padding:10px;font-family:Courier New,monospace;">';
   html += '<div style="margin-bottom:10px;color:#ffff00;font-weight:700;">SEARCH: ' + search + ' (' + matches.length + ' entries)</div>';
@@ -9734,6 +9740,12 @@ function rptSearchPayee(){
     var payeeColor = (e.payee === matches[0].payee) ? '#ffff88' : '#ffaa88'; // highlight exact match
     html += '<tr style="border-bottom:1px solid #1a1a4a;"><td style="padding:4px;color:#aaccff;">' + dateStr + '</td><td style="padding:4px;color:' + payeeColor + ';">' + e.payee + '</td><td style="padding:4px;text-align:right;color:#88ff88;">' + amtStr + '</td><td style="padding:4px;color:#ffaa00;">' + (e.pcode||'') + '</td><td style="padding:4px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
   }
+  
+  // Totals and averages row
+  var totalStr = (totalAmt >= 0 ? '+' : '') + (totalAmt).toFixed(2);
+  var avgStr = (avgAmt >= 0 ? '+' : '') + (avgAmt).toFixed(2);
+  html += '<tr style="border-top:2px solid #ffff00;color:#ffff00;font-weight:700;background:#0000aa;"><td style="padding:6px;">TOTAL</td><td style="padding:6px;"></td><td style="padding:6px;text-align:right;color:#ffff88;">' + totalStr + '</td><td style="padding:6px;"></td><td style="padding:6px;"></td></tr>';
+  html += '<tr style="color:#ffff00;background:#000080;"><td style="padding:6px;">AVERAGE</td><td style="padding:6px;"></td><td style="padding:6px;text-align:right;color:#88ff88;">' + avgStr + '</td><td style="padding:6px;"></td><td style="padding:6px;"></td></tr>';
   
   html += '</table></div>';
   document.getElementById('rpt-content').innerHTML = html;
