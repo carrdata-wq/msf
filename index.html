@@ -13412,6 +13412,7 @@ function _feBuildIndex(){
   _feComboCnt = counts;
   _feSaveComboCnt();
   _fePayeeIndex = {};
+  _fePayeeCount = {};  // reset payee count cache
   Object.keys(counts).forEach(function(k){
     var parts = k.split('|');
     var p = parts[0], pc = parts[1], d = parts[2];
