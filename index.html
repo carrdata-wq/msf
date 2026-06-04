@@ -15363,11 +15363,22 @@ function _feLookupAndApply(query){
   var combos = _fePayeeIndex[topPayee];
   var topCombo = combos[0];
   
-  // If only ONE payee matches, OR top payee has high count, go straight to draft
+  // If only ONE payee matches, go straight to draft
   if(matches.length === 1 && topCombo){
     _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
     toast(topPayee, true);
     return;
+  }
+  
+  // If top payee has 3x+ more transactions than second, auto-apply it (FoxBase throughput)
+  if(matches.length > 1 && topCombo){
+    var topCnt = _fePayeeCount[topPayee] || 0;
+    var secondCnt = _fePayeeCount[matches[1]] || 0;
+    if(topCnt > 0 && (secondCnt === 0 || topCnt >= secondCnt * 3)){
+      _feBeginDraft(topPayee, topCombo.pcode, topCombo.desc);
+      toast('AUTO ' + topPayee + ' ×' + topCnt, true);
+      return;
+    }
   }
   
   // Multiple payees: show simple picker with payee names + counts
