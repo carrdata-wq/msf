@@ -14102,7 +14102,7 @@ function _feEnterFillQty(){
   // so you can type a different count; if you don't touch it, it advances as 1.
   var qf = document.getElementById('fe-maskfield');
   if(qf){ try{ qf.focus({preventScroll:true}); qf.select(); }catch(e){} }
-  _feArmIdleTimer(2500);
+  _feArmIdleTimer(2000);  // 2 second auto-advance if user doesn't change qty
 }
 function _feApplyDraftQty(val){
   if(!_feDraft){ _feStartEntryPayee(); _feRender(); _feFocusPrompt(); return; }
