@@ -13233,6 +13233,7 @@ var _feInline = null;              // ThinkPad inline field edit: {idx, field}
 var _feInlineTimer = null;         // single-digit auto-fire timer for inline edits
 var _feIndexDirty = true;
 var _fePayeeIndex = {};            // UPPER(payee) -> [{pcode, desc, cnt}, ...] sorted by cnt desc
+var _fePayeeCount = {};            // UPPER(payee) -> total transaction count (for faster sorting)
 var _feComboCnt = {};              // "PAYEE|PCODE|DESC" -> running count
 var _feHistoryCnt = {};            // imported 34-year baseline (write-once via import tool)
 var _feMode = 'entry-payee';
@@ -13419,6 +13420,12 @@ function _feBuildIndex(){
   });
   Object.keys(_fePayeeIndex).forEach(function(p){
     _fePayeeIndex[p].sort(function(a,b){ return b.cnt - a.cnt; });
+    // Calculate total count for this payee
+    var totalCnt = 0;
+    for(var i=0; i<_fePayeeIndex[p].length; i++){
+      totalCnt += (_fePayeeIndex[p][i].cnt || 0);
+    }
+    _fePayeeCount[p] = totalCnt;
   });
   if(changed) saveLog();
   _feIndexDirty = false;
@@ -14180,6 +14187,12 @@ function _feCommitDraft(){
   }
   if(!found) _fePayeeIndex[pu].push({pcode:d.pcode||'',desc:d.desc||'',cnt:_feComboCnt[key]});
   _fePayeeIndex[pu].sort(function(a,b){ return b.cnt - a.cnt; });
+  // Update embedded payee count
+  var totalCnt = 0;
+  for(var j=0; j<_fePayeeIndex[pu].length; j++){
+    totalCnt += (_fePayeeIndex[pu][j].cnt || 0);
+  }
+  _fePayeeCount[pu] = totalCnt;
   toast('SAVED  ' + d.payee + '  ' + _feFmtAmt(entry.amt) + (entry.qty ? '  Q\u00d7' + entry.qty : ''), true);
   _feDraft = null;
   _feRowIdx = 0;
@@ -14934,8 +14947,8 @@ function _feRenderPickerResults(){
   // Sort matches by frequency (most-used first) for payee picker
   if(_feMode === 'pick-payee'){
     matches.sort(function(a, b){
-      var cntA = (_fePayeeIndex[a.toUpperCase()] && _fePayeeIndex[a.toUpperCase()].length) ? _fePayeeIndex[a.toUpperCase()].length : 0;
-      var cntB = (_fePayeeIndex[b.toUpperCase()] && _fePayeeIndex[b.toUpperCase()].length) ? _fePayeeIndex[b.toUpperCase()].length : 0;
+      var cntA = _fePayeeCount[a.toUpperCase()] || 0;
+      var cntB = _fePayeeCount[b.toUpperCase()] || 0;
       return cntB - cntA;  // highest count first
     });
   }
@@ -14983,7 +14996,7 @@ function _feRenderPickerResults(){
     // Show count for payee picker
     var countDisplay = '';
     if(_feMode === 'pick-payee'){
-      var cnt = (_fePayeeIndex[it.toUpperCase()] && _fePayeeIndex[it.toUpperCase()].length) ? _fePayeeIndex[it.toUpperCase()].length : 0;
+      var cnt = _fePayeeCount[it.toUpperCase()] || 0;
       countDisplay = ' <span style="opacity:0.7;">(' + cnt + ')</span>';
     }
     html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + key + star + _feEsc(it) + countDisplay + '</button>';
