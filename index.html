@@ -897,18 +897,13 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
-    <div class="menu-item" onclick="openModule('accounting')">
-      <div class="menu-num">1</div><div class="menu-icon">💰</div>
-      <div class="menu-label"><div class="ml">Accounting</div><div class="ms">Payee · Desc · Pcode · Amount</div></div>
-      <div class="menu-arrow" style="color:#ffff00;">›</div>
-    </div>
     <div class="menu-item" onclick="showSubMenu('accounting')">
-      <div class="menu-num">2</div><div class="menu-icon">📊</div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">More Accounting Tasks</div><div class="ms">Reports · Restaurant · Grocery · Bank · Portfolio · Fuel · Utility</div></div>
+      <div class="menu-num">1</div><div class="menu-icon">📊</div>
+      <div class="menu-label"><div class="ml" style="color:#00ffff;">Accounting &amp; Reports</div><div class="ms">Ledger · P&amp;L · Reports · Bank · Trackers</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
     <div class="menu-item" onclick="openBalance()" style="background:#002233;border:3px solid #00ffff;margin:2px 0;min-height:50px;">
-      <div class="menu-num">3</div><div class="menu-icon" style="font-size:28px;">💼</div>
+      <div class="menu-num">2</div><div class="menu-icon" style="font-size:28px;">💼</div>
       <div class="menu-label">
         <div class="ml" style="color:#00ffff;font-size:14px;">Balance Sheet</div>
         <div class="ms" style="color:#aaffff;">Pending payables/receivables · Running total</div>
@@ -917,17 +912,17 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
 
         <div class="menu-item" onclick="openModule('phone')">
-      <div class="menu-num">4</div><div class="menu-icon">📱</div>
+      <div class="menu-num">3</div><div class="menu-icon">📱</div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">Phone Clients</div><div class="ms">Client Database · Contacts · Jobs</div></div>
       <div class="menu-arrow" style="color:#00ffff;">›</div>
     </div>
     <div class="menu-item" onclick="showSubMenu('sysutil')">
-      <div class="menu-num">5</div><div class="menu-icon">⚙️</div>
+      <div class="menu-num">4</div><div class="menu-icon">⚙️</div>
       <div class="menu-label"><div class="ml" style="color:#ff88ff;">System Utilities</div><div class="ms">MFS Update · File Manager · Drive</div></div>
       <div class="menu-arrow" style="color:#ff88ff;">›</div>
     </div>
     <div class="menu-item" onclick="openTransferMenu()">
-      <div class="menu-num">6</div><div class="menu-icon">🔄</div>
+      <div class="menu-num">5</div><div class="menu-icon">🔄</div>
       <div class="menu-label"><div class="ml" style="color:#ffff00;">DOWNLOADS</div><div class="ms">Upload · Download · Backup · Sync · ZIP</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
@@ -1172,10 +1167,15 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 <div id="screen-accounting-sub" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
   <div style="background:#0000cc;border-bottom:2px solid #00ffff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
-    <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">📊 More Accounting Tasks</span>
+    <span style="font-weight:700;font-size:14px;color:#00ffff;flex:1;">📊 Accounting &amp; Reports</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
+    <div class="menu-item" onclick="openModule('accounting')" style="background:#002200;border:3px solid #00ff88;margin:2px 0;min-height:50px;">
+      <div class="menu-icon" style="font-size:26px;">💰</div>
+      <div class="menu-label"><div class="ml" style="color:#00ff88;font-size:14px;">ACCOUNTING — LEDGER · P&amp;L</div><div class="ms" style="color:#88ffaa;">Browse · Edit · P&amp;L · Balance Sheet · Masters</div></div>
+      <div class="menu-arrow" style="color:#00ff88;">›</div>
+    </div>
     <div class="menu-item" onclick="openModule('reports')">
       <div class="menu-num">1</div><div class="menu-icon">📊</div>
       <div class="menu-label"><div class="ml">Reports</div><div class="ms">By Pcode · By Desc · By Payee · By Year</div></div>
