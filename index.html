@@ -14930,6 +14930,15 @@ function _feRenderPickerResults(){
     if(!q) return true;
     return it.toUpperCase().indexOf(q) >= 0;   // contains match
   });
+  
+  // Sort matches by frequency (most-used first) for payee picker
+  if(_feMode === 'pick-payee'){
+    matches.sort(function(a, b){
+      var cntA = (_fePayeeIndex[a.toUpperCase()] && _fePayeeIndex[a.toUpperCase()].length) ? _fePayeeIndex[a.toUpperCase()].length : 0;
+      var cntB = (_fePayeeIndex[b.toUpperCase()] && _fePayeeIndex[b.toUpperCase()].length) ? _fePayeeIndex[b.toUpperCase()].length : 0;
+      return cntB - cntA;  // highest count first
+    });
+  }
   // DELETE MODE — tap an item to remove it from the master list. No auto-pick,
   // no letter-pick, no ADD NEW. Items render red with an ✕.
   if(_fePickerDelMode){
@@ -14971,7 +14980,13 @@ function _feRenderPickerResults(){
     var key = (lettered && idx < 26)
       ? '<span style="display:inline-block;background:#ffff00;color:#000080;font-weight:700;border-radius:2px;padding:0 5px;margin-right:6px;">' + String.fromCharCode(65+idx) + '</span>'
       : '';
-    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + key + star + _feEsc(it) + '</button>';
+    // Show count for payee picker
+    var countDisplay = '';
+    if(_feMode === 'pick-payee'){
+      var cnt = (_fePayeeIndex[it.toUpperCase()] && _fePayeeIndex[it.toUpperCase()].length) ? _fePayeeIndex[it.toUpperCase()].length : 0;
+      countDisplay = ' <span style="opacity:0.7;">(' + cnt + ')</span>';
+    }
+    html += '<button onclick="_feSetItem(\'' + esc + '\')" style="background:'+bg+';border:'+bd+';color:'+col+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;">' + key + star + _feEsc(it) + countDisplay + '</button>';
   });
   if(!matches.length){
     html += '<div style="color:#ff6666;padding:8px;width:100%;">No match — tap <b>+ ADD NEW</b> to create "' + _feEsc(_fePickerFilter) + '"</div>';
