@@ -13896,7 +13896,7 @@ function _feMaskInput(val){
         try { f2.setSelectionRange(fmt.length, fmt.length); } catch(e){}
       }
     }
-    if(raw) _feArmIdleTimer(2500); else _feClearIdleTimer();   // 2.5s — room for long amounts; Enter commits instantly
+    if(raw) _feArmIdleTimer(2750); else _feClearIdleTimer();   // 2.75s — room for long amounts; Enter commits instantly
     return;
   }
   if(_feMode === 'fill-qty'){
