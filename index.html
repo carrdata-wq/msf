@@ -13903,7 +13903,7 @@ function _feMaskInput(val){
     var qd = (val||'').replace(/[^0-9]/g,'').slice(0,6);
     var fq = document.getElementById('fe-maskfield');
     if(fq && fq.value !== qd) fq.value = qd;
-    if(qd) _feArmIdleTimer(2750); else _feClearIdleTimer();
+    if(qd) _feArmIdleTimer(2000); else _feClearIdleTimer();
     return;
   }
 }
@@ -14146,7 +14146,7 @@ function _feEnterFillQty(){
   // so you can type a different count; if you don't touch it, it advances as 1.
   var qf = document.getElementById('fe-maskfield');
   if(qf){ try{ qf.focus({preventScroll:true}); qf.select(); }catch(e){} }
-  _feArmIdleTimer(2750);  // 2.75 second auto-advance if user doesn't change qty
+  _feArmIdleTimer(2000);  // 2 second auto-advance if user doesn't change qty
 }
 function _feApplyDraftQty(val){
   if(!_feDraft){ _feStartEntryPayee(); _feRender(); _feFocusPrompt(); return; }
@@ -14501,8 +14501,8 @@ function _feInlineInput(){
       }
     }
     if(_feInlineTimer){ clearTimeout(_feInlineTimer); _feInlineTimer = null; }
-    if(d){   // 0.8s after you stop typing → applies. Enter also fires it.
-      _feInlineTimer = setTimeout(function(){ _feInlineTimer = null; _feApplyInline(); }, 800);
+    if(d){   // 2.75s after you stop typing → applies. Enter also fires it.
+      _feInlineTimer = setTimeout(function(){ _feInlineTimer = null; _feApplyInline(); }, 2750);
     }
     return;
   }
