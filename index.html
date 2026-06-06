@@ -1461,7 +1461,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
    </div>
     <!-- hint strip -->
     <div style="text-align:center;font-size:11px;color:#aaccff;letter-spacing:1px;padding:3px;font-weight:700;">
-      PAYEE &#9656; DAY &#9656; AMOUNT &#9656; LOOPS &nbsp;·&nbsp; COPY FLIP DEL PACK &nbsp;·&nbsp; MM DD YR AMT PCOD DESC &nbsp;·&nbsp; ?
+      PAYEE &#9656; DAY &#9656; AMOUNT &#9656; LOOPS &nbsp;·&nbsp; COPY FLIP DEL PACK XB &nbsp;·&nbsp; MM DD YR AMT PCOD DESC &nbsp;·&nbsp; ?
     </div>
   </div>
 
@@ -14354,6 +14354,7 @@ function _feDispatchCommand(raw){
   if(cmd === 'COPY'){ _feActCopy(); return; }
   if(cmd === 'FLIP'){ _feFlipSign(); return; }
   if(cmd === 'DEL'){ _feActDel(); return; }
+  if(cmd === 'XB' || cmd === 'BACKALL'){ _feBackupAll(); return; }
   if(cmd === 'MM'){ _feStartMM(); return; }
   if(cmd === 'DD'){ _feStartDD(); return; }
   if(cmd === 'YR'){ _feStartYR(); return; }
@@ -14367,6 +14368,46 @@ function _feDispatchCommand(raw){
   if(cmd === '?' || cmd === 'H'){ _feShowHelp(); return; }
   // Not a command → treat as a payee lookup (day defaults to today)
   _feLookupAndApply(cmd);
+}
+
+// ───── BACKUP ALL COMMAND ─────
+function _feBackupAll(){
+  try {
+    var backupData = {
+      timestamp: new Date().toISOString(),
+      version: '1.0',
+      data: {
+        LOG: LOG || [],
+        masters: {
+          mx_pcodes: JSON.parse(localStorage.getItem('mx_pcodes') || '[]'),
+          mx_descs: JSON.parse(localStorage.getItem('mx_descs') || '[]'),
+          mx_payees: JSON.parse(localStorage.getItem('mx_payees') || '[]'),
+          mx_clients: localStorage.getItem('mx_clients') || '{}',
+          mx_fuel: localStorage.getItem('mx_fuel') || '{}',
+          mx_acct: localStorage.getItem('mx_acct') || '{}'
+        }
+      }
+    };
+    
+    var json = JSON.stringify(backupData, null, 2);
+    var dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    var filename = 'MFS-BACKUP-' + dateStr + '.json';
+    
+    var blob = new Blob([json], {type: 'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
+    
+    toast('✓ BACKUP COMPLETE: ' + filename, true);
+  } catch(e){
+    toast('✗ Backup failed: ' + (e.message || e), false);
+  }
+  _feFocusPrompt();
 }
 
 // ───── DATE / AMT EDIT COMMANDS ─────
