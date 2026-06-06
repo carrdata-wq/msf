@@ -14959,23 +14959,27 @@ function _feRenderPickerResults(){
       return cntB - cntA;  // highest count first
     });
   }
-  // FOXBASE PCODE MENU — Letter-based selection with all pcodes
-  if(_feMode === 'pick-pcode' && !_fePickerDelMode && !q){
-    var htmlFB = '<div style="width:100%;background:#000033;border:2px solid #00ff00;border-radius:4px;padding:8px;margin-bottom:8px;">'
-      + '<div style="color:#00ff00;font-weight:700;font-size:13px;margin-bottom:8px;">PCODE MENU — PRESS LETTER:</div>';
-    var allPcodes = _fePickerItems.slice(0, 24);  // A-X (24 letters)
+  // FOXBASE PCODE MENU — Simple letter selection (no filtering, no search)
+  if(_feMode === 'pick-pcode' && !_fePickerDelMode){
+    var htmlFB = '<div style="width:100%;background:#000033;border:2px solid #00ff00;border-radius:4px;padding:12px;margin-bottom:8px;">'
+      + '<div style="color:#00ff00;font-weight:700;font-size:14px;margin-bottom:12px;">PCODE MENU — PICK A LETTER:</div>';
+    var allPcodes = _fePickerItems.slice(0, 24);  // A-X (24 letters max)
     allPcodes.forEach(function(pc, idx){
       var letter = String.fromCharCode(65 + idx);  // A, B, C...
-      var btn = '<button onclick="_feSetPcode(\'' + _feEsc(pc).replace(/'/g, "\\'") + '\')" '
-        + 'style="background:#000080;border:1px solid #00ff00;color:#00ff00;font-family:Courier New,monospace;font-size:12px;font-weight:700;'
-        + 'padding:6px 10px;border-radius:3px;cursor:pointer;margin:2px;min-width:80px;">'
-        + '<span style="background:#00ff00;color:#000080;padding:1px 6px;border-radius:2px;margin-right:4px;font-weight:700;">' + letter + '</span> '
-        + _feEsc(pc) + '</button>';
+      var btn = '<div style="display:inline-block;margin:4px;text-align:center;">'
+        + '<button onclick="_feSetPcode(\'' + _feEsc(pc).replace(/'/g, "\\'") + '\')" '
+        + 'style="background:#000080;border:2px solid #00ff00;color:#00ff00;font-family:Courier New,monospace;font-size:13px;font-weight:700;'
+        + 'padding:8px 12px;border-radius:3px;cursor:pointer;min-width:120px;display:block;">'
+        + '<span style="background:#00ff00;color:#000033;padding:2px 8px;border-radius:2px;font-weight:700;margin-right:4px;">' + letter + '</span></button>'
+        + '<div style="color:#00ffff;font-size:11px;margin-top:2px;font-family:Courier New,monospace;">' + _feEsc(pc) + '</div>'
+        + '</div>';
       htmlFB += btn;
     });
-    htmlFB += '</div><div style="width:100%;color:#ffff00;font-size:12px;margin:6px 0;">Add new or delete:</div>';
-    htmlFB += '<button onclick="_feShowAddNew()" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;margin:2px;">E ADD NEW</button>';
-    htmlFB += '<button onclick="_feTogglePickerDel()" style="background:#330000;border:1px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;margin:2px;">X DELETE</button>';
+    htmlFB += '<div style="clear:both;margin-top:12px;padding-top:8px;border-top:1px solid #00ff00;color:#ffff00;font-size:12px;">Or add/delete:</div>';
+    htmlFB += '<button onclick="_feShowAddNew()" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 14px;border-radius:3px;cursor:pointer;margin:4px;min-width:100px;">E ADD NEW</button>';
+    htmlFB += '<button onclick="_feTogglePickerDel()" style="background:#330000;border:2px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 14px;border-radius:3px;cursor:pointer;margin:4px;min-width:100px;">X DELETE</button>';
+    htmlFB += '<button onclick="document.getElementById(\'fe-picker\').style.display=\'none\';" style="background:#111111;border:1px solid #666666;color:#999999;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 14px;border-radius:3px;cursor:pointer;margin:4px;min-width:100px;">ESC EXIT</button>';
+    htmlFB += '</div>';
     box.innerHTML = htmlFB;
     return;
   }
