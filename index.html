@@ -14959,6 +14959,27 @@ function _feRenderPickerResults(){
       return cntB - cntA;  // highest count first
     });
   }
+  // FOXBASE PCODE MENU — Letter-based selection with all pcodes
+  if(_feMode === 'pick-pcode' && !_fePickerDelMode && !q){
+    var htmlFB = '<div style="width:100%;background:#000033;border:2px solid #00ff00;border-radius:4px;padding:8px;margin-bottom:8px;">'
+      + '<div style="color:#00ff00;font-weight:700;font-size:13px;margin-bottom:8px;">PCODE MENU — PRESS LETTER:</div>';
+    var allPcodes = _fePickerItems.slice(0, 24);  // A-X (24 letters)
+    allPcodes.forEach(function(pc, idx){
+      var letter = String.fromCharCode(65 + idx);  // A, B, C...
+      var btn = '<button onclick="_feSetPcode(\'' + _feEsc(pc).replace(/'/g, "\\'") + '\')" '
+        + 'style="background:#000080;border:1px solid #00ff00;color:#00ff00;font-family:Courier New,monospace;font-size:12px;font-weight:700;'
+        + 'padding:6px 10px;border-radius:3px;cursor:pointer;margin:2px;min-width:80px;">'
+        + '<span style="background:#00ff00;color:#000080;padding:1px 6px;border-radius:2px;margin-right:4px;font-weight:700;">' + letter + '</span> '
+        + _feEsc(pc) + '</button>';
+      htmlFB += btn;
+    });
+    htmlFB += '</div><div style="width:100%;color:#ffff00;font-size:12px;margin:6px 0;">Add new or delete:</div>';
+    htmlFB += '<button onclick="_feShowAddNew()" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;margin:2px;">E ADD NEW</button>';
+    htmlFB += '<button onclick="_feTogglePickerDel()" style="background:#330000;border:1px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;margin:2px;">X DELETE</button>';
+    box.innerHTML = htmlFB;
+    return;
+  }
+  
   // DELETE MODE — tap an item to remove it from the master list. No auto-pick,
   // no letter-pick, no ADD NEW. Items render red with an ✕.
   if(_fePickerDelMode){
