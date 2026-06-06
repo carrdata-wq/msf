@@ -14940,6 +14940,28 @@ function _feRenderPickerOverlay(){
   }, 30);
 }
 // Re-renders ONLY the result buttons — the search input keeps focus.
+function _fePcodeLetterKey(e){
+  if(_feMode !== 'pick-pcode' || !e.key || e.key.length !== 1) return;
+  var letter = e.key.toUpperCase();
+  if(!/[A-Z]/.test(letter)) return;
+  var idx = letter.charCodeAt(0) - 65;  // A=0, B=1, ..., Z=25
+  if(idx < 0 || idx >= _fePickerItems.length) return;
+  e.preventDefault();
+  e.stopPropagation();
+  _feSetPcode(_fePickerItems[idx]);
+}
+
+function _feDescLetterKey(e){
+  if(_feMode !== 'pick-desc' || !e.key || e.key.length !== 1) return;
+  var letter = e.key.toUpperCase();
+  if(!/[A-Z]/.test(letter)) return;
+  var idx = letter.charCodeAt(0) - 65;  // A=0, B=1, ..., Z=25
+  if(idx < 0 || idx >= _fePickerItems.length) return;
+  e.preventDefault();
+  e.stopPropagation();
+  _feSetDesc(_fePickerItems[idx]);
+}
+
 function _feRenderPickerResults(){
   var box = document.getElementById('fe-picker-results');
   if(!box) return;
@@ -14981,27 +15003,39 @@ function _feRenderPickerResults(){
     htmlFB += '<button onclick="document.getElementById(\'fe-picker\').style.display=\'none\';" style="background:#111111;border:1px solid #666666;color:#999999;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 14px;border-radius:3px;cursor:pointer;margin:4px;min-width:100px;">ESC EXIT</button>';
     htmlFB += '</div>';
     box.innerHTML = htmlFB;
+    // Set up DIRECT key listener for A-X letter selection
+    setTimeout(function(){
+      document.addEventListener('keydown', _fePcodeLetterKey, true);
+    }, 100);
     return;
   }
   
-  // FOXBASE DESC MENU — Letter-based selection with all descs
-  if(_feMode === 'pick-desc' && !_fePickerDelMode && !q){
-    var htmlFB = '<div style="width:100%;background:#003300;border:2px solid #00ff88;border-radius:4px;padding:8px;margin-bottom:8px;">'
-      + '<div style="color:#00ff88;font-weight:700;font-size:13px;margin-bottom:8px;">DESC MENU — PRESS LETTER:</div>';
-    var allDescs = _fePickerItems.slice(0, 24);  // A-X (24 letters)
+  // FOXBASE DESC MENU — Letter-based selection (no filtering, no search)
+  if(_feMode === 'pick-desc' && !_fePickerDelMode){
+    var htmlFB = '<div style="width:100%;background:#003300;border:2px solid #00ff88;border-radius:4px;padding:12px;margin-bottom:8px;">'
+      + '<div style="color:#00ff88;font-weight:700;font-size:14px;margin-bottom:12px;">DESC MENU — PICK A LETTER:</div>';
+    var allDescs = _fePickerItems.slice(0, 24);  // A-X (24 letters max)
     allDescs.forEach(function(dc, idx){
       var letter = String.fromCharCode(65 + idx);  // A, B, C...
-      var btn = '<button onclick="_feSetDesc(\'' + _feEsc(dc).replace(/'/g, "\\'") + '\')" '
-        + 'style="background:#003300;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:12px;font-weight:700;'
-        + 'padding:6px 10px;border-radius:3px;cursor:pointer;margin:2px;min-width:80px;">'
-        + '<span style="background:#00ff88;color:#003300;padding:1px 6px;border-radius:2px;margin-right:4px;font-weight:700;">' + letter + '</span> '
-        + _feEsc(dc) + '</button>';
+      var btn = '<div style="display:inline-block;margin:4px;text-align:center;">'
+        + '<button onclick="_feSetDesc(\'' + _feEsc(dc).replace(/'/g, "\\'") + '\')" '
+        + 'style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:13px;font-weight:700;'
+        + 'padding:8px 12px;border-radius:3px;cursor:pointer;min-width:120px;display:block;">'
+        + '<span style="background:#00ff88;color:#003300;padding:2px 8px;border-radius:2px;font-weight:700;margin-right:4px;">' + letter + '</span></button>'
+        + '<div style="color:#00ff00;font-size:11px;margin-top:2px;font-family:Courier New,monospace;">' + _feEsc(dc) + '</div>'
+        + '</div>';
       htmlFB += btn;
     });
-    htmlFB += '</div><div style="width:100%;color:#ffff00;font-size:12px;margin:6px 0;">Add new or delete:</div>';
-    htmlFB += '<button onclick="_feShowAddNew()" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;margin:2px;">E ADD NEW</button>';
-    htmlFB += '<button onclick="_feTogglePickerDel()" style="background:#330000;border:1px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:7px 11px;border-radius:3px;cursor:pointer;margin:2px;">X DELETE</button>';
+    htmlFB += '<div style="clear:both;margin-top:12px;padding-top:8px;border-top:1px solid #00ff88;color:#ffff00;font-size:12px;">Or add/delete:</div>';
+    htmlFB += '<button onclick="_feShowAddNew()" style="background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 14px;border-radius:3px;cursor:pointer;margin:4px;min-width:100px;">E ADD NEW</button>';
+    htmlFB += '<button onclick="_feTogglePickerDel()" style="background:#330000;border:2px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 14px;border-radius:3px;cursor:pointer;margin:4px;min-width:100px;">X DELETE</button>';
+    htmlFB += '<button onclick="document.getElementById(\'fe-picker\').style.display=\'none\';" style="background:#111111;border:1px solid #666666;color:#999999;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:8px 14px;border-radius:3px;cursor:pointer;margin:4px;min-width:100px;">ESC EXIT</button>';
+    htmlFB += '</div>';
     box.innerHTML = htmlFB;
+    // Set up DIRECT key listener for A-X letter selection
+    setTimeout(function(){
+      document.addEventListener('keydown', _feDescLetterKey, true);
+    }, 100);
     return;
   }
   
