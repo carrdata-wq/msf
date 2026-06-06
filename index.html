@@ -1514,31 +1514,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     </div>
 
    </div>
-    <!-- hint strip -->
-    <div style="text-align:center;font-size:11px;color:#aaccff;letter-spacing:1px;padding:3px;font-weight:700;">
-      PAYEE &#9656; DAY &#9656; AMOUNT &#9656; LOOPS &nbsp;·&nbsp; COPY FLIP DEL PACK XB &nbsp;·&nbsp; MM DD YR AMT PCOD DESC &nbsp;·&nbsp; ?
-    </div>
-    
-    <!-- Quick Commands Cheat Sheet -->
-    <div style="background:#000050;border:1px solid #4466cc;border-radius:3px;margin:4px 6px;padding:6px;font-size:10px;color:#aaccff;">
-      <div style="color:#ffff55;font-weight:700;margin-bottom:3px;">QUICK COMMANDS:</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;line-height:1.3;">
-        <div><span style="color:#00ffff;font-weight:700;">DEFA</span> set MM/YR</div>
-        <div><span style="color:#00ffff;font-weight:700;">MM</span> edit month</div>
-        <div><span style="color:#00ffff;font-weight:700;">DD</span> edit day</div>
-        <div><span style="color:#00ffff;font-weight:700;">YR</span> edit year</div>
-        <div><span style="color:#00ffff;font-weight:700;">AMT</span> edit amount</div>
-        <div><span style="color:#00ffff;font-weight:700;">PCOD</span> change code</div>
-        <div><span style="color:#00ffff;font-weight:700;">DESC</span> change desc</div>
-        <div><span style="color:#00ffff;font-weight:700;">−</span> flip sign</div>
-        <div><span style="color:#ffaa00;font-weight:700;">COPY</span> duplicate</div>
-        <div><span style="color:#ffaa00;font-weight:700;">FLIP</span> flip +/−</div>
-        <div><span style="color:#ffaa00;font-weight:700;">DEL</span> delete</div>
-        <div><span style="color:#ffaa00;font-weight:700;">PACK</span> cleanup</div>
-        <div><span style="color:#00ff88;font-weight:700;">XB</span> backup all</div>
-        <div><span style="color:#00ff88;font-weight:700;">R</span> reports</div>
-      </div>
-    </div>
+
   </div>
 
   <!-- OVERLAY for pickers, ADD NEW, help -->
@@ -14513,7 +14489,7 @@ function _feDispatchInput(val){
     // longer name is just a normal letter — this only fires when the entire
     // bar is a single X, so it never eats a payee you're actually typing.
     if(vu === 'X'){ _feVoidLast(); return; }
-    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','PAYE','PAYEE','R','S','-','?','H'].indexOf(vu) >= 0){
+    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','PAYE','PAYEE','R','S','-','?','H','BUP','XB','BACKALL'].indexOf(vu) >= 0){
       _feDispatchCommand(v); return;
     }
     _feLookupAndApply(v);
@@ -14622,7 +14598,7 @@ function _feDispatchCommand(raw){
   if(cmd === 'COPY'){ _feActCopy(); return; }
   if(cmd === 'FLIP'){ _feFlipSign(); return; }
   if(cmd === 'DEL'){ _feActDel(); return; }
-  if(cmd === 'XB' || cmd === 'BACKALL'){ _feBackupAll(); return; }
+  if(cmd === 'XB' || cmd === 'BACKALL' || cmd === 'BUP'){ _feBackupAll(); return; }
   if(cmd === 'MM'){ _feStartMM(); return; }
   if(cmd === 'DD'){ _feStartDD(); return; }
   if(cmd === 'YR'){ _feStartYR(); return; }
@@ -16212,6 +16188,7 @@ function _feShowHelp(){
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">↑</span> browse back to newer</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">ESC</span> cancel current mode</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">R</span> open Reports</div>'
+    + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">BUP</span> quick backup all data to Downloads folder</div>'
     + '<div style="color:#ffaa00;margin-top:10px;font-weight:700;font-size:12px;">RESIDENT CODES — tap a line first, then type:</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">COPY</span> duplicate that line into a fresh masked entry</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">FLIP</span> flip the sign (+/&minus;) of that line</div>'
