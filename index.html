@@ -13831,7 +13831,11 @@ function _feArmIdleTimer(ms){
   _feClearIdleTimer();
   _feIdleTimer = setTimeout(function(){
     _feIdleTimer = null;
-    if(_feMode === 'edit-newpayee' || _feMode === 'edit-payee') return;  // names take time
+    if(_feMode === 'edit-newpayee' || _feMode === 'edit-payee'){
+    var pval = (val||'').trim();
+    if(pval) _feArmIdleTimer(5000); else _feClearIdleTimer();  // 5s for payee name entry/edit
+    return;
+  }
     // MASKED LINE fields — read the in-table input
     if(_feMode === 'fill-day'){
       var df = document.getElementById('fe-maskfield');
