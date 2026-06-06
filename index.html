@@ -13896,7 +13896,7 @@ function _feMaskInput(val){
         try { f2.setSelectionRange(fmt.length, fmt.length); } catch(e){}
       }
     }
-    if(raw) _feArmIdleTimer(2750); else _feClearIdleTimer();   // 2.75s — room for long amounts; Enter commits instantly
+    if(raw) _feArmIdleTimer(4000); else _feClearIdleTimer();   // 4s — room for long amounts; Enter commits instantly
     return;
   }
   if(_feMode === 'fill-qty'){
@@ -15136,13 +15136,23 @@ function _feDeleteItem(val){
   }
   var isPcode = (_feMode === 'pick-pcode');
   var kind = isPcode ? 'PCODE' : 'DESC';
-  if(!confirm('Delete ' + kind + ' "' + val + '" from the master list?\n\n(Your saved entries are NOT changed.)')) return;
+  if(!confirm('Delete ' + kind + ' "' + val + '" from the master list AND remove it from all saved entries?')) return;
   var key = isPcode ? 'mx_pcodes' : 'mx_descs';
   try {
     var list = JSON.parse(localStorage.getItem(key) || '[]');
     list = list.filter(function(x){ return String(x).toUpperCase() !== String(val).toUpperCase(); });
     localStorage.setItem(key, JSON.stringify(list));
   } catch(e){}
+  // OPTION A: Remove from all saved LOG entries
+  var valUpper = String(val).toUpperCase();
+  LOG.forEach(function(e){
+    if(isPcode && e.pcode && String(e.pcode).toUpperCase() === valUpper){
+      e.pcode = '';
+    } else if(!isPcode && e.desc && String(e.desc).toUpperCase() === valUpper){
+      e.desc = '';
+    }
+  });
+  _feLogSave();
   if(isPcode){
     var sel = document.getElementById('p-pcode');
     if(sel){ for(var i=sel.options.length-1; i>=0; i--){ if(String(sel.options[i].value).toUpperCase() === String(val).toUpperCase()) sel.remove(i); } }
@@ -15153,7 +15163,7 @@ function _feDeleteItem(val){
   }
   // Drop it from the live picker list so it disappears immediately.
   _fePickerItems = _fePickerItems.filter(function(x){ return String(x).toUpperCase() !== String(val).toUpperCase(); });
-  toast('Deleted ' + kind + ' ' + val, true);
+  toast('Deleted ' + kind + ' ' + val + ' from picker AND all entries', true);
   _feRenderPickerResults();
 }
 
