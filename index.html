@@ -15070,22 +15070,18 @@ function _fePickerInputKey(e){
     }
     return;
   }
-  // ThinkPad letter-pick: a letter that CAN'T extend the filter (would match
-  // nothing) is a pick — press A/B/C to grab that result. A letter that still
-  // narrows the list just keeps filtering. No clash with typing the search.
-  // Letter-pick: ThinkPad on all pickers; Android on pcode/desc pickers too.
+  // Letter-pick: Press A/B/C to grab that result directly by index.
+  // Works on ThinkPad (all pickers) and Android (pcode/desc pickers).
   var letterPickOK = (window.innerWidth >= 720) || _feMode === 'pick-pcode' || _feMode === 'pick-desc';
   if(letterPickOK && e.key && e.key.length === 1 && /[a-zA-Z]/.test(e.key)){
     var qq = _fePickerFilter.toUpperCase();
     var letter = e.key.toUpperCase();
     var cur = _fePickerItems.filter(function(it){ return !qq || it.toUpperCase().indexOf(qq) >= 0; });
-    var ext = _fePickerItems.filter(function(it){ return it.toUpperCase().indexOf(qq + letter) >= 0; });
-    if(ext.length === 0 && cur.length >= 1 && cur.length <= 12){
-      var li = letter.charCodeAt(0) - 65;   // A=0, B=1, ...
-      if(li >= 0 && li < cur.length){
-        e.preventDefault();
-        _feSetItem(cur[li]);
-      }
+    // Pick by index: A=0, B=1, C=2, etc.
+    var li = letter.charCodeAt(0) - 65;   // A=0, B=1, ...
+    if(li >= 0 && li < cur.length && cur.length >= 1 && cur.length <= 12){
+      e.preventDefault();
+      _feSetItem(cur[li]);
     }
   }
 }
