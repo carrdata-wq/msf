@@ -926,6 +926,11 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml" style="color:#ffff00;">DOWNLOADS</div><div class="ms">Upload · Download · Backup · Sync · ZIP</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
     </div>
+    <div class="menu-item" onclick="openAudit()" style="background:#1a1a00;border:2px solid #ffaa00;margin:2px 0;">
+      <div class="menu-num">6</div><div class="menu-icon">🔍</div>
+      <div class="menu-label"><div class="ml" style="color:#ffaa00;font-weight:700;">AUDIT TOOL</div><div class="ms" style="color:#ffdd88;">Filter by PCODE · DESC · Month · Bank Reconcile</div></div>
+      <div class="menu-arrow" style="color:#ffaa00;">›</div>
+    </div>
   </div>
   <!-- spacer so footer buttons don't cover menu items -->
   <div style="height:0px;"></div>
@@ -1087,7 +1092,48 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<div id="screen-sysutil-sub" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
+<div id="screen-audit" class="screen" style="display:none;background:#1a1a00;font-family:Courier New,monospace;padding:10px;">
+  <div style="background:#000000;border-bottom:2px solid #ffaa00;padding:10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
+    <button onclick="goMain()" style="background:#ffff00;color:#000080;font-weight:700;padding:8px 12px;border:none;border-radius:4px;cursor:pointer;">◀ MENU</button>
+    <span style="flex:1;text-align:center;color:#ffaa00;font-weight:700;font-size:15px;">🔍 AUDIT TOOL</span>
+  </div>
+  
+  <div style="padding:10px;background:#0a0a00;margin:10px 5px;border:2px solid #ffaa00;border-radius:4px;">
+    <div style="color:#ffdd88;font-weight:700;margin-bottom:8px;">FILTER OPTIONS:</div>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div>
+        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">PCODE:</label>
+        <input type="text" id="audit-pcode" placeholder="e.g. ROOF" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
+      </div>
+      <div>
+        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">DESC:</label>
+        <input type="text" id="audit-desc" placeholder="e.g. INCOME" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
+      </div>
+      <div>
+        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">MONTH (1-12):</label>
+        <input type="number" id="audit-month" min="1" max="12" placeholder="3" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
+      </div>
+      <div>
+        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">YEAR:</label>
+        <input type="number" id="audit-year" placeholder="2026" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
+      </div>
+      <div>
+        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">AMT MIN:</label>
+        <input type="number" id="audit-amt-min" placeholder="0" step="0.01" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
+      </div>
+      <div>
+        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">AMT MAX:</label>
+        <input type="number" id="audit-amt-max" placeholder="999999" step="0.01" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
+      </div>
+    </div>
+    
+    <button onclick="auditSearch()" style="width:100%;padding:10px;background:#332200;border:2px solid #ffaa00;color:#ffff00;font-weight:700;font-family:Courier New;border-radius:4px;cursor:pointer;font-size:13px;">🔍 SEARCH & AUDIT</button>
+  </div>
+  
+  <div id="audit-results" style="padding:10px;"></div>
+</div>
+
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
@@ -5973,6 +6019,92 @@ function processEasyPaste(){
 function openTransferMenu(){
   document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
   document.getElementById('screen-transfer').style.display='block';
+}
+
+function openTransferMenu(){
+  document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
+  document.getElementById('screen-transfer').style.display='block';
+}
+
+function openAudit(){
+  document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
+  document.getElementById('screen-audit').style.display='block';
+  document.getElementById('audit-results').innerHTML = '<div style="color:#ffaa00;padding:10px;text-align:center;">Enter filter criteria and click SEARCH</div>';
+}
+
+function auditSearch(){
+  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
+  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
+  var month = parseInt(document.getElementById('audit-month').value) || 0;
+  var year = parseInt(document.getElementById('audit-year').value) || 0;
+  var amtMin = parseFloat(document.getElementById('audit-amt-min').value) || 0;
+  var amtMax = parseFloat(document.getElementById('audit-amt-max').value) || 999999999;
+  
+  var results = [];
+  var totalAmt = 0, totalCount = 0;
+  
+  LOG.forEach(function(e){
+    var ePcode = (e.pcode || '').toUpperCase();
+    var eDesc = (e.desc || '').toUpperCase();
+    var eAmt = Math.abs(e.amt || 0);
+    var eDate = e.date || '';
+    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
+    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
+    
+    var match = true;
+    if(pcode && ePcode.indexOf(pcode) < 0) match = false;
+    if(desc && eDesc.indexOf(desc) < 0) match = false;
+    if(month && eMM !== month) match = false;
+    if(year && eYR !== year) match = false;
+    if(eAmt < amtMin || eAmt > amtMax) match = false;
+    
+    if(match){
+      results.push(e);
+      totalAmt += e.amt || 0;
+      totalCount++;
+    }
+  });
+  
+  // Display results
+  var html = '<div style="margin:10px 5px;padding:10px;background:#0a0a00;border:1px solid #ffaa00;border-radius:4px;">';
+  html += '<div style="color:#ffff00;font-weight:700;margin-bottom:8px;">AUDIT RESULTS: ' + totalCount + ' entries · Total: $' + Math.abs(totalAmt).toFixed(2) + '</div>';
+  html += '<div style="color:#ffdd88;font-size:11px;margin-bottom:10px;">FILTERS: ';
+  if(pcode) html += 'PCODE=' + pcode + ' ';
+  if(desc) html += 'DESC=' + desc + ' ';
+  if(month) html += 'MM=' + month + ' ';
+  if(year) html += 'YR=' + year + ' ';
+  html += '</div>';
+  
+  if(results.length === 0){
+    html += '<div style="color:#ff6666;padding:10px;">No entries match your criteria</div>';
+  } else {
+    html += '<div style="overflow-x:auto;border:1px solid #ffaa00;border-radius:3px;">';
+    html += '<table style="width:100%;color:#ffff00;font-size:11px;border-collapse:collapse;">';
+    html += '<tr style="background:#1a1a00;border-bottom:1px solid #ffaa00;"><th style="padding:4px;text-align:left;color:#ffaa00;">DATE</th><th style="padding:4px;color:#ffaa00;">PAYEE</th><th style="padding:4px;color:#ffaa00;">PCODE</th><th style="padding:4px;color:#ffaa00;">DESC</th><th style="padding:4px;text-align:right;color:#ffaa00;">AMOUNT</th></tr>';
+    
+    results.forEach(function(e){
+      var amtColor = (e.amt < 0) ? '#ff8888' : '#88ff88';
+      html += '<tr style="border-bottom:1px solid #333300;">';
+      html += '<td style="padding:4px;color:#ffdd88;">' + (e.date || '') + '</td>';
+      html += '<td style="padding:4px;color:#ffff00;">' + (e.payee || '') + '</td>';
+      html += '<td style="padding:4px;color:#ffaa00;">' + (e.pcode || '') + '</td>';
+      html += '<td style="padding:4px;color:#ffaa00;">' + (e.desc || '') + '</td>';
+      html += '<td style="padding:4px;text-align:right;color:' + amtColor + ';font-weight:700;">$' + ((e.amt || 0).toFixed(2)) + '</td>';
+      html += '</tr>';
+    });
+    
+    html += '</table></div>';
+  }
+  
+  html += '<div style="margin-top:10px;padding:8px;background:#0a0a00;border:1px solid #ffdd88;border-radius:3px;color:#ffdd88;font-size:11px;">';
+  html += '<strong>BANK RECONCILIATION TIP:</strong> Use these filters to match your bank statement. Example:<br>';
+  html += '• PCODE=ROOF MM=3 → All roof work in March<br>';
+  html += '• DESC=INCOME MM=3 YR=2026 → All income for March 2026<br>';
+  html += '• AMT MIN=100 AMT MAX=500 → Transactions $100-500<br>';
+  html += '</div>';
+  
+  html += '</div>';
+  document.getElementById('audit-results').innerHTML = html;
 }
 
 function bulkCsvImport(){
