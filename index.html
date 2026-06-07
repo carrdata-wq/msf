@@ -2520,6 +2520,15 @@ function updateOnlineStatus(){
 window.addEventListener('online',updateOnlineStatus);
 window.addEventListener('offline',updateOnlineStatus);
 window.addEventListener('load',updateOnlineStatus);
+// Move the Fast Entry picker/qty overlay out to <body> so it renders over ANY
+// screen (it lives inside #screen-fastentry, which is display:none when the
+// AUDIT screen is active — that would otherwise hide the reused FE pickers).
+window.addEventListener('load',function(){
+  try{
+    var ov=document.getElementById('fe-overlay');
+    if(ov && ov.parentNode !== document.body) document.body.appendChild(ov);
+  }catch(e){}
+});
 
 function goMain() { window._cleanExportAcc=false; window._cleanExportPhone=false; showScreen('main'); }
 function openModule(mod) {
@@ -6292,49 +6301,11 @@ function auditSearch(){
   document.getElementById('audit-results').innerHTML = html;
 }
 
-function auditEditEntry(idx){
-  var results = [];
-  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
-  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
-  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
-  var month = parseInt(document.getElementById('audit-month').value) || 0;
-  var year = parseInt(document.getElementById('audit-year').value) || 0;
-  
-  LOG.forEach(function(e){
-    var ePcode = (e.pcode || '').toUpperCase();
-    var eDesc = (e.desc || '').toUpperCase();
-    var ePayee = (e.payee || '').toUpperCase();
-    var eDate = e.date || '';
-    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
-    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
-    
-    var match = true;
-    if(pcode && ePcode !== pcode) match = false;
-    if(desc && eDesc !== desc) match = false;
-    if(payee && ePayee !== payee) match = false;
-    if(month && eMM !== month) match = false;
-    if(year && eYR !== year) match = false;
-    
-    if(match) results.push(e);
-  });
-  
-  if(idx < results.length){
-    var e = results[idx];
-    var newAmt = prompt('Edit AMOUNT:\n' + e.date + ' | ' + e.payee + '\nCurrent: $' + e.amt, e.amt);
-    if(newAmt !== null && newAmt !== ''){
-      e.amt = parseFloat(newAmt);
-      save(LOG);
-      toast('✓ Amount updated', true);
-      auditSearch();
-    }
-  }
-}
-
 function auditQuickEditRow(idx){
   var codes = [
     ['day','D','DAY'],['mm','M','MONTH'],['yr','Y','YEAR'],
-    ['payee','P','PAYEE'],['pcode','P','PCODE'],['desc','D','DESC'],
-    ['qty','Q','QTY'],['amt','A','AMOUNT'],['id','I','ID'],['del','X','DELETE']
+    ['payee','P','PAYEE'],['pcode','C','PCODE'],['desc','S','DESC'],
+    ['qty','Q','QTY'],['amt','A','AMOUNT'],['del','X','DELETE']
   ];
   var s = '';
   for(var k=0;k<codes.length;k++){
@@ -6352,183 +6323,97 @@ function auditQuickEditRow(idx){
   return s;
 }
 
-// ───── AUDIT EDIT MODE (Fast Entry style) ─────
-var auditEditMode = null;  // current edit field (day, mm, yr, payee, pcode, desc, qty, amt, id)
-var auditEditIdx = -1;     // which result row
-var auditEditTimer = null;
-var auditEditIdleMs = 2500; // 2.5s idle = auto-apply
+// ───── AUDIT EDIT — reuses the REAL Fast Entry edit functions/pickers ─────
+// Each audit result row is a live reference into LOG, so we resolve its true
+// LOG index and hand off to _feQuick(), the same dispatcher the Fast Entry
+// code-strip uses. Pickers (PAYEE/PCODE/DESC), the QTY editor, inline DD/MM/YR
+// /AMT masking and the DELETE confirm are all Fast Entry's own — no duplicates.
+var _auditEditCtx = false;   // true while an edit launched from the audit screen is open
 
-function auditRowClick(idx){
-  // Click a row to enter edit mode
-  if(auditEditIdx === idx && auditEditMode){
-    // Already editing this row — keep focus on input
-    var inp = document.getElementById('audit-edit-input');
-    if(inp) inp.focus();
+// Resolve the live LOG index for audit result row `idx` under the current filter.
+function _auditLogIndexFor(idx){
+  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
+  var desc  = document.getElementById('audit-desc').value.toUpperCase().trim();
+  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
+  var month = parseInt(document.getElementById('audit-month').value) || 0;
+  var year  = parseInt(document.getElementById('audit-year').value) || 0;
+  var seen = 0;
+  for(var i=0;i<LOG.length;i++){
+    var e = LOG[i];
+    if(e.deleted) continue;
+    var ePcode=(e.pcode||'').toUpperCase(), eDesc=(e.desc||'').toUpperCase(), ePayee=(e.payee||'').toUpperCase();
+    var eDate=e.date||'', eMM=eDate.slice(5,7)?parseInt(eDate.slice(5,7)):0, eYR=eDate.slice(0,4)?parseInt(eDate.slice(0,4)):0;
+    if(pcode && ePcode!==pcode) continue;
+    if(desc  && eDesc!==desc)   continue;
+    if(payee && ePayee!==payee) continue;
+    if(month && eMM!==month)    continue;
+    if(year  && eYR!==year)     continue;
+    if(seen === idx) return i;   // this is the LOG index for audit row `idx`
+    seen++;
+  }
+  return -1;
+}
+
+// Code-button click on an audit row → dispatch to the real Fast Entry editor.
+function auditQuickEdit(idx, action){
+  var logIdx = _auditLogIndexFor(idx);
+  if(logIdx < 0){ toast('Entry not found', false); return; }
+  _auditEditCtx = true;          // saveLog hook will refresh the audit when done
+  _feRowIdx = logIdx;
+  // PAYEE / PCODE / DESC pickers, QTY editor, DELETE — all overlay/dialog based,
+  // so the real Fast Entry handlers display fine over the audit screen.
+  if(action==='payee' || action==='pcode' || action==='desc' || action==='qty'
+     || action==='del' || action==='copy' || action==='flip' || action==='email'){
+    _feQuick(logIdx, action);
     return;
   }
-  // Start editing the row (set to first field)
-  auditEditIdx = idx;
-  auditEditMode = 'amt';  // default to amount
-  auditShowEditInput();
+  // DAY / MM / YR / AMOUNT use Fast Entry's inline field-masking, which normally
+  // draws into the FE table (hidden here). Reuse its real apply logic by putting
+  // the same fe-inline-edit input inside the overlay and calling _feApplyInline.
+  var field = (action==='day') ? 'dd' : action;   // _feApplyInline expects 'dd'
+  _auditInlineOverlay(logIdx, field);
 }
 
-function auditShowEditInput(){
-  if(auditEditIdx < 0 || !auditEditMode) return;
-  
-  // Get results
-  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
-  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
-  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
-  var month = parseInt(document.getElementById('audit-month').value) || 0;
-  var year = parseInt(document.getElementById('audit-year').value) || 0;
-  
-  var results = [];
-  LOG.forEach(function(e){
-    var ePcode = (e.pcode || '').toUpperCase();
-    var eDesc = (e.desc || '').toUpperCase();
-    var ePayee = (e.payee || '').toUpperCase();
-    var eDate = e.date || '';
-    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
-    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
-    var match = true;
-    if(pcode && ePcode !== pcode) match = false;
-    if(desc && eDesc !== desc) match = false;
-    if(payee && ePayee !== payee) match = false;
-    if(month && eMM !== month) match = false;
-    if(year && eYR !== year) match = false;
-    if(match) results.push(e);
-  });
-  
-  if(auditEditIdx >= results.length) return;
-  var e = results[auditEditIdx];
-  
-  // Show input overlay
-  var inpDiv = document.getElementById('audit-edit-overlay');
-  if(!inpDiv){
-    inpDiv = document.createElement('div');
-    inpDiv.id = 'audit-edit-overlay';
-    document.body.appendChild(inpDiv);
-  }
-  
-  var label = auditEditMode.toUpperCase();
-  var val = '';
-  switch(auditEditMode){
-    case 'day': val = e.date.slice(8,10) || ''; label = 'DAY'; break;
-    case 'mm': val = e.date.slice(5,7) || ''; label = 'MONTH'; break;
-    case 'yr': val = e.date.slice(0,4) || '2026'; label = 'YEAR'; break;
-    case 'payee': val = e.payee || ''; label = 'PAYEE'; break;
-    case 'pcode': val = e.pcode || ''; label = 'PCODE'; break;
-    case 'desc': val = e.desc || ''; label = 'DESC'; break;
-    case 'qty': val = e.qty || '1'; label = 'QTY'; break;
-    case 'amt': val = e.amt || '0'; label = 'AMOUNT'; break;
-    case 'id': val = e.id || ''; label = 'ID'; break;
-  }
-  
-  inpDiv.innerHTML = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);'
-    + 'background:#0000cc;border:3px solid #ffff00;padding:20px;border-radius:8px;z-index:9999;">'
-    + '<div style="color:#ffff00;font-weight:700;margin-bottom:10px;font-family:Courier New,monospace;font-size:14px;">EDIT ' + label + '</div>'
-    + '<input id="audit-edit-input" type="text" value="' + val + '" '
-    + 'style="width:300px;padding:10px;background:#000066;border:2px solid #ffff00;color:#ffff00;'
-    + 'font-family:Courier New,monospace;font-weight:700;font-size:14px;border-radius:4px;" '
-    + 'onkeydown="auditEditKeydown(event)" />'
-    + '</div>';
-  
-  var inp = document.getElementById('audit-edit-input');
-  if(inp){
-    inp.focus();
-    inp.select();
-    inp.onblur = function(){ clearTimeout(auditEditTimer); };
-    inp.oninput = function(){
-      clearTimeout(auditEditTimer);
-      auditEditTimer = setTimeout(auditApplyEdit, auditEditIdleMs);
-    };
-  }
+// Overlay wrapper around Fast Entry's real inline editor. _feApplyInline reads
+// the fe-inline-edit input by id and _feInline state — neither cares where the
+// input lives in the DOM — so the FoxBase value rules (cents on AMT, date-part
+// replacement on DD/MM/YR) stay identical to typing on the Fast Entry line.
+function _auditInlineOverlay(logIdx, field){
+  var e = LOG[logIdx];
+  if(!e){ toast('Entry not found', false); return; }
+  _feInline = { idx: logIdx, field: field, blank: false };
+  var labels = {dd:'DAY', mm:'MONTH', yr:'YEAR', amt:'AMOUNT'};
+  var label = labels[field] || field.toUpperCase();
+  var cur = '';
+  if(field==='dd') cur = (e.date||'').slice(8,10);
+  else if(field==='mm') cur = (e.date||'').slice(5,7);
+  else if(field==='yr') cur = (e.date||'').slice(2,4); // FE stores 20xx; yr edit takes 2 digits
+  else if(field==='amt') cur = (e.amt!=null) ? String(Math.round(Math.abs(e.amt)*100)) : '';
+  var hint = (field==='amt') ? 'Type digits — last 2 are cents. Leading "-" forces expense.'
+           : (field==='yr') ? 'Two digits (e.g. 26 → 2026).'
+           : 'One or two digits.';
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  ov.innerHTML = '<div style="background:#000033;border:2px solid #00ffff;border-radius:6px;padding:14px;max-width:380px;width:100%;font-family:Courier New,monospace;align-self:flex-start;margin-top:8px;box-sizing:border-box;">'
+    + '<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:4px;">\u270E EDIT ' + label + ' — ' + _feEsc((e.payee||'').slice(0,24)) + '</div>'
+    + '<div style="color:#aaccff;font-size:11px;margin-bottom:8px;">' + hint + '</div>'
+    + '<input id="fe-inline-edit" type="text" inputmode="' + (field==='amt'?'numeric':'numeric') + '" autocomplete="off" autocorrect="off" spellcheck="false" value="' + cur + '" '
+    + 'oninput="_feInlineInput()" onkeydown="_feInlineKey(event)" '
+    + 'style="width:100%;background:#000000;border:1px solid #00ffff;color:#ffff55;font-family:Courier New,monospace;font-size:22px;font-weight:700;text-align:right;padding:8px;border-radius:4px;outline:none;box-sizing:border-box;">'
+    + '<div style="display:flex;gap:8px;margin-top:10px;">'
+    + '<button onclick="_feApplyInline()" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px;border-radius:4px;cursor:pointer;">\u2713 SAVE</button>'
+    + '<button onclick="_feCancelInline();document.getElementById(\'fe-overlay\').style.display=\'none\';" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px;border-radius:4px;cursor:pointer;">ESC</button>'
+    + '</div></div>';
+  ov.style.display = 'flex';
+  ov.style.alignItems = 'flex-start';
+  setTimeout(function(){ var q=document.getElementById('fe-inline-edit'); if(q){ try{ q.focus({preventScroll:true}); q.select(); }catch(e){ try{ q.focus(); }catch(e2){} } } }, 40);
 }
 
-function auditEditKeydown(ev){
-  if(ev.key === 'Enter'){
-    ev.preventDefault();
-    auditApplyEdit();
-  } else if(ev.key === 'Escape'){
-    ev.preventDefault();
-    auditCancelEdit();
-  }
+// Tapping the row body edits the AMOUNT (same default as a row tap in Fast Entry).
+function auditRowClick(idx){
+  auditQuickEdit(idx, 'amt');
 }
 
-function auditApplyEdit(){
-  clearTimeout(auditEditTimer);
-  var inp = document.getElementById('audit-edit-input');
-  if(!inp) return;
-  var newVal = inp.value;
-  
-  // Get results array again
-  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
-  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
-  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
-  var month = parseInt(document.getElementById('audit-month').value) || 0;
-  var year = parseInt(document.getElementById('audit-year').value) || 0;
-  
-  var results = [];
-  LOG.forEach(function(e){
-    var ePcode = (e.pcode || '').toUpperCase();
-    var eDesc = (e.desc || '').toUpperCase();
-    var ePayee = (e.payee || '').toUpperCase();
-    var eDate = e.date || '';
-    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
-    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
-    var match = true;
-    if(pcode && ePcode !== pcode) match = false;
-    if(desc && eDesc !== desc) match = false;
-    if(payee && ePayee !== payee) match = false;
-    if(month && eMM !== month) match = false;
-    if(year && eYR !== year) match = false;
-    if(match) results.push(e);
-  });
-  
-  if(auditEditIdx >= results.length) return;
-  var e = results[auditEditIdx];
-  
-  // Apply the edit
-  switch(auditEditMode){
-    case 'day':
-      if(newVal.length === 1) newVal = '0' + newVal;
-      e.date = e.date.slice(0,8) + newVal;
-      break;
-    case 'mm':
-      if(newVal.length === 1) newVal = '0' + newVal;
-      e.date = e.date.slice(0,5) + newVal + e.date.slice(7);
-      break;
-    case 'yr':
-      e.date = newVal + e.date.slice(4);
-      break;
-    case 'payee': e.payee = newVal.toUpperCase(); break;
-    case 'pcode': e.pcode = newVal.toUpperCase(); break;
-    case 'desc': e.desc = newVal.toUpperCase(); break;
-    case 'qty': e.qty = parseInt(newVal) || 1; break;
-    case 'amt': e.amt = parseFloat(newVal) || 0; break;
-    case 'id': e.id = newVal.toUpperCase(); break;
-  }
-  
-  save(LOG);
-  toast('✓ ' + auditEditMode.toUpperCase() + ' saved', true);
-  auditCancelEdit();
-  auditSearch(); // refresh
-}
-
-function auditCancelEdit(){
-  auditEditMode = null;
-  auditEditIdx = -1;
-  clearTimeout(auditEditTimer);
-  var inpDiv = document.getElementById('audit-edit-overlay');
-  if(inpDiv) inpDiv.innerHTML = '';
-}
-
-function auditQuickEdit(idx, action){
-  // Click a code button to edit that field
-  auditEditIdx = idx;
-  auditEditMode = action;
-  auditShowEditInput();
-}
 
 function bulkCsvImport(){
   var input=document.getElementById('bulk-import-input');
@@ -7785,7 +7670,20 @@ function doExportByYear(){
 }
 
 function loadLog(){try{var s=localStorage.getItem('mx_log');if(s)LOG=JSON.parse(s);}catch(e){LOG=[];}}
-function saveLog(){try{localStorage.setItem('mx_log',JSON.stringify(LOG));}catch(e){}}
+function saveLog(){try{localStorage.setItem('mx_log',JSON.stringify(LOG));}catch(e){}
+  // If an edit was launched from the AUDIT screen, refresh the audit results
+  // once the Fast Entry editor commits. Deferred so the FE editor finishes first.
+  if(typeof _auditEditCtx !== 'undefined' && _auditEditCtx){
+    _auditEditCtx = false;
+    setTimeout(function(){
+      try{
+        var ov=document.getElementById('fe-overlay');
+        if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+        if(typeof auditSearch==='function') auditSearch();
+      }catch(e){}
+    }, 60);
+  }
+}
 
 // ─────────────────────────────────────────────────────
 // BALANCE SHEET — Pending Payables / Receivables
@@ -13886,6 +13784,11 @@ var _feSortMode = 'recno';         // Fast Entry list sort: 'recno' (append orde
 var _feIsNewPayeeName = false;     // true while typing the FULL name for a new payee
 var _feDefMM = '';                 // default month (2-digit) — set via DEFA, persisted
 var _feDefYR = '';                 // default year (2-digit)  — set via DEFA, persisted
+// ── FILT — FoxBase-style SET FILTER TO. When active, the master list shows only
+//    matching rows; every browse/edit/delete tool then operates on that subset.
+//    Empty string = that field is not constrained. Toggle off with FILT or NOFILT/ALL.
+var _feFilt = { active:false, pcode:'', desc:'', payee:'', yr:'' };
+var _feFiltStep = null;            // which picker step the FILT wizard is on: 'pcode'|'desc'|'payee'|'yr'
 var _feDraftDay = '';              // (legacy) day holder
 var _feDraft = null;               // MASKED LINE: in-progress entry painted as table top row
 var _feDraftInput = '';            // live text mirrored into the masked line's open field
@@ -14127,6 +14030,18 @@ function _feRenderYearTabs(){
       + (active ? 'background:#ffff55;color:#000080;border:2px solid #ffff55;' : 'background:#000070;color:#88ccff;border:2px solid #4466cc;')
       + '">' + label + '</button>';
   });
+  // FILT badge — visible whenever a SET FILTER is active. Tapping it clears the
+  // filter (turns it off), the same as typing NOFILT.
+  if(_feFilt && _feFilt.active){
+    var bits = [];
+    if(_feFilt.pcode) bits.push(_feFilt.pcode);
+    if(_feFilt.desc)  bits.push(_feFilt.desc);
+    if(_feFilt.payee) bits.push(_feFilt.payee);
+    if(_feFilt.yr)    bits.push(_feFilt.yr);
+    html += '<button onclick="_feFiltClear()" title="Tap to turn filter OFF" style="'
+      + 'font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:5px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;'
+      + 'background:#ffaa00;color:#000;border:2px solid #ffdd55;">\u2715 FILT: ' + _feEsc(bits.join(' ')) + '</button>';
+  }
   box.innerHTML = html;
 }
 function _feSetYear(y){
@@ -14158,6 +14073,13 @@ function _feDisplayOrder(){
     if(!e || e.deleted) continue;
     if(i === forceIdx){ order.push(i); continue; }
     if(_feYearFilter !== 'ALL' && _feYearOf(e.date) !== _feYearFilter) continue;
+    // FILT — FoxBase SET FILTER TO: hide anything that doesn't match the active filter.
+    if(_feFilt.active){
+      if(_feFilt.pcode && (e.pcode||'').toUpperCase() !== _feFilt.pcode) continue;
+      if(_feFilt.desc  && (e.desc ||'').toUpperCase() !== _feFilt.desc)  continue;
+      if(_feFilt.payee && (e.payee||'').toUpperCase() !== _feFilt.payee) continue;
+      if(_feFilt.yr    && _feYearOf(e.date) !== _feFilt.yr)              continue;
+    }
     order.push(i);
   }
   if(_feSortMode === 'date'){
@@ -14867,6 +14789,114 @@ function _feApplyDefa(val){
   _feFocusPrompt();
 }
 
+// ───── FILT — FoxBase SET FILTER TO (PCODE → DESC → PAYEE → YR) ─────
+// A picker chain that sets _feFilt instead of editing a row. Reuses the same
+// data helpers (_feGetAllPcodes/Descs/Payees) and the fe-overlay shell, so the
+// look matches the entry pickers. Each step offers (ANY) to leave that field
+// unconstrained. When the chain finishes, _feFilt.active flips on and the master
+// list collapses to the matching rows — every existing edit tool then works on
+// just that subset, exactly like browsing a filtered FoxBase file.
+var _FILT_STEPS = ['pcode','desc','payee','yr'];
+function _feFiltStart(){
+  _feFilt = { active:false, pcode:'', desc:'', payee:'', yr:'' };
+  _feFiltStep = 'pcode';
+  _feFiltRenderStep();
+}
+function _feFiltUniqueYears(){
+  var ys = {};
+  for(var i=0;i<LOG.length;i++){ var e=LOG[i]; if(e && !e.deleted){ var y=_feYearOf(e.date); if(y) ys[y]=1; } }
+  return Object.keys(ys).sort().reverse();
+}
+function _feFiltRenderStep(){
+  var ov = document.getElementById('fe-overlay');
+  if(!ov) return;
+  var step = _feFiltStep;
+  var titleMap = { pcode:'FILTER · PCODE', desc:'FILTER · DESC', payee:'FILTER · PAYEE', yr:'FILTER · YEAR' };
+  var items = [];
+  if(step==='pcode') items = _feGetAllPcodes();
+  else if(step==='desc') items = _feGetAllDescs();
+  else if(step==='payee') items = _feGetAllPayees();
+  else if(step==='yr') items = _feFiltUniqueYears();
+  // progress line shows choices locked in so far
+  var picked = [];
+  if(_feFilt.pcode) picked.push('PCODE='+_feFilt.pcode);
+  if(_feFilt.desc)  picked.push('DESC='+_feFilt.desc);
+  if(_feFilt.payee) picked.push('PAYEE='+_feFilt.payee);
+  var prog = picked.length ? picked.join('  ') : 'no constraints yet';
+  var stepNo = _FILT_STEPS.indexOf(step) + 1;
+  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;">'
+    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:2px;">' + titleMap[step] + '  (' + stepNo + ' of 4)</div>'
+    + '<div style="color:#88ddff;font-size:11px;margin-bottom:8px;">' + _feEsc(prog) + '</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:5px;overflow-y:auto;margin-bottom:10px;">';
+  // (ANY) — leave this field unconstrained
+  html += '<button onclick="_feFiltChoose(\'\')" style="background:#003355;border:1px solid #00ccff;color:#00ddff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:3px;cursor:pointer;">(ANY)</button>';
+  for(var k=0;k<items.length;k++){
+    var it = String(items[k]||'');
+    if(!it) continue;
+    var safe = it.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html += '<button onclick="_feFiltChoose(\'' + safe + '\')" '
+      + 'style="background:#001a33;border:1px solid #ffff00;color:#ffff55;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:3px;cursor:pointer;">'
+      + _feEsc(it) + '</button>';
+  }
+  html += '</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button onclick="_feFiltCancel()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:9px;border-radius:4px;cursor:pointer;">ESC CANCEL</button>'
+    + '</div></div>';
+  ov.innerHTML = html;
+  ov.style.display = 'flex';
+  ov.style.alignItems = 'flex-start';
+}
+function _feFiltChoose(val){
+  var v = String(val||'').toUpperCase();
+  if(_feFiltStep==='pcode') _feFilt.pcode = v;
+  else if(_feFiltStep==='desc') _feFilt.desc = v;
+  else if(_feFiltStep==='payee') _feFilt.payee = v;
+  else if(_feFiltStep==='yr') _feFilt.yr = v;
+  // advance to the next step, or apply if we just did the last one
+  var idx = _FILT_STEPS.indexOf(_feFiltStep);
+  if(idx < _FILT_STEPS.length - 1){
+    _feFiltStep = _FILT_STEPS[idx+1];
+    _feFiltRenderStep();
+  } else {
+    _feFiltApply();
+  }
+}
+function _feFiltApply(){
+  _feFiltStep = null;
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  var anyConstraint = _feFilt.pcode || _feFilt.desc || _feFilt.payee || _feFilt.yr;
+  _feFilt.active = !!anyConstraint;
+  var parts = [];
+  if(_feFilt.pcode) parts.push('PCODE='+_feFilt.pcode);
+  if(_feFilt.desc)  parts.push('DESC='+_feFilt.desc);
+  if(_feFilt.payee) parts.push('PAYEE='+_feFilt.payee);
+  if(_feFilt.yr)    parts.push('YR='+_feFilt.yr);
+  if(_feFilt.active) toast('FILTER ON — ' + parts.join(' '), true);
+  else toast('No constraints chosen — filter off', true);
+  _feStartEntryPayee();
+  _feRender();
+  _feFocusPrompt();
+}
+function _feFiltClear(){
+  _feFilt = { active:false, pcode:'', desc:'', payee:'', yr:'' };
+  _feFiltStep = null;
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  toast('FILTER OFF — showing all', true);
+  _feStartEntryPayee();
+  _feRender();
+  _feFocusPrompt();
+}
+function _feFiltCancel(){
+  _feFiltStep = null;
+  var ov = document.getElementById('fe-overlay');
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  _feStartEntryPayee();
+  _feRender();
+  _feFocusPrompt();
+}
+
 function _feDispatchInput(val){
   var v = (val||'').trim();
   // HOME: waiting for a PAYEE (or a command)
@@ -14878,7 +14908,7 @@ function _feDispatchInput(val){
     // longer name is just a normal letter — this only fires when the entire
     // bar is a single X, so it never eats a payee you're actually typing.
     if(vu === 'X'){ _feVoidLast(); return; }
-    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','PAYE','PAYEE','R','S','-','?','H','BUP','XB','BACKALL'].indexOf(vu) >= 0){
+    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','PAYE','PAYEE','R','S','-','?','H','BUP','XB','BACKALL','FILT','NOFILT','ALL','FILTOFF'].indexOf(vu) >= 0){
       _feDispatchCommand(v); return;
     }
     _feLookupAndApply(v);
@@ -14982,6 +15012,12 @@ function _feDispatchCommand(raw){
   if(!cmd) return;
   _feLastCommand = cmd;
   if(cmd === 'DEFA'){ _feStartDefa(); return; }
+  if(cmd === 'FILT'){
+    // Toggle off if a filter is already active; otherwise start the wizard.
+    if(_feFilt.active){ _feFiltClear(); return; }
+    _feFiltStart(); return;
+  }
+  if(cmd === 'NOFILT' || cmd === 'FILTOFF' || cmd === 'ALL'){ _feFiltClear(); return; }
   if(cmd === 'PACK'){ _fePack(); return; }
   if(cmd === 'MENU' || cmd === 'QUIT'){ goMain(); return; }
   if(cmd === 'COPY'){ _feActCopy(); return; }
@@ -16629,6 +16665,13 @@ function _feShowHelp(){
     + '</div>'
     + '<div style="color:#aaccff;font-size:11px;margin-bottom:10px;">Input fires on ENTER, or auto-fires 1s after you stop typing.</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DEFA</span> set default MM/YR (type 0526 for May 2026)</div>'
+    + '<div style="background:#1a1400;border:1px solid #ffaa00;padding:8px;border-radius:4px;margin:10px 0;">'
+    + '<div style="color:#ffaa00;font-weight:700;font-size:13px;margin-bottom:4px;">▶ FILTER (browse a single block)</div>'
+    + '<div style="font-size:12px;margin-bottom:6px;">FILT walks you through PCODE → DESC → PAYEE → YEAR (pick (ANY) to skip a field). The list then shows ONLY matching rows — browse, edit, DEL them like normal. FILT again or NOFILT shows everything.</div>'
+    + '<div style="display:flex;gap:6px;">'
+    + '<button onclick="_feCloseOverlay();_feFiltStart();" style="flex:2;background:#332200;border:2px solid #ffaa00;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:8px;border-radius:4px;cursor:pointer;">⛃ FILT — SET FILTER</button>'
+    + '<button onclick="_feCloseOverlay();_feFiltClear();" style="flex:1;background:#222;border:2px solid #888;color:#ccc;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:8px;border-radius:4px;cursor:pointer;">NOFILT — OFF</button>'
+    + '</div></div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">MM</span> edit month of current row</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DD</span> edit day</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">YR</span> edit year (4-digit or 2-digit)</div>'
