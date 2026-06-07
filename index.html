@@ -14347,10 +14347,27 @@ function _feApplyDefa(val){
 // finishes, _feFilt.active flips on and the master list collapses to the matching
 // rows — every existing edit tool then works on just that subset.
 var _FILT_STEPS = ['pcode','desc','payee','yr'];
+var _feFiltItems = [];   // current step's options, so the letter-key handler can resolve A→item
 function _feFiltStart(){
   _feFilt = { active:false, pcode:'', desc:'', payee:'', yr:'' };
   _feFiltStep = 'pcode';
+  document.addEventListener('keydown', _feFiltLetterKey, true);  // press a letter to pick fast
   _feFiltRenderStep();
+}
+// Press A–X to pick that option instantly; 0 or SPACE picks (ANY). Mirrors the
+// Fast Entry PCODE/DESC pickers' letter selection.
+function _feFiltLetterKey(e){
+  if(!_feFiltStep) return;
+  if(!e.key) return;
+  if(e.key === 'Escape'){ e.preventDefault(); _feFiltCancel(); return; }
+  if(e.key === '0' || e.key === ' '){ e.preventDefault(); _feFiltChoose(''); return; }
+  if(e.key.length !== 1) return;
+  var L = e.key.toUpperCase();
+  if(!/[A-Z]/.test(L)) return;
+  var idx = L.charCodeAt(0) - 65;   // A=0, B=1, ... X=23
+  if(idx < 0 || idx >= _feFiltItems.length || idx >= 24) return;
+  e.preventDefault(); e.stopPropagation();
+  _feFiltChoose(_feFiltItems[idx]);
 }
 function _feFiltUniqueYears(){
   var ys = {};
@@ -14367,27 +14384,40 @@ function _feFiltRenderStep(){
   else if(step==='desc') items = _feGetAllDescs();
   else if(step==='payee') items = _feGetAllPayees();
   else if(step==='yr') items = _feFiltUniqueYears();
+  _feFiltItems = items.slice();   // remember for the letter-key handler
   var picked = [];
   if(_feFilt.pcode) picked.push('PCODE='+_feFilt.pcode);
   if(_feFilt.desc)  picked.push('DESC='+_feFilt.desc);
   if(_feFilt.payee) picked.push('PAYEE='+_feFilt.payee);
   var prog = picked.length ? picked.join('  ') : 'no constraints yet';
   var stepNo = _FILT_STEPS.indexOf(step) + 1;
-  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;">'
-    + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:2px;">' + titleMap[step] + '  (' + stepNo + ' of 4)</div>'
-    + '<div style="color:#88ddff;font-size:11px;margin-bottom:8px;">' + _feEsc(prog) + '</div>'
-    + '<div style="display:flex;flex-wrap:wrap;gap:5px;overflow-y:auto;margin-bottom:10px;">';
-  html += '<button onclick="_feFiltChoose(\'\')" style="background:#003355;border:1px solid #00ccff;color:#00ddff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:3px;cursor:pointer;">(ANY)</button>';
+  // colour theme per step, matching the Fast Entry pickers (pcode=green, desc=mint)
+  var accent = (step==='desc') ? '#00ff88' : (step==='payee' ? '#ffdd55' : '#00ff00');
+  var html = '<div style="background:#000033;border:2px solid ' + accent + ';border-radius:6px;padding:12px;max-width:620px;width:100%;max-height:84vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;overflow-y:auto;">'
+    + '<div style="color:' + accent + ';font-weight:700;font-size:14px;margin-bottom:2px;">' + titleMap[step] + '  (' + stepNo + ' of 4) — PICK A LETTER</div>'
+    + '<div style="color:#88ddff;font-size:11px;margin-bottom:10px;">' + _feEsc(prog) + '</div>'
+    + '<div style="margin-bottom:10px;">';
+  // (ANY) — leave this field unconstrained — key 0 / SPACE
+  html += '<div style="display:inline-block;margin:4px;text-align:center;vertical-align:top;">'
+    + '<button onclick="_feFiltChoose(\'\')" style="background:#003355;border:2px solid #00ccff;color:#00ddff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:3px;cursor:pointer;min-width:120px;display:block;">'
+    + '<span style="background:#00ccff;color:#000033;padding:2px 8px;border-radius:2px;font-weight:700;">0</span></button>'
+    + '<div style="color:#00ddff;font-size:11px;margin-top:2px;">(ANY)</div></div>';
   for(var k=0;k<items.length;k++){
     var it = String(items[k]||'');
     if(!it) continue;
     var safe = it.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    html += '<button onclick="_feFiltChoose(\'' + safe + '\')" '
-      + 'style="background:#001a33;border:1px solid #ffff00;color:#ffff55;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:3px;cursor:pointer;">'
-      + _feEsc(it) + '</button>';
+    var letter = (k < 24) ? String.fromCharCode(65 + k) : '·';   // A..X get a hotkey
+    var badge = (k < 24)
+      ? '<span style="background:' + accent + ';color:#000033;padding:2px 8px;border-radius:2px;font-weight:700;">' + letter + '</span>'
+      : '<span style="color:' + accent + ';">' + _feEsc(it) + '</span>';
+    html += '<div style="display:inline-block;margin:4px;text-align:center;vertical-align:top;">'
+      + '<button onclick="_feFiltChoose(\'' + safe + '\')" '
+      + 'style="background:#000080;border:2px solid ' + accent + ';color:' + accent + ';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:3px;cursor:pointer;min-width:120px;display:block;">'
+      + badge + '</button>'
+      + '<div style="color:#00ffff;font-size:11px;margin-top:2px;">' + _feEsc(it) + '</div></div>';
   }
   html += '</div>'
-    + '<div style="display:flex;gap:8px;">'
+    + '<div style="display:flex;gap:8px;border-top:1px solid ' + accent + ';padding-top:10px;">'
     + '<button onclick="_feFiltCancel()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:9px;border-radius:4px;cursor:pointer;">ESC CANCEL</button>'
     + '</div></div>';
   ov.innerHTML = html;
@@ -14410,6 +14440,7 @@ function _feFiltChoose(val){
 }
 function _feFiltApply(){
   _feFiltStep = null;
+  document.removeEventListener('keydown', _feFiltLetterKey, true);
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.style.display='none'; ov.innerHTML=''; }
   var anyConstraint = _feFilt.pcode || _feFilt.desc || _feFilt.payee || _feFilt.yr;
@@ -14428,6 +14459,7 @@ function _feFiltApply(){
 function _feFiltClear(){
   _feFilt = { active:false, pcode:'', desc:'', payee:'', yr:'' };
   _feFiltStep = null;
+  document.removeEventListener('keydown', _feFiltLetterKey, true);
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.style.display='none'; ov.innerHTML=''; }
   toast('FILTER OFF — showing all', true);
@@ -14437,6 +14469,7 @@ function _feFiltClear(){
 }
 function _feFiltCancel(){
   _feFiltStep = null;
+  document.removeEventListener('keydown', _feFiltLetterKey, true);
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.style.display='none'; ov.innerHTML=''; }
   _feStartEntryPayee();
