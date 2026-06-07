@@ -14617,11 +14617,13 @@ function _feDispatchCommand(raw){
 // ───── BACKUP ALL COMMAND ─────
 function _feBackupAll(){
   try {
+    var mfsData = JSON.parse(localStorage.getItem('mfs') || '{}');
     var backupData = {
       timestamp: new Date().toISOString(),
       version: '1.0',
       data: {
         LOG: LOG || [],
+        fuel: mfsData.fuel || { logs:[], miles:[] },
         masters: {
           mx_pcodes: JSON.parse(localStorage.getItem('mx_pcodes') || '[]'),
           mx_descs: JSON.parse(localStorage.getItem('mx_descs') || '[]'),
