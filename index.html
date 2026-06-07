@@ -897,14 +897,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
-    <div class="menu-item" onclick="auditStart()" style="background:#330033;border:3px solid #ff88ff;margin:2px 0;min-height:54px;">
-      <div class="menu-num" style="color:#ff88ff;font-size:22px;">🔍</div><div class="menu-icon" style="font-size:28px;">📋</div>
-      <div class="menu-label">
-        <div class="ml" style="color:#ff88ff;font-size:14px;font-weight:700;letter-spacing:1px;">AUDIT BLOCKS</div>
-        <div class="ms" style="color:#ffaaff;">Filter · Edit · Delete · Fast blocks</div>
-      </div>
-      <div class="menu-arrow" style="color:#ff88ff;">›</div>
-    </div>
     <div class="menu-item" onclick="showSubMenu('accounting')">
       <div class="menu-num">1</div><div class="menu-icon">📊</div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">Accounting &amp; Reports</div><div class="ms">Ledger · P&amp;L · Reports · Bank · Trackers</div></div>
@@ -933,11 +925,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-num">5</div><div class="menu-icon">🔄</div>
       <div class="menu-label"><div class="ml" style="color:#ffff00;">DOWNLOADS</div><div class="ms">Upload · Download · Backup · Sync · ZIP</div></div>
       <div class="menu-arrow" style="color:#ffff00;">›</div>
-    </div>
-    <div class="menu-item" onclick="openAudit()" style="background:#1a1a00;border:2px solid #ffaa00;margin:2px 0;">
-      <div class="menu-num">6</div><div class="menu-icon">🔍</div>
-      <div class="menu-label"><div class="ml" style="color:#ffaa00;font-weight:700;">AUDIT TOOL</div><div class="ms" style="color:#ffdd88;">Filter by PCODE · DESC · Month · Bank Reconcile</div></div>
-      <div class="menu-arrow" style="color:#ffaa00;">›</div>
     </div>
   </div>
   <!-- spacer so footer buttons don't cover menu items -->
@@ -1100,60 +1087,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   </div>
 </div>
 
-<div id="screen-audit" class="screen" style="display:none;background:#1a1a00;font-family:Courier New,monospace;padding:10px;">
-  <div style="background:#000000;border-bottom:2px solid #ffaa00;padding:10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
-    <button onclick="goMain()" style="background:#ffff00;color:#000080;font-weight:700;padding:8px 12px;border:none;border-radius:4px;cursor:pointer;">◀ MENU</button>
-    <span style="flex:1;text-align:center;color:#ffaa00;font-weight:700;font-size:15px;">🔍 AUDIT TOOL</span>
-  </div>
-  
-  <div style="padding:10px;background:#0a0a00;margin:10px 5px;border:2px solid #ffaa00;border-radius:4px;">
-    <div style="color:#ffdd88;font-weight:700;margin-bottom:8px;">FILTER OPTIONS:</div>
-    
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-      <div>
-        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">PCODE:</label>
-        <select id="audit-pcode" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
-          <option value="">— Select or leave blank —</option>
-        </select>
-      </div>
-      <div>
-        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">DESC:</label>
-        <select id="audit-desc" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
-          <option value="">— Select or leave blank —</option>
-        </select>
-      </div>
-      <div>
-        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">PAYEE:</label>
-        <select id="audit-payee" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
-          <option value="">— Select or leave blank —</option>
-        </select>
-      </div>
-      <div>
-        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">MONTH (1-12):</label>
-        <input type="number" id="audit-month" min="1" max="12" placeholder="3" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
-      </div>
-      <div>
-        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">YEAR:</label>
-        <input type="number" id="audit-year" placeholder="2026" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
-      </div>
-      <div>
-        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">AMT MIN:</label>
-        <input type="number" id="audit-amt-min" placeholder="0" step="0.01" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
-      </div>
-      <div>
-        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">AMT MAX:</label>
-        <input type="number" id="audit-amt-max" placeholder="999999" step="0.01" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
-      </div>
-    </div>
-    
-    <div style="display:flex;gap:6px;">
-      <button onclick="auditSearch()" style="flex:1;padding:10px;background:#332200;border:2px solid #ffaa00;color:#ffff00;font-weight:700;font-family:Courier New;border-radius:4px;cursor:pointer;font-size:13px;">🔍 SEARCH & AUDIT</button>
-      <button onclick="clearAuditFilters()" style="flex:1;padding:10px;background:#330000;border:2px solid #ff6666;color:#ffaa00;font-weight:700;font-family:Courier New;border-radius:4px;cursor:pointer;font-size:13px;">✕ CLEAR ALL</button>
-    </div>
-  </div>
-  
-  <div id="audit-results" style="padding:10px;"></div>
-</div>
 
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
@@ -1536,34 +1469,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <!-- OVERLAY for pickers, ADD NEW, help -->
   <div id="fe-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,32,0.88);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
-</div>
-
-<!-- AUDIT BLOCKS SCREEN -->
-<div id="screen-audit" class="screen" style="background:#330033;font-family:'Courier New',monospace;display:none;color:#ffffff;padding-top:12px;">
-  <div id="audit-header" style="background:#220022;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:12px;z-index:50;margin:0 6px;border-radius:3px;">
-    <button onclick="goMain()" style="background:#ffaaff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:4px 10px;border-radius:3px;cursor:pointer;">◀ MENU</button>
-    <span style="font-weight:700;font-size:12px;color:#ffff55;flex:1;letter-spacing:1px;">AUDIT BLOCKS</span>
-    <span id="audit-status" style="font-size:11px;font-weight:700;color:#88ffff;"></span>
-  </div>
-  <div style="padding:10px 6px;display:flex;flex-direction:column;gap:5px;background:#330033;min-height:100vh;position:relative;">
-    <div style="border:2px solid #ff88ff;border-radius:3px;padding:6px;background:#330033;flex:1;display:flex;flex-direction:column;">
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;flex-shrink:0;">
-        <button id="audit-pcode-btn" onclick="auditPickPcode()" style="flex:1;min-width:100px;background:#ff88ff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;">PCODE: —</button>
-        <button id="audit-year-btn" onclick="auditPickYear()" style="flex:1;min-width:100px;background:#ff88ff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;">YEAR: —</button>
-        <button id="audit-payee-btn" onclick="auditPickPayee()" style="flex:1;min-width:100px;background:#ffaaff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;opacity:0.7;">PAYEE: (opt)</button>
-        <button id="audit-desc-btn" onclick="auditPickDesc()" style="flex:1;min-width:100px;background:#ffaaff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;opacity:0.7;">DESC: (opt)</button>
-      </div>
-      <div style="display:flex;gap:4px;margin-bottom:8px;">
-        <button onclick="auditFilter()" style="flex:1;background:#00ff88;border:none;color:#000080;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:8px;border-radius:3px;cursor:pointer;letter-spacing:1px;">→ FILTER</button>
-        <button onclick="auditExport()" style="flex:1;background:#88ffff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:8px;border-radius:3px;cursor:pointer;letter-spacing:1px;">⬇ EXPORT CSV</button>
-      </div>
-      <div id="audit-results" style="flex:1;overflow-y:auto;background:#000000;border:1px solid #ff88ff;border-radius:3px;padding:6px;font-size:11px;line-height:1.4;color:#88ff88;">
-        <div style="color:#aaaaaa;text-align:center;padding:20px;">Pick PCODE &amp; YEAR, then FILTER</div>
-      </div>
-      <div id="audit-summary" style="margin-top:8px;text-align:center;font-size:11px;color:#ffaaff;font-weight:700;display:none;padding:4px;background:#220022;border-radius:3px;"></div>
-    </div>
-  </div>
-  <div id="audit-picker-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,32,0.95);z-index:99999;align-items:center;justify-content:center;padding:10px;"></div>
 </div>
 
 <div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
@@ -2520,15 +2425,6 @@ function updateOnlineStatus(){
 window.addEventListener('online',updateOnlineStatus);
 window.addEventListener('offline',updateOnlineStatus);
 window.addEventListener('load',updateOnlineStatus);
-// Move the Fast Entry picker/qty overlay out to <body> so it renders over ANY
-// screen (it lives inside #screen-fastentry, which is display:none when the
-// AUDIT screen is active — that would otherwise hide the reused FE pickers).
-window.addEventListener('load',function(){
-  try{
-    var ov=document.getElementById('fe-overlay');
-    if(ov && ov.parentNode !== document.body) document.body.appendChild(ov);
-  }catch(e){}
-});
 
 function goMain() { window._cleanExportAcc=false; window._cleanExportPhone=false; showScreen('main'); }
 function openModule(mod) {
@@ -6084,337 +5980,6 @@ function openTransferMenu(){
   document.getElementById('screen-transfer').style.display='block';
 }
 
-function openAudit(){
-  document.querySelectorAll('.screen').forEach(function(s){s.style.display='none';});
-  document.getElementById('screen-audit').style.display='block';
-  document.getElementById('audit-results').innerHTML = '<div style="color:#ffaa00;padding:10px;text-align:center;">Enter filter criteria and click SEARCH</div>';
-  
-  // Populate PCODE dropdown
-  var allPcodes = [];
-  try { allPcodes = JSON.parse(localStorage.getItem('mx_pcodes') || '[]'); } catch(e){}
-  LOG.forEach(function(e){ if(e.pcode && allPcodes.indexOf(e.pcode) < 0) allPcodes.push(e.pcode); });
-  allPcodes.sort();
-  
-  var pcodeSelect = document.getElementById('audit-pcode');
-  pcodeSelect.innerHTML = '<option value="">— Select or leave blank —</option>';
-  allPcodes.forEach(function(pc){
-    var opt = document.createElement('option');
-    opt.value = pc;
-    opt.textContent = pc;
-    pcodeSelect.appendChild(opt);
-  });
-  
-  // Populate DESC dropdown
-  var allDescs = [];
-  try { allDescs = JSON.parse(localStorage.getItem('mx_descs') || '[]'); } catch(e){}
-  LOG.forEach(function(e){ if(e.desc && allDescs.indexOf(e.desc) < 0) allDescs.push(e.desc); });
-  allDescs.sort();
-  
-  var descSelect = document.getElementById('audit-desc');
-  descSelect.innerHTML = '<option value="">— Select or leave blank —</option>';
-  allDescs.forEach(function(dc){
-    var opt = document.createElement('option');
-    opt.value = dc;
-    opt.textContent = dc;
-    descSelect.appendChild(opt);
-  });
-}
-
-function clearAuditFilters(){
-  document.getElementById('audit-pcode').value = '';
-  document.getElementById('audit-desc').value = '';
-  document.getElementById('audit-payee').value = '';
-  document.getElementById('audit-month').value = '';
-  document.getElementById('audit-year').value = '';
-  document.getElementById('audit-amt-min').value = '';
-  document.getElementById('audit-amt-max').value = '';
-  document.getElementById('audit-results').innerHTML = '';
-  
-  // Clear and reload dropdowns
-  document.getElementById('audit-pcode').innerHTML = '<option value="">— Select or leave blank —</option>';
-  document.getElementById('audit-desc').innerHTML = '<option value="">— Select or leave blank —</option>';
-  document.getElementById('audit-payee').innerHTML = '<option value="">— Select or leave blank —</option>';
-  
-  populateAuditDropdowns();
-  toast('✓ All filters cleared & reloaded', true);
-}
-
-function populateAuditDropdowns(){
-  // Populate PCODE dropdown
-  var pcodes = new Set();
-  var descs = new Set();
-  var payees = new Set();
-  LOG.forEach(function(e){
-    if(!e.deleted){
-      if(e.pcode) pcodes.add(e.pcode);
-      if(e.desc) descs.add(e.desc);
-      if(e.payee) payees.add(e.payee);
-    }
-  });
-  
-  // Fill PCODE (clear first, then add)
-  var pcodeSel = document.getElementById('audit-pcode');
-  if(pcodeSel){
-    // Keep the default option, remove others
-    while(pcodeSel.options.length > 1) pcodeSel.remove(1);
-    Array.from(pcodes).sort().forEach(function(p){
-      var opt = document.createElement('option');
-      opt.value = p;
-      opt.textContent = p;
-      pcodeSel.appendChild(opt);
-    });
-  }
-  
-  // Fill DESC
-  var descSel = document.getElementById('audit-desc');
-  if(descSel){
-    while(descSel.options.length > 1) descSel.remove(1);
-    Array.from(descs).sort().forEach(function(d){
-      var opt = document.createElement('option');
-      opt.value = d;
-      opt.textContent = d;
-      descSel.appendChild(opt);
-    });
-  }
-  
-  // Fill PAYEE
-  var payeeSel = document.getElementById('audit-payee');
-  if(payeeSel){
-    while(payeeSel.options.length > 1) payeeSel.remove(1);
-    Array.from(payees).sort().forEach(function(p){
-      var opt = document.createElement('option');
-      opt.value = p;
-      opt.textContent = p;
-      payeeSel.appendChild(opt);
-    });
-  }
-}
-
-function auditSearch(){
-  populateAuditDropdowns();
-  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
-  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
-  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
-  var month = parseInt(document.getElementById('audit-month').value) || 0;
-  var year = parseInt(document.getElementById('audit-year').value) || 0;
-  var amtMin = parseFloat(document.getElementById('audit-amt-min').value) || 0;
-  var amtMax = parseFloat(document.getElementById('audit-amt-max').value) || 999999999;
-  
-  var results = [];
-  var totalAmt = 0, totalCount = 0;
-  
-  LOG.forEach(function(e){
-    var ePcode = (e.pcode || '').toUpperCase();
-    var eDesc = (e.desc || '').toUpperCase();
-    var ePayee = (e.payee || '').toUpperCase();
-    var eAmt = Math.abs(e.amt || 0);
-    var eDate = e.date || '';
-    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
-    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
-    
-    var match = true;
-    if(pcode && ePcode !== pcode) match = false;
-    if(desc && eDesc !== desc) match = false;
-    if(payee && ePayee !== payee) match = false;
-    if(month && eMM !== month) match = false;
-    if(year && eYR !== year) match = false;
-    if(eAmt < amtMin || eAmt > amtMax) match = false;
-    
-    if(match){
-      results.push(e);
-      totalAmt += e.amt || 0;
-      totalCount++;
-    }
-  });
-  
-  // Display results
-  var html = '<div style="margin:10px 5px;padding:10px;background:#0000cc;border:2px solid #ffff00;border-radius:4px;">';
-  html += '<div style="color:#ffff00;font-weight:700;margin-bottom:8px;font-size:13px;">AUDIT RESULTS: ' + totalCount + ' entries · Total: $' + Math.abs(totalAmt).toFixed(2) + '</div>';
-  html += '<div style="color:#ffff55;font-size:11px;margin-bottom:10px;">FILTERS: ';
-  if(pcode) html += 'PCODE=' + pcode + ' ';
-  if(desc) html += 'DESC=' + desc + ' ';
-  if(payee) html += 'PAYEE=' + payee + ' ';
-  if(month) html += 'MM=' + month + ' ';
-  if(year) html += 'YR=' + year + ' ';
-  html += '</div>';
-  
-  if(results.length === 0){
-    html += '<div style="color:#ff6666;padding:10px;font-size:13px;">No entries match your criteria</div>';
-  } else {
-    html += '<div style="font-family:Courier New,monospace;background:#000066;border:2px solid #ffff00;border-radius:3px;padding:0;margin-bottom:10px;">';
-    
-    // Header line
-    html += '<div style="display:flex;align-items:baseline;gap:12px;padding:8px;background:#0000cc;border-bottom:2px solid #ffff00;color:#ffff00;font-weight:700;font-size:12px;">';
-    html += '<div style="flex:3;">DATE</div>';
-    html += '<div style="flex:3;">PAYEE</div>';
-    html += '<div style="flex:2;">PCODE</div>';
-    html += '<div style="flex:3;">DESC</div>';
-    html += '<div style="flex:2;text-align:right;">AMOUNT</div>';
-    html += '<div style="flex:0.5;text-align:right;">#</div>';
-    html += '<div style="flex:1;">CODES</div>';
-    html += '</div>';
-    
-    // Data rows
-    results.forEach(function(e, idx){
-      var amtColor = (e.amt < 0) ? '#ff8888' : '#88ff88';
-      var line = (e.date||'').padEnd(8) + ' ' +
-                 (e.payee||'').padEnd(20).slice(0,20) + ' ' +
-                 (e.pcode||'').padEnd(5).slice(0,5) + ' ' +
-                 (e.desc||'').padEnd(20).slice(0,20) + ' ' +
-                 ('$' + (e.amt||0).toFixed(2)).padStart(10);
-      
-      html += '<div style="display:flex;align-items:baseline;gap:12px;padding:6px 8px;border-bottom:1px solid #0066ff;color:#ffff00;font-size:12px;background:#0000cc;cursor:pointer;transition:background 0.1s;" '
-        + 'onclick="auditRowClick(' + idx + ')" '
-        + 'onmouseover="this.style.background=\'#000088\';" '
-        + 'onmouseout="this.style.background=\'#0000cc\';" '
-        + 'data-idx="' + idx + '">';
-      html += '<div style="flex:3;color:#ffff55;font-weight:700;letter-spacing:1px;">' + (e.date||'') + '</div>';
-      html += '<div style="flex:3;color:#ffff00;">' + (e.payee||'') + '</div>';
-      html += '<div style="flex:2;color:#ffff00;">' + (e.pcode||'') + '</div>';
-      html += '<div style="flex:3;color:#ffff00;">' + (e.desc||'') + '</div>';
-      html += '<div style="flex:2;text-align:right;color:' + amtColor + ';font-weight:700;">$' + ((e.amt||0).toFixed(2)) + '</div>';
-      
-      // # column (recno)
-      html += '<div style="flex:0.5;text-align:right;color:#ffaa00;font-weight:700;">#' + (idx+1) + '</div>';
-      
-      // QTY display (if present)
-      if(e.qty && e.qty > 0){
-        html += '<span style="color:#88ddff;font-weight:700;">Q×' + e.qty + '</span>';
-      }
-      
-      // Code buttons
-      html += '<div style="flex:1;font-size:10px;">' + auditQuickEditRow(idx) + '</div>';
-      html += '</div>';
-    });
-    
-    html += '</div>';
-  }
-  
-  html += '<div style="margin-top:10px;padding:8px;background:#0000cc;border:2px solid #ffff00;border-radius:3px;color:#ffff55;font-size:11px;font-weight:700;">';
-  html += '<strong style="color:#ffff00;">BANK RECONCILIATION TIP:</strong> Use these filters to match your bank statement. Example:<br>';
-  html += '• PCODE=ROOF MM=3 → All roof work in March<br>';
-  html += '• DESC=INCOME MM=3 YR=2026 → All income for March 2026<br>';
-  html += '• AMT MIN=100 AMT MAX=500 → Transactions $100-500<br>';
-  html += '</div>';
-  
-  html += '</div>';
-  document.getElementById('audit-results').innerHTML = html;
-}
-
-function auditQuickEditRow(idx){
-  var codes = [
-    ['day','D','DAY'],['mm','M','MONTH'],['yr','Y','YEAR'],
-    ['payee','P','PAYEE'],['pcode','C','PCODE'],['desc','S','DESC'],
-    ['qty','Q','QTY'],['amt','A','AMOUNT'],['del','X','DELETE']
-  ];
-  var s = '';
-  for(var k=0;k<codes.length;k++){
-    var c = codes[k];
-    var isDel = (c[0]==='del');
-    var bgc = isDel ? '#440000' : '#003300';
-    var fgc = isDel ? '#ff6666' : '#00ff88';
-    var bdc = isDel ? '1px solid #aa3333' : '1px solid #00ff88';
-    s += '<button onclick="event.stopPropagation();auditQuickEdit('+idx+',\''+c[0]+'\')" '
-      + 'title="'+c[2]+'" '
-      + 'style="font-family:Courier New,monospace;font-size:12px;font-weight:700;'
-      + 'background:'+bgc+';color:'+fgc+';border:'+bdc+';border-radius:2px;'
-      + 'padding:2px 6px;margin:0 1px;cursor:pointer;vertical-align:middle;">' + c[1] + '</button>';
-  }
-  return s;
-}
-
-// ───── AUDIT EDIT — reuses the REAL Fast Entry edit functions/pickers ─────
-// Each audit result row is a live reference into LOG, so we resolve its true
-// LOG index and hand off to _feQuick(), the same dispatcher the Fast Entry
-// code-strip uses. Pickers (PAYEE/PCODE/DESC), the QTY editor, inline DD/MM/YR
-// /AMT masking and the DELETE confirm are all Fast Entry's own — no duplicates.
-var _auditEditCtx = false;   // true while an edit launched from the audit screen is open
-
-// Resolve the live LOG index for audit result row `idx` under the current filter.
-function _auditLogIndexFor(idx){
-  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
-  var desc  = document.getElementById('audit-desc').value.toUpperCase().trim();
-  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
-  var month = parseInt(document.getElementById('audit-month').value) || 0;
-  var year  = parseInt(document.getElementById('audit-year').value) || 0;
-  var seen = 0;
-  for(var i=0;i<LOG.length;i++){
-    var e = LOG[i];
-    if(e.deleted) continue;
-    var ePcode=(e.pcode||'').toUpperCase(), eDesc=(e.desc||'').toUpperCase(), ePayee=(e.payee||'').toUpperCase();
-    var eDate=e.date||'', eMM=eDate.slice(5,7)?parseInt(eDate.slice(5,7)):0, eYR=eDate.slice(0,4)?parseInt(eDate.slice(0,4)):0;
-    if(pcode && ePcode!==pcode) continue;
-    if(desc  && eDesc!==desc)   continue;
-    if(payee && ePayee!==payee) continue;
-    if(month && eMM!==month)    continue;
-    if(year  && eYR!==year)     continue;
-    if(seen === idx) return i;   // this is the LOG index for audit row `idx`
-    seen++;
-  }
-  return -1;
-}
-
-// Code-button click on an audit row → dispatch to the real Fast Entry editor.
-function auditQuickEdit(idx, action){
-  var logIdx = _auditLogIndexFor(idx);
-  if(logIdx < 0){ toast('Entry not found', false); return; }
-  _auditEditCtx = true;          // saveLog hook will refresh the audit when done
-  _feRowIdx = logIdx;
-  // PAYEE / PCODE / DESC pickers, QTY editor, DELETE — all overlay/dialog based,
-  // so the real Fast Entry handlers display fine over the audit screen.
-  if(action==='payee' || action==='pcode' || action==='desc' || action==='qty'
-     || action==='del' || action==='copy' || action==='flip' || action==='email'){
-    _feQuick(logIdx, action);
-    return;
-  }
-  // DAY / MM / YR / AMOUNT use Fast Entry's inline field-masking, which normally
-  // draws into the FE table (hidden here). Reuse its real apply logic by putting
-  // the same fe-inline-edit input inside the overlay and calling _feApplyInline.
-  var field = (action==='day') ? 'dd' : action;   // _feApplyInline expects 'dd'
-  _auditInlineOverlay(logIdx, field);
-}
-
-// Overlay wrapper around Fast Entry's real inline editor. _feApplyInline reads
-// the fe-inline-edit input by id and _feInline state — neither cares where the
-// input lives in the DOM — so the FoxBase value rules (cents on AMT, date-part
-// replacement on DD/MM/YR) stay identical to typing on the Fast Entry line.
-function _auditInlineOverlay(logIdx, field){
-  var e = LOG[logIdx];
-  if(!e){ toast('Entry not found', false); return; }
-  _feInline = { idx: logIdx, field: field, blank: false };
-  var labels = {dd:'DAY', mm:'MONTH', yr:'YEAR', amt:'AMOUNT'};
-  var label = labels[field] || field.toUpperCase();
-  var cur = '';
-  if(field==='dd') cur = (e.date||'').slice(8,10);
-  else if(field==='mm') cur = (e.date||'').slice(5,7);
-  else if(field==='yr') cur = (e.date||'').slice(2,4); // FE stores 20xx; yr edit takes 2 digits
-  else if(field==='amt') cur = (e.amt!=null) ? String(Math.round(Math.abs(e.amt)*100)) : '';
-  var hint = (field==='amt') ? 'Type digits — last 2 are cents. Leading "-" forces expense.'
-           : (field==='yr') ? 'Two digits (e.g. 26 → 2026).'
-           : 'One or two digits.';
-  var ov = document.getElementById('fe-overlay');
-  if(!ov) return;
-  ov.innerHTML = '<div style="background:#000033;border:2px solid #00ffff;border-radius:6px;padding:14px;max-width:380px;width:100%;font-family:Courier New,monospace;align-self:flex-start;margin-top:8px;box-sizing:border-box;">'
-    + '<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:4px;">\u270E EDIT ' + label + ' — ' + _feEsc((e.payee||'').slice(0,24)) + '</div>'
-    + '<div style="color:#aaccff;font-size:11px;margin-bottom:8px;">' + hint + '</div>'
-    + '<input id="fe-inline-edit" type="text" inputmode="' + (field==='amt'?'numeric':'numeric') + '" autocomplete="off" autocorrect="off" spellcheck="false" value="' + cur + '" '
-    + 'oninput="_feInlineInput()" onkeydown="_feInlineKey(event)" '
-    + 'style="width:100%;background:#000000;border:1px solid #00ffff;color:#ffff55;font-family:Courier New,monospace;font-size:22px;font-weight:700;text-align:right;padding:8px;border-radius:4px;outline:none;box-sizing:border-box;">'
-    + '<div style="display:flex;gap:8px;margin-top:10px;">'
-    + '<button onclick="_feApplyInline()" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px;border-radius:4px;cursor:pointer;">\u2713 SAVE</button>'
-    + '<button onclick="_feCancelInline();document.getElementById(\'fe-overlay\').style.display=\'none\';" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:10px;border-radius:4px;cursor:pointer;">ESC</button>'
-    + '</div></div>';
-  ov.style.display = 'flex';
-  ov.style.alignItems = 'flex-start';
-  setTimeout(function(){ var q=document.getElementById('fe-inline-edit'); if(q){ try{ q.focus({preventScroll:true}); q.select(); }catch(e){ try{ q.focus(); }catch(e2){} } } }, 40);
-}
-
-// Tapping the row body edits the AMOUNT (same default as a row tap in Fast Entry).
-function auditRowClick(idx){
-  auditQuickEdit(idx, 'amt');
-}
-
-
 function bulkCsvImport(){
   var input=document.getElementById('bulk-import-input');
   if(!input){
@@ -7670,20 +7235,7 @@ function doExportByYear(){
 }
 
 function loadLog(){try{var s=localStorage.getItem('mx_log');if(s)LOG=JSON.parse(s);}catch(e){LOG=[];}}
-function saveLog(){try{localStorage.setItem('mx_log',JSON.stringify(LOG));}catch(e){}
-  // If an edit was launched from the AUDIT screen, refresh the audit results
-  // once the Fast Entry editor commits. Deferred so the FE editor finishes first.
-  if(typeof _auditEditCtx !== 'undefined' && _auditEditCtx){
-    _auditEditCtx = false;
-    setTimeout(function(){
-      try{
-        var ov=document.getElementById('fe-overlay');
-        if(ov){ ov.style.display='none'; ov.innerHTML=''; }
-        if(typeof auditSearch==='function') auditSearch();
-      }catch(e){}
-    }, 60);
-  }
-}
+function saveLog(){try{localStorage.setItem('mx_log',JSON.stringify(LOG));}catch(e){}}
 
 // ─────────────────────────────────────────────────────
 // BALANCE SHEET — Pending Payables / Receivables
@@ -13788,7 +13340,7 @@ var _feDefYR = '';                 // default year (2-digit)  — set via DEFA, 
 //    matching rows; every browse/edit/delete tool then operates on that subset.
 //    Empty string = that field is not constrained. Toggle off with FILT or NOFILT/ALL.
 var _feFilt = { active:false, pcode:'', desc:'', payee:'', yr:'' };
-var _feFiltStep = null;            // which picker step the FILT wizard is on: 'pcode'|'desc'|'payee'|'yr'
+var _feFiltStep = null;            // which picker step the FILT wizard is on
 var _feDraftDay = '';              // (legacy) day holder
 var _feDraft = null;               // MASKED LINE: in-progress entry painted as table top row
 var _feDraftInput = '';            // live text mirrored into the masked line's open field
@@ -14030,8 +13582,7 @@ function _feRenderYearTabs(){
       + (active ? 'background:#ffff55;color:#000080;border:2px solid #ffff55;' : 'background:#000070;color:#88ccff;border:2px solid #4466cc;')
       + '">' + label + '</button>';
   });
-  // FILT badge — visible whenever a SET FILTER is active. Tapping it clears the
-  // filter (turns it off), the same as typing NOFILT.
+  // FILT badge — visible whenever a SET FILTER is active. Tapping it clears it.
   if(_feFilt && _feFilt.active){
     var bits = [];
     if(_feFilt.pcode) bits.push(_feFilt.pcode);
@@ -14791,11 +14342,10 @@ function _feApplyDefa(val){
 
 // ───── FILT — FoxBase SET FILTER TO (PCODE → DESC → PAYEE → YR) ─────
 // A picker chain that sets _feFilt instead of editing a row. Reuses the same
-// data helpers (_feGetAllPcodes/Descs/Payees) and the fe-overlay shell, so the
-// look matches the entry pickers. Each step offers (ANY) to leave that field
-// unconstrained. When the chain finishes, _feFilt.active flips on and the master
-// list collapses to the matching rows — every existing edit tool then works on
-// just that subset, exactly like browsing a filtered FoxBase file.
+// data helpers and the fe-overlay shell, so the look matches the entry pickers.
+// Each step offers (ANY) to leave that field unconstrained. When the chain
+// finishes, _feFilt.active flips on and the master list collapses to the matching
+// rows — every existing edit tool then works on just that subset.
 var _FILT_STEPS = ['pcode','desc','payee','yr'];
 function _feFiltStart(){
   _feFilt = { active:false, pcode:'', desc:'', payee:'', yr:'' };
@@ -14817,7 +14367,6 @@ function _feFiltRenderStep(){
   else if(step==='desc') items = _feGetAllDescs();
   else if(step==='payee') items = _feGetAllPayees();
   else if(step==='yr') items = _feFiltUniqueYears();
-  // progress line shows choices locked in so far
   var picked = [];
   if(_feFilt.pcode) picked.push('PCODE='+_feFilt.pcode);
   if(_feFilt.desc)  picked.push('DESC='+_feFilt.desc);
@@ -14828,7 +14377,6 @@ function _feFiltRenderStep(){
     + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:2px;">' + titleMap[step] + '  (' + stepNo + ' of 4)</div>'
     + '<div style="color:#88ddff;font-size:11px;margin-bottom:8px;">' + _feEsc(prog) + '</div>'
     + '<div style="display:flex;flex-wrap:wrap;gap:5px;overflow-y:auto;margin-bottom:10px;">';
-  // (ANY) — leave this field unconstrained
   html += '<button onclick="_feFiltChoose(\'\')" style="background:#003355;border:1px solid #00ccff;color:#00ddff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:6px 12px;border-radius:3px;cursor:pointer;">(ANY)</button>';
   for(var k=0;k<items.length;k++){
     var it = String(items[k]||'');
@@ -14852,7 +14400,6 @@ function _feFiltChoose(val){
   else if(_feFiltStep==='desc') _feFilt.desc = v;
   else if(_feFiltStep==='payee') _feFilt.payee = v;
   else if(_feFiltStep==='yr') _feFilt.yr = v;
-  // advance to the next step, or apply if we just did the last one
   var idx = _FILT_STEPS.indexOf(_feFiltStep);
   if(idx < _FILT_STEPS.length - 1){
     _feFiltStep = _FILT_STEPS[idx+1];
@@ -15013,7 +14560,6 @@ function _feDispatchCommand(raw){
   _feLastCommand = cmd;
   if(cmd === 'DEFA'){ _feStartDefa(); return; }
   if(cmd === 'FILT'){
-    // Toggle off if a filter is already active; otherwise start the wizard.
     if(_feFilt.active){ _feFiltClear(); return; }
     _feFiltStart(); return;
   }
@@ -15105,18 +14651,18 @@ function _feBackupAll(){
       bytes: enc.encode(clientLines.join('\r\n'))
     });
     
-    // 5. BALANCE SHEET CSV (by PCODE)
+    // 5. BALANCE SHEET CSV (running total by PCODE)
     var balances = {};
     LOG.forEach(function(e) {
       if (!e.deleted && e.pcode) {
-        var pcode = String(e.pcode).toUpperCase();
-        if (!balances[pcode]) balances[pcode] = 0;
-        balances[pcode] += (e.amt || 0);
+        var pc = String(e.pcode).toUpperCase();
+        if (!balances[pc]) balances[pc] = 0;
+        balances[pc] += (e.amt || 0);
       }
     });
     var balanceLines = ['PCODE,BALANCE'];
-    Object.keys(balances).sort().forEach(function(pcode) {
-      balanceLines.push([csvField(pcode), csvField(balances[pcode].toFixed(2))].join(','));
+    Object.keys(balances).sort().forEach(function(pc) {
+      balanceLines.push([csvField(pc), csvField(balances[pc].toFixed(2))].join(','));
     });
     files.push({
       name: 'MFS-BALANCE-SHEET.csv',
@@ -16724,230 +16270,7 @@ function _feFocusPrompt(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// AUDIT BLOCKS MODULE — Filter, edit, delete entries by PCODE/YEAR/DESC
-// ════════════════════════════════════════════════════════════════════
-var auditFilter = { pcode: '', year: '', payee: '', desc: '' };
-var auditResults = [];
-
-function auditStart() {
-  auditFilter = { pcode: '', year: '', payee: '', desc: '' };
-  auditResults = [];
-  showScreen('audit');
-  
-  // Extract unique values from LOG
-  var pcodes = new Set();
-  var descs = new Set();
-  var payees = new Set();
-  var years = new Set();
-  LOG.forEach(function(e) {
-    if(!e.deleted) {
-      if(e.pcode) pcodes.add(e.pcode);
-      if(e.desc) descs.add(e.desc);
-      if(e.payee) payees.add(e.payee);
-      if(e.year) years.add(String(e.year));
-    }
-  });
-  
-  // Display available options
-  var pCodeList = Array.from(pcodes).sort().slice(0, 5).join(', ');
-  var descList = Array.from(descs).sort().slice(0, 5).join(', ');
-  var payeeList = Array.from(payees).sort().slice(0, 5).join(', ');
-  var yearList = Array.from(years).sort().reverse().join(', ');
-  
-  var el = document.getElementById('audit-results');
-  if(el) {
-    el.innerHTML = '<div style="color:#88ff88;padding:10px;font-size:11px;line-height:1.6;">'
-      + '<div style="color:#ffff55;font-weight:700;margin-bottom:8px;">Available Data:</div>'
-      + '<div><strong>PCODEs:</strong> ' + (pCodeList || '(none)') + (pcodes.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + pcodes.size + ' total)</span></div>'
-      + '<div><strong>Years:</strong> ' + yearList + '</div>'
-      + '<div><strong>Payees:</strong> ' + (payeeList || '(none)') + (payees.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + payees.size + ' total)</span></div>'
-      + '<div><strong>Descs:</strong> ' + (descList || '(none)') + (descs.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + descs.size + ' total)</span></div>'
-      + '<div style="margin-top:10px;color:#aaaaaa;font-size:10px;">👉 Tap buttons to select filters, then FILTER</div>'
-      + '</div>';
-  }
-  
-  auditUpdateButtons();
-}
-
-function auditUpdateButtons() {
-  var pc = document.getElementById('audit-pcode-btn');
-  var yr = document.getElementById('audit-year-btn');
-  var py = document.getElementById('audit-payee-btn');
-  var dc = document.getElementById('audit-desc-btn');
-  if(pc) pc.textContent = 'PCODE: ' + (auditFilter.pcode || '—');
-  if(yr) yr.textContent = 'YEAR: ' + (auditFilter.year || '—');
-  if(py) py.textContent = 'PAYEE: ' + (auditFilter.payee || '(opt)');
-  if(dc) dc.textContent = 'DESC: ' + (auditFilter.desc || '(opt)');
-}
-
-function auditPickPcode() {
-  var codes = new Set();
-  LOG.forEach(function(e) {
-    if(!e.deleted && e.pcode) codes.add(e.pcode);
-  });
-  var codeList = Array.from(codes).sort();
-  if(codeList.length === 0) {
-    toast('No PCODEs in LOG', false);
-    return;
-  }
-  var msg = 'Select PCODE:\n\n' + codeList.join('\n');
-  var choice = prompt(msg);
-  if(choice && codeList.indexOf(choice.toUpperCase()) >= 0) {
-    auditFilter.pcode = choice.toUpperCase();
-    auditUpdateButtons();
-    toast('✓ PCODE: ' + choice.toUpperCase(), true);
-  }
-}
-
-function auditPickYear() {
-  var years = new Set();
-  LOG.forEach(function(e) { if(!e.deleted && e.year) years.add(String(e.year)); });
-  var yrs = Array.from(years).sort().reverse();
-  if(yrs.length === 0) {
-    toast('No years in LOG', false);
-    return;
-  }
-  var msg = 'Select YEAR:\n\n' + yrs.join('\n');
-  var choice = prompt(msg);
-  if(choice && yrs.indexOf(choice) >= 0) {
-    auditFilter.year = choice;
-    auditUpdateButtons();
-    toast('✓ YEAR: ' + choice, true);
-  }
-}
-
-function auditPickPayee() {
-  var payees = new Set();
-  LOG.forEach(function(e) {
-    if(!e.deleted && e.payee) payees.add(e.payee);
-  });
-  var payeeList = Array.from(payees).sort();
-  if(payeeList.length === 0) {
-    toast('No payees in LOG', false);
-    return;
-  }
-  var msg = 'Select PAYEE (or leave blank for none):\n\n' + payeeList.join('\n');
-  var choice = prompt(msg, '');
-  if(choice !== null) {
-    auditFilter.payee = choice.toUpperCase();
-    auditUpdateButtons();
-    if(choice) {
-      toast('✓ PAYEE: ' + choice, true);
-    } else {
-      toast('✓ PAYEE: (cleared)', true);
-    }
-  }
-}
-
-function auditPickDesc() {
-  var descs = new Set();
-  LOG.forEach(function(e) {
-    if(!e.deleted && e.desc) descs.add(e.desc);
-  });
-  var descList = Array.from(descs).sort();
-  if(descList.length === 0) {
-    toast('No descs in LOG', false);
-    return;
-  }
-  var msg = 'Select DESC (or leave blank for none):\n\n' + descList.join('\n');
-  var choice = prompt(msg, '');
-  if(choice !== null) {
-    auditFilter.desc = choice.toUpperCase();
-    auditUpdateButtons();
-    if(choice) {
-      toast('✓ DESC: ' + choice, true);
-    } else {
-      toast('✓ DESC: (cleared)', true);
-    }
-  }
-}
-
-function auditFilter() {
-  if(!auditFilter.pcode || !auditFilter.year) {
-    toast('PCODE and YEAR are required', false);
-    return;
-  }
-  auditResults = LOG.filter(function(e) {
-    if(e.deleted) return false;
-    if(e.pcode !== auditFilter.pcode) return false;
-    if(String(e.year) !== String(auditFilter.year)) return false;
-    if(auditFilter.payee && e.payee !== auditFilter.payee) return false;
-    if(auditFilter.desc && e.desc !== auditFilter.desc) return false;
-    return true;
-  });
-  auditDisplayResults();
-}
-
-function auditDisplayResults() {
-  var el = document.getElementById('audit-results');
-  if(!el) return;
-  if(auditResults.length === 0) {
-    el.innerHTML = '<div style="color:#ff8888;text-align:center;padding:20px;">No entries found</div>';
-    return;
-  }
-  var html = '';
-  auditResults.forEach(function(e, idx) {
-    html += '<div style="margin-bottom:8px;padding:6px;background:#001100;border:1px solid #44ff44;border-radius:3px;">'
-      + '<div style="color:#ffff55;font-weight:700;">' + (idx+1) + '. ' + e.date + ' | ' + e.payee + ' | $' + e.amt + '</div>'
-      + '<div style="color:#88ff88;font-size:10px;margin-top:2px;">Desc: ' + e.desc + ' | PCODE: ' + e.pcode + '</div>'
-      + '<div style="margin-top:4px;display:flex;gap:4px;">'
-      + '<button onclick="auditEditEntry(' + idx + ')" style="flex:1;background:#0088ff;border:none;color:#fff;font-size:10px;padding:4px;border-radius:2px;cursor:pointer;">EDIT</button>'
-      + '<button onclick="auditDeleteEntry(' + idx + ')" style="flex:1;background:#ff4444;border:none;color:#fff;font-size:10px;padding:4px;border-radius:2px;cursor:pointer;">DEL</button>'
-      + '</div></div>';
-  });
-  el.innerHTML = html;
-  var sumEl = document.getElementById('audit-summary');
-  if(sumEl) {
-    var total = auditResults.reduce(function(s, e) { return s + (parseFloat(e.amt) || 0); }, 0);
-    sumEl.textContent = '✓ ' + auditResults.length + ' entries | TOTAL: $' + total.toFixed(2);
-    sumEl.style.display = 'block';
-  }
-}
-
-function auditEditEntry(idx) {
-  var e = auditResults[idx];
-  var newAmt = prompt('Edit AMOUNT:', e.amt);
-  if(newAmt !== null) {
-    e.amt = newAmt;
-    auditDisplayResults();
-    toast('✓ Amount updated', true);
-  }
-}
-
-function auditDeleteEntry(idx) {
-  if(confirm('Delete this entry from the audit block?')) {
-    auditResults[idx].deleted = 'X';
-    auditDisplayResults();
-    toast('✓ Marked for deletion', true);
-  }
-}
-
-function auditExport() {
-  if(auditResults.length === 0) {
-    toast('No entries to export', false);
-    return;
-  }
-  var lines = ['DATE,PAYEE,PCODE,DESC,AMOUNT'];
-  auditResults.forEach(function(e) {
-    if(!e.deleted) {
-      lines.push([(e.date || ''), (e.payee || ''), (e.pcode || ''), (e.desc || ''), (e.amt || '')].join(','));
-    }
-  });
-  var csv = lines.join('\r\n');
-  var blob = new Blob([csv], {type: 'text/csv'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'AUDIT-' + auditFilter.pcode + '-' + auditFilter.year + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function() { try{URL.revokeObjectURL(url);}catch(e){} }, 2000);
-  toast('✓ Exported ' + auditResults.length + ' entries', true);
-}
-
-// ════════════════════════════════════════════════════════════════════
-// END AUDIT MODULE
+// END FAST ENTRY MODULE
 // ════════════════════════════════════════════════════════════════════
 </script>
 <div id="bkp-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;padding:20px;">
