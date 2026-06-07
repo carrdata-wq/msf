@@ -1123,6 +1123,12 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
         </select>
       </div>
       <div>
+        <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">PAYEE:</label>
+        <select id="audit-payee" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
+          <option value="">— Select or leave blank —</option>
+        </select>
+      </div>
+      <div>
         <label style="color:#ffaa00;font-size:12px;display:block;margin-bottom:3px;">MONTH (1-12):</label>
         <input type="number" id="audit-month" min="1" max="12" placeholder="3" style="width:100%;padding:6px;background:#1a1a00;border:1px solid #ffaa00;color:#ffff00;font-family:Courier New;border-radius:2px;font-size:12px;">
       </div>
@@ -1140,7 +1146,10 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
     </div>
     
-    <button onclick="auditSearch()" style="width:100%;padding:10px;background:#332200;border:2px solid #ffaa00;color:#ffff00;font-weight:700;font-family:Courier New;border-radius:4px;cursor:pointer;font-size:13px;">🔍 SEARCH & AUDIT</button>
+    <div style="display:flex;gap:6px;">
+      <button onclick="auditSearch()" style="flex:1;padding:10px;background:#332200;border:2px solid #ffaa00;color:#ffff00;font-weight:700;font-family:Courier New;border-radius:4px;cursor:pointer;font-size:13px;">🔍 SEARCH & AUDIT</button>
+      <button onclick="clearAuditFilters()" style="flex:1;padding:10px;background:#330000;border:2px solid #ff6666;color:#ffaa00;font-weight:700;font-family:Courier New;border-radius:4px;cursor:pointer;font-size:13px;">✕ CLEAR ALL</button>
+    </div>
   </div>
   
   <div id="audit-results" style="padding:10px;"></div>
@@ -1541,6 +1550,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;flex-shrink:0;">
         <button id="audit-pcode-btn" onclick="auditPickPcode()" style="flex:1;min-width:100px;background:#ff88ff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;">PCODE: —</button>
         <button id="audit-year-btn" onclick="auditPickYear()" style="flex:1;min-width:100px;background:#ff88ff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;">YEAR: —</button>
+        <button id="audit-payee-btn" onclick="auditPickPayee()" style="flex:1;min-width:100px;background:#ffaaff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;opacity:0.7;">PAYEE: (opt)</button>
         <button id="audit-desc-btn" onclick="auditPickDesc()" style="flex:1;min-width:100px;background:#ffaaff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;opacity:0.7;">DESC: (opt)</button>
       </div>
       <div style="display:flex;gap:4px;margin-bottom:8px;">
@@ -6101,9 +6111,81 @@ function openAudit(){
   });
 }
 
+function clearAuditFilters(){
+  document.getElementById('audit-pcode').value = '';
+  document.getElementById('audit-desc').value = '';
+  document.getElementById('audit-payee').value = '';
+  document.getElementById('audit-month').value = '';
+  document.getElementById('audit-year').value = '';
+  document.getElementById('audit-amt-min').value = '';
+  document.getElementById('audit-amt-max').value = '';
+  document.getElementById('audit-results').innerHTML = '';
+  
+  // Clear and reload dropdowns
+  document.getElementById('audit-pcode').innerHTML = '<option value="">— Select or leave blank —</option>';
+  document.getElementById('audit-desc').innerHTML = '<option value="">— Select or leave blank —</option>';
+  document.getElementById('audit-payee').innerHTML = '<option value="">— Select or leave blank —</option>';
+  
+  populateAuditDropdowns();
+  toast('✓ All filters cleared & reloaded', true);
+}
+
+function populateAuditDropdowns(){
+  // Populate PCODE dropdown
+  var pcodes = new Set();
+  var descs = new Set();
+  var payees = new Set();
+  LOG.forEach(function(e){
+    if(!e.deleted){
+      if(e.pcode) pcodes.add(e.pcode);
+      if(e.desc) descs.add(e.desc);
+      if(e.payee) payees.add(e.payee);
+    }
+  });
+  
+  // Fill PCODE (clear first, then add)
+  var pcodeSel = document.getElementById('audit-pcode');
+  if(pcodeSel){
+    // Keep the default option, remove others
+    while(pcodeSel.options.length > 1) pcodeSel.remove(1);
+    Array.from(pcodes).sort().forEach(function(p){
+      var opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      pcodeSel.appendChild(opt);
+    });
+  }
+  
+  // Fill DESC
+  var descSel = document.getElementById('audit-desc');
+  if(descSel){
+    while(descSel.options.length > 1) descSel.remove(1);
+    Array.from(descs).sort().forEach(function(d){
+      var opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      descSel.appendChild(opt);
+    });
+  }
+  
+  // Fill PAYEE
+  var payeeSel = document.getElementById('audit-payee');
+  if(payeeSel){
+    while(payeeSel.options.length > 1) payeeSel.remove(1);
+    Array.from(payees).sort().forEach(function(p){
+      var opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      payeeSel.appendChild(opt);
+    });
+  }
+}
+
 function auditSearch(){
+  populateAuditDropdowns();
   var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
   var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
+  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
   var month = parseInt(document.getElementById('audit-month').value) || 0;
   var year = parseInt(document.getElementById('audit-year').value) || 0;
   var amtMin = parseFloat(document.getElementById('audit-amt-min').value) || 0;
@@ -6115,14 +6197,16 @@ function auditSearch(){
   LOG.forEach(function(e){
     var ePcode = (e.pcode || '').toUpperCase();
     var eDesc = (e.desc || '').toUpperCase();
+    var ePayee = (e.payee || '').toUpperCase();
     var eAmt = Math.abs(e.amt || 0);
     var eDate = e.date || '';
     var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
     var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
     
     var match = true;
-    if(pcode && ePcode.indexOf(pcode) < 0) match = false;
-    if(desc && eDesc.indexOf(desc) < 0) match = false;
+    if(pcode && ePcode !== pcode) match = false;
+    if(desc && eDesc !== desc) match = false;
+    if(payee && ePayee !== payee) match = false;
     if(month && eMM !== month) match = false;
     if(year && eYR !== year) match = false;
     if(eAmt < amtMin || eAmt > amtMax) match = false;
@@ -6135,38 +6219,42 @@ function auditSearch(){
   });
   
   // Display results
-  var html = '<div style="margin:10px 5px;padding:10px;background:#0a0a00;border:1px solid #ffaa00;border-radius:4px;">';
-  html += '<div style="color:#ffff00;font-weight:700;margin-bottom:8px;">AUDIT RESULTS: ' + totalCount + ' entries · Total: $' + Math.abs(totalAmt).toFixed(2) + '</div>';
-  html += '<div style="color:#ffdd88;font-size:11px;margin-bottom:10px;">FILTERS: ';
+  var html = '<div style="margin:10px 5px;padding:10px;background:#0000cc;border:2px solid #ffff00;border-radius:4px;">';
+  html += '<div style="color:#ffff00;font-weight:700;margin-bottom:8px;font-size:13px;">AUDIT RESULTS: ' + totalCount + ' entries · Total: $' + Math.abs(totalAmt).toFixed(2) + '</div>';
+  html += '<div style="color:#ffff55;font-size:11px;margin-bottom:10px;">FILTERS: ';
   if(pcode) html += 'PCODE=' + pcode + ' ';
   if(desc) html += 'DESC=' + desc + ' ';
+  if(payee) html += 'PAYEE=' + payee + ' ';
   if(month) html += 'MM=' + month + ' ';
   if(year) html += 'YR=' + year + ' ';
   html += '</div>';
   
   if(results.length === 0){
-    html += '<div style="color:#ff6666;padding:10px;">No entries match your criteria</div>';
+    html += '<div style="color:#ff6666;padding:10px;font-size:13px;">No entries match your criteria</div>';
   } else {
-    html += '<div style="overflow-x:auto;border:1px solid #ffaa00;border-radius:3px;">';
-    html += '<table style="width:100%;color:#ffff00;font-size:11px;border-collapse:collapse;">';
-    html += '<tr style="background:#1a1a00;border-bottom:1px solid #ffaa00;"><th style="padding:4px;text-align:left;color:#ffaa00;">DATE</th><th style="padding:4px;color:#ffaa00;">PAYEE</th><th style="padding:4px;color:#ffaa00;">PCODE</th><th style="padding:4px;color:#ffaa00;">DESC</th><th style="padding:4px;text-align:right;color:#ffaa00;">AMOUNT</th></tr>';
+    html += '<div style="overflow-x:auto;border:2px solid #ffff00;border-radius:3px;background:#000066;">';
+    html += '<table style="width:100%;color:#ffff00;font-size:12px;border-collapse:collapse;font-family:Courier New,monospace;font-weight:700;">';
+    html += '<tr style="background:#0000cc;border-bottom:2px solid #ffff00;"><th style="padding:6px;text-align:left;color:#ffff00;">DATE</th><th style="padding:6px;color:#ffff00;">PAYEE</th><th style="padding:6px;color:#ffff00;">PCODE</th><th style="padding:6px;color:#ffff00;">DESC</th><th style="padding:6px;text-align:right;color:#ffff00;">QTY</th><th style="padding:6px;text-align:right;color:#ffff00;">AMOUNT</th><th style="padding:6px;color:#ffff00;">ID</th><th style="padding:6px;color:#ffff00;">CODES</th></tr>';
     
-    results.forEach(function(e){
+    results.forEach(function(e, idx){
       var amtColor = (e.amt < 0) ? '#ff8888' : '#88ff88';
-      html += '<tr style="border-bottom:1px solid #333300;">';
-      html += '<td style="padding:4px;color:#ffdd88;">' + (e.date || '') + '</td>';
-      html += '<td style="padding:4px;color:#ffff00;">' + (e.payee || '') + '</td>';
-      html += '<td style="padding:4px;color:#ffaa00;">' + (e.pcode || '') + '</td>';
-      html += '<td style="padding:4px;color:#ffaa00;">' + (e.desc || '') + '</td>';
-      html += '<td style="padding:4px;text-align:right;color:' + amtColor + ';font-weight:700;">$' + ((e.amt || 0).toFixed(2)) + '</td>';
+      html += '<tr style="background:#0000cc;border-bottom:1px solid #0066ff;">';
+      html += '<td style="padding:6px;color:#ffff55;">' + (e.date || '') + '</td>';
+      html += '<td style="padding:6px;color:#ffff00;">' + (e.payee || '') + '</td>';
+      html += '<td style="padding:6px;color:#ffff00;">' + (e.pcode || '') + '</td>';
+      html += '<td style="padding:6px;color:#ffff00;">' + (e.desc || '') + '</td>';
+      html += '<td style="padding:6px;text-align:right;color:#ffff55;">' + (e.qty || '') + '</td>';
+      html += '<td style="padding:6px;text-align:right;color:' + amtColor + ';font-weight:700;">$' + ((e.amt || 0).toFixed(2)) + '</td>';
+      html += '<td style="padding:6px;color:#ffff55;">' + (e.id || '') + '</td>';
+      html += '<td style="padding:4px;font-size:11px;">' + auditQuickEditRow(idx) + '</td>';
       html += '</tr>';
     });
     
     html += '</table></div>';
   }
   
-  html += '<div style="margin-top:10px;padding:8px;background:#0a0a00;border:1px solid #ffdd88;border-radius:3px;color:#ffdd88;font-size:11px;">';
-  html += '<strong>BANK RECONCILIATION TIP:</strong> Use these filters to match your bank statement. Example:<br>';
+  html += '<div style="margin-top:10px;padding:8px;background:#0000cc;border:2px solid #ffff00;border-radius:3px;color:#ffff55;font-size:11px;font-weight:700;">';
+  html += '<strong style="color:#ffff00;">BANK RECONCILIATION TIP:</strong> Use these filters to match your bank statement. Example:<br>';
   html += '• PCODE=ROOF MM=3 → All roof work in March<br>';
   html += '• DESC=INCOME MM=3 YR=2026 → All income for March 2026<br>';
   html += '• AMT MIN=100 AMT MAX=500 → Transactions $100-500<br>';
@@ -6174,6 +6262,190 @@ function auditSearch(){
   
   html += '</div>';
   document.getElementById('audit-results').innerHTML = html;
+}
+
+function auditEditEntry(idx){
+  var results = [];
+  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
+  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
+  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
+  var month = parseInt(document.getElementById('audit-month').value) || 0;
+  var year = parseInt(document.getElementById('audit-year').value) || 0;
+  
+  LOG.forEach(function(e){
+    var ePcode = (e.pcode || '').toUpperCase();
+    var eDesc = (e.desc || '').toUpperCase();
+    var ePayee = (e.payee || '').toUpperCase();
+    var eDate = e.date || '';
+    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
+    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
+    
+    var match = true;
+    if(pcode && ePcode !== pcode) match = false;
+    if(desc && eDesc !== desc) match = false;
+    if(payee && ePayee !== payee) match = false;
+    if(month && eMM !== month) match = false;
+    if(year && eYR !== year) match = false;
+    
+    if(match) results.push(e);
+  });
+  
+  if(idx < results.length){
+    var e = results[idx];
+    var newAmt = prompt('Edit AMOUNT:\n' + e.date + ' | ' + e.payee + '\nCurrent: $' + e.amt, e.amt);
+    if(newAmt !== null && newAmt !== ''){
+      e.amt = parseFloat(newAmt);
+      save(LOG);
+      toast('✓ Amount updated', true);
+      auditSearch();
+    }
+  }
+}
+
+function auditQuickEditRow(idx){
+  var codes = [
+    ['day','D','DAY'],['mm','M','MONTH'],['yr','Y','YEAR'],
+    ['payee','P','PAYEE'],['pcode','P','PCODE'],['desc','D','DESC'],
+    ['qty','Q','QTY'],['amt','A','AMOUNT'],['id','I','ID'],['del','X','DELETE']
+  ];
+  var s = '';
+  for(var k=0;k<codes.length;k++){
+    var c = codes[k];
+    var isDel = (c[0]==='del');
+    var bgc = isDel ? '#440000' : '#003300';
+    var fgc = isDel ? '#ff6666' : '#00ff88';
+    var bdc = isDel ? '1px solid #aa3333' : '1px solid #00ff88';
+    s += '<button onclick="event.stopPropagation();auditQuickEdit('+idx+',\''+c[0]+'\')" '
+      + 'title="'+c[2]+'" '
+      + 'style="font-family:Courier New,monospace;font-size:12px;font-weight:700;'
+      + 'background:'+bgc+';color:'+fgc+';border:'+bdc+';border-radius:2px;'
+      + 'padding:2px 6px;margin:0 1px;cursor:pointer;vertical-align:middle;">' + c[1] + '</button>';
+  }
+  return s;
+}
+
+function auditQuickEdit(idx, action){
+  // Rebuild results array to find the entry
+  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
+  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
+  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
+  var month = parseInt(document.getElementById('audit-month').value) || 0;
+  var year = parseInt(document.getElementById('audit-year').value) || 0;
+  
+  var results = [];
+  LOG.forEach(function(e){
+    var ePcode = (e.pcode || '').toUpperCase();
+    var eDesc = (e.desc || '').toUpperCase();
+    var ePayee = (e.payee || '').toUpperCase();
+    var eDate = e.date || '';
+    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
+    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
+    
+    var match = true;
+    if(pcode && ePcode !== pcode) match = false;
+    if(desc && eDesc !== desc) match = false;
+    if(payee && ePayee !== payee) match = false;
+    if(month && eMM !== month) match = false;
+    if(year && eYR !== year) match = false;
+    if(match) results.push(e);
+  });
+  
+  if(idx >= results.length) return;
+  var e = results[idx];
+  
+  switch(action){
+    case 'day':
+      var newDay = prompt('Edit DAY:', e.date.slice(8,10) || '');
+      if(newDay !== null) {
+        var d = e.date.slice(0,8) + (newDay.length===1 ? '0'+newDay : newDay);
+        e.date = d;
+        save(LOG);
+        toast('✓ Date updated', true);
+        auditSearch();
+      }
+      break;
+    case 'mm':
+      var newMM = prompt('Edit MONTH (1-12):', e.date.slice(5,7) || '');
+      if(newMM !== null && newMM) {
+        var mm = newMM.length===1 ? '0'+newMM : newMM;
+        e.date = e.date.slice(0,5) + mm + e.date.slice(7);
+        save(LOG);
+        toast('✓ Month updated', true);
+        auditSearch();
+      }
+      break;
+    case 'yr':
+      var newYR = prompt('Edit YEAR:', e.date.slice(0,4) || '2026');
+      if(newYR !== null) {
+        e.date = newYR + e.date.slice(4);
+        save(LOG);
+        toast('✓ Year updated', true);
+        auditSearch();
+      }
+      break;
+    case 'payee':
+      var newPayee = prompt('Edit PAYEE:', e.payee || '');
+      if(newPayee !== null) {
+        e.payee = newPayee.toUpperCase();
+        save(LOG);
+        toast('✓ Payee updated', true);
+        auditSearch();
+      }
+      break;
+    case 'pcode':
+      var newPcode = prompt('Edit PCODE:', e.pcode || '');
+      if(newPcode !== null) {
+        e.pcode = newPcode.toUpperCase();
+        save(LOG);
+        toast('✓ Pcode updated', true);
+        auditSearch();
+      }
+      break;
+    case 'desc':
+      var newDesc = prompt('Edit DESC:', e.desc || '');
+      if(newDesc !== null) {
+        e.desc = newDesc.toUpperCase();
+        save(LOG);
+        toast('✓ Desc updated', true);
+        auditSearch();
+      }
+      break;
+    case 'amt':
+      var newAmt = prompt('Edit AMOUNT:', e.amt || '0');
+      if(newAmt !== null) {
+        e.amt = parseFloat(newAmt);
+        save(LOG);
+        toast('✓ Amount updated', true);
+        auditSearch();
+      }
+      break;
+    case 'qty':
+      var newQty = prompt('Edit QTY (quantity/units):', e.qty || '1');
+      if(newQty !== null) {
+        e.qty = parseInt(newQty) || 1;
+        save(LOG);
+        toast('✓ Qty updated', true);
+        auditSearch();
+      }
+      break;
+    case 'id':
+      var newId = prompt('Edit ID:', e.id || '');
+      if(newId !== null) {
+        e.id = newId.toUpperCase();
+        save(LOG);
+        toast('✓ ID updated', true);
+        auditSearch();
+      }
+      break;
+    case 'del':
+      if(confirm('Delete entry?\n' + e.date + ' | ' + e.payee + ' | $' + e.amt)){
+        e.deleted = 'X';
+        save(LOG);
+        toast('✓ Entry deleted', true);
+        auditSearch();
+      }
+      break;
+  }
 }
 
 function bulkCsvImport(){
@@ -16311,22 +16583,24 @@ function _feFocusPrompt(){
 // ════════════════════════════════════════════════════════════════════
 // AUDIT BLOCKS MODULE — Filter, edit, delete entries by PCODE/YEAR/DESC
 // ════════════════════════════════════════════════════════════════════
-var auditFilter = { pcode: '', year: '', desc: '' };
+var auditFilter = { pcode: '', year: '', payee: '', desc: '' };
 var auditResults = [];
 
 function auditStart() {
-  auditFilter = { pcode: '', year: '', desc: '' };
+  auditFilter = { pcode: '', year: '', payee: '', desc: '' };
   auditResults = [];
   showScreen('audit');
   
   // Extract unique values from LOG
   var pcodes = new Set();
   var descs = new Set();
+  var payees = new Set();
   var years = new Set();
   LOG.forEach(function(e) {
     if(!e.deleted) {
       if(e.pcode) pcodes.add(e.pcode);
       if(e.desc) descs.add(e.desc);
+      if(e.payee) payees.add(e.payee);
       if(e.year) years.add(String(e.year));
     }
   });
@@ -16334,6 +16608,7 @@ function auditStart() {
   // Display available options
   var pCodeList = Array.from(pcodes).sort().slice(0, 5).join(', ');
   var descList = Array.from(descs).sort().slice(0, 5).join(', ');
+  var payeeList = Array.from(payees).sort().slice(0, 5).join(', ');
   var yearList = Array.from(years).sort().reverse().join(', ');
   
   var el = document.getElementById('audit-results');
@@ -16342,8 +16617,9 @@ function auditStart() {
       + '<div style="color:#ffff55;font-weight:700;margin-bottom:8px;">Available Data:</div>'
       + '<div><strong>PCODEs:</strong> ' + (pCodeList || '(none)') + (pcodes.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + pcodes.size + ' total)</span></div>'
       + '<div><strong>Years:</strong> ' + yearList + '</div>'
+      + '<div><strong>Payees:</strong> ' + (payeeList || '(none)') + (payees.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + payees.size + ' total)</span></div>'
       + '<div><strong>Descs:</strong> ' + (descList || '(none)') + (descs.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + descs.size + ' total)</span></div>'
-      + '<div style="margin-top:10px;color:#aaaaaa;font-size:10px;">👉 Tap PCODE button to see all options</div>'
+      + '<div style="margin-top:10px;color:#aaaaaa;font-size:10px;">👉 Tap buttons to select filters, then FILTER</div>'
       + '</div>';
   }
   
@@ -16353,9 +16629,11 @@ function auditStart() {
 function auditUpdateButtons() {
   var pc = document.getElementById('audit-pcode-btn');
   var yr = document.getElementById('audit-year-btn');
+  var py = document.getElementById('audit-payee-btn');
   var dc = document.getElementById('audit-desc-btn');
   if(pc) pc.textContent = 'PCODE: ' + (auditFilter.pcode || '—');
   if(yr) yr.textContent = 'YEAR: ' + (auditFilter.year || '—');
+  if(py) py.textContent = 'PAYEE: ' + (auditFilter.payee || '(opt)');
   if(dc) dc.textContent = 'DESC: ' + (auditFilter.desc || '(opt)');
 }
 
@@ -16366,42 +16644,56 @@ function auditPickPcode() {
   });
   var codeList = Array.from(codes).sort();
   if(codeList.length === 0) {
-    toast('No PCODEs found in LOG', false);
+    toast('No PCODEs in LOG', false);
     return;
   }
-  var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:400px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
-    + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT PCODE</div>';
-  codeList.forEach(function(c) {
-    var count = LOG.filter(function(e) { return !e.deleted && e.pcode === c; }).length;
-    html += '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;color:#88ff88;" onclick="auditSetPcode(\'' + c.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + c + ' (' + count + ')</div>';
-  });
-  html += '</div>';
-  var ov = document.getElementById('audit-picker-overlay');
-  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; ov.style.alignItems = 'center'; ov.style.justifyContent = 'center'; }
-}
-
-function auditSetPcode(c) {
-  auditFilter.pcode = c;
-  auditUpdateButtons();
+  var msg = 'Select PCODE:\n\n' + codeList.join('\n');
+  var choice = prompt(msg);
+  if(choice && codeList.indexOf(choice.toUpperCase()) >= 0) {
+    auditFilter.pcode = choice.toUpperCase();
+    auditUpdateButtons();
+    toast('✓ PCODE: ' + choice.toUpperCase(), true);
+  }
 }
 
 function auditPickYear() {
   var years = new Set();
   LOG.forEach(function(e) { if(!e.deleted && e.year) years.add(String(e.year)); });
   var yrs = Array.from(years).sort().reverse();
-  var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:300px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
-    + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT YEAR</div>';
-  yrs.forEach(function(y) {
-    html += '<div style="padding:10px;border-bottom:1px solid #660066;cursor:pointer;font-weight:700;font-size:14px;color:#88ff88;" onclick="auditSetYear(\'' + y + '\');auditCloseOverlay();">' + y + '</div>';
-  });
-  html += '</div>';
-  var ov = document.getElementById('audit-picker-overlay');
-  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; ov.style.alignItems = 'center'; ov.style.justifyContent = 'center'; }
+  if(yrs.length === 0) {
+    toast('No years in LOG', false);
+    return;
+  }
+  var msg = 'Select YEAR:\n\n' + yrs.join('\n');
+  var choice = prompt(msg);
+  if(choice && yrs.indexOf(choice) >= 0) {
+    auditFilter.year = choice;
+    auditUpdateButtons();
+    toast('✓ YEAR: ' + choice, true);
+  }
 }
 
-function auditSetYear(y) {
-  auditFilter.year = y;
-  auditUpdateButtons();
+function auditPickPayee() {
+  var payees = new Set();
+  LOG.forEach(function(e) {
+    if(!e.deleted && e.payee) payees.add(e.payee);
+  });
+  var payeeList = Array.from(payees).sort();
+  if(payeeList.length === 0) {
+    toast('No payees in LOG', false);
+    return;
+  }
+  var msg = 'Select PAYEE (or leave blank for none):\n\n' + payeeList.join('\n');
+  var choice = prompt(msg, '');
+  if(choice !== null) {
+    auditFilter.payee = choice.toUpperCase();
+    auditUpdateButtons();
+    if(choice) {
+      toast('✓ PAYEE: ' + choice, true);
+    } else {
+      toast('✓ PAYEE: (cleared)', true);
+    }
+  }
 }
 
 function auditPickDesc() {
@@ -16410,26 +16702,21 @@ function auditPickDesc() {
     if(!e.deleted && e.desc) descs.add(e.desc);
   });
   var descList = Array.from(descs).sort();
-  var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:400px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
-    + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT DESC (optional)</div>'
-    + '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;color:#aaaaff;" onclick="auditSetDesc(\'\');auditCloseOverlay();"><CLEAR></div>';
-  descList.forEach(function(d) {
-    var count = LOG.filter(function(e) { return !e.deleted && e.desc === d; }).length;
-    html += '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;color:#88ff88;" onclick="auditSetDesc(\'' + d.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + d + ' (' + count + ')</div>';
-  });
-  html += '</div>';
-  var ov = document.getElementById('audit-picker-overlay');
-  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; ov.style.alignItems = 'center'; ov.style.justifyContent = 'center'; }
-}
-
-function auditSetDesc(d) {
-  auditFilter.desc = d;
-  auditUpdateButtons();
-}
-
-function auditCloseOverlay() {
-  var ov = document.getElementById('audit-picker-overlay');
-  if(ov) { ov.style.display = 'none'; ov.innerHTML = ''; }
+  if(descList.length === 0) {
+    toast('No descs in LOG', false);
+    return;
+  }
+  var msg = 'Select DESC (or leave blank for none):\n\n' + descList.join('\n');
+  var choice = prompt(msg, '');
+  if(choice !== null) {
+    auditFilter.desc = choice.toUpperCase();
+    auditUpdateButtons();
+    if(choice) {
+      toast('✓ DESC: ' + choice, true);
+    } else {
+      toast('✓ DESC: (cleared)', true);
+    }
+  }
 }
 
 function auditFilter() {
@@ -16441,6 +16728,7 @@ function auditFilter() {
     if(e.deleted) return false;
     if(e.pcode !== auditFilter.pcode) return false;
     if(String(e.year) !== String(auditFilter.year)) return false;
+    if(auditFilter.payee && e.payee !== auditFilter.payee) return false;
     if(auditFilter.desc && e.desc !== auditFilter.desc) return false;
     return true;
   });
