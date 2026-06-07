@@ -14617,39 +14617,83 @@ function _feDispatchCommand(raw){
 // ───── BACKUP ALL COMMAND ─────
 function _feBackupAll(){
   try {
-    var mfsData = JSON.parse(localStorage.getItem('mfs') || '{}');
-    var backupData = {
-      timestamp: new Date().toISOString(),
-      version: '1.0',
-      data: {
-        LOG: LOG || [],
-        fuel: mfsData.fuel || { logs:[], miles:[] },
-        masters: {
-          mx_pcodes: JSON.parse(localStorage.getItem('mx_pcodes') || '[]'),
-          mx_descs: JSON.parse(localStorage.getItem('mx_descs') || '[]'),
-          mx_payees: JSON.parse(localStorage.getItem('mx_payees') || '[]'),
-          mx_clients: localStorage.getItem('mx_clients') || '{}',
-          mx_fuel: localStorage.getItem('mx_fuel') || '{}',
-          mx_acct: localStorage.getItem('mx_acct') || '{}'
-        }
+    var enc = new TextEncoder();
+    var files = [];
+    
+    // Helper to escape CSV fields
+    function csvField(val) {
+      var s = String(val || '');
+      if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+        s = '"' + s.replace(/"/g, '""') + '"';
       }
-    };
+      return s;
+    }
     
-    var json = JSON.stringify(backupData, null, 2);
-    var dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    var filename = 'MFS-BACKUP-' + dateStr + '.json';
+    // 1. ACCOUNTING CSV
+    var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT'];
+    LOG.forEach(function(e) {
+      if (!e.deleted) {
+        acctLines.push([csvField(e.date), csvField(e.day), csvField(e.month), csvField(e.year), 
+                        csvField(e.payee), csvField(e.pcode), csvField(e.desc), csvField(e.amt)].join(','));
+      }
+    });
+    files.push({
+      name: 'MFS-ACCOUNTING.csv',
+      bytes: enc.encode(acctLines.join('\r\n'))
+    });
     
-    var blob = new Blob([json], {type: 'application/json'});
+    // 2. MILEAGE CSV
+    var mfsData = JSON.parse(localStorage.getItem('mfs') || '{}');
+    var mileageLog = (mfsData.fuel && mfsData.fuel.miles) ? mfsData.fuel.miles : [];
+    var mileLines = ['DATE,VEHICLE,ODOMETER,NOTES'];
+    mileageLog.forEach(function(m) {
+      mileLines.push([csvField(m.date), csvField(m.veh || 'TRUCK'), csvField(m.odo), csvField(m.notes)].join(','));
+    });
+    files.push({
+      name: 'MFS-MILEAGE.csv',
+      bytes: enc.encode(mileLines.join('\r\n'))
+    });
+    
+    // 3. MASTERS CSV (pcodes, descs, payees)
+    var pcodes = JSON.parse(localStorage.getItem('mx_pcodes') || '[]');
+    var descs = JSON.parse(localStorage.getItem('mx_descs') || '[]');
+    var payees = JSON.parse(localStorage.getItem('mx_payees') || '[]');
+    var masterLines = ['TYPE,VALUE'];
+    pcodes.forEach(function(p) { masterLines.push(['PCODE', csvField(p)].join(',')); });
+    descs.forEach(function(d) { masterLines.push(['DESC', csvField(d)].join(',')); });
+    payees.forEach(function(p) { masterLines.push(['PAYEE', csvField(p)].join(',')); });
+    files.push({
+      name: 'MFS-MASTERS.csv',
+      bytes: enc.encode(masterLines.join('\r\n'))
+    });
+    
+    // 4. CLIENTS/PHONE CSV
+    var clientLines = ['NAME,PHONE,EMAIL,ADDRESS,NOTES,CONTACTED'];
+    if (typeof CLIENTS !== 'undefined' && CLIENTS && CLIENTS.length > 0) {
+      CLIENTS.forEach(function(c) {
+        clientLines.push([csvField(c.name), csvField(c.phone), csvField(c.email), 
+                         csvField(c.addr), csvField(c.notes), csvField(c.contacted)].join(','));
+      });
+    }
+    files.push({
+      name: 'MFS-CLIENTS.csv',
+      bytes: enc.encode(clientLines.join('\r\n'))
+    });
+    
+    // Create ZIP and download
+    var zip = _makeZip(files);
+    var blob = new Blob([zip], {type: 'application/zip'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
+    var dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     a.href = url;
-    a.download = filename;
+    a.download = 'MFS-BACKUP-' + dateStr + '.zip';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
+    setTimeout(function() { try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
     
-    toast('✓ BACKUP COMPLETE: ' + filename, true);
+    toast('✓ BACKUP COMPLETE: 4 CSVs in ZIP — ' + acctLines.length + ' acct · ' + mileLines.length + ' miles · ' + clientLines.length + ' clients', true);
   } catch(e){
     toast('✗ Backup failed: ' + (e.message || e), false);
   }
