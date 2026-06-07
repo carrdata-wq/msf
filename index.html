@@ -897,6 +897,14 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       </div>
       <div class="menu-arrow" style="color:#00ff88;">›</div>
     </div>
+    <div class="menu-item" onclick="auditStart()" style="background:#330033;border:3px solid #ff88ff;margin:2px 0;min-height:54px;">
+      <div class="menu-num" style="color:#ff88ff;font-size:22px;">🔍</div><div class="menu-icon" style="font-size:28px;">📋</div>
+      <div class="menu-label">
+        <div class="ml" style="color:#ff88ff;font-size:14px;font-weight:700;letter-spacing:1px;">AUDIT BLOCKS</div>
+        <div class="ms" style="color:#ffaaff;">Filter · Edit · Delete · Fast blocks</div>
+      </div>
+      <div class="menu-arrow" style="color:#ff88ff;">›</div>
+    </div>
     <div class="menu-item" onclick="showSubMenu('accounting')">
       <div class="menu-num">1</div><div class="menu-icon">📊</div>
       <div class="menu-label"><div class="ml" style="color:#00ffff;">Accounting &amp; Reports</div><div class="ms">Ledger · P&amp;L · Reports · Bank · Trackers</div></div>
@@ -1519,6 +1527,33 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 
   <!-- OVERLAY for pickers, ADD NEW, help -->
   <div id="fe-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,32,0.88);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
+</div>
+
+<!-- AUDIT BLOCKS SCREEN -->
+<div id="screen-audit" class="screen" style="background:#330033;font-family:'Courier New',monospace;display:none;color:#ffffff;padding-top:12px;">
+  <div id="audit-header" style="background:#220022;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:12px;z-index:50;margin:0 6px;border-radius:3px;">
+    <button onclick="goMain()" style="background:#ffaaff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:4px 10px;border-radius:3px;cursor:pointer;">◀ MENU</button>
+    <span style="font-weight:700;font-size:12px;color:#ffff55;flex:1;letter-spacing:1px;">AUDIT BLOCKS</span>
+    <span id="audit-status" style="font-size:11px;font-weight:700;color:#88ffff;"></span>
+  </div>
+  <div style="padding:10px 6px;display:flex;flex-direction:column;gap:5px;background:#330033;min-height:100vh;position:relative;">
+    <div style="border:2px solid #ff88ff;border-radius:3px;padding:6px;background:#330033;flex:1;display:flex;flex-direction:column;">
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;flex-shrink:0;">
+        <button id="audit-pcode-btn" onclick="auditPickPcode()" style="flex:1;min-width:100px;background:#ff88ff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;">PCODE: —</button>
+        <button id="audit-year-btn" onclick="auditPickYear()" style="flex:1;min-width:100px;background:#ff88ff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;">YEAR: —</button>
+        <button id="audit-desc-btn" onclick="auditPickDesc()" style="flex:1;min-width:100px;background:#ffaaff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px;border-radius:3px;cursor:pointer;letter-spacing:1px;opacity:0.7;">DESC: (opt)</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:8px;">
+        <button onclick="auditFilter()" style="flex:1;background:#00ff88;border:none;color:#000080;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:8px;border-radius:3px;cursor:pointer;letter-spacing:1px;">→ FILTER</button>
+        <button onclick="auditExport()" style="flex:1;background:#88ffff;border:none;color:#330033;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:8px;border-radius:3px;cursor:pointer;letter-spacing:1px;">⬇ EXPORT CSV</button>
+      </div>
+      <div id="audit-results" style="flex:1;overflow-y:auto;background:#000000;border:1px solid #ff88ff;border-radius:3px;padding:6px;font-size:11px;line-height:1.4;color:#88ff88;">
+        <div style="color:#aaaaaa;text-align:center;padding:20px;">Pick PCODE &amp; YEAR, then FILTER</div>
+      </div>
+      <div id="audit-summary" style="margin-top:8px;text-align:center;font-size:11px;color:#ffaaff;font-weight:700;display:none;padding:4px;background:#220022;border-radius:3px;"></div>
+    </div>
+  </div>
+  <div id="audit-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,32,0.88);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
 </div>
 
 <div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
@@ -16274,7 +16309,214 @@ function _feFocusPrompt(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// END FAST ENTRY MODULE
+// AUDIT BLOCKS MODULE — Filter, edit, delete entries by PCODE/YEAR/DESC
+// ════════════════════════════════════════════════════════════════════
+var auditFilter = { pcode: '', year: '', desc: '' };
+var auditResults = [];
+
+function auditStart() {
+  auditFilter = { pcode: '', year: '', desc: '' };
+  auditResults = [];
+  showScreen('audit');
+  
+  // Extract unique values from LOG
+  var pcodes = new Set();
+  var descs = new Set();
+  var years = new Set();
+  LOG.forEach(function(e) {
+    if(!e.deleted) {
+      if(e.pcode) pcodes.add(e.pcode);
+      if(e.desc) descs.add(e.desc);
+      if(e.year) years.add(String(e.year));
+    }
+  });
+  
+  // Display available options
+  var pCodeList = Array.from(pcodes).sort().slice(0, 5).join(', ');
+  var descList = Array.from(descs).sort().slice(0, 5).join(', ');
+  var yearList = Array.from(years).sort().reverse().join(', ');
+  
+  var el = document.getElementById('audit-results');
+  if(el) {
+    el.innerHTML = '<div style="color:#88ff88;padding:10px;font-size:11px;line-height:1.6;">'
+      + '<div style="color:#ffff55;font-weight:700;margin-bottom:8px;">Available Data:</div>'
+      + '<div><strong>PCODEs:</strong> ' + (pCodeList || '(none)') + (pcodes.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + pcodes.size + ' total)</span></div>'
+      + '<div><strong>Years:</strong> ' + yearList + '</div>'
+      + '<div><strong>Descs:</strong> ' + (descList || '(none)') + (descs.size > 5 ? '...' : '') + ' <span style="color:#aaaaaa;">(' + descs.size + ' total)</span></div>'
+      + '<div style="margin-top:10px;color:#aaaaaa;font-size:10px;">👉 Tap PCODE button to see all options</div>'
+      + '</div>';
+  }
+  
+  auditUpdateButtons();
+}
+
+function auditUpdateButtons() {
+  var pc = document.getElementById('audit-pcode-btn');
+  var yr = document.getElementById('audit-year-btn');
+  var dc = document.getElementById('audit-desc-btn');
+  if(pc) pc.textContent = 'PCODE: ' + (auditFilter.pcode || '—');
+  if(yr) yr.textContent = 'YEAR: ' + (auditFilter.year || '—');
+  if(dc) dc.textContent = 'DESC: ' + (auditFilter.desc || '(opt)');
+}
+
+function auditPickPcode() {
+  var codes = new Set();
+  LOG.forEach(function(e) {
+    if(!e.deleted && e.pcode) codes.add(e.pcode);
+  });
+  var codeList = Array.from(codes).sort();
+  if(codeList.length === 0) {
+    toast('No PCODEs found in LOG', false);
+    return;
+  }
+  var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:400px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT PCODE</div>';
+  codeList.forEach(function(c) {
+    var count = LOG.filter(function(e) { return !e.deleted && e.pcode === c; }).length;
+    html += '<div style="padding:6px;border-bottom:1px solid #660066;cursor:pointer;" onclick="auditSetPcode(\'' + c.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + c + ' (' + count + ')</div>';
+  });
+  html += '</div>';
+  var ov = document.getElementById('audit-picker-overlay');
+  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; }
+}
+
+function auditSetPcode(c) {
+  auditFilter.pcode = c;
+  auditUpdateButtons();
+}
+
+function auditPickYear() {
+  var years = new Set();
+  LOG.forEach(function(e) { if(!e.deleted && e.year) years.add(String(e.year)); });
+  var yrs = Array.from(years).sort().reverse();
+  var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:300px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT YEAR</div>';
+  yrs.forEach(function(y) {
+    html += '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;font-weight:700;font-size:14px;" onclick="auditSetYear(\'' + y + '\');auditCloseOverlay();">' + y + '</div>';
+  });
+  html += '</div>';
+  var ov = document.getElementById('audit-picker-overlay');
+  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; }
+}
+
+function auditSetYear(y) {
+  auditFilter.year = y;
+  auditUpdateButtons();
+}
+
+function auditPickDesc() {
+  var descs = new Set();
+  LOG.forEach(function(e) {
+    if(!e.deleted && e.desc) descs.add(e.desc);
+  });
+  var descList = Array.from(descs).sort();
+  var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:400px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT DESC (optional)</div>'
+    + '<div style="padding:6px;border-bottom:1px solid #660066;cursor:pointer;color:#aaaaff;" onclick="auditSetDesc(\'\');auditCloseOverlay();"><CLEAR></div>';
+  descList.forEach(function(d) {
+    var count = LOG.filter(function(e) { return !e.deleted && e.desc === d; }).length;
+    html += '<div style="padding:6px;border-bottom:1px solid #660066;cursor:pointer;" onclick="auditSetDesc(\'' + d.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + d + ' (' + count + ')</div>';
+  });
+  html += '</div>';
+  var ov = document.getElementById('audit-picker-overlay');
+  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; }
+}
+
+function auditSetDesc(d) {
+  auditFilter.desc = d;
+  auditUpdateButtons();
+}
+
+function auditCloseOverlay() {
+  var ov = document.getElementById('audit-picker-overlay');
+  if(ov) { ov.style.display = 'none'; ov.innerHTML = ''; }
+}
+
+function auditFilter() {
+  if(!auditFilter.pcode || !auditFilter.year) {
+    toast('PCODE and YEAR are required', false);
+    return;
+  }
+  auditResults = LOG.filter(function(e) {
+    if(e.deleted) return false;
+    if(e.pcode !== auditFilter.pcode) return false;
+    if(String(e.year) !== String(auditFilter.year)) return false;
+    if(auditFilter.desc && e.desc !== auditFilter.desc) return false;
+    return true;
+  });
+  auditDisplayResults();
+}
+
+function auditDisplayResults() {
+  var el = document.getElementById('audit-results');
+  if(!el) return;
+  if(auditResults.length === 0) {
+    el.innerHTML = '<div style="color:#ff8888;text-align:center;padding:20px;">No entries found</div>';
+    return;
+  }
+  var html = '';
+  auditResults.forEach(function(e, idx) {
+    html += '<div style="margin-bottom:8px;padding:6px;background:#001100;border:1px solid #44ff44;border-radius:3px;">'
+      + '<div style="color:#ffff55;font-weight:700;">' + (idx+1) + '. ' + e.date + ' | ' + e.payee + ' | $' + e.amt + '</div>'
+      + '<div style="color:#88ff88;font-size:10px;margin-top:2px;">Desc: ' + e.desc + ' | PCODE: ' + e.pcode + '</div>'
+      + '<div style="margin-top:4px;display:flex;gap:4px;">'
+      + '<button onclick="auditEditEntry(' + idx + ')" style="flex:1;background:#0088ff;border:none;color:#fff;font-size:10px;padding:4px;border-radius:2px;cursor:pointer;">EDIT</button>'
+      + '<button onclick="auditDeleteEntry(' + idx + ')" style="flex:1;background:#ff4444;border:none;color:#fff;font-size:10px;padding:4px;border-radius:2px;cursor:pointer;">DEL</button>'
+      + '</div></div>';
+  });
+  el.innerHTML = html;
+  var sumEl = document.getElementById('audit-summary');
+  if(sumEl) {
+    var total = auditResults.reduce(function(s, e) { return s + (parseFloat(e.amt) || 0); }, 0);
+    sumEl.textContent = '✓ ' + auditResults.length + ' entries | TOTAL: $' + total.toFixed(2);
+    sumEl.style.display = 'block';
+  }
+}
+
+function auditEditEntry(idx) {
+  var e = auditResults[idx];
+  var newAmt = prompt('Edit AMOUNT:', e.amt);
+  if(newAmt !== null) {
+    e.amt = newAmt;
+    auditDisplayResults();
+    toast('✓ Amount updated', true);
+  }
+}
+
+function auditDeleteEntry(idx) {
+  if(confirm('Delete this entry from the audit block?')) {
+    auditResults[idx].deleted = 'X';
+    auditDisplayResults();
+    toast('✓ Marked for deletion', true);
+  }
+}
+
+function auditExport() {
+  if(auditResults.length === 0) {
+    toast('No entries to export', false);
+    return;
+  }
+  var lines = ['DATE,PAYEE,PCODE,DESC,AMOUNT'];
+  auditResults.forEach(function(e) {
+    if(!e.deleted) {
+      lines.push([(e.date || ''), (e.payee || ''), (e.pcode || ''), (e.desc || ''), (e.amt || '')].join(','));
+    }
+  });
+  var csv = lines.join('\r\n');
+  var blob = new Blob([csv], {type: 'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'AUDIT-' + auditFilter.pcode + '-' + auditFilter.year + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function() { try{URL.revokeObjectURL(url);}catch(e){} }, 2000);
+  toast('✓ Exported ' + auditResults.length + ' entries', true);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// END AUDIT MODULE
 // ════════════════════════════════════════════════════════════════════
 </script>
 <div id="bkp-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;padding:20px;">
