@@ -15011,6 +15011,24 @@ function _feBackupAll(){
       bytes: enc.encode(clientLines.join('\r\n'))
     });
     
+    // 5. BALANCE SHEET CSV (by PCODE)
+    var balances = {};
+    LOG.forEach(function(e) {
+      if (!e.deleted && e.pcode) {
+        var pcode = String(e.pcode).toUpperCase();
+        if (!balances[pcode]) balances[pcode] = 0;
+        balances[pcode] += (e.amt || 0);
+      }
+    });
+    var balanceLines = ['PCODE,BALANCE'];
+    Object.keys(balances).sort().forEach(function(pcode) {
+      balanceLines.push([csvField(pcode), csvField(balances[pcode].toFixed(2))].join(','));
+    });
+    files.push({
+      name: 'MFS-BALANCE-SHEET.csv',
+      bytes: enc.encode(balanceLines.join('\r\n'))
+    });
+    
     // Create ZIP and download
     var zip = _makeZip(files);
     var blob = new Blob([zip], {type: 'application/zip'});
@@ -15024,7 +15042,7 @@ function _feBackupAll(){
     document.body.removeChild(a);
     setTimeout(function() { try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
     
-    toast('✓ BACKUP COMPLETE: 4 CSVs in ZIP — ' + acctLines.length + ' acct · ' + mileLines.length + ' miles · ' + clientLines.length + ' clients', true);
+    toast('✓ BACKUP COMPLETE: 5 CSVs in ZIP — ' + acctLines.length + ' acct · ' + mileLines.length + ' miles · ' + Object.keys(balances).length + ' pcodes · ' + clientLines.length + ' clients', true);
   } catch(e){
     toast('✗ Backup failed: ' + (e.message || e), false);
   }
