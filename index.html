@@ -1553,7 +1553,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div id="audit-summary" style="margin-top:8px;text-align:center;font-size:11px;color:#ffaaff;font-weight:700;display:none;padding:4px;background:#220022;border-radius:3px;"></div>
     </div>
   </div>
-  <div id="audit-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,32,0.88);z-index:9000;align-items:center;justify-content:center;padding:10px;"></div>
+  <div id="audit-picker-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,32,0.95);z-index:99999;align-items:center;justify-content:center;padding:10px;"></div>
 </div>
 
 <div id="screen-accounting" class="screen" style="background: rgb(26, 26, 255); font-family: &quot;Courier New&quot;, monospace; display: none;">
@@ -16373,11 +16373,11 @@ function auditPickPcode() {
     + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT PCODE</div>';
   codeList.forEach(function(c) {
     var count = LOG.filter(function(e) { return !e.deleted && e.pcode === c; }).length;
-    html += '<div style="padding:6px;border-bottom:1px solid #660066;cursor:pointer;" onclick="auditSetPcode(\'' + c.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + c + ' (' + count + ')</div>';
+    html += '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;color:#88ff88;" onclick="auditSetPcode(\'' + c.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + c + ' (' + count + ')</div>';
   });
   html += '</div>';
   var ov = document.getElementById('audit-picker-overlay');
-  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; }
+  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; ov.style.alignItems = 'center'; ov.style.justifyContent = 'center'; }
 }
 
 function auditSetPcode(c) {
@@ -16392,11 +16392,11 @@ function auditPickYear() {
   var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:300px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
     + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT YEAR</div>';
   yrs.forEach(function(y) {
-    html += '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;font-weight:700;font-size:14px;" onclick="auditSetYear(\'' + y + '\');auditCloseOverlay();">' + y + '</div>';
+    html += '<div style="padding:10px;border-bottom:1px solid #660066;cursor:pointer;font-weight:700;font-size:14px;color:#88ff88;" onclick="auditSetYear(\'' + y + '\');auditCloseOverlay();">' + y + '</div>';
   });
   html += '</div>';
   var ov = document.getElementById('audit-picker-overlay');
-  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; }
+  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; ov.style.alignItems = 'center'; ov.style.justifyContent = 'center'; }
 }
 
 function auditSetYear(y) {
@@ -16412,14 +16412,14 @@ function auditPickDesc() {
   var descList = Array.from(descs).sort();
   var html = '<div style="background:#330033;border:2px solid #ff88ff;border-radius:6px;padding:14px;max-width:400px;font-family:Courier New,monospace;color:#fff;font-size:13px;max-height:80vh;overflow-y:auto;">'
     + '<div style="color:#ffff55;font-weight:700;font-size:14px;margin-bottom:10px;">SELECT DESC (optional)</div>'
-    + '<div style="padding:6px;border-bottom:1px solid #660066;cursor:pointer;color:#aaaaff;" onclick="auditSetDesc(\'\');auditCloseOverlay();"><CLEAR></div>';
+    + '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;color:#aaaaff;" onclick="auditSetDesc(\'\');auditCloseOverlay();"><CLEAR></div>';
   descList.forEach(function(d) {
     var count = LOG.filter(function(e) { return !e.deleted && e.desc === d; }).length;
-    html += '<div style="padding:6px;border-bottom:1px solid #660066;cursor:pointer;" onclick="auditSetDesc(\'' + d.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + d + ' (' + count + ')</div>';
+    html += '<div style="padding:8px;border-bottom:1px solid #660066;cursor:pointer;color:#88ff88;" onclick="auditSetDesc(\'' + d.replace(/'/g, "\\'") + '\');auditCloseOverlay();">' + d + ' (' + count + ')</div>';
   });
   html += '</div>';
   var ov = document.getElementById('audit-picker-overlay');
-  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; }
+  if(ov) { ov.innerHTML = html; ov.style.display = 'flex'; ov.style.alignItems = 'center'; ov.style.justifyContent = 'center'; }
 }
 
 function auditSetDesc(d) {
