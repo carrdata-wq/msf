@@ -6254,7 +6254,11 @@ function auditSearch(){
                  (e.desc||'').padEnd(20).slice(0,20) + ' ' +
                  ('$' + (e.amt||0).toFixed(2)).padStart(10);
       
-      html += '<div style="display:flex;align-items:baseline;gap:12px;padding:6px 8px;border-bottom:1px solid #0066ff;color:#ffff00;font-size:12px;background:#0000cc;cursor:pointer;" data-idx="' + idx + '">';
+      html += '<div style="display:flex;align-items:baseline;gap:12px;padding:6px 8px;border-bottom:1px solid #0066ff;color:#ffff00;font-size:12px;background:#0000cc;cursor:pointer;transition:background 0.1s;" '
+        + 'onclick="auditRowClick(' + idx + ')" '
+        + 'onmouseover="this.style.background=\'#000088\';" '
+        + 'onmouseout="this.style.background=\'#0000cc\';" '
+        + 'data-idx="' + idx + '">';
       html += '<div style="flex:3;color:#ffff55;font-weight:700;letter-spacing:1px;">' + (e.date||'') + '</div>';
       html += '<div style="flex:3;color:#ffff00;">' + (e.payee||'') + '</div>';
       html += '<div style="flex:2;color:#ffff00;">' + (e.pcode||'') + '</div>';
@@ -6348,8 +6352,30 @@ function auditQuickEditRow(idx){
   return s;
 }
 
-function auditQuickEdit(idx, action){
-  // Rebuild results array to find the entry
+// ───── AUDIT EDIT MODE (Fast Entry style) ─────
+var auditEditMode = null;  // current edit field (day, mm, yr, payee, pcode, desc, qty, amt, id)
+var auditEditIdx = -1;     // which result row
+var auditEditTimer = null;
+var auditEditIdleMs = 2500; // 2.5s idle = auto-apply
+
+function auditRowClick(idx){
+  // Click a row to enter edit mode
+  if(auditEditIdx === idx && auditEditMode){
+    // Already editing this row — keep focus on input
+    var inp = document.getElementById('audit-edit-input');
+    if(inp) inp.focus();
+    return;
+  }
+  // Start editing the row (set to first field)
+  auditEditIdx = idx;
+  auditEditMode = 'amt';  // default to amount
+  auditShowEditInput();
+}
+
+function auditShowEditInput(){
+  if(auditEditIdx < 0 || !auditEditMode) return;
+  
+  // Get results
   var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
   var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
   var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
@@ -6364,7 +6390,6 @@ function auditQuickEdit(idx, action){
     var eDate = e.date || '';
     var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
     var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
-    
     var match = true;
     if(pcode && ePcode !== pcode) match = false;
     if(desc && eDesc !== desc) match = false;
@@ -6374,102 +6399,135 @@ function auditQuickEdit(idx, action){
     if(match) results.push(e);
   });
   
-  if(idx >= results.length) return;
-  var e = results[idx];
+  if(auditEditIdx >= results.length) return;
+  var e = results[auditEditIdx];
   
-  switch(action){
+  // Show input overlay
+  var inpDiv = document.getElementById('audit-edit-overlay');
+  if(!inpDiv){
+    inpDiv = document.createElement('div');
+    inpDiv.id = 'audit-edit-overlay';
+    document.body.appendChild(inpDiv);
+  }
+  
+  var label = auditEditMode.toUpperCase();
+  var val = '';
+  switch(auditEditMode){
+    case 'day': val = e.date.slice(8,10) || ''; label = 'DAY'; break;
+    case 'mm': val = e.date.slice(5,7) || ''; label = 'MONTH'; break;
+    case 'yr': val = e.date.slice(0,4) || '2026'; label = 'YEAR'; break;
+    case 'payee': val = e.payee || ''; label = 'PAYEE'; break;
+    case 'pcode': val = e.pcode || ''; label = 'PCODE'; break;
+    case 'desc': val = e.desc || ''; label = 'DESC'; break;
+    case 'qty': val = e.qty || '1'; label = 'QTY'; break;
+    case 'amt': val = e.amt || '0'; label = 'AMOUNT'; break;
+    case 'id': val = e.id || ''; label = 'ID'; break;
+  }
+  
+  inpDiv.innerHTML = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);'
+    + 'background:#0000cc;border:3px solid #ffff00;padding:20px;border-radius:8px;z-index:9999;">'
+    + '<div style="color:#ffff00;font-weight:700;margin-bottom:10px;font-family:Courier New,monospace;font-size:14px;">EDIT ' + label + '</div>'
+    + '<input id="audit-edit-input" type="text" value="' + val + '" '
+    + 'style="width:300px;padding:10px;background:#000066;border:2px solid #ffff00;color:#ffff00;'
+    + 'font-family:Courier New,monospace;font-weight:700;font-size:14px;border-radius:4px;" '
+    + 'onkeydown="auditEditKeydown(event)" />'
+    + '</div>';
+  
+  var inp = document.getElementById('audit-edit-input');
+  if(inp){
+    inp.focus();
+    inp.select();
+    inp.onblur = function(){ clearTimeout(auditEditTimer); };
+    inp.oninput = function(){
+      clearTimeout(auditEditTimer);
+      auditEditTimer = setTimeout(auditApplyEdit, auditEditIdleMs);
+    };
+  }
+}
+
+function auditEditKeydown(ev){
+  if(ev.key === 'Enter'){
+    ev.preventDefault();
+    auditApplyEdit();
+  } else if(ev.key === 'Escape'){
+    ev.preventDefault();
+    auditCancelEdit();
+  }
+}
+
+function auditApplyEdit(){
+  clearTimeout(auditEditTimer);
+  var inp = document.getElementById('audit-edit-input');
+  if(!inp) return;
+  var newVal = inp.value;
+  
+  // Get results array again
+  var pcode = document.getElementById('audit-pcode').value.toUpperCase().trim();
+  var desc = document.getElementById('audit-desc').value.toUpperCase().trim();
+  var payee = document.getElementById('audit-payee').value.toUpperCase().trim();
+  var month = parseInt(document.getElementById('audit-month').value) || 0;
+  var year = parseInt(document.getElementById('audit-year').value) || 0;
+  
+  var results = [];
+  LOG.forEach(function(e){
+    var ePcode = (e.pcode || '').toUpperCase();
+    var eDesc = (e.desc || '').toUpperCase();
+    var ePayee = (e.payee || '').toUpperCase();
+    var eDate = e.date || '';
+    var eMM = eDate.slice(5,7) ? parseInt(eDate.slice(5,7)) : 0;
+    var eYR = eDate.slice(0,4) ? parseInt(eDate.slice(0,4)) : 0;
+    var match = true;
+    if(pcode && ePcode !== pcode) match = false;
+    if(desc && eDesc !== desc) match = false;
+    if(payee && ePayee !== payee) match = false;
+    if(month && eMM !== month) match = false;
+    if(year && eYR !== year) match = false;
+    if(match) results.push(e);
+  });
+  
+  if(auditEditIdx >= results.length) return;
+  var e = results[auditEditIdx];
+  
+  // Apply the edit
+  switch(auditEditMode){
     case 'day':
-      var newDay = prompt('Edit DAY:', e.date.slice(8,10) || '');
-      if(newDay !== null) {
-        var d = e.date.slice(0,8) + (newDay.length===1 ? '0'+newDay : newDay);
-        e.date = d;
-        save(LOG);
-        toast('✓ Date updated', true);
-        auditSearch();
-      }
+      if(newVal.length === 1) newVal = '0' + newVal;
+      e.date = e.date.slice(0,8) + newVal;
       break;
     case 'mm':
-      var newMM = prompt('Edit MONTH (1-12):', e.date.slice(5,7) || '');
-      if(newMM !== null && newMM) {
-        var mm = newMM.length===1 ? '0'+newMM : newMM;
-        e.date = e.date.slice(0,5) + mm + e.date.slice(7);
-        save(LOG);
-        toast('✓ Month updated', true);
-        auditSearch();
-      }
+      if(newVal.length === 1) newVal = '0' + newVal;
+      e.date = e.date.slice(0,5) + newVal + e.date.slice(7);
       break;
     case 'yr':
-      var newYR = prompt('Edit YEAR:', e.date.slice(0,4) || '2026');
-      if(newYR !== null) {
-        e.date = newYR + e.date.slice(4);
-        save(LOG);
-        toast('✓ Year updated', true);
-        auditSearch();
-      }
+      e.date = newVal + e.date.slice(4);
       break;
-    case 'payee':
-      var newPayee = prompt('Edit PAYEE:', e.payee || '');
-      if(newPayee !== null) {
-        e.payee = newPayee.toUpperCase();
-        save(LOG);
-        toast('✓ Payee updated', true);
-        auditSearch();
-      }
-      break;
-    case 'pcode':
-      var newPcode = prompt('Edit PCODE:', e.pcode || '');
-      if(newPcode !== null) {
-        e.pcode = newPcode.toUpperCase();
-        save(LOG);
-        toast('✓ Pcode updated', true);
-        auditSearch();
-      }
-      break;
-    case 'desc':
-      var newDesc = prompt('Edit DESC:', e.desc || '');
-      if(newDesc !== null) {
-        e.desc = newDesc.toUpperCase();
-        save(LOG);
-        toast('✓ Desc updated', true);
-        auditSearch();
-      }
-      break;
-    case 'amt':
-      var newAmt = prompt('Edit AMOUNT:', e.amt || '0');
-      if(newAmt !== null) {
-        e.amt = parseFloat(newAmt);
-        save(LOG);
-        toast('✓ Amount updated', true);
-        auditSearch();
-      }
-      break;
-    case 'qty':
-      var newQty = prompt('Edit QTY (quantity/units):', e.qty || '1');
-      if(newQty !== null) {
-        e.qty = parseInt(newQty) || 1;
-        save(LOG);
-        toast('✓ Qty updated', true);
-        auditSearch();
-      }
-      break;
-    case 'id':
-      var newId = prompt('Edit ID:', e.id || '');
-      if(newId !== null) {
-        e.id = newId.toUpperCase();
-        save(LOG);
-        toast('✓ ID updated', true);
-        auditSearch();
-      }
-      break;
-    case 'del':
-      if(confirm('Delete entry?\n' + e.date + ' | ' + e.payee + ' | $' + e.amt)){
-        e.deleted = 'X';
-        save(LOG);
-        toast('✓ Entry deleted', true);
-        auditSearch();
-      }
-      break;
+    case 'payee': e.payee = newVal.toUpperCase(); break;
+    case 'pcode': e.pcode = newVal.toUpperCase(); break;
+    case 'desc': e.desc = newVal.toUpperCase(); break;
+    case 'qty': e.qty = parseInt(newVal) || 1; break;
+    case 'amt': e.amt = parseFloat(newVal) || 0; break;
+    case 'id': e.id = newVal.toUpperCase(); break;
   }
+  
+  save(LOG);
+  toast('✓ ' + auditEditMode.toUpperCase() + ' saved', true);
+  auditCancelEdit();
+  auditSearch(); // refresh
+}
+
+function auditCancelEdit(){
+  auditEditMode = null;
+  auditEditIdx = -1;
+  clearTimeout(auditEditTimer);
+  var inpDiv = document.getElementById('audit-edit-overlay');
+  if(inpDiv) inpDiv.innerHTML = '';
+}
+
+function auditQuickEdit(idx, action){
+  // Click a code button to edit that field
+  auditEditIdx = idx;
+  auditEditMode = action;
+  auditShowEditInput();
 }
 
 function bulkCsvImport(){
