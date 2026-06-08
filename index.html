@@ -12317,7 +12317,7 @@ function universalSniff(txt){
   if(!lines.length) return 'unknown';
   var firstLine=lines[0].toLowerCase();
   // accounting CSV WITH header (first line)
-  if(firstLine.indexOf('payee')>=0 && firstLine.indexOf('amt')>=0 && firstLine.indexOf('date')>=0) return 'backup-csv';
+  if(firstLine.indexOf('payee')>=0 && (firstLine.indexOf('amt')>=0 || firstLine.indexOf('amount')>=0) && firstLine.indexOf('date')>=0) return 'backup-csv';
   // accounting CSV header could appear AFTER preamble (signature etc)
   var headerRe=/^"?(?:id|date|payee|pcode|desc|amt)"?,/i;
   for(var hi=0;hi<lines.length;hi++){
@@ -12496,7 +12496,7 @@ function universalLoadBackupCSV(txt){
     if(!ln) continue;
     var lo=ln.toLowerCase();
     var isHeader=(lo.indexOf('"id"')>=0 && lo.indexOf('"payee"')>=0 && lo.indexOf('"amt"')>=0)
-                 || (lo.indexOf('payee')>=0 && lo.indexOf('amt')>=0 && lo.indexOf('date')>=0 && lo.indexOf(',')>=0);
+                 || (lo.indexOf('payee')>=0 && (lo.indexOf('amt')>=0 || lo.indexOf('amount')>=0) && lo.indexOf('date')>=0 && lo.indexOf(',')>=0);
     if(startIdx<0 && (isHeader || dataLineRe.test(ln))){
       startIdx=li;
     }
@@ -12609,7 +12609,7 @@ function universalMergeBackupCSV(txt){
     if(!ln) continue;
     var lo=ln.toLowerCase();
     var isHeader=(lo.indexOf('"id"')>=0 && lo.indexOf('"payee"')>=0 && lo.indexOf('"amt"')>=0)
-                 || (lo.indexOf('payee')>=0 && lo.indexOf('amt')>=0 && lo.indexOf('date')>=0 && lo.indexOf(',')>=0);
+                 || (lo.indexOf('payee')>=0 && (lo.indexOf('amt')>=0 || lo.indexOf('amount')>=0) && lo.indexOf('date')>=0 && lo.indexOf(',')>=0);
     if(startIdx<0 && (isHeader || dataLineRe.test(ln))) startIdx=li;
     if(startIdx>=0 && dataLineRe.test(ln)) endIdx=li;
   }
