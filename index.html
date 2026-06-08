@@ -1733,7 +1733,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <!-- Log Mileage -->
   <div id="fuel-mileage" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX7</span></div>
+      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX8</span></div>
       <div class="field"><label>Date</label><input type="date" id="mile-date"></div>
       <div class="field"><label>Odometer Reading</label><input type="number" id="mile-odo" inputmode="numeric" placeholder="e.g. 87542"></div>
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
@@ -3902,31 +3902,29 @@ function mileageReadFile(input){
     try{
       var rows=_parseMileageCSV(e.target.result);
       if(!rows.length){ toast('No mileage rows found. Columns seen: '+(_parseMileageCSV._lastHeader||'?'),false); input.value=''; return; }
-      var d=load();
-      if(!d.fuel) d.fuel={logs:[]};
-      if(!d.fuel.miles) d.fuel.miles=[];
+      if(!_milesReady){ toast('Still loading mileage — tap upload again in a second',false); _milesInit(function(){}); input.value=''; return; }
       var seen={};
-      d.fuel.miles.forEach(function(m){ seen[(m.date||'')+'|'+(m.veh||'').toUpperCase()+'|'+(m.odo||0)]=true; });
+      MILES.forEach(function(m){ seen[(m.date||'')+'|'+(m.veh||'').toUpperCase()+'|'+(m.odo||0)]=true; });
       var added=0;
       rows.forEach(function(r){
         var key=(r.date||'')+'|'+(r.veh||'').toUpperCase()+'|'+(r.odo||0);
         if(seen[key]) return;
         seen[key]=true;
-        d.fuel.miles.push({ id:nextId(d.fuel.miles), date:r.date, odo:r.odo, veh:r.veh, notes:r.notes });
+        MILES.push({ id:0, date:r.date, odo:r.odo, veh:r.veh, notes:r.notes });
         added++;
       });
-      d.fuel.miles.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
-      try{ save(d); }
-      catch(se){ toast('Save failed (storage may be full): '+((se&&se.message)?se.message:se),false); input.value=''; return; }
-      var total=d.fuel.miles.length;
-      if(typeof fuelShow==='function') fuelShow('mileage');
-      try{ if(typeof renderMileHistory==='function') renderMileHistory(); }catch(_e){}
-      try{ if(typeof renderMileChart==='function') renderMileChart(); }catch(_e){}
-      toast('\u2713 '+total+' total reading'+(total===1?'':'s')+' in the table'+(added<rows.length?' ('+(rows.length-added)+' already there)':''), true);
-      setTimeout(function(){
-        var hist=document.getElementById('mile-history');
-        if(hist && hist.scrollIntoView) hist.scrollIntoView({behavior:'smooth',block:'start'});
-      },150);
+      _milesCommit(function(ok){
+        if(!ok){ toast('Could not save — this device has no usable storage (IndexedDB blocked)',false); input.value=''; return; }
+        var total=MILES.length;
+        if(typeof fuelShow==='function') fuelShow('mileage');
+        renderMileHistory(); renderMileChart();
+        toast('\u2713 '+total+' total reading'+(total===1?'':'s')+' in the table'+(added<rows.length?' ('+(rows.length-added)+' already there)':''), true);
+        setTimeout(function(){
+          var hist=document.getElementById('mile-history');
+          if(hist && hist.scrollIntoView) hist.scrollIntoView({behavior:'smooth',block:'start'});
+        },150);
+        input.value='';
+      });
     }catch(err){ toast('Mileage import error: '+(err&&err.message?err.message:err),false); }
     input.value='';
   };
@@ -3993,6 +3991,69 @@ function backupMfsData(){
   }
 }
 
+/* ===== MILEAGE STORAGE — IndexedDB (the localStorage 'mfs' slot is full) =====
+   MILES is the in-memory source of truth, loaded from IDB at startup. Every
+   mutation updates MILES then persists via _milesCommit(). A best-effort copy
+   is mirrored back into 'mfs'.fuel.miles so the stats/charts keep working when
+   localStorage has room. */
+var MILES=[]; var _milesReady=false; var _milesDb=null;
+function _milesOpen(cb){
+  if(_milesDb){ cb(_milesDb); return; }
+  if(!window.indexedDB){ cb(null); return; }
+  try{
+    var req=indexedDB.open('mfs_mileage',1);
+    req.onupgradeneeded=function(e){ var db=e.target.result; if(!db.objectStoreNames.contains('miles')) db.createObjectStore('miles',{keyPath:'id'}); };
+    req.onsuccess=function(e){ _milesDb=e.target.result; cb(_milesDb); };
+    req.onerror=function(){ cb(null); };
+  }catch(e){ cb(null); }
+}
+function _milesReadAll(cb){
+  _milesOpen(function(db){
+    if(!db){ cb(null); return; }
+    try{ var tx=db.transaction('miles','readonly'); var rq=tx.objectStore('miles').getAll();
+      rq.onsuccess=function(){ cb(rq.result||[]); }; rq.onerror=function(){ cb(null); };
+    }catch(e){ cb(null); }
+  });
+}
+function _milesWriteAll(arr,cb){
+  _milesOpen(function(db){
+    if(!db){ if(cb)cb(false); return; }
+    try{ var tx=db.transaction('miles','readwrite'); var st=tx.objectStore('miles');
+      st.clear(); arr.forEach(function(m){ st.put(m); });
+      tx.oncomplete=function(){ if(cb)cb(true); }; tx.onerror=function(){ if(cb)cb(false); };
+    }catch(e){ if(cb)cb(false); }
+  });
+}
+function _milesCommit(cb){
+  // Give every row a unique numeric id, sort by date, persist, mirror best-effort.
+  var nid=1; MILES.forEach(function(m){ if(typeof m.id==='number'&&m.id>=nid) nid=m.id+1; });
+  var used={}; MILES.forEach(function(m){ if(typeof m.id!=='number'||!m.id||used[m.id]){ m.id=nid++; } used[m.id]=true; });
+  MILES.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+  _milesWriteAll(MILES.slice(), function(ok){
+    try{ var d=load(); if(!d.fuel)d.fuel={logs:[]}; d.fuel.miles=MILES.slice(); save(d); }catch(e){}
+    if(cb) cb(ok);
+  });
+}
+function _milesInit(cb){
+  _milesReadAll(function(arr){
+    if(arr===null){ try{ var d=load(); MILES=((d.fuel&&d.fuel.miles)||[]).slice(); }catch(e){ MILES=[]; } _milesReady=true; if(cb)cb(); return; }
+    if(arr.length===0){
+      var seed=[]; try{ var d2=load(); seed=((d2.fuel&&d2.fuel.miles)||[]).slice(); }catch(e){}
+      if(seed.length){ MILES=seed; _milesWriteAll(MILES.slice(),function(){ _milesReady=true; if(cb)cb(); }); return; }
+      MILES=[];
+    } else { MILES=arr; }
+    _milesReady=true; if(cb)cb();
+  });
+}
+(function _milesBootstrap(){
+  _milesInit(function(){
+    try{
+      var pg=document.getElementById('fuel-mileage');
+      if(pg && pg.style.display!=='none' && typeof renderMileHistory==='function') renderMileHistory();
+    }catch(e){}
+  });
+})();
+
 function addMileage(){
   var dateEl=document.getElementById('mile-date');
   var odoEl=document.getElementById('mile-odo');
@@ -4003,32 +4064,22 @@ function addMileage(){
   var veh=((vehEl&&vehEl.value)||'TRUCK').trim().toUpperCase();
   var notes=((noteEl&&noteEl.value)||'').trim();
   if(!date||!odo){ toast('Date & Odometer required',false); return; }
-  var d=load();
-  if(!d.fuel) d.fuel={logs:[]};
-  if(!Array.isArray(d.fuel.miles)) d.fuel.miles=[];
-  d.fuel.miles.push({id:nextId(d.fuel.miles),date:date,odo:odo,veh:veh,notes:notes});
-  d.fuel.miles.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-  // Save AND verify it actually persisted (catches private-mode / storage-full).
-  var want=d.fuel.miles.length, ok=false, err='';
-  try{
-    save(d);
-    var rr=JSON.parse(localStorage.getItem('mfs')||'{}');
-    ok=!!(rr&&rr.fuel&&rr.fuel.miles&&rr.fuel.miles.length===want);
-  }catch(e){ err=(e&&e.message)?e.message:String(e); }
-  if(!ok){ toast('Could not save'+(err?': '+err:' — storage is blocked or full on this device'),false); return; }
-  if(odoEl)odoEl.value=''; if(noteEl)noteEl.value='';
-  renderMileHistory();
-  renderMileChart();
-  toast('🚗 Saved ✓ — '+want+' total reading'+(want===1?'':'s'),true);
-  setTimeout(function(){
-    var h=document.getElementById('mile-history');
-    if(h && h.scrollIntoView) h.scrollIntoView({behavior:'smooth',block:'start'});
-  },120);
+  if(!_milesReady){ toast('Still loading mileage — tap save again in a second',false); _milesInit(function(){ renderMileHistory(); }); return; }
+  MILES.push({id:0,date:date,odo:odo,veh:veh,notes:notes});
+  _milesCommit(function(ok){
+    if(!ok){ toast('Could not save — this device has no usable storage (IndexedDB blocked)',false); return; }
+    if(odoEl)odoEl.value=''; if(noteEl)noteEl.value='';
+    renderMileHistory(); renderMileChart();
+    toast('🚗 Saved ✓ — '+MILES.length+' total reading'+(MILES.length===1?'':'s'),true);
+    setTimeout(function(){
+      var h=document.getElementById('mile-history');
+      if(h && h.scrollIntoView) h.scrollIntoView({behavior:'smooth',block:'start'});
+    },120);
+  });
 }
 
 function renderMileHistory(){
-  const d=load();
-  var miles=(d.fuel&&d.fuel.miles)||[];
+  var miles=MILES.slice();
   var cnt=document.getElementById('mile-count');
   if(cnt) cnt.textContent=miles.length+' reading'+(miles.length===1?'':'s');
   var host=document.getElementById('mile-history');
@@ -4067,8 +4118,7 @@ function renderMileHistory(){
 }
 
 function renderMileChart(){
-  const d=load();
-  var all=((d.fuel&&d.fuel.miles)||[]).slice();
+  var all=MILES.slice();
   var el=document.getElementById('mile-chart');
   if(!el)return;
   if(!all.length){ el.innerHTML='<div style="color:#888;font-size:13px;padding:8px;">No mileage logged yet.</div>'; return; }
@@ -4079,7 +4129,7 @@ function renderMileChart(){
     var v=(m.veh||'TRUCK').toUpperCase();
     (byVeh[v]=byVeh[v]||[]).push(m);
   });
-  var retiredMap=(d.fuel && d.fuel.retired)||{};
+  var retiredMap={}; try{ var d=load(); retiredMap=(d.fuel && d.fuel.retired)||{}; }catch(e){}
   function _lastDate(arr){ var x=''; arr.forEach(function(m){ if((m.date||'')>x) x=m.date||''; }); return x; }
   var vehList=Object.keys(byVeh).sort(function(a,b){
     var ra=retiredMap[a]?1:0, rb=retiredMap[b]?1:0;
@@ -4172,9 +4222,7 @@ function unretireVehicle(veh){
 }
 
 function editMileage(id){
-  const d=load();
-  var miles=(d.fuel&&d.fuel.miles)||[];
-  var m=miles.find(function(x){return x.id===id;});
+  var m=MILES.find(function(x){return x.id===id;});
   if(!m)return;
   var overlay=document.createElement('div');
   overlay.id='mile-edit-overlay';
@@ -4202,31 +4250,22 @@ function saveMileageEdit(id){
   var veh=document.getElementById('mile-edit-veh').value.toUpperCase().trim();
   var notes=document.getElementById('mile-edit-notes').value.trim();
   if(!date||!odo){toast('Date and odometer required',false);return;}
-  const d=load();
-  if(!d.fuel)d.fuel={logs:[],miles:[]};
-  for(var i=0;i<d.fuel.miles.length;i++){
-    if(d.fuel.miles[i].id===id){
-      d.fuel.miles[i].date=date;
-      d.fuel.miles[i].odo=odo;
-      d.fuel.miles[i].veh=veh;
-      d.fuel.miles[i].notes=notes;
-      break;
-    }
+  for(var i=0;i<MILES.length;i++){
+    if(MILES[i].id===id){ MILES[i].date=date; MILES[i].odo=odo; MILES[i].veh=veh; MILES[i].notes=notes; break; }
   }
-  d.fuel.miles.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-  save(d);
-  document.getElementById('mile-edit-overlay').remove();
-  renderMileHistory();
-  toast('Mileage updated ✓',true);
+  _milesCommit(function(ok){
+    var ov=document.getElementById('mile-edit-overlay'); if(ov)ov.remove();
+    renderMileHistory();
+    toast(ok?'Mileage updated ✓':'Updated on screen, but storage write failed',ok);
+  });
 }
 
 function delMileage(id){
-  const d=load();
-  if(!d.fuel||!d.fuel.miles)return;
-  d.fuel.miles=d.fuel.miles.filter(function(m){return m.id!==id;});
-  save(d);
-  renderMileHistory();
-  toast('Deleted ✓',true);
+  MILES=MILES.filter(function(m){return m.id!==id;});
+  _milesCommit(function(ok){
+    renderMileHistory();
+    toast(ok?'Deleted ✓':'Removed on screen, but storage write failed',ok);
+  });
 }
 function buildFuelFilters() {
   const d=load();
