@@ -3826,26 +3826,73 @@ function _mileageCSVSplit(line){
   return res;
 }
 function _parseMileageCSV(text){
-  var lines=String(text||'').split(/\r?\n/);
-  var headerIdx=-1, cols=null;
-  for(var i=0;i<lines.length;i++){
-    if(/DATE/i.test(lines[i]) && /VEHICLE/i.test(lines[i]) && /ODOMETER/i.test(lines[i])){
-      headerIdx=i; cols=_mileageCSVSplit(lines[i]).map(function(c){return c.trim().toUpperCase();}); break;
+  text = String(text||'').replace(/^\uFEFF/,'');          // strip BOM if present
+  var lines = text.split(/\r?\n/);
+  // Split a line on the delimiter actually used (comma, tab, or semicolon).
+  function splitLine(line){
+    if(line.indexOf(',')<0 && line.indexOf('\t')>=0) return line.split('\t');
+    if(line.indexOf(',')<0 && line.indexOf(';')>=0) return line.split(';');
+    return _mileageCSVSplit(line);
+  }
+  function toNum(s){ return parseFloat(String(s||'').replace(/[^0-9.\-]/g,''))||0; }
+  function looksLikeDate(s){ return /\d{4}-\d{1,2}-\d{1,2}|\d{1,2}\/\d{1,2}\/\d{2,4}/.test(String(s||'')); }
+  // Classify one header cell -> date | veh | odo | notes | driven | null
+  function classify(h){
+    h = String(h||'').trim().toLowerCase();
+    if(!h) return null;
+    if(/driven|trip/.test(h)) return 'driven';                         // miles-driven column = skip
+    if(/odometer|odom|\bodo\b|reading|mileage|^miles$/.test(h)) return 'odo';
+    if(/date/.test(h)) return 'date';
+    if(/vehicle|truck|^car$|^veh|unit/.test(h)) return 'veh';
+    if(/note|memo|desc/.test(h)) return 'notes';
+    return null;
+  }
+  // Look for a header row in the first few lines.
+  var headerIdx=-1, map=null, hdr=null;
+  for(var i=0;i<lines.length && i<8;i++){
+    if(!lines[i] || !lines[i].trim()) continue;
+    var cells=splitLine(lines[i]);
+    var m={date:-1,veh:-1,odo:-1,notes:-1};
+    for(var c=0;c<cells.length;c++){
+      var kind=classify(cells[c]);
+      if(kind && kind!=='driven' && m[kind]===-1) m[kind]=c;
     }
+    if(m.date>=0 || m.odo>=0){ headerIdx=i; map=m; hdr=cells; break; }
   }
-  var di=cols?cols.indexOf('DATE'):0, vi=cols?cols.indexOf('VEHICLE'):1, oi=cols?cols.indexOf('ODOMETER'):2, ni=cols?cols.indexOf('NOTES'):4;
-  if(di<0)di=0; if(vi<0)vi=1; if(oi<0)oi=2; if(ni<0)ni=4;
-  var out=[];
-  for(var j=headerIdx+1; j<lines.length; j++){
+  var out=[], start, di, vi, oi, ni;
+  if(map){
+    start=headerIdx+1; di=map.date; vi=map.veh; oi=map.odo; ni=map.notes;
+  } else {
+    // No recognizable header — infer columns from the first data row.
+    start=0;
+    var sample=null;
+    for(var s=0;s<lines.length;s++){ if(lines[s] && lines[s].trim()){ sample=splitLine(lines[s]); break; } }
+    di=-1; vi=-1; oi=-1; ni=-1;
+    if(sample){
+      for(var k=0;k<sample.length;k++){
+        var v=(sample[k]||'').trim();
+        if(di<0 && looksLikeDate(v)){ di=k; continue; }
+        if(oi<0 && toNum(v)>=10 && /^\$?[0-9][0-9,\.]+$/.test(v)){ oi=k; continue; }
+        if(vi<0 && /[A-Za-z]/.test(v)){ vi=k; }
+      }
+    }
+    if(di<0) di=0;
+    if(oi<0) oi=(sample&&sample.length>2)?2:1;
+    if(vi<0) vi=1;
+    ni=(sample&&sample.length>oi+1)?oi+1:-1;
+  }
+  for(var j=start;j<lines.length;j++){
     var ln=lines[j]; if(!ln||!ln.trim()) continue;
-    var f=_mileageCSVSplit(ln);
-    var date=(f[di]||'').trim();
-    var veh=(f[vi]||'').trim().toUpperCase();
-    var odo=parseFloat(String(f[oi]||'').replace(/[^0-9.\-]/g,''))||0;
-    var notes=(f[ni]||'').trim();
-    if(!date && !veh && !odo) continue;
-    out.push({date:date, veh:veh, odo:odo, notes:notes});
+    var f=splitLine(ln);
+    var date=(di>=0?(f[di]||''):'').trim();
+    var veh=(vi>=0?(f[vi]||''):'').trim().toUpperCase();
+    var odo=toNum(oi>=0?f[oi]:0);
+    var notes=(ni>=0?(f[ni]||''):'').trim();
+    if(/date/i.test(date) && !looksLikeDate(date)) continue;   // skip a stray header row
+    if(!odo) continue;                                          // a mileage row needs an odometer reading
+    out.push({date:date, veh:veh||'TRUCK', odo:odo, notes:notes});
   }
+  _parseMileageCSV._lastHeader = hdr ? hdr.join(' | ') : '(no header row found)';
   return out;
 }
 function mileageReadFile(input){
@@ -3854,7 +3901,7 @@ function mileageReadFile(input){
   reader.onload=function(e){
     try{
       var rows=_parseMileageCSV(e.target.result);
-      if(!rows.length){ toast('No mileage rows found in that file',false); input.value=''; return; }
+      if(!rows.length){ toast('No mileage rows found. Columns seen: '+(_parseMileageCSV._lastHeader||'?'),false); input.value=''; return; }
       var d=load();
       if(!d.fuel) d.fuel={logs:[]};
       if(!d.fuel.miles) d.fuel.miles=[];
