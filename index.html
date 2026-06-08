@@ -1733,7 +1733,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <!-- Log Mileage -->
   <div id="fuel-mileage" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX6</span></div>
+      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX7</span></div>
       <div class="field"><label>Date</label><input type="date" id="mile-date"></div>
       <div class="field"><label>Odometer Reading</label><input type="number" id="mile-odo" inputmode="numeric" placeholder="e.g. 87542"></div>
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
@@ -3994,27 +3994,36 @@ function backupMfsData(){
 }
 
 function addMileage(){
-  const d=load();
-  const date=document.getElementById('mile-date').value||today();
-  const odo=parseFloat(document.getElementById('mile-odo').value)||0;
-  const veh=(document.getElementById('mile-veh').value||'TRUCK').trim().toUpperCase();
-  const notes=(document.getElementById('mile-notes').value||'').trim();
-  if(!date||!odo){toast('Date & Odometer required',false);return;}
-  if(!d.fuel)d.fuel={logs:[],miles:[]};
-  if(!d.fuel.miles)d.fuel.miles=[];
-  d.fuel.miles.push({id:nextId(d.fuel.miles),date,odo,veh,notes});
+  var dateEl=document.getElementById('mile-date');
+  var odoEl=document.getElementById('mile-odo');
+  var vehEl=document.getElementById('mile-veh');
+  var noteEl=document.getElementById('mile-notes');
+  var date=(dateEl&&dateEl.value)||today();
+  var odo=parseFloat((odoEl&&odoEl.value)||'')||0;
+  var veh=((vehEl&&vehEl.value)||'TRUCK').trim().toUpperCase();
+  var notes=((noteEl&&noteEl.value)||'').trim();
+  if(!date||!odo){ toast('Date & Odometer required',false); return; }
+  var d=load();
+  if(!d.fuel) d.fuel={logs:[]};
+  if(!Array.isArray(d.fuel.miles)) d.fuel.miles=[];
+  d.fuel.miles.push({id:nextId(d.fuel.miles),date:date,odo:odo,veh:veh,notes:notes});
   d.fuel.miles.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-  save(d);
-  document.getElementById('mile-odo').value='';
-  document.getElementById('mile-notes').value='';
+  // Save AND verify it actually persisted (catches private-mode / storage-full).
+  var want=d.fuel.miles.length, ok=false, err='';
+  try{
+    save(d);
+    var rr=JSON.parse(localStorage.getItem('mfs')||'{}');
+    ok=!!(rr&&rr.fuel&&rr.fuel.miles&&rr.fuel.miles.length===want);
+  }catch(e){ err=(e&&e.message)?e.message:String(e); }
+  if(!ok){ toast('Could not save'+(err?': '+err:' — storage is blocked or full on this device'),false); return; }
+  if(odoEl)odoEl.value=''; if(noteEl)noteEl.value='';
   renderMileHistory();
-  // Re-render chart explicitly and scroll it into view so the user sees the update
   renderMileChart();
+  toast('🚗 Saved ✓ — '+want+' total reading'+(want===1?'':'s'),true);
   setTimeout(function(){
-    var chart=document.getElementById('mile-chart');
-    if(chart && chart.scrollIntoView) chart.scrollIntoView({behavior:'smooth',block:'start'});
-  },100);
-  toast('🚗 Mileage saved ✓ — chart updated',true);
+    var h=document.getElementById('mile-history');
+    if(h && h.scrollIntoView) h.scrollIntoView({behavior:'smooth',block:'start'});
+  },120);
 }
 
 function renderMileHistory(){
