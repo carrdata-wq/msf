@@ -4012,14 +4012,21 @@ function addMileage(){
 function renderMileHistory(){
   const d=load();
   var miles=(d.fuel&&d.fuel.miles)||[];
-  var recent=miles.slice(-10).reverse();
-  var h='';
-  if(!recent.length){document.getElementById('mile-history').innerHTML='<div style="color:var(--dim);font-size:14px;">No mileage logged yet</div>';return;}
-  recent.forEach(function(m,i){
-    // "driven" must compare against the previous reading OF THE SAME CAR.
+  var host=document.getElementById('mile-history');
+  if(!miles.length){ host.innerHTML='<div style="color:var(--dim);font-size:14px;">No mileage logged yet</div>'; return; }
+  // Build per-vehicle date-sorted lists once, so the "driven" delta compares
+  // each reading to the previous reading OF THE SAME CAR.
+  var byVeh={};
+  miles.forEach(function(m){ var v=(m.veh||'TRUCK').toUpperCase(); (byVeh[v]=byVeh[v]||[]).push(m); });
+  Object.keys(byVeh).forEach(function(v){ byVeh[v].sort(function(a,b){return(a.date||'').localeCompare(b.date||'');}); });
+  var counts=Object.keys(byVeh).sort().map(function(v){ return v+' '+byVeh[v].length; }).join('  ·  ');
+  var h='<div style="color:#00ff88;font-family:Courier New,monospace;font-size:13px;font-weight:700;margin-bottom:6px;">'
+       +miles.length+' readings  ·  '+counts+'</div>';
+  // Show ALL readings, newest first.
+  var ordered=miles.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'');});
+  ordered.forEach(function(m,i){
     var mv=(m.veh||'TRUCK').toUpperCase();
-    var sameVeh=miles.filter(function(x){return (x.veh||'TRUCK').toUpperCase()===mv;})
-                      .sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+    var sameVeh=byVeh[mv];
     var mi=sameVeh.indexOf(m);
     var prev=mi>0?sameVeh[mi-1]:null;
     var driven=prev?m.odo-prev.odo:0;
