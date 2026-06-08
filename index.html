@@ -1733,7 +1733,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <!-- Log Mileage -->
   <div id="fuel-mileage" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title green">🚗 Log Mileage</div>
+      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX6</span></div>
       <div class="field"><label>Date</label><input type="date" id="mile-date"></div>
       <div class="field"><label>Odometer Reading</label><input type="number" id="mile-odo" inputmode="numeric" placeholder="e.g. 87542"></div>
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
@@ -3916,14 +3916,13 @@ function mileageReadFile(input){
         added++;
       });
       d.fuel.miles.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
-      save(d);
+      try{ save(d); }
+      catch(se){ toast('Save failed (storage may be full): '+((se&&se.message)?se.message:se),false); input.value=''; return; }
       var total=d.fuel.miles.length;
       if(typeof fuelShow==='function') fuelShow('mileage');
-      // Render explicitly (don't rely only on fuelShow) and scroll the table into
-      // view, so the appended rows are actually visible instead of below the fold.
       try{ if(typeof renderMileHistory==='function') renderMileHistory(); }catch(_e){}
       try{ if(typeof renderMileChart==='function') renderMileChart(); }catch(_e){}
-      toast('\u2713 Imported '+added+' \u2014 '+total+' total reading'+(total===1?'':'s')+' now in the table'+(rows.length-added>0?' ('+(rows.length-added)+' already there)':''), true);
+      toast('\u2713 '+total+' total reading'+(total===1?'':'s')+' in the table'+(added<rows.length?' ('+(rows.length-added)+' already there)':''), true);
       setTimeout(function(){
         var hist=document.getElementById('mile-history');
         if(hist && hist.scrollIntoView) hist.scrollIntoView({behavior:'smooth',block:'start'});
@@ -4021,7 +4020,10 @@ function addMileage(){
 function renderMileHistory(){
   const d=load();
   var miles=(d.fuel&&d.fuel.miles)||[];
+  var cnt=document.getElementById('mile-count');
+  if(cnt) cnt.textContent=miles.length+' reading'+(miles.length===1?'':'s');
   var host=document.getElementById('mile-history');
+  if(!host) return;
   if(!miles.length){ host.innerHTML='<div style="color:var(--dim);font-size:14px;">No mileage logged yet</div>'; return; }
   // Build per-vehicle date-sorted lists once, so the "driven" delta compares
   // each reading to the previous reading OF THE SAME CAR.
