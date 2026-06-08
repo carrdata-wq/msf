@@ -6114,6 +6114,46 @@ function parseBulkFile(text,filename){
     }
     return{type:'accounting',data:rows.filter(function(r){return r.payee;})};
   }
+  // Accounting BUP backup — DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT.
+  // (The BUP export uses this shape; read it header-aware so it round-trips.)
+  var _bup = text.toUpperCase();
+  if(_bup.indexOf('PAYEE')>=0 && _bup.indexOf('AMOUNT')>=0 && _bup.indexOf('PCODE')>=0){
+    var blines=text.split(/\r?\n/);
+    function _splitCsvLine2(line){
+      var cols=[],cur='',inq=false;
+      for(var ci=0;ci<line.length;ci++){
+        var ch=line[ci];
+        if(ch==='"'){inq=!inq;}
+        else if(ch===','&&!inq){cols.push(cur);cur='';}
+        else cur+=ch;
+      }
+      cols.push(cur); return cols;
+    }
+    var bh=_splitCsvLine2(blines[0]).map(function(h){return h.replace(/"/g,'').trim().toUpperCase();});
+    var bDATE=bh.indexOf('DATE'), bPAYEE=bh.indexOf('PAYEE'), bPCODE=bh.indexOf('PCODE'),
+        bDESC=bh.indexOf('DESC'), bAMT=bh.indexOf('AMOUNT'), bQTY=bh.indexOf('QTY');
+    var brows=[];
+    for(var i=1;i<blines.length;i++){
+      if(!blines[i].trim())continue;
+      var bc=_splitCsvLine2(blines[i]);
+      function bgv(idx){ return (idx>=0 && idx<bc.length) ? (bc[idx]||'') : ''; }
+      var bpay=bgv(bPAYEE).trim().toUpperCase();
+      if(!bpay)continue;
+      var brow={
+        id:Date.now()+Math.random(),
+        date:bgv(bDATE).trim(),
+        payee:bpay,
+        pcode:bgv(bPCODE).trim().toUpperCase(),
+        desc:bgv(bDESC).trim().toUpperCase(),
+        amt:parseFloat(bgv(bAMT))||0,
+        x:'', mtime:''
+      };
+      var bqn=parseInt(bgv(bQTY),10);
+      if(!isNaN(bqn) && bqn>0) brow.qty=bqn;
+      brows.push(brow);
+    }
+    return{type:'accounting',data:brows};
+  }
   // Phone clients CSV — NAME,PHONE header
   if(text.toUpperCase().indexOf('NAME,PHONE')>=0){
     var lines=text.split(/\r?\n/);
@@ -14477,6 +14517,301 @@ function _feFiltCancel(){
   _feFocusPrompt();
 }
 
+// ═══════════════ REPORTS — FoxBase fast report codes ═══════════════
+// Saved combos live in localStorage 'mx_reports' as
+//   [{code:'RROO', pcode:'', desc:'ROOFING', yr:'', label:'Roofing'}]
+// Type the code at the PAYEE prompt → output menu → formatted block.
+// RNEW builds a custom code with the same letter pickers as FILT.
+// Bare 'R' still opens the reports screen (unchanged).
+var _feRptCtx = null;   // {rep, rows, total, text} for the active report's output buttons
+
+function _feLoadReports(){
+  try{ return JSON.parse(localStorage.getItem('mx_reports')||'null'); }catch(e){ return null; }
+}
+function _feSaveReports(list){
+  try{ localStorage.setItem('mx_reports', JSON.stringify(list)); }catch(e){}
+}
+function _feGetReports(){
+  var list = _feLoadReports();
+  if(!list){ list = _feAutoGenReports(); _feSaveReports(list); return list; }
+  // Migration: earlier builds used an R- prefix. If any stored code isn't an
+  // X-code, the list is stale — rebuild it under the new X namespace.
+  var stale = false;
+  for(var i=0;i<list.length;i++){ if((list[i].code||'').charAt(0) !== 'X'){ stale = true; break; } }
+  if(stale){ list = _feAutoGenReports(); _feSaveReports(list); }
+  return list;
+}
+// Auto-build a starter set: X + the PCODE value, and X + first letters of each DESC.
+// (Custom mnemonics like X106→10629 are added by hand via XNEW.)
+function _feAutoGenReports(){
+  var out = [], seen = {};
+  function add(code, rec){ if(code.length>1 && !seen[code]){ seen[code]=1; rec.code=code; out.push(rec); } }
+  _feGetAllPcodes().forEach(function(pc){
+    var c = 'X' + String(pc).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
+    add(c, {pcode:String(pc).toUpperCase(), desc:'', yr:'', label:'PCODE '+pc});
+  });
+  _feGetAllDescs().forEach(function(dc){
+    var c = 'X' + String(dc).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+    add(c, {pcode:'', desc:String(dc).toUpperCase(), yr:'', label:String(dc)});
+  });
+  return out;
+}
+function _feReportFind(code){
+  var list = _feGetReports(); code = String(code).toUpperCase();
+  for(var i=0;i<list.length;i++){ if((list[i].code||'').toUpperCase() === code) return list[i]; }
+  return null;
+}
+
+// Gather the matching rows + total for a saved combo.
+function _feReportRows(rep){
+  var rows = [], total = 0;
+  var pcode=(rep.pcode||'').toUpperCase(), desc=(rep.desc||'').toUpperCase(),
+      payee=(rep.payee||'').toUpperCase(), yr=(rep.yr||'');
+  for(var i=0;i<LOG.length;i++){
+    var e = LOG[i]; if(!e || e.deleted) continue;
+    if(pcode && (e.pcode||'').toUpperCase() !== pcode) continue;
+    if(desc  && (e.desc ||'').toUpperCase() !== desc)  continue;
+    if(payee && (e.payee||'').toUpperCase() !== payee) continue;
+    if(yr    && _feYearOf(e.date) !== yr)              continue;
+    rows.push(e); total += (e.amt||0);
+  }
+  return { rows: rows, total: total };
+}
+
+// Formatted block (option 3: header + line items + total).
+function _feReportBlockText(rep, rows, total){
+  var L = [];
+  L.push('REPORT: ' + (rep.label || rep.code));
+  var f = [];
+  if(rep.pcode) f.push('PCODE=' + rep.pcode);
+  if(rep.desc)  f.push('DESC='  + rep.desc);
+  if(rep.payee) f.push('PAYEE=' + rep.payee);
+  if(rep.yr)    f.push('YR='    + rep.yr);
+  L.push('FILTER: ' + (f.length ? f.join('  ') : 'ALL'));
+  L.push('CODE:   ' + rep.code);
+  L.push('-------------------------------------------');
+  rows.forEach(function(e){
+    var amt = (e.amt||0).toFixed(2);
+    L.push((e.date||'') + '  ' + (e.payee||'') + '  [' + (e.pcode||'') + '] '
+           + (e.desc||'') + '   $' + amt);
+  });
+  L.push('-------------------------------------------');
+  L.push('TOTAL: $' + total.toFixed(2) + '   (' + rows.length + ' items)');
+  return L.join('\n');
+}
+
+// Type a report code → build it → show the output (printer) menu FIRST.
+function _feRunReport(code){
+  var rep = _feReportFind(code);
+  if(!rep){ toast('No report code ' + code, false); _feFocusPrompt(); return; }
+  var r = _feReportRows(rep);
+  _feRptCtx = { rep: rep, rows: r.rows, total: r.total, text: _feReportBlockText(rep, r.rows, r.total) };
+  _feRenderReportMenu();
+}
+
+// Printer/output menu — shown before the data, FoxBase style.
+function _feRenderReportMenu(){
+  var ov = document.getElementById('fe-overlay'); if(!ov || !_feRptCtx) return;
+  var rep = _feRptCtx.rep;
+  var f = [];
+  if(rep.pcode) f.push('PCODE='+rep.pcode);
+  if(rep.desc)  f.push('DESC='+rep.desc);
+  if(rep.payee) f.push('PAYEE='+rep.payee);
+  if(rep.yr)    f.push('YR='+rep.yr);
+  var html = '<div style="background:#000033;border:2px solid #00ffff;border-radius:6px;padding:14px;max-width:520px;width:100%;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;">'
+    + '<div style="color:#00ffff;font-weight:700;font-size:15px;margin-bottom:2px;">\u2399 PRINT / OUTPUT — ' + _feEsc(rep.label||rep.code) + '</div>'
+    + '<div style="color:#88ddff;font-size:11px;margin-bottom:4px;">' + _feEsc(f.length?f.join('  '):'ALL') + '</div>'
+    + '<div style="color:#ffff55;font-size:12px;margin-bottom:12px;">' + _feRptCtx.rows.length + ' items \u00b7 TOTAL $' + _feRptCtx.total.toFixed(2) + '</div>'
+    + '<button onclick="_feReportOutput(\'view\')" style="width:100%;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:11px;border-radius:4px;cursor:pointer;margin-bottom:8px;"><span style="background:#00ffff;color:#000033;padding:1px 7px;border-radius:2px;margin-right:6px;">V</span>VIEW ON SCREEN</button>'
+    + '<button onclick="_feReportOutput(\'share\')" style="width:100%;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:11px;border-radius:4px;cursor:pointer;margin-bottom:8px;"><span style="background:#00ff88;color:#003300;padding:1px 7px;border-radius:2px;margin-right:6px;">E</span>EMAIL / SHARE</button>'
+    + '<button onclick="_feReportOutput(\'copy\')" style="width:100%;background:#222200;border:2px solid #ffdd55;color:#ffdd55;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:11px;border-radius:4px;cursor:pointer;margin-bottom:8px;"><span style="background:#ffdd55;color:#222200;padding:1px 7px;border-radius:2px;margin-right:6px;">C</span>COPY TEXT</button>'
+    + '<button onclick="_feReportClose()" style="width:100%;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:9px;border-radius:4px;cursor:pointer;">ESC</button>'
+    + '</div>';
+  ov.innerHTML = html; ov.style.display='flex'; ov.style.alignItems='flex-start';
+  setTimeout(function(){ document.addEventListener('keydown', _feReportMenuKey, true); }, 60);
+}
+function _feReportMenuKey(e){
+  if(!_feRptCtx) return;
+  var k = (e.key||'').toUpperCase();
+  if(e.key==='Escape'){ e.preventDefault(); _feReportClose(); return; }
+  if(k==='V'){ e.preventDefault(); _feReportOutput('view'); }
+  else if(k==='E'){ e.preventDefault(); _feReportOutput('share'); }
+  else if(k==='C'){ e.preventDefault(); _feReportOutput('copy'); }
+}
+function _feReportOutput(action){
+  if(!_feRptCtx) return;
+  var text = _feRptCtx.text, rep = _feRptCtx.rep;
+  if(action==='copy'){
+    try{ navigator.clipboard.writeText(text); toast('\u2713 Report copied', true); }
+    catch(e){ toast('Copy failed', false); }
+    return;
+  }
+  if(action==='share'){
+    var subject = 'MFS Report ' + rep.code + ' — ' + (rep.label||'');
+    if(navigator.share){
+      navigator.share({ title: subject, text: text }).catch(function(){});
+    } else {
+      var url = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+      try{ window.location.href = url; }
+      catch(e){ try{ navigator.clipboard.writeText(text); toast('No mail app — copied instead', true); }catch(e2){} }
+    }
+    return;
+  }
+  // view on screen — render the block into the overlay
+  if(action==='view'){
+    var ov = document.getElementById('fe-overlay'); if(!ov) return;
+    document.removeEventListener('keydown', _feReportMenuKey, true);
+    var html = '<div style="background:#000022;border:2px solid #00ffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:86vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;">'
+      + '<pre style="color:#ffff66;font-size:12px;white-space:pre-wrap;word-break:break-word;overflow-y:auto;margin:0 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
+      + '<div style="display:flex;gap:8px;">'
+      + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">EMAIL / SHARE</button>'
+      + '<button onclick="_feReportOutput(\'copy\')" style="flex:1;background:#222200;border:2px solid #ffdd55;color:#ffdd55;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">COPY</button>'
+      + '<button onclick="_feReportClose()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">ESC</button>'
+      + '</div></div>';
+    ov.innerHTML = html;
+  }
+}
+function _feReportClose(){
+  document.removeEventListener('keydown', _feReportMenuKey, true);
+  _feRptCtx = null;
+  var ov = document.getElementById('fe-overlay'); if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  _feStartEntryPayee(); _feRender(); _feFocusPrompt();
+}
+
+// ───── RNEW — build / manage custom report codes ─────
+var _feRnew = null;     // {step, pcode, desc, yr, code}
+var _feRnewItems = [];
+var _RNEW_PICK_STEPS = ['pcode','desc','yr'];
+function _feRnewStart(){
+  _feRnew = { step:'list', pcode:'', desc:'', yr:'', code:'' };
+  _feRnewRender();
+}
+// Open the builder straight into the ADD flow, pre-naming the code the user typed.
+function _feRnewStartWith(code){
+  _feRnew = { step:'pcode', pcode:'', desc:'', yr:'', code:String(code||'').toUpperCase() };
+  _feRnewRender();
+}
+function _feRnewLetterKey(e){
+  if(!_feRnew) return;
+  if(e.key==='Escape'){ e.preventDefault(); _feRnewCancel(); return; }
+  if(_RNEW_PICK_STEPS.indexOf(_feRnew.step) < 0) return;  // only on picker steps
+  if(!e.key || e.key.length!==1) return;
+  if(e.key==='0' || e.key===' '){ e.preventDefault(); _feRnewChoose(''); return; }
+  var L = e.key.toUpperCase();
+  if(!/[A-Z]/.test(L)) return;
+  var idx = L.charCodeAt(0) - 65;
+  if(idx<0 || idx>=_feRnewItems.length || idx>=24) return;
+  e.preventDefault(); e.stopPropagation();
+  _feRnewChoose(_feRnewItems[idx]);
+}
+function _feRnewRender(){
+  var ov = document.getElementById('fe-overlay'); if(!ov || !_feRnew) return;
+  document.removeEventListener('keydown', _feRnewLetterKey, true);
+  var step = _feRnew.step;
+  if(step==='list'){
+    var list = _feGetReports();
+    var html = '<div style="background:#000033;border:2px solid #ffaa00;border-radius:6px;padding:12px;max-width:620px;width:100%;max-height:84vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;overflow-y:auto;">'
+      + '<div style="color:#ffaa00;font-weight:700;font-size:14px;margin-bottom:8px;">REPORT CODES</div>'
+      + '<div style="font-size:11px;color:#88ddff;margin-bottom:8px;">Type a code at the prompt (e.g. ' + _feEsc((list[0]&&list[0].code)||'XROO') + ') to run it. Tap \u2715 to delete.</div>'
+      + '<div style="margin-bottom:10px;">';
+    list.forEach(function(rep, i){
+      var f=[]; if(rep.pcode)f.push('PCODE='+rep.pcode); if(rep.desc)f.push(rep.desc); if(rep.yr)f.push(rep.yr);
+      html += '<div style="display:flex;align-items:center;gap:8px;border-bottom:1px solid #224;padding:5px 0;">'
+        + '<span style="background:#ffaa00;color:#000;font-weight:700;padding:2px 8px;border-radius:2px;min-width:54px;text-align:center;">' + _feEsc(rep.code) + '</span>'
+        + '<span style="color:#ffff55;flex:1;font-size:12px;">' + _feEsc(f.join(' \u00b7 ')||'ALL') + '</span>'
+        + '<button onclick="_feRnewDelete(' + i + ')" style="background:#330000;border:1px solid #ff6666;color:#ff6666;font-weight:700;font-size:11px;padding:3px 8px;border-radius:2px;cursor:pointer;">\u2715</button>'
+        + '</div>';
+    });
+    if(!list.length) html += '<div style="color:#888;font-size:12px;">No codes yet.</div>';
+    html += '</div>'
+      + '<div style="display:flex;gap:8px;">'
+      + '<button onclick="_feRnewBegin()" style="flex:2;background:#332200;border:2px solid #ffaa00;color:#ffff00;font-weight:700;font-size:14px;padding:11px;border-radius:4px;cursor:pointer;font-family:Courier New,monospace;">\u2795 ADD NEW CODE</button>'
+      + '<button onclick="_feRnewCancel()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-weight:700;font-size:13px;padding:11px;border-radius:4px;cursor:pointer;font-family:Courier New,monospace;">ESC</button>'
+      + '</div></div>';
+    ov.innerHTML = html; ov.style.display='flex'; ov.style.alignItems='flex-start';
+    return;
+  }
+  if(step==='name'){
+    var f=[]; if(_feRnew.pcode)f.push('PCODE='+_feRnew.pcode); if(_feRnew.desc)f.push('DESC='+_feRnew.desc); if(_feRnew.yr)f.push('YR='+_feRnew.yr);
+    ov.innerHTML = '<div style="background:#000033;border:2px solid #ffaa00;border-radius:6px;padding:14px;max-width:420px;width:100%;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;">'
+      + '<div style="color:#ffaa00;font-weight:700;font-size:14px;margin-bottom:4px;">NAME THIS CODE</div>'
+      + '<div style="color:#88ddff;font-size:11px;margin-bottom:8px;">' + _feEsc(f.join('  ')||'ALL') + '</div>'
+      + '<div style="color:#ffff55;font-size:11px;margin-bottom:6px;">Start with X, e.g. X106, XSUB, XROO</div>'
+      + '<input id="rnew-code" type="text" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="8" value="' + _feEsc(_feRnew.code || 'X') + '" '
+      + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();_feRnewSave();}" '
+      + 'style="width:100%;background:#000;border:2px solid #ffaa00;color:#ffff55;font-family:Courier New,monospace;font-size:20px;font-weight:700;text-transform:uppercase;padding:9px;border-radius:4px;box-sizing:border-box;outline:none;">'
+      + '<div style="display:flex;gap:8px;margin-top:10px;">'
+      + '<button onclick="_feRnewSave()" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-weight:700;font-size:14px;padding:10px;border-radius:4px;cursor:pointer;font-family:Courier New,monospace;">\u2713 SAVE CODE</button>'
+      + '<button onclick="_feRnewCancel()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;font-family:Courier New,monospace;">ESC</button>'
+      + '</div></div>';
+    ov.style.display='flex'; ov.style.alignItems='flex-start';
+    setTimeout(function(){ var q=document.getElementById('rnew-code'); if(q){ try{ q.focus(); q.setSelectionRange(1,1); }catch(e){} } }, 40);
+    return;
+  }
+  // picker steps: pcode / desc / yr — same letter style as FILT
+  var titleMap = { pcode:'NEW CODE · PCODE', desc:'NEW CODE · DESC', yr:'NEW CODE · YEAR' };
+  var items = (step==='pcode') ? _feGetAllPcodes() : (step==='desc') ? _feGetAllDescs() : _feRptUniqueYears();
+  _feRnewItems = items.slice();
+  var accent = (step==='desc') ? '#00ff88' : (step==='yr' ? '#ffdd55' : '#00ff00');
+  var stepNo = _RNEW_PICK_STEPS.indexOf(step)+1;
+  var h = '<div style="background:#000033;border:2px solid '+accent+';border-radius:6px;padding:12px;max-width:620px;width:100%;max-height:84vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;overflow-y:auto;">'
+    + '<div style="color:'+accent+';font-weight:700;font-size:14px;margin-bottom:8px;">'+titleMap[step]+'  ('+stepNo+' of 3) — PICK A LETTER</div>'
+    + '<div style="margin-bottom:10px;">'
+    + '<div style="display:inline-block;margin:4px;text-align:center;vertical-align:top;"><button onclick="_feRnewChoose(\'\')" style="background:#003355;border:2px solid #00ccff;color:#00ddff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:3px;cursor:pointer;min-width:120px;display:block;"><span style="background:#00ccff;color:#000033;padding:2px 8px;border-radius:2px;">0</span></button><div style="color:#00ddff;font-size:11px;margin-top:2px;">(ANY)</div></div>';
+  for(var k=0;k<items.length;k++){
+    var it=String(items[k]||''); if(!it) continue;
+    var safe=it.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var badge = (k<24) ? '<span style="background:'+accent+';color:#000033;padding:2px 8px;border-radius:2px;">'+String.fromCharCode(65+k)+'</span>' : '<span style="color:'+accent+';">'+_feEsc(it)+'</span>';
+    h += '<div style="display:inline-block;margin:4px;text-align:center;vertical-align:top;"><button onclick="_feRnewChoose(\''+safe+'\')" style="background:#000080;border:2px solid '+accent+';color:'+accent+';font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 12px;border-radius:3px;cursor:pointer;min-width:120px;display:block;">'+badge+'</button><div style="color:#00ffff;font-size:11px;margin-top:2px;">'+_feEsc(it)+'</div></div>';
+  }
+  h += '</div><div style="display:flex;gap:8px;border-top:1px solid '+accent+';padding-top:10px;"><button onclick="_feRnewCancel()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-weight:700;font-size:13px;padding:9px;border-radius:4px;cursor:pointer;font-family:Courier New,monospace;">ESC CANCEL</button></div></div>';
+  ov.innerHTML = h; ov.style.display='flex'; ov.style.alignItems='flex-start';
+  setTimeout(function(){ document.addEventListener('keydown', _feRnewLetterKey, true); }, 60);
+}
+function _feRptUniqueYears(){
+  var ys={}; for(var i=0;i<LOG.length;i++){ var e=LOG[i]; if(e&&!e.deleted){ var y=_feYearOf(e.date); if(y) ys[y]=1; } }
+  return Object.keys(ys).sort().reverse();
+}
+function _feRnewBegin(){ _feRnew.step='pcode'; _feRnewRender(); }
+function _feRnewChoose(val){
+  var v=String(val||'').toUpperCase();
+  if(_feRnew.step==='pcode') _feRnew.pcode=v;
+  else if(_feRnew.step==='desc') _feRnew.desc=v;
+  else if(_feRnew.step==='yr') _feRnew.yr=v;
+  var idx=_RNEW_PICK_STEPS.indexOf(_feRnew.step);
+  document.removeEventListener('keydown', _feRnewLetterKey, true);
+  if(idx < _RNEW_PICK_STEPS.length-1){ _feRnew.step=_RNEW_PICK_STEPS[idx+1]; _feRnewRender(); }
+  else { _feRnew.step='name'; _feRnewRender(); }
+}
+function _feRnewSave(){
+  var inp=document.getElementById('rnew-code');
+  var code=(inp?inp.value:'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code.length<2){ toast('Code needs at least 2 chars',false); if(inp) inp.focus(); return; }
+  if(code[0] !== 'X') code = 'X'+code;
+  var list=_feGetReports();
+  // overwrite if the code already exists
+  var found=false;
+  for(var i=0;i<list.length;i++){ if((list[i].code||'').toUpperCase()===code){ list[i]={code:code,pcode:_feRnew.pcode,desc:_feRnew.desc,yr:_feRnew.yr,label:(_feRnew.desc||_feRnew.pcode||code)}; found=true; break; } }
+  if(!found) list.push({code:code,pcode:_feRnew.pcode,desc:_feRnew.desc,yr:_feRnew.yr,label:(_feRnew.desc||_feRnew.pcode||code)});
+  _feSaveReports(list);
+  toast('\u2713 Saved ' + code, true);
+  _feRnew=null;
+  var ov=document.getElementById('fe-overlay'); if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  _feStartEntryPayee(); _feRender(); _feFocusPrompt();
+}
+function _feRnewDelete(i){
+  var list=_feGetReports();
+  if(i>=0 && i<list.length){ var c=list[i].code; list.splice(i,1); _feSaveReports(list); toast('Deleted '+c,true); _feRnewRender(); }
+}
+function _feRnewCancel(){
+  document.removeEventListener('keydown', _feRnewLetterKey, true);
+  _feRnew=null;
+  var ov=document.getElementById('fe-overlay'); if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  _feStartEntryPayee(); _feRender(); _feFocusPrompt();
+}
+// ═══════════════ END REPORTS ═══════════════
+
+
 function _feDispatchInput(val){
   var v = (val||'').trim();
   // HOME: waiting for a PAYEE (or a command)
@@ -14488,6 +14823,15 @@ function _feDispatchInput(val){
     // longer name is just a normal letter — this only fires when the entire
     // bar is a single X, so it never eats a payee you're actually typing.
     if(vu === 'X'){ _feVoidLast(); return; }
+    // REPORTS: XNEW opens the code manager; a defined X-code runs its report; an
+    // UNKNOWN single-token X-code opens the builder pre-named with it — it must
+    // never fall through and create a payee/new data file.
+    if(vu === 'XNEW'){ _feRnewStart(); return; }
+    if(vu.charAt(0) === 'X' && vu.indexOf(' ') < 0 && vu.length >= 2 && vu.length <= 8 && vu !== 'XB'){
+      if(_feReportFind(vu)){ _feRunReport(vu); return; }
+      toast(vu + ' not a report code yet — build it', true);
+      _feRnewStartWith(vu); return;
+    }
     if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','PAYE','PAYEE','R','S','-','?','H','BUP','XB','BACKALL','FILT','NOFILT','ALL','FILTOFF'].indexOf(vu) >= 0){
       _feDispatchCommand(v); return;
     }
@@ -16251,6 +16595,11 @@ function _feShowHelp(){
     + '<button onclick="_feCloseOverlay();_feFiltStart();" style="flex:2;background:#332200;border:2px solid #ffaa00;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:8px;border-radius:4px;cursor:pointer;">⛃ FILT — SET FILTER</button>'
     + '<button onclick="_feCloseOverlay();_feFiltClear();" style="flex:1;background:#222;border:2px solid #888;color:#ccc;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:8px;border-radius:4px;cursor:pointer;">NOFILT — OFF</button>'
     + '</div></div>'
+    + '<div style="background:#001a1a;border:1px solid #00ffff;padding:8px;border-radius:4px;margin:10px 0;">'
+    + '<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:4px;">▶ REPORTS (millisecond blocks)</div>'
+    + '<div style="font-size:12px;margin-bottom:6px;">Type a report code at the prompt (e.g. XROO, XSUB, X106) → pick output (View / Email-Share / Copy) → the block prints with a total. X-codes are separate from payee data. XNEW builds a custom code (PCODE + DESC + YR) with the same letter-pickers as FILT.</div>'
+    + '<button onclick="_feCloseOverlay();_feRnewStart();" style="width:100%;background:#002222;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:8px;border-radius:4px;cursor:pointer;">⊕ XNEW — MANAGE / ADD REPORT CODES</button>'
+    + '</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">MM</span> edit month of current row</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">DD</span> edit day</div>'
     + '<div><span style="color:#00ffff;font-weight:700;display:inline-block;width:50px;">YR</span> edit year (4-digit or 2-digit)</div>'
