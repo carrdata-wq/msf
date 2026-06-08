@@ -1740,8 +1740,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="field"><label>Notes (optional)</label><input type="text" id="mile-notes" placeholder="e.g. Monthly reading"></div>
       <button class="btn btn-green" onclick="addMileage()">✓ SAVE MILEAGE</button>
       <button onclick="backupMfsData()" style="width:100%;margin-top:6px;padding:13px;background:#00ff88;color:#000080;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">↓ DOWNLOAD &amp; EMAIL MILEAGE TO ME</button>
-      <button onclick="uploadMileage()" style="width:100%;margin-top:6px;padding:13px;background:#00aaff;color:#001a33;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;">↑ UPLOAD / RESTORE MILEAGE</button>
-      <input type="file" id="mileage-file-input" accept=".csv,.txt" style="display:none" onchange="mileageReadFile(this)">
+      <label for="mileage-file-input" style="display:block;width:100%;margin-top:6px;padding:13px;background:#00aaff;color:#001a33;border:none;border-radius:6px;font-family:Courier New,monospace;font-weight:700;font-size:14px;cursor:pointer;text-align:center;box-sizing:border-box;">↑ UPLOAD / RESTORE MILEAGE</label>
+      <input type="file" id="mileage-file-input" onchange="mileageReadFile(this)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;">
       <button class="btn btn-dim" onclick="fuelShow('')">◀ Back</button>
     </div>
     <!-- Mileage history -->
@@ -3919,9 +3919,10 @@ function mileageReadFile(input){
       save(d);
       toast('\u2713 Restored '+added+' mileage row'+(added===1?'':'s')+(rows.length-added>0?' ('+(rows.length-added)+' already there)':''), true);
       if(typeof fuelShow==='function') fuelShow('mileage');
-    }catch(err){ toast('Could not read that mileage file',false); }
+    }catch(err){ toast('Mileage import error: '+(err&&err.message?err.message:err),false); }
     input.value='';
   };
+  reader.onerror=function(){ toast('Could not read the file (device blocked it). Try re-saving the CSV to your phone, then upload again.',false); input.value=''; };
   reader.readAsText(file);
 }
 function backupMfsData(){
