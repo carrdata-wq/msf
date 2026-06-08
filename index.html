@@ -3917,8 +3917,17 @@ function mileageReadFile(input){
       });
       d.fuel.miles.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
       save(d);
-      toast('\u2713 Restored '+added+' mileage row'+(added===1?'':'s')+(rows.length-added>0?' ('+(rows.length-added)+' already there)':''), true);
+      var total=d.fuel.miles.length;
       if(typeof fuelShow==='function') fuelShow('mileage');
+      // Render explicitly (don't rely only on fuelShow) and scroll the table into
+      // view, so the appended rows are actually visible instead of below the fold.
+      try{ if(typeof renderMileHistory==='function') renderMileHistory(); }catch(_e){}
+      try{ if(typeof renderMileChart==='function') renderMileChart(); }catch(_e){}
+      toast('\u2713 Imported '+added+' \u2014 '+total+' total reading'+(total===1?'':'s')+' now in the table'+(rows.length-added>0?' ('+(rows.length-added)+' already there)':''), true);
+      setTimeout(function(){
+        var hist=document.getElementById('mile-history');
+        if(hist && hist.scrollIntoView) hist.scrollIntoView({behavior:'smooth',block:'start'});
+      },150);
     }catch(err){ toast('Mileage import error: '+(err&&err.message?err.message:err),false); }
     input.value='';
   };
