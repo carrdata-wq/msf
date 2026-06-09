@@ -15278,23 +15278,69 @@ function _feBackupAll(){
       bytes: enc.encode(balanceLines.join('\r\n'))
     });
     
-    // Create ZIP and download
+    // ── Build the ZIP (validated bytes) ──
     var zip = _makeZip(files);
     var blob = new Blob([zip], {type: 'application/zip'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
     var dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    a.href = url;
-    a.download = 'MFS-BACKUP-' + dateStr + '.zip';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function() { try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
-    
-    alert('✓ BACKUP COMPLETE: 5 CSVs in ZIP\n\n' + acctLines.length + ' accounting entries\n' + mileLines.length + ' mileage readings\n' + Object.keys(balances).length + ' pcodes\n' + clientLines.length + ' clients\n\nFile: MFS-BACKUP-' + dateStr + '.zip');
+    var fname = 'MFS-BACKUP-' + dateStr + '.zip';
+    var url = URL.createObjectURL(blob);
+    // stash so the popup buttons can reach the file
+    _bupLast = { blob: blob, url: url, fname: fname };
+
+    var summary = (acctLines.length - 1) + ' accounting · ' + (mileLines.length - 1) + ' mileage · '
+                + Object.keys(balances).length + ' pcodes · ' + (clientLines.length - 1) + ' clients';
+
+    // Can this device hand the file to Gmail/Drive/Files? (Android home-screen app: yes)
+    var canShare = false;
+    try { canShare = !!(navigator.canShare && navigator.canShare({ files: [ new File([blob], fname, {type:'application/zip'}) ] })); } catch(e){ canShare = false; }
+
+    // On-screen popup — NEVER relies on a silent download (which dies in the Android app).
+    var popupHTML = '<div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:14px;width:100%;max-width:420px;font-family:Courier New,monospace;text-align:center;color:#ffffff;">'
+      + '<div style="font-size:30px;margin-bottom:6px;">💾</div>'
+      + '<div style="color:#ffff00;font-size:15px;font-weight:700;margin-bottom:4px;">BACKUP READY · ' + dateStr + '</div>'
+      + '<div style="color:#ccccff;font-size:12px;margin-bottom:4px;word-break:break-all;">' + fname + '</div>'
+      + '<div style="color:#aaffaa;font-size:12px;margin-bottom:12px;">' + summary + '</div>'
+      + (canShare ? '<button onclick="_bupShareZip()" style="width:100%;background:#00ff88;color:#000080;font-weight:700;font-size:15px;padding:14px;border:none;border-radius:6px;margin-bottom:8px;cursor:pointer;">📤 SHARE / SAVE FILE</button>' : '')
+      + '<button onclick="_bupDownloadZip()" style="width:100%;background:#ffff00;color:#000080;font-weight:700;font-size:15px;padding:14px;border:none;border-radius:6px;margin-bottom:8px;cursor:pointer;">⬇ DOWNLOAD TO THIS DEVICE</button>'
+      + '<a href="' + url + '" download="' + fname + '" style="display:block;color:#88ccff;font-size:12px;margin-bottom:10px;text-decoration:underline;">…or long-press here to save the file</a>'
+      + '<button onclick="_bupCloseModal()" style="width:100%;background:#880000;color:#ffffff;font-size:13px;padding:11px;border:none;border-radius:6px;cursor:pointer;">CLOSE</button>'
+      + '</div>';
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'bup-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:10px;';
+    overlay.innerHTML = popupHTML;
+    document.body.appendChild(overlay);
+    return;   // popup is up — skip the auto focus so the keyboard doesn't cover it
   } catch(e){
     toast('✗ Backup failed: ' + (e.message || e), false);
   }
+  _feFocusPrompt();
+}
+
+// ───── BUP POPUP HELPERS (Android-reliable delivery) ─────
+var _bupLast = null;
+function _bupShareZip(){
+  if(!_bupLast){ toast('Nothing to share — run BUP again', false); return; }
+  try{
+    var file = new File([_bupLast.blob], _bupLast.fname, {type:'application/zip'});
+    navigator.share({ files:[file], title:'MFS Backup', text:_bupLast.fname })
+      .then(function(){ toast('✓ Shared — pick Gmail, Drive, or Files', true); _bupCloseModal(); })
+      .catch(function(err){ if(err && err.name !== 'AbortError'){ toast('Share cancelled — try DOWNLOAD', false); } });
+  }catch(e){ toast('Share not available — use DOWNLOAD', false); }
+}
+function _bupDownloadZip(){
+  if(!_bupLast){ toast('Nothing to download — run BUP again', false); return; }
+  try{
+    var a = document.createElement('a');
+    a.href = _bupLast.url; a.download = _bupLast.fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast('⬇ Saved — check Downloads / your file manager', true);
+  }catch(e){ toast('Download failed: ' + (e.message || e), false); }
+}
+function _bupCloseModal(){
+  var ov = document.getElementById('bup-overlay'); if(ov) ov.remove();
+  if(_bupLast && _bupLast.url){ var u = _bupLast.url; setTimeout(function(){ try{URL.revokeObjectURL(u);}catch(e){} }, 8000); }
   _feFocusPrompt();
 }
 
