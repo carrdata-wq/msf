@@ -15291,7 +15291,7 @@ function _feBackupAll(){
     document.body.removeChild(a);
     setTimeout(function() { try{URL.revokeObjectURL(url);}catch(e){} }, 5000);
     
-    toast('✓ BACKUP COMPLETE: 5 CSVs in ZIP — ' + acctLines.length + ' acct · ' + mileLines.length + ' miles · ' + Object.keys(balances).length + ' pcodes · ' + clientLines.length + ' clients', true);
+    alert('✓ BACKUP COMPLETE: 5 CSVs in ZIP\n\n' + acctLines.length + ' accounting entries\n' + mileLines.length + ' mileage readings\n' + Object.keys(balances).length + ' pcodes\n' + clientLines.length + ' clients\n\nFile: MFS-BACKUP-' + dateStr + '.zip');
   } catch(e){
     toast('✗ Backup failed: ' + (e.message || e), false);
   }
