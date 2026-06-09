@@ -1733,7 +1733,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <!-- Log Mileage -->
   <div id="fuel-mileage" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX10</span></div>
+      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX13</span></div>
       <div class="field"><label>Date</label><input type="date" id="mile-date"></div>
       <div class="field"><label>Odometer Reading</label><input type="number" id="mile-odo" inputmode="numeric" placeholder="e.g. 87542"></div>
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
@@ -15223,9 +15223,8 @@ function _feBackupAll(){
       bytes: enc.encode(acctLines.join('\r\n'))
     });
     
-    // 2. MILEAGE CSV
-    var mfsData = JSON.parse(localStorage.getItem('mfs') || '{}');
-    var mileageLog = (mfsData.fuel && mfsData.fuel.miles) ? mfsData.fuel.miles : [];
+    // 2. MILEAGE CSV — now reads from MILES (IndexedDB) instead of old localStorage
+    var mileageLog = (typeof MILES !== 'undefined' && MILES) ? MILES.slice() : [];
     var mileLines = ['DATE,VEHICLE,ODOMETER,NOTES'];
     mileageLog.forEach(function(m) {
       mileLines.push([csvField(m.date), csvField(m.veh || 'TRUCK'), csvField(m.odo), csvField(m.notes)].join(','));
