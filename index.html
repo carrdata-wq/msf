@@ -15200,6 +15200,8 @@ function _feBackupAll(){
   try {
     var enc = new TextEncoder();
     var files = [];
+    // Safe handles — never throw if a global isn't ready yet
+    var L = (typeof LOG !== 'undefined' && LOG) ? LOG : [];
     
     // Helper to escape CSV fields
     function csvField(val) {
@@ -15212,7 +15214,7 @@ function _feBackupAll(){
     
     // 1. ACCOUNTING CSV
     var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT'];
-    LOG.forEach(function(e) {
+    L.forEach(function(e) {
       if (!e.deleted) {
         acctLines.push([csvField(e.date), csvField(e.day), csvField(e.month), csvField(e.year), 
                         csvField(e.payee), csvField(e.pcode), csvField(e.desc), csvField(e.amt)].join(','));
@@ -15262,7 +15264,7 @@ function _feBackupAll(){
     
     // 5. BALANCE SHEET CSV (running total by PCODE)
     var balances = {};
-    LOG.forEach(function(e) {
+    L.forEach(function(e) {
       if (!e.deleted && e.pcode) {
         var pc = String(e.pcode).toUpperCase();
         if (!balances[pc]) balances[pc] = 0;
@@ -15313,7 +15315,8 @@ function _feBackupAll(){
     document.body.appendChild(overlay);
     return;   // popup is up — skip the auto focus so the keyboard doesn't cover it
   } catch(e){
-    toast('✗ Backup failed: ' + (e.message || e), false);
+    try { console.error('BUP error:', e); } catch(_){}
+    alert('⚠ BUP COULD NOT FINISH\n\n' + (e && e.message ? e.message : e) + '\n\nTell Claude this exact message.');
   }
   _feFocusPrompt();
 }
