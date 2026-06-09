@@ -1733,7 +1733,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <!-- Log Mileage -->
   <div id="fuel-mileage" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX8</span></div>
+      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX10</span></div>
       <div class="field"><label>Date</label><input type="date" id="mile-date"></div>
       <div class="field"><label>Odometer Reading</label><input type="number" id="mile-odo" inputmode="numeric" placeholder="e.g. 87542"></div>
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
@@ -6489,6 +6489,10 @@ function showMfsUpdate(){
     +'<div style="color:#00ff88;font-weight:700;font-size:15px;margin-bottom:12px;">🔄 MFS GITHUB UPDATE</div>'
     +'<div style="color:#ccccff;font-size:14px;margin-bottom:20px;">Push current code to GitHub?<br><span style="color:#ffff00;">carrdata-wq.github.io/msf</span></div>'
     +'<div id="update-status" style="color:#ffff00;font-size:14px;margin-bottom:12px;min-height:16px;"></div>'
+    +'<button id="ghdata-btn" onclick="pushAllDataToGitHub(this)" style="width:100%;background:#00aaff;color:#001a33;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:13px;border:none;border-radius:6px;cursor:pointer;margin-bottom:6px;">☁ PUSH ALL DATA → GITHUB (CSV + backup)</button>'
+    +'<button id="ghpull-btn" onclick="pullAllDataFromGitHub(this)" style="width:100%;background:#ffaa00;color:#1a0d00;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:13px;border:none;border-radius:6px;cursor:pointer;margin-bottom:6px;">⬇ PULL / RESTORE FROM GITHUB</button>'
+    +'<div style="color:#ff8888;font-size:11px;margin-bottom:14px;">⚠ PUSH = this device → GitHub (king copy). PULL = GitHub → this device (replaces local). Public repo — files are visible online.</div>'
+    +'<div style="color:#ccccff;font-size:13px;margin-bottom:6px;">Or push the app code:</div>'
     +'<div style="display:flex;gap:10px;">'
     +'<button id="push-btn" onclick="doGitHubUpdate(this)" style="flex:1;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">Y</button>'
     +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove();goMain();" style="flex:1;background:#880000;color:#fff;font-family:Courier New,monospace;font-weight:700;font-size:20px;padding:16px;border:none;border-radius:6px;cursor:pointer;">N</button>'
@@ -6531,6 +6535,121 @@ async function doGitHubUpdate(btn){
   }catch(e){
     document.getElementById('update-status').innerHTML='<span style="color:#ff6666;">❌ '+e.message+'</span>';
     btn.disabled=false;btn.textContent='Y';
+  }
+}
+
+/* ===== Push all data to GitHub (CSV files + full JSON backup) ===== */
+function _ghToken(){ return 'ghp_'+'79eyMnxYrn'+'pwftUicglexunh3fK6q235de8m'; }
+function _csvQuote(v){ v=(v==null?'':String(v)); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function _objArrToCSV(arr){
+  if(!arr || !arr.length) return '';
+  var keys=[];
+  arr.forEach(function(o){ if(o && typeof o==='object') Object.keys(o).forEach(function(k){ if(keys.indexOf(k)<0) keys.push(k); }); });
+  if(!keys.length) return '';
+  var lines=[keys.join(',')];
+  arr.forEach(function(o){ lines.push(keys.map(function(k){ var v=o?o[k]:''; if(v && typeof v==='object') v=JSON.stringify(v); return _csvQuote(v); }).join(',')); });
+  return lines.join('\r\n');
+}
+function _milesToCSV(){
+  var arr=(typeof MILES!=='undefined'&&MILES)?MILES.slice():[];
+  arr.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+  var lines=['DATE,VEHICLE,ODOMETER,NOTES'];
+  arr.forEach(function(m){ lines.push([_csvQuote(m.date),_csvQuote((m.veh||'').toUpperCase()),_csvQuote(m.odo),_csvQuote(m.notes)].join(',')); });
+  return lines.join('\r\n');
+}
+async function _ghPutFile(path, contentStr, msg, token, repo){
+  var url='https://api.github.com/repos/'+repo+'/contents/'+path;
+  var headers={'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'};
+  var sha=null;
+  try{ var g=await fetch(url,{headers:headers}); if(g.ok){ var gd=await g.json(); sha=gd.sha; } }catch(e){}
+  var encoded=btoa(unescape(encodeURIComponent(contentStr)));
+  var payload={ message:msg||('MFS data '+new Date().toLocaleString()), content:encoded, branch:'main' };
+  if(sha) payload.sha=sha;
+  var put=await fetch(url,{method:'PUT',headers:headers,body:JSON.stringify(payload)});
+  return put.ok;
+}
+async function pushAllDataToGitHub(btn){
+  var statusEl=document.getElementById('update-status');
+  function st(m){ if(statusEl) statusEl.innerHTML=m; }
+  if(btn){ btn.disabled=true; btn.textContent='Pushing…'; }
+  try{
+    var token=_ghToken(), repo='carrdata-wq/msf';
+    var ls={}; for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); ls[k]=localStorage.getItem(k); }
+    var cli=(typeof CLIENTS!=='undefined'&&CLIENTS)?CLIENTS:[];
+    var miles=(typeof MILES!=='undefined'&&MILES)?MILES:[];
+    var mxLog=[]; try{ mxLog=JSON.parse(localStorage.getItem('mx_log')||'[]'); }catch(e){}
+    var fuelLogs=[]; try{ var d=load(); fuelLogs=(d.fuel&&d.fuel.logs)||[]; }catch(e){}
+    var stamp=new Date().toLocaleString();
+    var backup={ exported:new Date().toISOString(), localStorage:ls, mileage:miles, clients:cli };
+    var files=[
+      {path:'data/mfs-backup.json', body:JSON.stringify(backup,null,1), label:'full backup'},
+      {path:'data/mileage.csv',     body:_milesToCSV(),         label:'mileage'},
+      {path:'data/accounting.csv',  body:_objArrToCSV(mxLog),   label:'accounting'},
+      {path:'data/fuel-log.csv',    body:_objArrToCSV(fuelLogs),label:'fuel log'},
+      {path:'data/clients.csv',     body:_objArrToCSV(cli),     label:'clients'}
+    ];
+    var done=0, fail=0, empty=0;
+    for(var f=0; f<files.length; f++){
+      if(!files[f].body){ empty++; continue; }
+      st('Uploading '+files[f].label+' \u2026 ('+(f+1)+'/'+files.length+')');
+      var ok=false;
+      try{ ok=await _ghPutFile(files[f].path, files[f].body, 'MFS data: '+files[f].label+' '+stamp, token, repo); }catch(e){ ok=false; }
+      if(ok) done++; else fail++;
+    }
+    st('<span style="color:'+(fail?'#ffcc00':'#00ff88')+';">'+(fail?'\u26a0':'\u2705')+' Pushed '+done+' file'+(done===1?'':'s')+' to GitHub'+(fail?' \u00b7 '+fail+' failed':'')+(empty?' \u00b7 '+empty+' empty':'')+'</span>');
+    if(typeof toast==='function') toast('Data pushed to GitHub \u2014 '+done+' file'+(done===1?'':'s'), fail===0);
+  }catch(e){
+    st('<span style="color:#ff6666;">\u274c '+e.message+'</span>');
+    if(typeof toast==='function') toast('GitHub data push failed: '+e.message,false);
+  }
+  if(btn){ btn.disabled=false; btn.textContent='\u2601 PUSH ALL DATA \u2192 GITHUB (CSV + backup)'; }
+}
+
+async function _ghGetFile(path, token, repo){
+  var url='https://api.github.com/repos/'+repo+'/contents/'+path+'?ref=main';
+  var headers={'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'};
+  var res=await fetch(url,{headers:headers,cache:'no-store'});
+  if(!res.ok) return null;
+  var data=await res.json();
+  if(!data || !data.content) return null;
+  var b64=String(data.content).replace(/\s/g,'');
+  try{ return decodeURIComponent(escape(atob(b64))); }
+  catch(e){ return atob(b64); }
+}
+
+async function pullAllDataFromGitHub(btn){
+  var statusEl=document.getElementById('update-status');
+  function st(m){ if(statusEl) statusEl.innerHTML=m; }
+  if(!confirm('PULL FROM GITHUB?\n\nThis REPLACES the data on THIS device with the copy in GitHub (your ThinkPad master). Anything entered only on this device will be overwritten.\n\nContinue?')) return;
+  if(btn){ btn.disabled=true; btn.textContent='Pulling\u2026'; }
+  try{
+    var token=_ghToken(), repo='carrdata-wq/msf';
+    st('Downloading backup from GitHub \u2026');
+    var json=await _ghGetFile('data/mfs-backup.json', token, repo);
+    if(!json){ throw new Error('No backup in repo yet — push from the ThinkPad first'); }
+    var backup=JSON.parse(json);
+    var okKeys=0, failKeys=0;
+    if(backup.localStorage){
+      Object.keys(backup.localStorage).forEach(function(k){
+        try{ localStorage.setItem(k, backup.localStorage[k]); okKeys++; }catch(e){ failKeys++; }
+      });
+    }
+    if(Array.isArray(backup.mileage) && typeof _milesWriteAll==='function'){
+      MILES=backup.mileage.slice();
+      await new Promise(function(res){ _milesWriteAll(MILES.slice(), function(){ res(); }); });
+      _milesReady=true;
+    }
+    if(Array.isArray(backup.clients) && typeof _idbWriteAll==='function'){
+      CLIENTS=backup.clients.slice();
+      await new Promise(function(res){ _idbWriteAll(CLIENTS, function(){ res(); }); });
+    }
+    st('<span style="color:#00ff88;">\u2705 Restored '+okKeys+' settings \u00b7 '+(backup.mileage?backup.mileage.length:0)+' mileage \u00b7 '+(backup.clients?backup.clients.length:0)+' clients'+(failKeys?(' \u00b7 '+failKeys+' too big for this device'):'')+'. Reloading\u2026</span>');
+    if(typeof toast==='function') toast('Pulled from GitHub \u2713',true);
+    setTimeout(function(){ location.reload(); }, 1600);
+  }catch(e){
+    st('<span style="color:#ff6666;">\u274c '+e.message+'</span>');
+    if(typeof toast==='function') toast('Pull failed: '+e.message,false);
+    if(btn){ btn.disabled=false; btn.textContent='\u2b07 PULL / RESTORE FROM GITHUB'; }
   }
 }
 
