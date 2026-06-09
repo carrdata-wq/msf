@@ -1088,6 +1088,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 
+<div id="screen-sysutil-sub" class="screen" style="display:none;">
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
@@ -1153,6 +1154,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <input type="file" id="sync-file-input" accept=".json" style="display:none" onchange="doSyncRead(this)">
   <input type="file" id="bulk-import-input" accept=".json,.csv,.txt" multiple style="display:none" onchange="handleAndroidBulkImport(event)">
   </div>
+</div>
 </div>
 <div id="filemgr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;align-items:flex-end;justify-content:center;padding:10px;">
   <div style="background:#0000cc;border:2px solid #ffff00;border-radius:8px;padding:14px;width:100%;max-width:420px;font-family:Courier New,monospace;">
@@ -1733,7 +1735,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <!-- Log Mileage -->
   <div id="fuel-mileage" class="fpage" style="display:none">
     <div class="card">
-      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX10</span></div>
+      <div class="card-title green">🚗 Log Mileage <span id="mile-count" style="color:#ffff00;font-weight:700;">0 readings</span> <span style="color:#6666ff;font-size:10px;">v.MX11</span></div>
       <div class="field"><label>Date</label><input type="date" id="mile-date"></div>
       <div class="field"><label>Odometer Reading</label><input type="number" id="mile-odo" inputmode="numeric" placeholder="e.g. 87542"></div>
       <div class="field"><label>Vehicle</label><input type="text" id="mile-veh" placeholder="e.g. TRUCK, CAR" oninput="this.value=this.value.toUpperCase()"></div>
