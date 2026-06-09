@@ -15065,7 +15065,7 @@ function _feDispatchInput(val){
       toast(vu + ' not a report code yet — build it', true);
       _feRnewStartWith(vu); return;
     }
-    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','PAYE','PAYEE','R','S','-','?','H','BUP','XB','BACKALL','FILT','NOFILT','ALL','FILTOFF'].indexOf(vu) >= 0){
+    if(['DEFA','PACK','COPY','FLIP','DEL','MENU','QUIT','MM','DD','YR','AMT','PCOD','DESC','PAYE','PAYEE','R','S','-','?','H','BUP','XB','BACKALL','KEYS','FILT','NOFILT','ALL','FILTOFF'].indexOf(vu) >= 0){
       _feDispatchCommand(v); return;
     }
     _feLookupAndApply(v);
@@ -15180,6 +15180,7 @@ function _feDispatchCommand(raw){
   if(cmd === 'FLIP'){ _feFlipSign(); return; }
   if(cmd === 'DEL'){ _feActDel(); return; }
   if(cmd === 'XB' || cmd === 'BACKALL' || cmd === 'BUP'){ _feBackupAll(); return; }
+  if(cmd === 'KEYS'){ _feDumpKeys(); return; }
   if(cmd === 'MM'){ _feStartMM(); return; }
   if(cmd === 'DD'){ _feStartDD(); return; }
   if(cmd === 'YR'){ _feStartYR(); return; }
@@ -15237,9 +15238,23 @@ function _feBackupAll(){
     });
     
     // 3. MASTERS CSV (pcodes, descs, payees)
-    var pcodes = JSON.parse(localStorage.getItem('mx_pcodes') || '[]');
-    var descs = JSON.parse(localStorage.getItem('mx_descs') || '[]');
-    var payees = JSON.parse(localStorage.getItem('mx_payees') || '[]');
+    // NOTE: payees do NOT live in mx_payees — they live in mx_payee_combos / mx_custom,
+    // and any used in the ledger. Pull from all three and dedupe so MASTERS is complete.
+    var pcodes = [], descs = [];
+    try { pcodes = JSON.parse(localStorage.getItem('mx_pcodes') || '[]'); } catch(e){}
+    try { descs  = JSON.parse(localStorage.getItem('mx_descs')  || '[]'); } catch(e){}
+    var paySet = {};
+    function addPayee(name){ var n = String(name || '').trim(); if(n && !paySet[n.toUpperCase()]) paySet[n.toUpperCase()] = n; }
+    try {
+      var combos = JSON.parse(localStorage.getItem('mx_payee_combos') || '{}');
+      Object.keys(combos).forEach(function(k){ var c = combos[k]; addPayee((c && c.displayName) ? c.displayName : k); });
+    } catch(e){}
+    try {
+      var custom = JSON.parse(localStorage.getItem('mx_custom') || '[]');
+      custom.forEach(function(c){ if(c && c.payee) addPayee(c.payee); });
+    } catch(e){}
+    L.forEach(function(e){ if(e && !e.deleted && e.payee) addPayee(e.payee); });
+    var payees = Object.keys(paySet).sort().map(function(k){ return paySet[k]; });
     var masterLines = ['TYPE,VALUE'];
     pcodes.forEach(function(p) { masterLines.push(['PCODE', csvField(p)].join(',')); });
     descs.forEach(function(d) { masterLines.push(['DESC', csvField(d)].join(',')); });
@@ -15262,19 +15277,23 @@ function _feBackupAll(){
       bytes: enc.encode(clientLines.join('\r\n'))
     });
     
-    // 5. BALANCE SHEET CSV (running total by PCODE)
-    var balances = {};
-    L.forEach(function(e) {
-      if (!e.deleted && e.pcode) {
-        var pc = String(e.pcode).toUpperCase();
-        if (!balances[pc]) balances[pc] = 0;
-        balances[pc] += (e.amt || 0);
-      }
+    // 5. BALANCE SHEET CSV — the REAL Balance module data (mx_balance), with full fields
+    var balRows = [];
+    try { balRows = JSON.parse(localStorage.getItem('mx_balance') || '[]'); } catch(e){ balRows = []; }
+    var balanceLines = ['DATE,PAYEE,PCODE,DESC,AMOUNT,CHECKED,SENT,ID,MTIME'];
+    var balTotal = 0;
+    balRows.forEach(function(b) {
+      if(!b) return;
+      var amt = (typeof b.amt === 'number') ? b.amt : (parseFloat(b.amt || 0) || 0);
+      balTotal += amt;
+      balanceLines.push([
+        csvField(b.date), csvField(b.payee), csvField(b.pcode), csvField(b.desc),
+        amt.toFixed(2), csvField(b.checked ? 'Y' : ''), csvField(b.sent ? 'Y' : ''),
+        csvField(b.id), csvField(b.mtime)
+      ].join(','));
     });
-    var balanceLines = ['PCODE,BALANCE'];
-    Object.keys(balances).sort().forEach(function(pc) {
-      balanceLines.push([csvField(pc), csvField(balances[pc].toFixed(2))].join(','));
-    });
+    balanceLines.push('');
+    balanceLines.push(['TOTAL', '', '', '', balTotal.toFixed(2), '', '', '', ''].join(','));
     files.push({
       name: 'MFS-BALANCE-SHEET.csv',
       bytes: enc.encode(balanceLines.join('\r\n'))
@@ -15290,7 +15309,7 @@ function _feBackupAll(){
     _bupLast = { blob: blob, url: url, fname: fname };
 
     var summary = (acctLines.length - 1) + ' accounting · ' + (mileLines.length - 1) + ' mileage · '
-                + Object.keys(balances).length + ' pcodes · ' + (clientLines.length - 1) + ' clients';
+                + payees.length + ' payees · ' + balRows.length + ' balance rows · ' + (clientLines.length - 1) + ' clients';
 
     // Can this device hand the file to Gmail/Drive/Files? (Android home-screen app: yes)
     var canShare = false;
@@ -15344,6 +15363,37 @@ function _bupDownloadZip(){
 function _bupCloseModal(){
   var ov = document.getElementById('bup-overlay'); if(ov) ov.remove();
   if(_bupLast && _bupLast.url){ var u = _bupLast.url; setTimeout(function(){ try{URL.revokeObjectURL(u);}catch(e){} }, 8000); }
+  _feFocusPrompt();
+}
+
+// ───── KEYS DIAGNOSTIC — shows what is actually stored on THIS device ─────
+function _feDumpKeys(){
+  try{
+    var lines = [];
+    for(var i=0; i<localStorage.length; i++){
+      var k = localStorage.key(i);
+      var raw = localStorage.getItem(k) || '';
+      var count = '';
+      try{
+        var v = JSON.parse(raw);
+        if(Array.isArray(v)) count = v.length + ' items';
+        else if(v && typeof v === 'object') count = Object.keys(v).length + ' keys';
+        else count = 'value';
+      }catch(e){ count = raw.length + ' chars'; }
+      lines.push(k + ' = ' + count);
+    }
+    lines.sort();
+    var milesN = (typeof MILES !== 'undefined' && MILES) ? MILES.length : '?';
+    var msg = 'WHAT IS STORED ON THIS DEVICE\n'
+            + '(read these to Claude)\n'
+            + '──────────────\n'
+            + lines.join('\n')
+            + '\n──────────────\n'
+            + 'MILES (IndexedDB) = ' + milesN + ' readings';
+    alert(msg);
+  }catch(e){
+    alert('KEYS error: ' + (e && e.message ? e.message : e));
+  }
   _feFocusPrompt();
 }
 
