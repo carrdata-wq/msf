@@ -14912,15 +14912,18 @@ function _feReportOutput(action){
     }
     return;
   }
-  // view on screen — render the block into the overlay
+  // view on screen — render the block into the overlay.
+  // Keep _feReportMenuKey ATTACHED here so V / E / C / ESC keys still work while
+  // viewing, and repeat the V/E/C action menu at the BOTTOM of the report so a long
+  // audit can be emailed or copied right from where you finished reading.
   if(action==='view'){
     var ov = document.getElementById('fe-overlay'); if(!ov) return;
-    document.removeEventListener('keydown', _feReportMenuKey, true);
     var html = '<div style="background:#000022;border:2px solid #00ffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:86vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;">'
       + '<pre style="color:#ffff66;font-size:12px;white-space:pre-wrap;word-break:break-word;overflow-y:auto;margin:0 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
-      + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">EMAIL / SHARE</button>'
-      + '<button onclick="_feReportOutput(\'copy\')" style="flex:1;background:#222200;border:2px solid #ffdd55;color:#ffdd55;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">COPY</button>'
+      + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
+      + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ff88;color:#003300;padding:1px 6px;border-radius:2px;margin-right:5px;">E</span>EMAIL / SHARE</button>'
+      + '<button onclick="_feReportOutput(\'copy\')" style="flex:1;background:#222200;border:2px solid #ffdd55;color:#ffdd55;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#ffdd55;color:#222200;padding:1px 6px;border-radius:2px;margin-right:5px;">C</span>COPY</button>'
       + '<button onclick="_feReportClose()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">ESC</button>'
       + '</div></div>';
     ov.innerHTML = html;
