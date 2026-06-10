@@ -13621,7 +13621,7 @@ var _feMergePending = null;        // {keeper, losers[]} awaiting soft confirm
 var _feAutoApplyThreshold = 25;    // FoxBase 25-uses rule
 var _feMaxRows = 8;
 var _feIdleTimer = null;           // FoxBase auto-fire: type letters, pause, dispatch
-var _feIdleMs = 1000;              // 1 second — at terminal speed, 2s felt like 10 hours
+var _feIdleMs = 2000;              // 2 seconds — room to type the longer XR cheat codes (XR$ROOF, XRAUD10629) without it firing mid-type. ENTER still commits instantly for quick single-letter commands.
 var _feGuidedFlow = [];            // queue of steps when adding a new payee
 var _feGuidedAmt = false;          // true when a guided new-payee flow must end at the AMOUNT field
 var _feGuidedDay = false;          // true when the new-payee flow should ask DAY (DD) before AMOUNT
@@ -14855,13 +14855,15 @@ function _feReportBlockText(rep, rows, total){
   return L.join('\n');
 }
 
-// Type a report code → build it → show the output (printer) menu FIRST.
+// Type a report code → build it → go STRAIGHT to the report on screen (no gate).
+// The V / E / C / ESC menu now lives at the bottom of the report, so there's no
+// reason to stop and ask first — type the code, the data is there.
 function _feRunReport(code){
   var rep = _feReportFind(code);
   if(!rep){ toast('No report code ' + code, false); _feFocusPrompt(); return; }
   var r = _feReportRows(rep);
   _feRptCtx = { rep: rep, rows: r.rows, total: r.total, text: _feReportBlockText(rep, r.rows, r.total) };
-  _feRenderReportMenu();
+  _feReportOutput('view');
 }
 
 // Printer/output menu — shown before the data, FoxBase style.
@@ -14927,6 +14929,11 @@ function _feReportOutput(action){
       + '<button onclick="_feReportClose()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">ESC</button>'
       + '</div></div>';
     ov.innerHTML = html;
+    ov.style.display='flex'; ov.style.alignItems='flex-start';
+    // We may have jumped straight here (no menu gate), so make sure the
+    // V / E / C / ESC keys are live. Remove-then-add keeps it from doubling up.
+    document.removeEventListener('keydown', _feReportMenuKey, true);
+    setTimeout(function(){ document.addEventListener('keydown', _feReportMenuKey, true); }, 60);
   }
 }
 function _feReportClose(){
@@ -14982,7 +14989,7 @@ function _feRunAudit(arg){
   L.push(padR('*** TOTAL  '+rows.length+' RECS', 69)+padL((total<0?'-':'')+Math.abs(total).toFixed(2),12));
   var rep = { code:'XRAUD'+(pcode||''), label:title, pcode:pcode, desc:'', payee:'', yr:yr };
   _feRptCtx = { rep:rep, rows:rows, total:total, text:L.join('\n') };
-  _feRenderReportMenu();
+  _feReportOutput('view');
 }
 
 // ───── RNEW — build / manage custom report codes ─────
