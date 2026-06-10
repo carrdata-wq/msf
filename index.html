@@ -9121,6 +9121,28 @@ function runMasterDesc(){
     +'<div style="color:#ff88ff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'
     +'Master Description Report &nbsp;&nbsp; '+yrLabel+(pc?' · '+pc:'')+'</div>';
 
+  // ── KEY / CHEAT SHEET — collapsible legend explaining every column + the A/B codes.
+  // Self-contained: the toggle is an inline onclick, no extra named function needed.
+  h+='<div style="margin-bottom:8px;text-align:center;">'
+    +'<button onclick="var k=document.getElementById(\'mdr-key\');var s=k.style.display===\'none\';k.style.display=s?\'block\':\'none\';this.innerHTML=s?\'📖 KEY / CHEAT SHEET &#9650;\':\'📖 KEY / CHEAT SHEET &#9660;\';" '
+    +'style="background:#001a33;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:5px 12px;border-radius:4px;cursor:pointer;letter-spacing:1px;">📖 KEY / CHEAT SHEET &#9660;</button>'
+    +'<div id="mdr-key" style="display:none;text-align:left;background:#000044;border:1px solid #00ffff;border-radius:4px;padding:9px 11px;margin-top:6px;font-family:Courier New,monospace;font-size:12px;line-height:1.7;color:#cfe3ff;">'
+    +'<div style="color:#ffff00;font-weight:700;margin-bottom:4px;">COLUMNS</div>'
+    +'<span style="color:#00ffff;font-weight:700;">DESCRIPTION</span> — the desc label (e.g. SUBCONTRACTOR).<br>'
+    +'<span style="color:#00ffff;font-weight:700;">HOW MANY</span> — number of entries with that desc.<br>'
+    +'<span style="color:#00ffff;font-weight:700;">AMOUNT</span> — total dollars. <span style="color:#88ff88;">+green = money in</span>, <span style="color:#ff8888;">&minus;red = money out</span>.<br>'
+    +'<span style="color:#00ffff;font-weight:700;">RANK</span> — position within its A or B section (1 = listed first).<br>'
+    +'<span style="color:#00ffff;font-weight:700;">PCT%</span> — that desc&#39;s share of its section total.<br>'
+    +'<span style="color:#00ffff;font-weight:700;">AVG</span> — average per entry (AMOUNT &divide; HOW MANY).<br>'
+    +'<span style="color:#00ffff;font-weight:700;">PCO</span> — the PCODE. Only shows when a single PCODE filter is picked above.<br>'
+    +'<div style="color:#ffff00;font-weight:700;margin:7px 0 4px;">SECTION CODES &nbsp;(* B=DEBITS A=CREDITS)</div>'
+    +'<span style="color:#88ff88;font-weight:700;">A = CREDITS</span> — money in / positive amounts.<br>'
+    +'<span style="color:#ff8888;font-weight:700;">B = DEBITS</span> — money out / expenses (always-expense descs land here even if positive).<br>'
+    +'<div style="color:#ffff00;font-weight:700;margin:7px 0 4px;">TOTALS</div>'
+    +'<span style="color:#cccccc;font-weight:700;">* Subsubtotal *</span> — total for that one section (A or B).<br>'
+    +'<span style="color:#ffff00;font-weight:700;">*** Total ***</span> — grand total of every entry shown.'
+    +'</div></div>';
+
   // header row
   h+='<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:14px;">'
     +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
@@ -14911,6 +14933,55 @@ function _feReportClose(){
   _feStartEntryPayee(); _feRender(); _feFocusPrompt();
 }
 
+// ───── XRAUD — CARRINGTON AUDIT REPORT (SEE menu opt 5) ─────
+// Usage:  XRAUD            audit everything
+//         XRAUD10629       audit pcode 10629  → "AUDIT FOR 10629"
+//         XRAUD10629 2026  pcode 10629, year 2026 only
+// Sort: biggest amount first, then month, then payee (FoxBase STR(AMT,12,2)+MM+PAYEE).
+// Builds the same monospace text block every other report uses, then rides the
+// existing VIEW / EMAIL / COPY / ESC output menu — nothing new on the render side.
+function _feRunAudit(arg){
+  arg = String(arg||'').trim();
+  var yr='', m = arg.match(/[\s\.\/]+(\d{2,4})\s*$/);
+  if(m){ yr = (m[1].length===2 ? '20'+m[1] : m[1]); arg = arg.slice(0, m.index); }
+  var pcode = arg.replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+  function padR(s,n){ s=String(s); if(s.length>n) s=s.slice(0,n); while(s.length<n) s+=' '; return s; }
+  function padL(s,n){ s=String(s); if(s.length>n) s=s.slice(0,n); while(s.length<n) s=' '+s; return s; }
+  function monthOf(d){ var s=String(d||'').trim(), x=s.match(/^\d{4}[-\/](\d{1,2})/)||s.match(/^(\d{1,2})[-\/]/); return x ? ('0'+x[1]).slice(-2) : '00'; }
+  var rows=[];
+  for(var i=0;i<LOG.length;i++){
+    var e=LOG[i]; if(!e || e.deleted) continue;
+    if(pcode && String(e.pcode||'').toUpperCase() !== pcode) continue;
+    if(yr && _feYearOf(e.date) !== yr) continue;
+    rows.push(e);
+  }
+  rows.sort(function(a,b){
+    var d = Math.abs(b.amt||0) - Math.abs(a.amt||0); if(d) return d;
+    var ma=monthOf(a.date), mb=monthOf(b.date); if(ma!==mb) return ma<mb?-1:1;
+    return String(a.payee||'').localeCompare(String(b.payee||''));
+  });
+  var title = 'AUDIT FOR ' + (pcode||'ALL') + (yr?(' / '+yr):'');
+  var bar = '--------------------------------------------------------------------------------';
+  var L = [];
+  L.push('        CARRINGTON AUDIT REPORT');
+  L.push('        ' + title);
+  L.push('');
+  L.push(padL('RECNO',5)+' '+padR('DATE',10)+' '+padR('PCODE',7)+' '+padR('PAYEE',22)+' '+padR('DESCRIPTION',20)+' '+padL('AMOUNT',12));
+  L.push(bar);
+  var total=0;
+  rows.forEach(function(e,idx){
+    var a=(e.amt||0); total+=a;
+    var amt=(a<0?'-':'')+Math.abs(a).toFixed(2);
+    L.push(padL(idx+1,5)+' '+padR(e.date||'',10)+' '+padR(e.pcode||'',7)+' '+padR(e.payee||'',22)+' '+padR(e.desc||'',20)+' '+padL(amt,12));
+  });
+  if(!rows.length) L.push('   (no records'+(pcode?(' for pcode '+pcode):'')+(yr?(' in '+yr):'')+')');
+  L.push(bar);
+  L.push(padR('*** TOTAL  '+rows.length+' RECS', 69)+padL((total<0?'-':'')+Math.abs(total).toFixed(2),12));
+  var rep = { code:'XRAUD'+(pcode||''), label:title, pcode:pcode, desc:'', payee:'', yr:yr };
+  _feRptCtx = { rep:rep, rows:rows, total:total, text:L.join('\n') };
+  _feRenderReportMenu();
+}
+
 // ───── RNEW — build / manage custom report codes ─────
 var _feRnew = null;     // {step, pcode, desc, yr, code}
 var _feRnewItems = [];
@@ -15060,6 +15131,10 @@ function _feDispatchInput(val){
     // UNKNOWN single-token X-code opens the builder pre-named with it — it must
     // never fall through and create a payee/new data file.
     if(vu === 'XNEW'){ _feRnewStart(); return; }
+    // XRAUD — the CARRINGTON AUDIT REPORT. Caught here, BEFORE the generic X-code
+    // handler below, so "XRAUD" / "XRAUD10629" / "XRAUD10629 2026" run the audit
+    // instead of being treated as an unknown report code.
+    if(vu.indexOf('XRAUD') === 0){ _feRunAudit(vu.slice(5)); return; }
     if(vu.charAt(0) === 'X' && vu.indexOf(' ') < 0 && vu.length >= 2 && vu.length <= 8 && vu !== 'XB'){
       if(_feReportFind(vu)){ _feRunReport(vu); return; }
       toast(vu + ' not a report code yet — build it', true);
