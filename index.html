@@ -15949,7 +15949,7 @@ function _feRenderPickerOverlay(){
       + 'style="background:#330000;border:1px solid #ff5555;color:#ff8888;font-family:Courier New,monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:3px;cursor:pointer;flex-shrink:0;">&#128465; DELETE</button>';
   }
   // Build the overlay shell ONCE — input stays alive while results re-render.
-  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;">'
+  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:600px;width:100%;max-height:82vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:46px;">'
     + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
     + '<div style="color:#ffff00;font-weight:700;font-size:12px;flex:1;min-width:0;">' + title + ' — type any letters in it (SUP finds ROOFING SUPPLIES) · auto-picks at 1 · ESC cancels</div>'
     + delToggle
@@ -15960,7 +15960,7 @@ function _feRenderPickerOverlay(){
       + 'style="background:#000000;border:2px solid #ffff00;color:#ffff55;font-family:Courier New,monospace;'
       + 'font-size:19px;font-weight:700;padding:7px 10px;border-radius:3px;outline:none;'
       + 'text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;width:100%;box-sizing:border-box;">'
-    + '<div id="fe-picker-results" style="display:flex;flex-wrap:wrap;gap:4px;overflow-y:auto;"></div>'
+    + '<div id="fe-picker-results" style="display:flex;flex-wrap:wrap;gap:4px;overflow-y:auto;margin-top:14px;"></div>'
     + '</div>';
   ov.innerHTML = html;
   ov.style.display = 'flex';
@@ -15994,25 +15994,32 @@ function _feDescLetterKey(e){
   _feSetDesc(_fePickerItems[idx]);
 }
 
+// Sort a list of payees highest-count-first (A = most used). No-op for pcode/desc.
+function _feSortByCount(arr){
+  if(_feMode === 'pick-payee'){
+    arr.sort(function(a, b){
+      return (_fePayeeCount[b.toUpperCase()] || 0) - (_fePayeeCount[a.toUpperCase()] || 0);
+    });
+  }
+  return arr;
+}
+// THE single source of truth for the picker's visible order: filter by what's
+// typed, then sort. Both the rendered A/B/C list and the letter-pick logic use
+// this, so the letter you press always matches the item shown at that slot.
+function _feSortedMatches(){
+  var q = (_fePickerFilter || '').toUpperCase();
+  var matches = _fePickerItems.filter(function(it){
+    if(!q) return true;
+    return it.toUpperCase().replace(/\s+/g,'').indexOf(q) >= 0;
+  });
+  return _feSortByCount(matches);
+}
+
 function _feRenderPickerResults(){
   var box = document.getElementById('fe-picker-results');
   if(!box) return;
   var q = _fePickerFilter.toUpperCase();
-  var matches = _fePickerItems.filter(function(it){
-    if(!q) return true;
-    // Remove spaces from payee name for matching (CAR LOAN BAMBIO matches CARL)
-    return it.toUpperCase().replace(/\s+/g,'').indexOf(q) >= 0;
-  });
-  
-  // Sort matches by frequency (most-used first) for payee picker
-  if(_feMode === 'pick-payee'){
-    matches.sort(function(a, b){
-      var cntA = _fePayeeCount[a.toUpperCase()] || 0;
-      var cntB = _fePayeeCount[b.toUpperCase()] || 0;
-      console.log('  Sorting: ' + a + '(' + cntA + ') vs ' + b + '(' + cntB + ')');
-      return cntB - cntA;  // highest count first
-    });
-  }
+  var matches = _feSortedMatches();
   // FOXBASE PCODE MENU — Simple letter selection (no filtering, no search)
   if(_feMode === 'pick-pcode' && !_fePickerDelMode){
     var htmlFB = '<div style="width:100%;background:#000033;border:2px solid #00ff00;border-radius:4px;padding:12px;margin-bottom:8px;">'
@@ -16099,7 +16106,9 @@ function _feRenderPickerResults(){
   // ThinkPad: when the list is short, label each result A B C ... — press the letter to pick.
   // ThinkPad: letter-pick on every picker. Android: letter-pick on the
   // pcode and desc pickers too (faster than tapping), payee stays tap-only.
-  var letterPickOK = (window.innerWidth >= 720) || _feMode === 'pick-pcode' || _feMode === 'pick-desc';
+  // ABC letter-pick on EVERY picker, every screen size (payee included now).
+  // Type ACE -> the matching payees show A/B/C with A = most-used; press the letter.
+  var letterPickOK = true;
   var lettered = letterPickOK && matches.length >= 1 && matches.length <= 12;
   var html = '';
   matches.slice(0, 120).forEach(function(it, idx){
@@ -16144,12 +16153,13 @@ function _feFilterPicker(val){
   // letter-pick also rides the input event. If exactly one letter was just
   // appended and it can't extend the filter (matches nothing), treat it as a
   // pick of the result at that letter's slot. ThinkPad pcode/desc + Android.
-  var letterPickOK = (window.innerWidth >= 720) || _feMode === 'pick-pcode' || _feMode === 'pick-desc';
+  var letterPickOK = true;   // ABC letter-pick now on every picker (payee too)
   if(letterPickOK && val.length === prev.length + 1 && val.indexOf(prev) === 0){
     var added = val.charAt(val.length - 1);
     if(/[A-Z]/.test(added)){
       var prevMatches = _fePickerItems.filter(function(it){ return !prev || it.toUpperCase().replace(/\s+/g,'').indexOf(prev) >= 0; });
       var extMatches  = _fePickerItems.filter(function(it){ return it.toUpperCase().replace(/\s+/g,'').indexOf(val) >= 0; });
+      _feSortByCount(prevMatches);   // same order as the A/B/C list on screen
       if(extMatches.length === 0 && prevMatches.length >= 1 && prevMatches.length <= 12){
         var li = added.charCodeAt(0) - 65;   // A=0, B=1, ...
         if(li >= 0 && li < prevMatches.length){
@@ -16184,11 +16194,12 @@ function _fePickerInputKey(e){
   }
   // Letter-pick: Press A/B/C to grab that result directly by index.
   // Works on ThinkPad (all pickers) and Android (pcode/desc pickers).
-  var letterPickOK = (window.innerWidth >= 720) || _feMode === 'pick-pcode' || _feMode === 'pick-desc';
+  var letterPickOK = true;   // ABC letter-pick now on every picker (payee too)
   if(letterPickOK && e.key && e.key.length === 1 && /[a-zA-Z]/.test(e.key)){
     var qq = _fePickerFilter.toUpperCase();
     var letter = e.key.toUpperCase();
     var cur = _fePickerItems.filter(function(it){ return !qq || it.toUpperCase().indexOf(qq) >= 0; });
+    _feSortByCount(cur);   // same order as the A/B/C list on screen
     // Pick by index: A=0, B=1, C=2, etc.
     var li = letter.charCodeAt(0) - 65;   // A=0, B=1, ...
     if(li >= 0 && li < cur.length && cur.length >= 1 && cur.length <= 12){
