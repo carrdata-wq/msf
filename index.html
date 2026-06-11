@@ -14779,6 +14779,7 @@ function _feFiltCancel(){
 // RNEW builds a custom code with the same letter pickers as FILT.
 // Bare 'R' still opens the reports screen (unchanged).
 var _feRptCtx = null;   // {rep, rows, total, text} for the active report's output buttons
+var _feLastFilter = null;   // {pcode, desc, term, yr} of the last pull — drives the auto SEE/PRINT menu
 
 function _feLoadReports(){
   try{ return JSON.parse(localStorage.getItem('mx_reports')||'null'); }catch(e){ return null; }
@@ -14891,9 +14892,39 @@ function _feReportMenuKey(e){
   if(!_feRptCtx) return;
   var k = (e.key||'').toUpperCase();
   if(e.key==='Escape'){ e.preventDefault(); _feReportClose(); return; }
-  if(k==='V'){ e.preventDefault(); _feReportOutput('view'); }
-  else if(k==='E'){ e.preventDefault(); _feReportOutput('share'); }
-  else if(k==='C'){ e.preventDefault(); _feReportOutput('copy'); }
+  if(k==='V'){ e.preventDefault(); _feReportOutput('view'); return; }
+  if(k==='E'){ e.preventDefault(); _feReportOutput('share'); return; }
+  if(k==='C'){ e.preventDefault(); _feReportOutput('copy'); return; }
+  // SEE/PRINT menu number keys — only when a pcode/all filter is active
+  if(_feShowPicker() && e.key>='1' && e.key<='9'){ e.preventDefault(); _fePickerRun(e.key); }
+}
+// Show the auto SEE/PRINT menu for pcode pulls and all-data — but NOT for a
+// description or "$" contains pull, since the report builders scope by pcode+year.
+function _feShowPicker(){ return !!(_feLastFilter && !_feLastFilter.desc && !_feLastFilter.term); }
+function _fePickerRun(n){
+  var f = _feLastFilter || {};
+  var scope = (f.pcode||'') + (f.yr ? (' '+f.yr) : '');
+  if(n==='1'){ _feRunDesc(scope); return; }
+  if(n==='5'){ _feRunAudit(scope); return; }
+  toast('Report ' + n + ' — coming soon', false);
+}
+// The FoxBase SEE/PRINT menu, rendered right under the data. Built reports are live;
+// the rest are listed (your menu numbers) and light up as we wire them.
+function _feReportPickerHTML(){
+  if(!_feShowPicker()) return '';
+  var f = _feLastFilter || {};
+  var scope = (f.pcode ? ('PCODE ' + f.pcode) : 'ALL') + (f.yr ? (' / ' + f.yr) : ' / ALL YRS');
+  var items = [['1','DESCRIPTION',1],['2','DATE',0],['3','12-MONTH',0],['4','PERCENT',0],['5','AUDIT',1],['6','DESC-IRS',0],['7','TRADE',0],['8','IRS SUM',0],['9','COUNT',0]];
+  var btns = items.map(function(it){
+    var k=it[0], nm=it[1], on=it[2];
+    if(on){
+      return '<button onclick="_fePickerRun(\''+k+'\')" style="background:#001a33;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#00ffff;color:#001a33;padding:0 5px;border-radius:2px;margin-right:5px;">'+k+'</span>'+nm+'</button>';
+    }
+    return '<button disabled style="background:#0a0a18;border:1px solid #333355;color:#6677aa;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;text-align:left;cursor:default;"><span style="background:#333355;color:#99aacc;padding:0 5px;border-radius:2px;margin-right:5px;">'+k+'</span>'+nm+'</button>';
+  }).join('');
+  return '<div style="border-top:1px solid #00444a;margin:6px 0 8px;padding-top:8px;">'
+    + '<div style="color:#ffff66;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px;">SEE / PRINT MENU &#8226; ' + _feEsc(scope) + '  <span style="color:#88aacc;font-weight:400;">press a number</span></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">' + btns + '</div></div>';
 }
 function _feReportOutput(action){
   if(!_feRptCtx) return;
@@ -14922,6 +14953,7 @@ function _feReportOutput(action){
     var ov = document.getElementById('fe-overlay'); if(!ov) return;
     var html = '<div style="background:#000022;border:2px solid #00ffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
       + '<pre style="color:#ffff66;font-size:12px;white-space:pre-wrap;word-break:break-word;overflow-y:auto;margin:0 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
+      + _feReportPickerHTML()
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
       + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ff88;color:#003300;padding:1px 6px;border-radius:2px;margin-right:5px;">E</span>EMAIL / SHARE</button>'
@@ -14988,6 +15020,7 @@ function _feRunAudit(arg){
   L.push(bar);
   L.push(padR('*** TOTAL  '+rows.length+' RECS', 69)+padL((total<0?'-':'')+Math.abs(total).toFixed(2),12));
   var rep = { code:'XRAUD'+(pcode||''), label:title, pcode:pcode, desc:'', payee:'', yr:yr };
+  _feLastFilter = { pcode:pcode, desc:'', term:'', yr:yr };
   _feRptCtx = { rep:rep, rows:rows, total:total, text:L.join('\n') };
   _feReportOutput('view');
 }
@@ -15050,6 +15083,7 @@ function _feRunDesc(arg){
   if(!pcOrder.length) L.push('   (no records'+(pcode?(' for pcode '+pcode):'')+(yr?(' in '+yr):'')+')');
   L.push(padR('*** GRAND TOTAL  '+grandN+' RECS', 67)+padL(money(grand),13));
   var rep = { code:'/desc'+(pcode?(' '+pcode):''), label:title, pcode:pcode, desc:'', payee:'', yr:yr };
+  _feLastFilter = { pcode:pcode, desc:'', term:'', yr:yr };
   _feRptCtx = { rep:rep, rows:[], total:grand, text:L.join('\n') };
   _feReportOutput('view');
 }
@@ -15076,8 +15110,8 @@ function _feSlashCommand(rest){
   }
   var token = [head].concat(args.map(function(a){return a.toUpperCase();})).join(' ').trim();
   var rep = null;
-  if(_feSlashIsPcode(token)){ rep = { code:'/'+token, label:'PCODE '+token, pcode:token, desc:'', payee:'', yr:yr }; }
-  else { var dm = _feSlashMatchDesc(token); if(dm){ rep = { code:'/'+token, label:dm, pcode:'', desc:dm, payee:'', yr:yr }; } }
+  if(_feSlashIsPcode(token)){ rep = { code:'/'+token, label:'PCODE '+token, pcode:token, desc:'', payee:'', yr:yr }; _feLastFilter = { pcode:token, desc:'', term:'', yr:yr }; }
+  else { var dm = _feSlashMatchDesc(token); if(dm){ rep = { code:'/'+token, label:dm, pcode:'', desc:dm, payee:'', yr:yr }; _feLastFilter = { pcode:'', desc:dm, term:'', yr:yr }; } }
   if(!rep){ toast('No pcode or desc "'+token+'"', false); _feFocusPrompt(); return; }
   var r = _feReportRows(rep);
   _feRptCtx = { rep:rep, rows:r.rows, total:r.total, text:_feReportBlockText(rep, r.rows, r.total) };
@@ -15118,6 +15152,7 @@ function _feSlashContains(rest){
     if(hay.indexOf(term) >= 0){ rows.push(e); total += (e.amt||0); }
   }
   var rep = { code:'/$'+term, label:'CONTAINS "'+term+'"', pcode:'', desc:'', payee:'', yr:yr };
+  _feLastFilter = { pcode:'', desc:'', term:term, yr:yr };
   _feRptCtx = { rep:rep, rows:rows, total:total, text:_feReportBlockText(rep, rows, total) };
   _feReportOutput('view');
 }
