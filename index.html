@@ -14260,6 +14260,10 @@ function _feArmIdleTimer(ms){
     if(!inp) return;
     var v = (inp.value||'').trim();
     if(!v) return;
+    // SLASH COMMANDS fire on ENTER only — never on the idle timer. A multi-part
+    // command like /2025/desc/roof has valid prefixes (/2025, /roof) that would
+    // otherwise auto-fire mid-type and steal the screen. Type freely, press Enter.
+    if(v.charAt(0)==='/'){ return; }
     inp.value = '';
     _feDispatchInput(v);
   }, ms || _feIdleMs);
