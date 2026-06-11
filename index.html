@@ -15064,7 +15064,7 @@ function _feRunDesc(arg){
   pcOrder.forEach(function(pc){
     var P=byPc[pc]; var base=P.gross||1;
     L.push('PCODE ' + pc + '   (' + P.cnt + ' recs)');
-    L.push('  ' + padR('VENDOR',22)+padL('CNT',4)+padL('AMOUNT',13)+padL('AVG',11)+padL('PCT%',7));
+    L.push('  ' + padR('VENDOR',42)+padL('CNT',4)+padL('AMOUNT',13)+padL('AVG',11)+padL('PCT%',7));
     P.dOrder.sort();
     P.dOrder.forEach(function(ds){
       var D=P.descs[ds];
@@ -15072,16 +15072,16 @@ function _feRunDesc(arg){
       D.pOrder.sort();
       D.pOrder.forEach(function(py){
         var V=D.payees[py];
-        L.push('    ' + padR(py,20)+padL(V.cnt,4)+padL(money(V.sum),13)+padL(money(V.sum/V.cnt),11)+padL((Math.abs(V.sum)/base*100).toFixed(1),7));
+        L.push('    ' + padR(py,40)+padL(V.cnt,4)+padL(money(V.sum),13)+padL(money(V.sum/V.cnt),11)+padL((Math.abs(V.sum)/base*100).toFixed(1),7));
       });
-      L.push('    ' + padR('* '+ds,20)+padL(D.cnt,4)+padL(money(D.sum),13)+padL(money(D.sum/D.cnt),11)+padL((Math.abs(D.sum)/base*100).toFixed(1),7));
+      L.push('    ' + padR('* '+ds,40)+padL(D.cnt,4)+padL(money(D.sum),13)+padL(money(D.sum/D.cnt),11)+padL((Math.abs(D.sum)/base*100).toFixed(1),7));
     });
-    L.push('  ' + padR('*** PCODE '+pc+' TOTAL',26)+padL(money(P.sum),13));
+    L.push('  ' + padR('*** PCODE '+pc+' TOTAL',46)+padL(money(P.sum),13));
     L.push(bar);
     grand+=P.sum; grandN+=P.cnt;
   });
   if(!pcOrder.length) L.push('   (no records'+(pcode?(' for pcode '+pcode):'')+(yr?(' in '+yr):'')+')');
-  L.push(padR('*** GRAND TOTAL  '+grandN+' RECS', 67)+padL(money(grand),13));
+  L.push(padR('*** GRAND TOTAL  '+grandN+' RECS', 48)+padL(money(grand),13));
   var rep = { code:'/desc'+(pcode?(' '+pcode):''), label:title, pcode:pcode, desc:'', payee:'', yr:yr };
   _feLastFilter = { pcode:pcode, desc:'', term:'', yr:yr };
   _feRptCtx = { rep:rep, rows:[], total:grand, text:L.join('\n') };
@@ -15094,30 +15094,69 @@ function _feRunDesc(arg){
 //   /aud   /aud 10629   /aud 10629 2026     → the AUDIT report
 //   /roof   /10629   /phone   /trash         → pull that pcode or description
 //   a trailing 2- or 4-digit token scopes the year:  /10629 2026
+// Order-blind command parser. Splits on "/" AND spaces, then sorts the pieces:
+// one piece is the REPORT (desc/aud/...), one may be a YEAR (2/4 digits), the rest
+// are the FILTER (pcode or description). So these are all identical:
+//   /roof/desc   /desc/roof   /desc roof   /roof/desc/2025   /2025/desc/roof
+// No report named → it's just a pull.  /?  or  /help → the cheat sheet.
+var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS'};
 function _feSlashCommand(rest){
   rest = String(rest||'').trim();
-  if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — FoxBase "$" contains-pull
-  // PIPE:  /roof 2025/desc  → pull ROOF 2025 and run it straight into the DESC report, no menu.
-  var pipe = rest.indexOf('/');
-  if(pipe >= 0){ _feRunPipedReport(rest.slice(pipe+1), rest.slice(0, pipe)); return; }
-  var sp = rest.split(/\s+/).filter(Boolean);
-  if(!sp.length){ toast('Type /aud, /<pcode>, or /<desc>', true); _feFocusPrompt(); return; }
-  var head = sp[0].toUpperCase();
-  var args = sp.slice(1);
-  if(head === 'AUD' || head === 'AUDIT'){ _feRunAudit(args.join(' ')); return; }   // named report
-  if(head === 'DESC' || head === 'DESCRIPTION'){ _feRunDesc(args.join(' ')); return; }   // description rollup
-  var yr = '';                                                                     // optional trailing year
-  if(args.length){
-    var m = args[args.length-1].match(/^(\d{2}|\d{4})$/);
-    if(m){ yr = (m[1].length===2 ? '20'+m[1] : m[1]); args = args.slice(0,-1); }
+  if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — contains-pull
+  if(rest === '?' || rest.toUpperCase() === 'HELP'){ _feSlashHelp(); return; }
+  var toks = rest.replace(/\//g,' ').split(/\s+/).filter(Boolean);
+  if(!toks.length){ _feSlashHelp(); return; }
+  var report='', year='', filterToks=[];
+  for(var i=0;i<toks.length;i++){
+    var u = toks[i].toUpperCase();
+    if(!report && _feReportWords[u]){ report = _feReportWords[u]; continue; }
+    if(!year && /^(\d{2}|\d{4})$/.test(toks[i])){ year = toks[i]; continue; }
+    filterToks.push(toks[i]);
   }
-  var token = [head].concat(args.map(function(a){return a.toUpperCase();})).join(' ').trim();
+  if(report){
+    var filterArg = (filterToks.join(' ') + (year?(' '+year):'')).trim();
+    _feRunPipedReport(report, filterArg);
+    return;
+  }
+  _feRunPull(filterToks.join(' '), year);
+}
+// Plain pull: resolve <token> as a pcode or description, optional year, show the data + menu.
+function _feRunPull(token, yr){
+  token = String(token||'').toUpperCase().trim();
+  yr = yr ? (yr.length===2 ? '20'+yr : yr) : '';
+  if(!token){ _feSlashHelp(); return; }
   var rep = null;
   if(_feSlashIsPcode(token)){ rep = { code:'/'+token, label:'PCODE '+token, pcode:token, desc:'', payee:'', yr:yr }; _feLastFilter = { pcode:token, desc:'', term:'', yr:yr }; }
   else { var dm = _feSlashMatchDesc(token); if(dm){ rep = { code:'/'+token, label:dm, pcode:'', desc:dm, payee:'', yr:yr }; _feLastFilter = { pcode:'', desc:dm, term:'', yr:yr }; } }
   if(!rep){ toast('No pcode or desc "'+token+'"', false); _feFocusPrompt(); return; }
   var r = _feReportRows(rep);
   _feRptCtx = { rep:rep, rows:r.rows, total:r.total, text:_feReportBlockText(rep, r.rows, r.total) };
+  _feReportOutput('view');
+}
+// /? — the cheat sheet. So nobody has to remember the codes cold.
+function _feSlashHelp(){
+  var L = [];
+  L.push('        MFS  SLASH  COMMANDS');
+  L.push('');
+  L.push('PULL DATA');
+  L.push('   /roof            a pcode');
+  L.push('   /phone           a description (partial ok)');
+  L.push('   /$ace            anything containing "ace"');
+  L.push('   /roof 2025       scope to a year');
+  L.push('');
+  L.push('REPORTS   (any order — slash or space)');
+  L.push('   /roof/desc   =   /desc/roof   =   /desc roof');
+  L.push('   /roof/desc/2025  put a year anywhere');
+  L.push('   live now:  DESC   AUD');
+  L.push('   coming:    DATE 12MO PCT IRS TRADE COUNT');
+  L.push('');
+  L.push('INSIDE A REPORT');
+  L.push('   press a NUMBER   run that report on the data');
+  L.push('   V view   E email   C copy   ESC back');
+  L.push('   /?               this list');
+  var rep = { code:'/?', label:'SLASH COMMANDS', pcode:'', desc:'', payee:'', yr:'' };
+  _feLastFilter = null;
+  _feRptCtx = { rep:rep, rows:[], total:0, text:L.join('\n') };
   _feReportOutput('view');
 }
 function _feSlashIsPcode(t){
