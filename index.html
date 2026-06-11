@@ -14260,10 +14260,6 @@ function _feArmIdleTimer(ms){
     if(!inp) return;
     var v = (inp.value||'').trim();
     if(!v) return;
-    // SLASH COMMANDS fire on ENTER only — never on the idle timer. A multi-part
-    // command like /2025/desc/roof has valid prefixes (/2025, /roof) that would
-    // otherwise auto-fire mid-type and steal the screen. Type freely, press Enter.
-    if(v.charAt(0)==='/'){ return; }
     inp.value = '';
     _feDispatchInput(v);
   }, ms || _feIdleMs);
@@ -14908,8 +14904,8 @@ function _feShowPicker(){ return !!(_feLastFilter && !_feLastFilter.desc && !_fe
 function _fePickerRun(n){
   var f = _feLastFilter || {};
   var scope = (f.pcode||'') + (f.yr ? (' '+f.yr) : '');
-  if(n==='1'){ _feRunDesc(scope); return; }
-  if(n==='5'){ _feRunAudit(scope); return; }
+  var map = { '1':_feRunDesc, '2':_feRunDate, '3':_feRun12mo, '4':_feRunPct, '5':_feRunAudit, '6':_feRunDescIrs, '7':_feRunTrade, '8':_feRunIrs, '9':_feRunCount };
+  if(map[n]){ map[n](scope); return; }
   toast('Report ' + n + ' — coming soon', false);
 }
 // The FoxBase SEE/PRINT menu, rendered right under the data. Built reports are live;
@@ -14918,7 +14914,7 @@ function _feReportPickerHTML(){
   if(!_feShowPicker()) return '';
   var f = _feLastFilter || {};
   var scope = (f.pcode ? ('PCODE ' + f.pcode) : 'ALL') + (f.yr ? (' / ' + f.yr) : ' / ALL YRS');
-  var items = [['1','DESCRIPTION',1],['2','DATE',0],['3','12-MONTH',0],['4','PERCENT',0],['5','AUDIT',1],['6','DESC-IRS',0],['7','TRADE',0],['8','IRS SUM',0],['9','COUNT',0]];
+  var items = [['1','DESCRIPTION',1],['2','DATE',1],['3','12-MONTH',1],['4','PERCENT',1],['5','AUDIT',1],['6','DESC-IRS',1],['7','TRADE',1],['8','IRS SUM',1],['9','COUNT',1]];
   var btns = items.map(function(it){
     var k=it[0], nm=it[1], on=it[2];
     if(on){
@@ -14957,7 +14953,7 @@ function _feReportOutput(action){
     var ov = document.getElementById('fe-overlay'); if(!ov) return;
     var html = '<div style="background:#3d7fd6;border:2px solid #ffffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
       + _feReportPickerHTML()
-      + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:12px;white-space:pre-wrap;word-break:break-word;overflow-y:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
+      + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:12px;white-space:pre;overflow:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
       + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ff88;color:#003300;padding:1px 6px;border-radius:2px;margin-right:5px;">E</span>EMAIL / SHARE</button>'
@@ -15098,12 +15094,189 @@ function _feRunDesc(arg){
 //   /aud   /aud 10629   /aud 10629 2026     → the AUDIT report
 //   /roof   /10629   /phone   /trash         → pull that pcode or description
 //   a trailing 2- or 4-digit token scopes the year:  /10629 2026
+// ═══════════ SHARED REPORT HELPERS ═══════════
+function _fePadR(s,n){ s=String(s); if(s.length>n) s=s.slice(0,n); while(s.length<n) s+=' '; return s; }
+function _fePadL(s,n){ s=String(s); if(s.length>n) s=s.slice(0,n); while(s.length<n) s=' '+s; return s; }
+function _feMoney(v){ return (v<0?'-':'')+Math.abs(v).toFixed(2); }
+function _feP2(n){ return ('0'+n).slice(-2); }
+function _feMonthIdx(d){ var s=String(d||''); var m=s.match(/^\d{4}[-\/](\d{1,2})/)||s.match(/^(\d{1,2})[-\/]/); return m?(parseInt(m[1],10)-1):-1; }
+function _feDateKey(d){ var s=String(d||''); var iso=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/); if(iso) return iso[1]+_feP2(iso[2])+_feP2(iso[3]); var us=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/); if(us){ var y=us[3].length===2?'20'+us[3]:us[3]; return y+_feP2(us[1])+_feP2(us[2]); } return '99999999'; }
+// Resolve "ROOF 2025" → {pcode, yr, rows} filtered from LOG.
+function _feScopeRows(arg){
+  arg = String(arg||'').trim();
+  var yr='', m = arg.match(/[\s\.\/]+(\d{2,4})\s*$/);
+  if(m){ yr = (m[1].length===2 ? '20'+m[1] : m[1]); arg = arg.slice(0, m.index); }
+  var pcode = arg.replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+  var rows=[];
+  for(var i=0;i<LOG.length;i++){ var e=LOG[i]; if(!e||e.deleted) continue;
+    if(pcode && String(e.pcode||'').toUpperCase()!==pcode) continue;
+    if(yr && _feYearOf(e.date)!==yr) continue; rows.push(e); }
+  return { pcode:pcode, yr:yr, rows:rows };
+}
+function _feFinishReport(code,label,pcode,yr,text){
+  _feLastFilter = { pcode:pcode, desc:'', term:'', yr:yr };
+  _feRptCtx = { rep:{ code:code, label:label, pcode:pcode, desc:'', payee:'', yr:yr }, rows:[], total:0, text:text };
+  _feReportOutput('view');
+}
+function _feIrsCat(desc){ var d=String(desc||'').toUpperCase(); if(/INCOME|DIVIDEND|INTEREST|REFUND/.test(d)) return 'A'; if(/WATER|ELECTRIC|PHONE/.test(d)) return 'C'; if(/TAX/.test(d)) return 'D'; return 'B'; }
+function _fePctCat(desc){ var d=String(desc||'').toUpperCase(); if(/INCOME|DIVIDEND|INTEREST|REFUND/.test(d)) return 'A'; if(/TAX/.test(d)) return 'C'; return 'B'; }
+function _feTradeCat(desc){ var d=String(desc||'').toUpperCase(); if(/COST|PURCHASE|PROCEEDS|SALE|WASH/.test(d)) return 'A'; if(/DIVIDEND|INTEREST|INCOME/.test(d)) return 'C'; if(/TAX/.test(d)) return 'Z'; return 'D'; }
+
+// ───── /irs · /pct — category summaries (buckets by IRS class) ─────
+function _feCatSummary(arg, mode){
+  var sc=_feScopeRows(arg), rows=sc.rows;
+  var catFn = mode==='PCT' ? _fePctCat : _feIrsCat;
+  var CATN = mode==='PCT' ? {A:'INCOME',B:'GENERAL',C:'TAXES'} : {A:'INCOME',B:'GENERAL',C:'UTILITIES',D:'TAXES'};
+  var order = mode==='PCT' ? ['A','B','C'] : ['A','B','C','D'];
+  var cats={}, expBase=0;
+  rows.forEach(function(e){
+    var amt=(e.amt||0); var ds=String(e.desc||'(none)').toUpperCase();
+    if(mode==='PCT' && /JOB TOTAL/.test(ds)) amt=0;          // PERCENT zeroes JOB TOTAL
+    var c=catFn(e.desc);
+    cats[c]=cats[c]||{d:{},o:[]};
+    if(!cats[c].d[ds]){ cats[c].d[ds]={sum:0,cnt:0}; cats[c].o.push(ds); }
+    cats[c].d[ds].sum+=amt; cats[c].d[ds].cnt++;
+    if(c!=='A') expBase+=Math.abs(amt);
+  });
+  expBase=expBase||1;
+  var title=(mode==='PCT'?'PERCENT':'IRS SUMMARY')+' — '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):'');
+  var L=[]; L.push('        CARRINGTON '+(mode==='PCT'?'PERCENT MATH':'IRS SUMMARY')); L.push('        '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):'')); L.push('');
+  L.push(' '+_fePadR('DESCRIPTION',24)+_fePadL('CNT',5)+_fePadL('AMOUNT',14)+_fePadL('%EXP',8));
+  order.forEach(function(c){ if(!cats[c])return;
+    L.push(c+'  '+CATN[c]);
+    cats[c].o.sort().forEach(function(ds){ var D=cats[c].d[ds];
+      var pct = c==='A' ? _fePadL('inc',8) : _fePadL((Math.abs(D.sum)/expBase*100).toFixed(1),8);
+      L.push('  '+_fePadR(ds,23)+_fePadL(D.cnt,5)+_fePadL(_feMoney(D.sum),14)+pct); });
+    var sub=cats[c].o.reduce(function(s,ds){return s+cats[c].d[ds].sum;},0);
+    var cnt=cats[c].o.reduce(function(s,ds){return s+cats[c].d[ds].cnt;},0);
+    L.push('  '+_fePadR('* '+c+' SUBTOTAL',23)+_fePadL(cnt,5)+_fePadL(_feMoney(sub),14)+(c==='A'?'':_fePadL((Math.abs(sub)/expBase*100).toFixed(1),8))); });
+  if(!rows.length) L.push('   (no records)');
+  var net=rows.reduce(function(s,e){return s+(e.amt||0);},0);
+  L.push(''); L.push(_fePadR('*** NET',24)+_fePadL('',5)+_fePadL(_feMoney(net),14));
+  _feFinishReport('/'+(mode==='PCT'?'pct':'irs')+(sc.pcode?(' '+sc.pcode):''), title, sc.pcode, sc.yr, L.join('\n'));
+}
+function _feRunIrs(arg){ _feCatSummary(arg,'IRS'); }
+function _feRunPct(arg){ _feCatSummary(arg,'PCT'); }
+
+// ───── /trade — investment summary (cost/proceeds/wash, income, taxes) ─────
+function _feRunTrade(arg){
+  var sc=_feScopeRows(arg), rows=sc.rows;
+  var CATN={A:'TRADES (cost/proceeds/wash)',C:'INVESTMENT INCOME',Z:'TAXES',D:'OTHER'};
+  var cats={};
+  rows.forEach(function(e){ var c=_feTradeCat(e.desc), ds=String(e.desc||'(none)').toUpperCase();
+    cats[c]=cats[c]||{d:{},o:[]}; if(!cats[c].d[ds]){cats[c].d[ds]={sum:0,cnt:0};cats[c].o.push(ds);}
+    cats[c].d[ds].sum+=(e.amt||0); cats[c].d[ds].cnt++; });
+  var L=[]; L.push('        CARRINGTON TRADE SUMMARY'); L.push('        '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):'')); L.push('');
+  L.push(' '+_fePadR('DESCRIPTION',24)+_fePadL('CNT',5)+_fePadL('AMOUNT',14));
+  var net=0;
+  ['A','C','Z','D'].forEach(function(c){ if(!cats[c])return; L.push(c+'  '+CATN[c]);
+    cats[c].o.sort().forEach(function(ds){ var D=cats[c].d[ds]; L.push('  '+_fePadR(ds,23)+_fePadL(D.cnt,5)+_fePadL(_feMoney(D.sum),14)); });
+    var sub=cats[c].o.reduce(function(s,ds){return s+cats[c].d[ds].sum;},0); net+=sub;
+    var lbl=c==='A'?'NET REALIZED':(c==='C'?'TOTAL INCOME':(c==='Z'?'TOTAL TAXES':'OTHER'));
+    L.push('  '+_fePadR('* '+lbl,28)+_fePadL(_feMoney(sub),14)); });
+  if(!rows.length) L.push('   (no records)');
+  L.push(''); L.push(_fePadR('*** NET TAXABLE',29)+_fePadL(_feMoney(net),14));
+  _feFinishReport('/trade'+(sc.pcode?(' '+sc.pcode):''), 'TRADE SUMMARY — '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):''), sc.pcode, sc.yr, L.join('\n'));
+}
+
+// ───── /12mo · /count — description × month grid (dollars or counts) ─────
+function _feMonthGrid(arg, counting){
+  var sc=_feScopeRows(arg), rows=sc.rows;
+  var byDesc={}, order=[];
+  rows.forEach(function(e){ var ds=String(e.desc||'(none)').toUpperCase(); var mi=_feMonthIdx(e.date); if(mi<0)return;
+    if(!byDesc[ds]){ byDesc[ds]=[0,0,0,0,0,0,0,0,0,0,0,0]; order.push(ds); }
+    byDesc[ds][mi]+= counting ? 1 : (e.amt||0); });
+  var L=[]; var ttl=(counting?'COUNT':'12-MONTH')+' — '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):'');
+  L.push('        CARRINGTON '+(counting?'ENTRY COUNT':'12-MONTH SPREAD')); L.push('        '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):'')); L.push('');
+  var hdr=_fePadR(' DESCRIPTION',16); for(var i=1;i<=12;i++) hdr+=_fePadL('MT'+i,6); hdr+=_fePadL('TOTAL', counting?6:11);
+  L.push(hdr);
+  var colT=[0,0,0,0,0,0,0,0,0,0,0,0], grand=0;
+  order.sort().forEach(function(ds){ var arr=byDesc[ds]; var line=_fePadR(' '+ds,16); var t=0;
+    arr.forEach(function(v,i){ line+= _fePadL(counting?(v||'.'):(v?Math.round(Math.abs(v)):'.'),6); t+=v; colT[i]+=v; });
+    line+= counting ? _fePadL(t,6) : _fePadL(_feMoney(t),11); grand+=t; L.push(line); });
+  if(!order.length) L.push('   (no records)');
+  var gl=_fePadR(' TOTAL',16); colT.forEach(function(v){ gl+=_fePadL(counting?v:(v?Math.round(Math.abs(v)):'.'),6); });
+  gl+= counting ? _fePadL(grand,6) : _fePadL(_feMoney(grand),11);
+  L.push(''); L.push(gl);
+  if(counting) L.push('   TOTAL LOGINS: '+grand);
+  _feFinishReport('/'+(counting?'count':'12mo')+(sc.pcode?(' '+sc.pcode):''), ttl, sc.pcode, sc.yr, L.join('\n'));
+}
+function _feRun12mo(arg){ _feMonthGrid(arg, false); }
+function _feRunCount(arg){ _feMonthGrid(arg, true); }
+
+// ───── /date — chronological running balance (MATHADD) ─────
+function _feRunDate(arg){
+  var sc=_feScopeRows(arg); var rows=sc.rows.slice().sort(function(a,b){ return _feDateKey(a.date).localeCompare(_feDateKey(b.date)); });
+  var L=[]; L.push('        CARRINGTON DATE / MATH REPORT'); L.push('        '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):'')); L.push('');
+  L.push(' '+_fePadR('DATE',11)+_fePadR('PAYEE',22)+_fePadL('AMOUNT',13)+_fePadL('BALANCE',14));
+  var bal=0;
+  rows.forEach(function(e){ bal+=(e.amt||0);
+    L.push(' '+_fePadR(e.date||'',11)+_fePadR(e.payee||'',22)+_fePadL(_feMoney(e.amt||0),13)+_fePadL(_feMoney(bal),14)); });
+  if(!rows.length) L.push('   (no records)');
+  L.push(''); L.push(_fePadR('*** ENDING BALANCE',46)+_fePadL(_feMoney(bal),14));
+  _feFinishReport('/date'+(sc.pcode?(' '+sc.pcode):''), 'DATE / MATH — '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):''), sc.pcode, sc.yr, L.join('\n'));
+}
+
+// ───── /descirs — lean IRS description page (date · payee · amt, by desc) ─────
+function _feRunDescIrs(arg){
+  var sc=_feScopeRows(arg), rows=sc.rows;
+  var byDesc={}, order=[];
+  rows.forEach(function(e){ var ds=String(e.desc||'(none)').toUpperCase(); if(!byDesc[ds]){byDesc[ds]=[];order.push(ds);} byDesc[ds].push(e); });
+  var L=[]; L.push('        TRISTAN CARRINGTON AUDIT REPORT'); L.push('        '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):'')); L.push('');
+  L.push(' '+_fePadR('DATE',11)+_fePadR('PAYEE',24)+_fePadL('AMT',13));
+  var grand=0;
+  order.sort().forEach(function(ds){ L.push('DESCRIPTION: '+ds); var sub=0;
+    byDesc[ds].slice().sort(function(a,b){return _feDateKey(a.date).localeCompare(_feDateKey(b.date));}).forEach(function(e){
+      sub+=(e.amt||0); grand+=(e.amt||0);
+      L.push(' '+_fePadR(e.date||'',11)+_fePadR(e.payee||'',24)+_fePadL(_feMoney(e.amt||0),13)); });
+    L.push('   '+_fePadR('subtotal',32)+_fePadL(_feMoney(sub),13)); });
+  if(!rows.length) L.push('   (no records)');
+  L.push(''); L.push(_fePadR('*** TOTAL',36)+_fePadL(_feMoney(grand),13));
+  _feFinishReport('/descirs'+(sc.pcode?(' '+sc.pcode):''), 'DESC-IRS — '+(sc.pcode||'ALL')+(sc.yr?(' / '+sc.yr):''), sc.pcode, sc.yr, L.join('\n'));
+}
+
+// ───── /all — MASTER SUMMARY YEARS (every year across, total on the end) ─────
+// The ZIALL pivot: each description's spend laid out year-by-year side by side,
+// grouped by category (A income, B general, C utilities, D taxes), total column
+// last. Cross-year by nature, so it ignores a single-year scope; /all roof limits
+// to one pcode. Whole-dollar cells (IRS rounds to dollars); full cents on totals.
+function _feRunAll(arg){
+  var a = String(arg||'').trim().replace(/\b(?:19|20)\d{2}\b/g,'').trim();   // strip any stray year
+  var pcode = a.replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+  var rows=[];
+  for(var i=0;i<LOG.length;i++){ var e=LOG[i]; if(!e||e.deleted) continue;
+    if(pcode && String(e.pcode||'').toUpperCase()!==pcode) continue; rows.push(e); }
+  var yset={}; rows.forEach(function(e){ var y=_feYearOf(e.date); if(y) yset[y]=1; });
+  var years=Object.keys(yset).sort();
+  var cats={}; var CATN={A:'INCOME',B:'GENERAL',C:'UTILITIES',D:'TAXES'};
+  rows.forEach(function(e){ var c=_feIrsCat(e.desc), ds=String(e.desc||'(none)').toUpperCase(), y=_feYearOf(e.date), amt=(e.amt||0);
+    cats[c]=cats[c]||{d:{},o:[]}; if(!cats[c].d[ds]){cats[c].d[ds]={yr:{},tot:0};cats[c].o.push(ds);}
+    var D=cats[c].d[ds]; D.yr[y]=(D.yr[y]||0)+amt; D.tot+=amt; });
+  function r0(v){ return v ? String(Math.round(v)) : '.'; }
+  var W=11, L=[];
+  L.push('        CARRINGTON MASTER SUMMARY — ALL YEARS'); L.push('        '+(pcode||'ALL PCODES')); L.push('');
+  var hdr=_fePadR(' DESCRIPTION',24); years.forEach(function(y){ hdr+=_fePadL(y,W); }); hdr+=_fePadL('TOTAL',13);
+  L.push(hdr);
+  var colT={}, grand=0;
+  ['A','B','C','D'].forEach(function(c){ if(!cats[c])return; L.push(c+'  '+CATN[c]);
+    cats[c].o.sort().forEach(function(ds){ var D=cats[c].d[ds]; var line=' '+_fePadR(ds,23);
+      years.forEach(function(y){ var v=D.yr[y]||0; line+=_fePadL(r0(v),W); colT[y]=(colT[y]||0)+v; });
+      line+=_fePadL(_feMoney(D.tot),13); grand+=D.tot; L.push(line); });
+    var st=0, sub=' '+_fePadR('* '+c+' SUBTOTAL',23);
+    years.forEach(function(y){ var v=0; cats[c].o.forEach(function(ds){ v+=cats[c].d[ds].yr[y]||0; }); sub+=_fePadL(r0(v),W); st+=v; });
+    sub+=_fePadL(_feMoney(st),13); L.push(sub); });
+  if(!rows.length) L.push('   (no records'+(pcode?(' for pcode '+pcode):'')+')');
+  var gl=_fePadR(' *** ALL TOTAL',24); years.forEach(function(y){ gl+=_fePadL(r0(colT[y]||0),W); }); gl+=_fePadL(_feMoney(grand),13);
+  L.push(''); L.push(gl);
+  _feFinishReport('/all'+(pcode?(' '+pcode):''), 'MASTER SUMMARY — ALL YEARS'+(pcode?(' / '+pcode):''), pcode, '', L.join('\n'));
+}
+
 // Order-blind command parser. Splits on "/" AND spaces, then sorts the pieces:
 // one piece is the REPORT (desc/aud/...), one may be a YEAR (2/4 digits), the rest
 // are the FILTER (pcode or description). So these are all identical:
 //   /roof/desc   /desc/roof   /desc roof   /roof/desc/2025   /2025/desc/roof
 // No report named → it's just a pull.  /?  or  /help → the cheat sheet.
-var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS'};
+var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS',ALL:'ALL'};
 function _feSlashCommand(rest){
   rest = String(rest||'').trim();
   if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — contains-pull
@@ -15151,8 +15324,8 @@ function _feSlashHelp(){
   L.push('REPORTS   (any order — slash or space)');
   L.push('   /roof/desc   =   /desc/roof   =   /desc roof');
   L.push('   /roof/desc/2025  put a year anywhere');
-  L.push('   live now:  DESC   AUD');
-  L.push('   coming:    DATE 12MO PCT IRS TRADE COUNT');
+  L.push('   live now:  DESC AUD DATE 12MO PCT IRS TRADE COUNT DESCIRS');
+  L.push('   /all   /all roof   master summary, ALL years across');
   L.push('');
   L.push('INSIDE A REPORT');
   L.push('   press a NUMBER   run that report on the data');
@@ -15182,11 +15355,10 @@ function _feSlashMatchDesc(t){
 function _feRunPipedReport(report, filterArg){
   report = String(report||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   filterArg = String(filterArg||'').trim();
-  if(report==='DESC' || report==='DESCRIPTION'){ _feRunDesc(filterArg); return; }
-  if(report==='AUD'  || report==='AUDIT'){ _feRunAudit(filterArg); return; }
-  if(['DATE','PCT','PERCENT','IRS','TRADE','COUNT','12MO','12MON','DESCIRS'].indexOf(report) >= 0){
-    toast(report + ' report — coming soon', false); _feFocusPrompt(); return;
-  }
+  var map = { DESC:_feRunDesc, DESCRIPTION:_feRunDesc, AUD:_feRunAudit, AUDIT:_feRunAudit,
+    DATE:_feRunDate, PCT:_feRunPct, PERCENT:_feRunPct, IRS:_feRunIrs, TRADE:_feRunTrade,
+    COUNT:_feRunCount, '12MO':_feRun12mo, '12MON':_feRun12mo, DESCIRS:_feRunDescIrs, ALL:_feRunAll };
+  if(map[report]){ map[report](filterArg); return; }
   toast('Unknown report "/' + report + '"', false); _feFocusPrompt();
 }
 // "$" contains-pull — /$ace grabs any row with "ace" in ANY field (payee, desc,
