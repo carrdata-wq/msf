@@ -14922,8 +14922,8 @@ function _feReportPickerHTML(){
     }
     return '<button disabled style="background:#0a0a18;border:1px solid #333355;color:#6677aa;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;text-align:left;cursor:default;"><span style="background:#333355;color:#99aacc;padding:0 5px;border-radius:2px;margin-right:5px;">'+k+'</span>'+nm+'</button>';
   }).join('');
-  return '<div style="border-top:1px solid #00444a;margin:6px 0 8px;padding-top:8px;">'
-    + '<div style="color:#ffff66;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px;">SEE / PRINT MENU &#8226; ' + _feEsc(scope) + '  <span style="color:#88aacc;font-weight:400;">press a number</span></div>'
+  return '<div style="border-bottom:2px solid #ffffff;margin:0 0 4px;padding-bottom:8px;">'
+    + '<div style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px;">SEE / PRINT MENU &#8226; ' + _feEsc(scope) + '  <span style="color:#dfeaff;font-weight:400;">PRESS A NUMBER</span></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">' + btns + '</div></div>';
 }
 function _feReportOutput(action){
@@ -14951,9 +14951,9 @@ function _feReportOutput(action){
   // audit can be emailed or copied right from where you finished reading.
   if(action==='view'){
     var ov = document.getElementById('fe-overlay'); if(!ov) return;
-    var html = '<div style="background:#000022;border:2px solid #00ffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
-      + '<pre style="color:#ffff66;font-size:12px;white-space:pre-wrap;word-break:break-word;overflow-y:auto;margin:0 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
+    var html = '<div style="background:#3d7fd6;border:2px solid #ffffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
       + _feReportPickerHTML()
+      + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:12px;white-space:pre-wrap;word-break:break-word;overflow-y:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
       + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ff88;color:#003300;padding:1px 6px;border-radius:2px;margin-right:5px;">E</span>EMAIL / SHARE</button>'
