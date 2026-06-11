@@ -14992,6 +14992,48 @@ function _feRunAudit(arg){
   _feReportOutput('view');
 }
 
+// ───── "/" COMMAND BAR — a slash means REPORT, never a new entry ─────
+// A leading "/" can't begin a payee name, so it's an unambiguous command sigil and
+// the prompt will never mistake it for new data:
+//   /aud   /aud 10629   /aud 10629 2026     → the AUDIT report
+//   /roof   /10629   /phone   /trash         → pull that pcode or description
+//   a trailing 2- or 4-digit token scopes the year:  /10629 2026
+function _feSlashCommand(rest){
+  rest = String(rest||'').trim();
+  var sp = rest.split(/\s+/).filter(Boolean);
+  if(!sp.length){ toast('Type /aud, /<pcode>, or /<desc>', true); _feFocusPrompt(); return; }
+  var head = sp[0].toUpperCase();
+  var args = sp.slice(1);
+  if(head === 'AUD' || head === 'AUDIT'){ _feRunAudit(args.join(' ')); return; }   // named report
+  var yr = '';                                                                     // optional trailing year
+  if(args.length){
+    var m = args[args.length-1].match(/^(\d{2}|\d{4})$/);
+    if(m){ yr = (m[1].length===2 ? '20'+m[1] : m[1]); args = args.slice(0,-1); }
+  }
+  var token = [head].concat(args.map(function(a){return a.toUpperCase();})).join(' ').trim();
+  var rep = null;
+  if(_feSlashIsPcode(token)){ rep = { code:'/'+token, label:'PCODE '+token, pcode:token, desc:'', payee:'', yr:yr }; }
+  else { var dm = _feSlashMatchDesc(token); if(dm){ rep = { code:'/'+token, label:dm, pcode:'', desc:dm, payee:'', yr:yr }; } }
+  if(!rep){ toast('No pcode or desc "'+token+'"', false); _feFocusPrompt(); return; }
+  var r = _feReportRows(rep);
+  _feRptCtx = { rep:rep, rows:r.rows, total:r.total, text:_feReportBlockText(rep, r.rows, r.total) };
+  _feReportOutput('view');
+}
+function _feSlashIsPcode(t){
+  t = String(t).toUpperCase();
+  var all = _feGetAllPcodes();
+  for(var i=0;i<all.length;i++){ if(String(all[i]).toUpperCase() === t) return true; }
+  return false;
+}
+function _feSlashMatchDesc(t){
+  t = String(t).toUpperCase(); if(!t) return null;
+  var all = _feGetAllDescs(), i;
+  for(i=0;i<all.length;i++){ if(String(all[i]).toUpperCase() === t) return all[i]; }            // exact
+  for(i=0;i<all.length;i++){ if(String(all[i]).toUpperCase().indexOf(t) === 0) return all[i]; }  // starts-with
+  for(i=0;i<all.length;i++){ if(String(all[i]).toUpperCase().indexOf(t) >= 0) return all[i]; }   // contains
+  return null;
+}
+
 // ───── RNEW — build / manage custom report codes ─────
 var _feRnew = null;     // {step, pcode, desc, yr, code}
 var _feRnewItems = [];
@@ -15132,6 +15174,10 @@ function _feDispatchInput(val){
   if(_feMode === 'entry-payee'){
     if(!v){ _feFocusPrompt(); return; }
     var vu = v.toUpperCase();
+    // "/" COMMAND BAR — a leading slash is always a report command and can never
+    // be a payee, so it fires the slash engine and never creates a new entry.
+    //   /aud · /aud 10629 2026 · /roof · /10629 · /phone
+    if(v.charAt(0) === '/'){ _feSlashCommand(v.slice(1)); return; }
     // Lone "X" on the PAYEE bar = FoxBase kill: void the LAST file entered and
     // jump straight back to a fresh PAYEE prompt (no confirm). An "X" inside a
     // longer name is just a normal letter — this only fires when the entire
