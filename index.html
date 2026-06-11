@@ -14992,6 +14992,68 @@ function _feRunAudit(arg){
   _feReportOutput('view');
 }
 
+// ───── /desc — CARRINGTON DESCRIPTION REPORT (SEE menu opt 1) ─────
+// Usage:  /desc            rollup of everything
+//         /desc roof       just pcode ROOF
+//         /desc roof 2026  pcode ROOF, year 2026
+// Groups PCODE -> DESCRIPTION -> VENDOR. Each vendor shows count, total, average,
+// and percent of the pcode; each description caps with a subtotal; each pcode totals.
+// Income falls into its own DESCRIPTION group, so it never averages in with expenses.
+function _feRunDesc(arg){
+  arg = String(arg||'').trim();
+  var yr='', m = arg.match(/[\s\.\/]+(\d{2,4})\s*$/);
+  if(m){ yr = (m[1].length===2 ? '20'+m[1] : m[1]); arg = arg.slice(0, m.index); }
+  var pcode = arg.replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+  function padR(s,n){ s=String(s); if(s.length>n) s=s.slice(0,n); while(s.length<n) s+=' '; return s; }
+  function padL(s,n){ s=String(s); if(s.length>n) s=s.slice(0,n); while(s.length<n) s=' '+s; return s; }
+  function money(v){ return (v<0?'-':'')+Math.abs(v).toFixed(2); }
+  var byPc = {}, pcOrder = [];
+  for(var i=0;i<LOG.length;i++){
+    var e=LOG[i]; if(!e || e.deleted) continue;
+    if(pcode && String(e.pcode||'').toUpperCase() !== pcode) continue;
+    if(yr && _feYearOf(e.date) !== yr) continue;
+    var pc=String(e.pcode||'(none)'), ds=String(e.desc||'(none)'), py=String(e.payee||'(none)'), a=(e.amt||0);
+    if(!byPc[pc]){ byPc[pc]={descs:{},dOrder:[],sum:0,cnt:0}; pcOrder.push(pc); }
+    var P=byPc[pc]; P.sum+=a; P.cnt++; P.gross=(P.gross||0)+Math.abs(a);
+    if(!P.descs[ds]){ P.descs[ds]={payees:{},pOrder:[],sum:0,cnt:0}; P.dOrder.push(ds); }
+    var D=P.descs[ds]; D.sum+=a; D.cnt++;
+    if(!D.payees[py]){ D.payees[py]={sum:0,cnt:0}; D.pOrder.push(py); }
+    D.payees[py].sum+=a; D.payees[py].cnt++;
+  }
+  var bar = '--------------------------------------------------------------------------------';
+  var title = 'DESCRIPTION REPORT — ' + (pcode||'ALL PCODES') + (yr?(' / '+yr):'');
+  var L = [];
+  L.push('        CARRINGTON DESCRIPTION REPORT');
+  L.push('        ' + (pcode||'ALL PCODES') + (yr?(' / '+yr):''));
+  L.push('');
+  var grand=0, grandN=0;
+  pcOrder.sort();
+  pcOrder.forEach(function(pc){
+    var P=byPc[pc]; var base=P.gross||1;
+    L.push('PCODE ' + pc + '   (' + P.cnt + ' recs)');
+    L.push('  ' + padR('VENDOR',22)+padL('CNT',4)+padL('AMOUNT',13)+padL('AVG',11)+padL('PCT%',7));
+    P.dOrder.sort();
+    P.dOrder.forEach(function(ds){
+      var D=P.descs[ds];
+      L.push('  ' + ds);
+      D.pOrder.sort();
+      D.pOrder.forEach(function(py){
+        var V=D.payees[py];
+        L.push('    ' + padR(py,20)+padL(V.cnt,4)+padL(money(V.sum),13)+padL(money(V.sum/V.cnt),11)+padL((Math.abs(V.sum)/base*100).toFixed(1),7));
+      });
+      L.push('    ' + padR('* '+ds,20)+padL(D.cnt,4)+padL(money(D.sum),13)+padL(money(D.sum/D.cnt),11)+padL((Math.abs(D.sum)/base*100).toFixed(1),7));
+    });
+    L.push('  ' + padR('*** PCODE '+pc+' TOTAL',26)+padL(money(P.sum),13));
+    L.push(bar);
+    grand+=P.sum; grandN+=P.cnt;
+  });
+  if(!pcOrder.length) L.push('   (no records'+(pcode?(' for pcode '+pcode):'')+(yr?(' in '+yr):'')+')');
+  L.push(padR('*** GRAND TOTAL  '+grandN+' RECS', 67)+padL(money(grand),13));
+  var rep = { code:'/desc'+(pcode?(' '+pcode):''), label:title, pcode:pcode, desc:'', payee:'', yr:yr };
+  _feRptCtx = { rep:rep, rows:[], total:grand, text:L.join('\n') };
+  _feReportOutput('view');
+}
+
 // ───── "/" COMMAND BAR — a slash means REPORT, never a new entry ─────
 // A leading "/" can't begin a payee name, so it's an unambiguous command sigil and
 // the prompt will never mistake it for new data:
@@ -15006,6 +15068,7 @@ function _feSlashCommand(rest){
   var head = sp[0].toUpperCase();
   var args = sp.slice(1);
   if(head === 'AUD' || head === 'AUDIT'){ _feRunAudit(args.join(' ')); return; }   // named report
+  if(head === 'DESC' || head === 'DESCRIPTION'){ _feRunDesc(args.join(' ')); return; }   // description rollup
   var yr = '';                                                                     // optional trailing year
   if(args.length){
     var m = args[args.length-1].match(/^(\d{2}|\d{4})$/);
