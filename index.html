@@ -14920,7 +14920,7 @@ function _feReportOutput(action){
   // audit can be emailed or copied right from where you finished reading.
   if(action==='view'){
     var ov = document.getElementById('fe-overlay'); if(!ov) return;
-    var html = '<div style="background:#000022;border:2px solid #00ffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:86vh;display:flex;flex-direction:column;align-self:flex-start;margin-top:8px;font-family:Courier New,monospace;">'
+    var html = '<div style="background:#000022;border:2px solid #00ffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
       + '<pre style="color:#ffff66;font-size:12px;white-space:pre-wrap;word-break:break-word;overflow-y:auto;margin:0 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
