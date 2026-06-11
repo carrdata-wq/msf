@@ -14926,23 +14926,34 @@ function _feReportPickerHTML(){
     + '<div style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px;">SEE / PRINT MENU &#8226; ' + _feEsc(scope) + '  <span style="color:#dfeaff;font-weight:400;">PRESS A NUMBER</span></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">' + btns + '</div></div>';
 }
+function _feCopyText(text){
+  function fallback(){
+    try{
+      var ta=document.createElement('textarea'); ta.value=text;
+      ta.style.position='fixed'; ta.style.left='-9999px'; ta.style.top='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      var ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      toast(ok ? '\u2713 COPIED — paste with Ctrl+V' : 'Could not copy — select the text by hand', ok);
+    }catch(e){ toast('Could not copy — select the text by hand', false); }
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast('\u2713 COPIED — paste with Ctrl+V into email or a doc', true); }, fallback);
+  } else { fallback(); }
+}
 function _feReportOutput(action){
   if(!_feRptCtx) return;
   var text = _feRptCtx.text, rep = _feRptCtx.rep;
-  if(action==='copy'){
-    try{ navigator.clipboard.writeText(text); toast('\u2713 Report copied', true); }
-    catch(e){ toast('Copy failed', false); }
-    return;
-  }
+  if(action==='copy'){ _feCopyText(text); return; }
   if(action==='share'){
-    var subject = 'MFS Report ' + rep.code + ' — ' + (rep.label||'');
-    if(navigator.share){
-      navigator.share({ title: subject, text: text }).catch(function(){});
-    } else {
-      var url = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
-      try{ window.location.href = url; }
-      catch(e){ try{ navigator.clipboard.writeText(text); toast('No mail app — copied instead', true); }catch(e2){} }
-    }
+    var subject = 'MFS REPORT ' + (rep.code||'') + (rep.label ? (' — ' + rep.label) : '');
+    // Gmail compose in a NEW TAB (works in-browser; never navigates the app away).
+    var body = text.length > 1800 ? (text.slice(0,1800) + '\n\n...(truncated — use COPY for the full report)') : text;
+    var gmail = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    var w = window.open(gmail, '_blank');
+    if(w){ toast('Opening Gmail compose\u2026', true); }
+    else if(navigator.share){ navigator.share({ title: subject, text: text }).catch(function(){}); }
+    else { _feCopyText(text); toast('Pop-up blocked — report COPIED instead; paste into your email', true); }
     return;
   }
   // view on screen — render the block into the overlay.
