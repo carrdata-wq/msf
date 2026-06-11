@@ -15000,6 +15000,7 @@ function _feRunAudit(arg){
 //   a trailing 2- or 4-digit token scopes the year:  /10629 2026
 function _feSlashCommand(rest){
   rest = String(rest||'').trim();
+  if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — FoxBase "$" contains-pull
   var sp = rest.split(/\s+/).filter(Boolean);
   if(!sp.length){ toast('Type /aud, /<pcode>, or /<desc>', true); _feFocusPrompt(); return; }
   var head = sp[0].toUpperCase();
@@ -15032,6 +15033,30 @@ function _feSlashMatchDesc(t){
   for(i=0;i<all.length;i++){ if(String(all[i]).toUpperCase().indexOf(t) === 0) return all[i]; }  // starts-with
   for(i=0;i<all.length;i++){ if(String(all[i]).toUpperCase().indexOf(t) >= 0) return all[i]; }   // contains
   return null;
+}
+// "$" contains-pull — /$ace grabs any row with "ace" in ANY field (payee, desc,
+// pcode, date); /$ace 2026 scopes the year. This is FoxBase's "$" substring operator,
+// the grab-anything-fast pull — it does NOT care about pcode/desc structure.
+function _feSlashContains(rest){
+  rest = String(rest||'').trim();
+  var sp = rest.split(/\s+/).filter(Boolean);
+  if(!sp.length){ toast('Type /$<text> to pull anything containing it', true); _feFocusPrompt(); return; }
+  var yr = '';
+  if(sp.length > 1){
+    var m = sp[sp.length-1].match(/^(\d{2}|\d{4})$/);
+    if(m){ yr = (m[1].length===2 ? '20'+m[1] : m[1]); sp = sp.slice(0,-1); }
+  }
+  var term = sp.join(' ').toUpperCase();
+  var rows = [], total = 0;
+  for(var i=0;i<LOG.length;i++){
+    var e = LOG[i]; if(!e || e.deleted) continue;
+    if(yr && _feYearOf(e.date) !== yr) continue;
+    var hay = ((e.date||'')+' '+(e.payee||'')+' '+(e.pcode||'')+' '+(e.desc||'')).toUpperCase();
+    if(hay.indexOf(term) >= 0){ rows.push(e); total += (e.amt||0); }
+  }
+  var rep = { code:'/$'+term, label:'CONTAINS "'+term+'"', pcode:'', desc:'', payee:'', yr:yr };
+  _feRptCtx = { rep:rep, rows:rows, total:total, text:_feReportBlockText(rep, rows, total) };
+  _feReportOutput('view');
 }
 
 // ───── RNEW — build / manage custom report codes ─────
