@@ -16703,6 +16703,20 @@ function _fePickerInputKey(e){
     }
     return;
   }
+  // Number-pick: Press #1, #2, #3 to select by index
+  if(e.key && /^[0-9]$/.test(e.key)){
+    e.preventDefault();
+    var qq = _fePickerFilter.toUpperCase();
+    var num = parseInt(e.key, 10);
+    if(num === 0) num = 10;  // #0 = 10th item
+    var cur = _fePickerItems.filter(function(it){ return !qq || it.toUpperCase().indexOf(qq) >= 0; });
+    _feSortByCount(cur);
+    var idx = num - 1;
+    if(idx >= 0 && idx < cur.length){
+      _feSetItem(cur[idx]);
+      return;
+    }
+  }
   // Letter-pick: Press A/B/C to grab that result directly by index.
   // Works on ThinkPad (all pickers) and Android (pcode/desc pickers).
   var letterPickOK = true;   // ABC letter-pick now on every picker (payee too)
