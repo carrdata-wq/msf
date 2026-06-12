@@ -15590,6 +15590,41 @@ function _feDispatchInput(val){
   if(_feMode === 'edit-newpayee'){ _feApplyNewPayeeName(v); return; }
   if(_feMode === 'pick-pcode'){ _feApplyPcodePick(v); return; }
   if(_feMode === 'pick-desc'){ _feApplyDescPick(v); return; }
+  if(_feMode === 'quick-day'){
+    var s = String(v||'').replace(/[^0-9]/g,'');
+    var dd = s ? String(parseInt(s,10)) : ('0'+new Date().getDate()).slice(-2);
+    if(dd.length === 1) dd = '0' + dd;
+    if(parseInt(dd,10) < 1 || parseInt(dd,10) > 31){ toast('Bad day', false); _feFocusPrompt(); return; }
+    window._feQuickEntry.dd = dd;
+    _feMode = 'quick-amt';
+    var inp2 = document.getElementById('fe-prompt');
+    if(inp2) inp2.value = '';
+    _feMiniLabel = 'AMOUNT (#' + window._feQuickEntry.id + ')';
+    _feRender();
+    _feFocusPrompt();
+    return;
+  }
+  if(_feMode === 'quick-amt'){
+    var amt = parseFloat(v.replace(/[^0-9.\-]/g,''));
+    if(isNaN(amt)){ toast('Bad amount', false); _feFocusPrompt(); return; }
+    window._feQuickEntry.amt = -Math.abs(amt);
+    // Write to LOG and save
+    var entry = { 
+      id: window._feQuickEntry.id,
+      date: _feDefYR + '-' + _feDefMM + '-' + window._feQuickEntry.dd,
+      payee: window._feQuickEntry.payee,
+      pcode: window._feQuickEntry.pcode,
+      desc: window._feQuickEntry.desc,
+      amt: window._feQuickEntry.amt
+    };
+    LOG.push(entry);
+    _feLogSave();
+    toast('✓ Saved #' + entry.id, true);
+    _feStartEntryPayee();
+    _feRender();
+    _feFocusPrompt();
+    return;
+  }
   if(_feMode === 'edit-payee-combo'){ 
     if(v){
       // User edited - apply new values (for now, just accept as-is)
@@ -17016,19 +17051,14 @@ function _feWriteCSVRow(recno, payee, pcode, desc){
 }
 
 function _feStartEntryWithRecno(recno, payee, pcode, desc){
-  _feDraft = {
-    id: recno,
-    payee: payee,
-    pcode: pcode || '',
-    desc: desc || '',
-    mm: _feDefMM,
-    yr: _feDefYR,
-    dd: '',
-    amt: null
-  };
-  _feDraftInput = '';
-  _feRowIdx = 0;
-  _feEnterFillDay();
+  // Store in global for DATE/AMT collection
+  window._feQuickEntry = { id: recno, payee: payee, pcode: pcode, desc: desc, dd: '', amt: null };
+  _feMode = 'quick-day';
+  var inp = document.getElementById('fe-prompt');
+  if(inp) inp.value = '';
+  _feMiniLabel = 'DAY (#' + recno + ' ' + payee + ')';
+  _feRender();
+  _feFocusPrompt();
 }
 
 function _feShowPayeeEditScreen(payee, pcode, desc){
