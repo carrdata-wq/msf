@@ -14492,13 +14492,8 @@ function _feBeginDraft(payee, pcode, desc){
   _feRowIdx = 0;
   var ov = document.getElementById('fe-overlay');
   if(ov){ ov.innerHTML=''; ov.style.display='none'; }
-  // New payee (no pcode/desc yet) → pick those first, THEN fill the line.
-  if(!pcode && !desc){
-    _feGuidedFlow = ['pcode','desc'];
-    _feRender();
-    setTimeout(_feAdvanceGuided, 80);
-    return;
-  }
+  // Skip pcode/desc pickers - go straight to date entry
+  // User can edit pcode/desc in the final file if needed
   // Payee + combo resolved — fill the masked line: DAY first, then AMOUNT.
   _feEnterFillDay();
 }
@@ -15595,6 +15590,16 @@ function _feDispatchInput(val){
   if(_feMode === 'edit-newpayee'){ _feApplyNewPayeeName(v); return; }
   if(_feMode === 'pick-pcode'){ _feApplyPcodePick(v); return; }
   if(_feMode === 'pick-desc'){ _feApplyDescPick(v); return; }
+  if(_feMode === 'edit-payee-combo'){ 
+    if(v){
+      // User edited - apply new values (for now, just accept as-is)
+      _feBeginDraft(_feDraftPayee, _feDraftPcode, _feDraftDesc);
+    } else {
+      // Empty = confirm and proceed to date
+      _feBeginDraft(_feDraftPayee, _feDraftPcode, _feDraftDesc);
+    }
+    return; 
+  }
   if(_feMode === 'ask-new'){ _feApplyAskNew(v); return; }
   _feDispatchCommand(v);
 }
@@ -16989,9 +16994,57 @@ function _fePickPayeeQuick(payee){
   var combos = _fePayeeIndex[payee.toUpperCase()];
   var topCombo = combos && combos.length > 0 ? combos[0] : null;
   if(topCombo){
-    _feBeginDraft(payee, topCombo.pcode, topCombo.desc);
-    toast(payee, true);
+    // Get next recno
+    var recno = nextId(LOG);
+    // Write CSV row immediately
+    _feWriteCSVRow(recno, payee, topCombo.pcode, topCombo.desc);
+    // Start entry with recno
+    _feStartEntryWithRecno(recno, payee, topCombo.pcode, topCombo.desc);
   }
+}
+
+function _feWriteCSVRow(recno, payee, pcode, desc){
+  // Append to master CSV in memory (or localStorage)
+  var csvLine = '"' + recno + '","","' + payee.replace(/"/g,'""') + '","' + (pcode||'') + '","' + (desc||'') + '",""';
+  if(!window._masterCSV) window._masterCSV = [];
+  window._masterCSV.push(csvLine);
+  // Also save to localStorage if needed
+  try {
+    localStorage.setItem('mx_master_csv', JSON.stringify(window._masterCSV));
+  } catch(e){}
+  toast('Row #' + recno + ' → master.csv', true);
+}
+
+function _feStartEntryWithRecno(recno, payee, pcode, desc){
+  _feDraft = {
+    id: recno,
+    payee: payee,
+    pcode: pcode || '',
+    desc: desc || '',
+    mm: _feDefMM,
+    yr: _feDefYR,
+    dd: '',
+    amt: null
+  };
+  _feDraftInput = '';
+  _feRowIdx = 0;
+  _feEnterFillDay();
+}
+
+function _feShowPayeeEditScreen(payee, pcode, desc){
+  _feMode = 'edit-payee-combo';
+  var inp = document.getElementById('fe-prompt');
+  if(inp){
+    inp.value = '';
+    inp.placeholder = 'PAYEE: ' + payee + ' | PCODE: ' + pcode + ' | DESC: ' + desc + ' — press ENTER to continue';
+  }
+  _feMiniLabel = 'REVIEW & EDIT (or Enter to confirm)';
+  _feDraft = null;
+  _feDraftPayee = payee;
+  _feDraftPcode = pcode;
+  _feDraftDesc = desc;
+  _feRender();
+  _feFocusPrompt();
 }
 
 function _feLookupAndApply(query){
@@ -17044,10 +17097,16 @@ function _feLookupAndApply(query){
   matches.slice(0, 20).forEach(function(p, idx){
     var cnt = _fePayeeCount[p] || 0;
     var k = idx < 9 ? String(idx+1) : String.fromCharCode(65 + (idx - 9));
-    html += '<button onclick="_fePickPayeeQuick(\'' + p.replace(/'/g, "\\'") + '\')" style="width:100%;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:13px;padding:10px;border-radius:3px;cursor:pointer;margin-bottom:4px;">'
-      + '<span style="display:inline-block;width:24px;color:#ffff00;font-weight:700;">[' + k + ']</span> '
-      + '<span style="color:#00ffff;font-weight:700;flex:1;">' + p + '</span> '
-      + '<span style="color:#88ff88;">(' + cnt + ')</span>'
+    var topCombo = (_fePayeeIndex[p] && _fePayeeIndex[p][0]) ? _fePayeeIndex[p][0] : {pcode:'', desc:''};
+    var nextRecno = nextId(LOG);
+    html += '<button onclick="_fePickPayeeQuick(\'' + p.replace(/'/g, "\\'") + '\')" style="width:100%;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:12px;padding:8px;border-radius:3px;cursor:pointer;margin-bottom:4px;">'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      + '<span style="display:inline-block;width:20px;color:#ffff00;font-weight:700;">X' + k + '</span>'
+      + '<span style="color:#00ffff;font-weight:700;min-width:140px;">' + p + '</span>'
+      + '<span style="color:#ffff00;flex:1;">' + (topCombo.pcode || '') + '</span>'
+      + '<span style="color:#88ff88;flex:1;">' + (topCombo.desc || '') + '</span>'
+      + '<span style="color:#ffaa00;font-weight:700;">#' + nextRecno + '</span>'
+      + '</div>'
       + '</button>';
   });
   html += '</div></div>';
@@ -17081,7 +17140,7 @@ function _feShowComboPicker(payees, q){
         + '<span id="fechk'+idx+'" onclick="_feToggleMergeCheck('+idx+')" title="mark as same vendor" '
         + 'style="flex:0 0 30px;display:flex;align-items:center;justify-content:center;background:#0a1a3a;border:2px solid #2dd4bf;border-radius:3px;cursor:pointer;font-weight:700;font-size:16px;color:#2dd4bf;"></span>'
         + '<button onclick="_fePickCombo('+idx+')" style="flex:1;text-align:left;background:#001144;border:1px solid #4466cc;color:#fff;font-family:Courier New,monospace;font-size:12px;padding:7px 10px;border-radius:3px;cursor:pointer;">'
-        + '<span style="display:inline-block;width:24px;color:#ffff00;font-weight:700;">[' + k + ']</span> '
+        + '<span style="display:inline-block;width:24px;color:#ffff00;font-weight:700;">X' + k + '</span> '
         + '<span style="color:#00ffff;font-weight:700;">' + _feEsc(c.pcode||'(none)') + '</span> · '
         + '<span style="color:#fff;">' + _feEsc(c.desc||'(none)') + '</span>'
         + '<span style="color:#aaaaff;float:right;">×' + c.cnt + '</span>'
