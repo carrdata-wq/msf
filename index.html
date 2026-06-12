@@ -15398,7 +15398,7 @@ function _feRunAll(arg){
 // are the FILTER (pcode or description). So these are all identical:
 //   /roof/desc   /desc/roof   /desc roof   /roof/desc/2025   /2025/desc/roof
 // No report named → it's just a pull.  /?  or  /help → the cheat sheet.
-var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS',ALL:'ALL'};
+var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS',ALL:'ALL',INV:'INV'};
 function _feSlashCommand(rest){
   rest = String(rest||'').trim();
   if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — contains-pull
