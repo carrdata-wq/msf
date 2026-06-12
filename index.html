@@ -15590,16 +15590,16 @@ function _feDispatchInput(val){
   if(_feMode === 'edit-newpayee'){ _feApplyNewPayeeName(v); return; }
   if(_feMode === 'pick-pcode'){ _feApplyPcodePick(v); return; }
   if(_feMode === 'pick-desc'){ _feApplyDescPick(v); return; }
-  if(_feMode === 'quick-day'){
+  if(_feMode === 'quick-date'){
     var s = String(v||'').replace(/[^0-9]/g,'');
     var dd = s ? String(parseInt(s,10)) : ('0'+new Date().getDate()).slice(-2);
     if(dd.length === 1) dd = '0' + dd;
     if(parseInt(dd,10) < 1 || parseInt(dd,10) > 31){ toast('Bad day', false); _feFocusPrompt(); return; }
-    window._feQuickEntry.dd = dd;
+    window._entry_date = dd;
     _feMode = 'quick-amt';
-    var inp2 = document.getElementById('fe-prompt');
-    if(inp2) inp2.value = '';
-    _feMiniLabel = 'AMOUNT (#' + window._feQuickEntry.id + ')';
+    var inp = document.getElementById('fe-prompt');
+    if(inp) inp.value = '';
+    _feMiniLabel = 'AMOUNT (#' + window._entry_recno + ')';
     _feRender();
     _feFocusPrompt();
     return;
@@ -15607,19 +15607,18 @@ function _feDispatchInput(val){
   if(_feMode === 'quick-amt'){
     var amt = parseFloat(v.replace(/[^0-9.\-]/g,''));
     if(isNaN(amt)){ toast('Bad amount', false); _feFocusPrompt(); return; }
-    window._feQuickEntry.amt = -Math.abs(amt);
-    // Write to LOG and save
+    amt = -Math.abs(amt);
     var entry = { 
-      id: window._feQuickEntry.id,
-      date: _feDefYR + '-' + _feDefMM + '-' + window._feQuickEntry.dd,
-      payee: window._feQuickEntry.payee,
-      pcode: window._feQuickEntry.pcode,
-      desc: window._feQuickEntry.desc,
-      amt: window._feQuickEntry.amt
+      id: window._entry_recno,
+      date: _feDefYR + '-' + _feDefMM + '-' + window._entry_date,
+      payee: window._entry_payee,
+      pcode: window._entry_pcode,
+      desc: window._entry_desc,
+      amt: amt
     };
     LOG.push(entry);
     _feLogSave();
-    toast('✓ Saved #' + entry.id, true);
+    toast('✓ #' + entry.id + ' saved', true);
     _feStartEntryPayee();
     _feRender();
     _feFocusPrompt();
@@ -17029,13 +17028,24 @@ function _fePickPayeeQuick(payee){
   var combos = _fePayeeIndex[payee.toUpperCase()];
   var topCombo = combos && combos.length > 0 ? combos[0] : null;
   if(topCombo){
-    // Get next recno
     var recno = nextId(LOG);
-    // Write CSV row immediately
     _feWriteCSVRow(recno, payee, topCombo.pcode, topCombo.desc);
-    // Start entry with recno
-    _feStartEntryWithRecno(recno, payee, topCombo.pcode, topCombo.desc);
+    // Set variables and GO STRAIGHT TO DATE
+    window._entry_recno = recno;
+    window._entry_payee = payee;
+    window._entry_pcode = topCombo.pcode;
+    window._entry_desc = topCombo.desc;
+    _feAskQuickDate();
   }
+}
+
+function _feAskQuickDate(){
+  _feMode = 'quick-date';
+  var inp = document.getElementById('fe-prompt');
+  if(inp) inp.value = '';
+  _feMiniLabel = 'DATE (#' + window._entry_recno + ')';
+  _feRender();
+  _feFocusPrompt();
 }
 
 function _feWriteCSVRow(recno, payee, pcode, desc){
