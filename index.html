@@ -15590,40 +15590,7 @@ function _feDispatchInput(val){
   if(_feMode === 'edit-newpayee'){ _feApplyNewPayeeName(v); return; }
   if(_feMode === 'pick-pcode'){ _feApplyPcodePick(v); return; }
   if(_feMode === 'pick-desc'){ _feApplyDescPick(v); return; }
-  if(_feMode === 'quick-date'){
-    var s = String(v||'').replace(/[^0-9]/g,'');
-    var dd = s ? String(parseInt(s,10)) : ('0'+new Date().getDate()).slice(-2);
-    if(dd.length === 1) dd = '0' + dd;
-    if(parseInt(dd,10) < 1 || parseInt(dd,10) > 31){ toast('Bad day', false); _feFocusPrompt(); return; }
-    window._entry_date = dd;
-    _feMode = 'quick-amt';
-    var inp = document.getElementById('fe-prompt');
-    if(inp) inp.value = '';
-    _feMiniLabel = 'AMOUNT (#' + window._entry_recno + ')';
-    _feRender();
-    _feFocusPrompt();
-    return;
-  }
-  if(_feMode === 'quick-amt'){
-    var amt = parseFloat(v.replace(/[^0-9.\-]/g,''));
-    if(isNaN(amt)){ toast('Bad amount', false); _feFocusPrompt(); return; }
-    amt = -Math.abs(amt);
-    var entry = { 
-      id: window._entry_recno,
-      date: _feDefYR + '-' + _feDefMM + '-' + window._entry_date,
-      payee: window._entry_payee,
-      pcode: window._entry_pcode,
-      desc: window._entry_desc,
-      amt: amt
-    };
-    LOG.push(entry);
-    _feLogSave();
-    toast('✓ #' + entry.id + ' saved', true);
-    _feStartEntryPayee();
-    _feRender();
-    _feFocusPrompt();
-    return;
-  }
+
   if(_feMode === 'edit-payee-combo'){ 
     if(v){
       // User edited - apply new values (for now, just accept as-is)
@@ -15678,10 +15645,9 @@ function _feFinishStep(){
 }
 
 function _feStartGuidedFlow(){
-  _feGuidedFlow = ['pcode','desc'];
-  _feGuidedAmt = true;   // after PCOD → DESC, stop on AMOUNT (not back to PAYEE)
-  _feYearFilter = 'ALL'; // show the ALL view so the new row + its DD/AMOUNT steps are visible
-  setTimeout(_feAdvanceGuided, 80);
+  // REMOVED: Don't ask for pcode/desc - they come from combos
+  _feGuidedFlow = [];
+  _feEnterFillDay();
 }
 
 function _feAdvanceGuided(){
@@ -17025,12 +16991,13 @@ function _feWordStart(name, q){
 function _fePickPayeeQuick(payee){
   var ov = document.getElementById('fe-overlay');
   if(ov) ov.style.display = 'none';
+  // REBUILD index to ensure payee data is loaded
+  if(_feIndexDirty) _feBuildIndex();
   var combos = _fePayeeIndex[payee.toUpperCase()];
   var topCombo = combos && combos.length > 0 ? combos[0] : null;
   if(topCombo){
     var recno = nextId(LOG);
     _feWriteCSVRow(recno, payee, topCombo.pcode, topCombo.desc);
-    // Set variables and GO STRAIGHT TO DATE
     window._entry_recno = recno;
     window._entry_payee = payee;
     window._entry_pcode = topCombo.pcode;
@@ -17040,12 +17007,17 @@ function _fePickPayeeQuick(payee){
 }
 
 function _feAskQuickDate(){
-  _feMode = 'quick-date';
-  var inp = document.getElementById('fe-prompt');
-  if(inp) inp.value = '';
-  _feMiniLabel = 'DATE (#' + window._entry_recno + ')';
-  _feRender();
-  _feFocusPrompt();
+  _feDraft = {
+    id: window._entry_recno,
+    payee: window._entry_payee,
+    pcode: window._entry_pcode,
+    desc: window._entry_desc,
+    mm: _feDefMM,
+    yr: _feDefYR,
+    dd: '',
+    amt: null
+  };
+  _feEnterFillDay();
 }
 
 function _feWriteCSVRow(recno, payee, pcode, desc){
