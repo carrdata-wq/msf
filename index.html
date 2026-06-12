@@ -14260,6 +14260,8 @@ function _feArmIdleTimer(ms){
     if(!inp) return;
     var v = (inp.value||'').trim();
     if(!v) return;
+    // Slash commands require Enter key - don't auto-fire
+    if(v.charAt(0) === '/') return;
     inp.value = '';
     _feDispatchInput(v);
   }, ms || _feIdleMs);
@@ -14364,13 +14366,8 @@ function _feHandleInput(val){
     }
   }
   // FoxBase idle auto-fire: type letter(s), pause, dispatch — no ENTER needed
-  // EXCEPT: / commands require Enter key (don't auto-fire slash commands)
   if(val && val.length > 0){
-    if(val.charAt(0) === '/'){
-      _feClearIdleTimer();  // Slash commands: Enter key only, no auto-fire
-    } else {
-      _feArmIdleTimer();    // Regular payee/amount: auto-fire after pause
-    }
+    _feArmIdleTimer();
   } else {
     _feClearIdleTimer();
   }
