@@ -14385,6 +14385,20 @@ function _feHandlePromptKey(e){
       }
     }
   }
+  // Number key selection for pick-payee, pick-pcode, pick-desc
+  if((_feMode === 'pick-payee' || _feMode === 'pick-pcode' || _feMode === 'pick-desc') && /^[0-9]$/.test(e.key)){
+    e.preventDefault();
+    _feClearIdleTimer();
+    var num = parseInt(e.key, 10);
+    if(num === 0) num = 10;  // #0 = 10th item
+    var idx = num - 1;
+    if(idx >= 0 && idx < _fePickerItems.length){
+      if(_feMode === 'pick-payee') _feSetPayeePicked(_fePickerItems[idx]);
+      else if(_feMode === 'pick-pcode') _feApplyPcodePick(_fePickerItems[idx]);
+      else if(_feMode === 'pick-desc') _feApplyDescPick(_fePickerItems[idx]);
+    }
+    return;
+  }
   if(e.key === 'Enter'){
     e.preventDefault();
     _feClearIdleTimer();
