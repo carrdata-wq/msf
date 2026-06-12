@@ -1216,11 +1216,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <div class="menu-label"><div class="ml">Utility Tracker</div><div class="ms">KWH Electric · CF Gas · Cost/unit</div></div>
       <div class="menu-arrow">›</div>
     </div>
-    <div class="menu-item" onclick="invLoad();invShowComparison();showScreen('inventory');">
-      <div class="menu-num">9</div><div class="menu-icon">📦</div>
-      <div class="menu-label"><div class="ml" style="color:#00ffff;">INVENTORY — Per-Unit Compare</div><div class="ms">Items · Stores · $/unit · Savings %</div></div>
-      <div class="menu-arrow" style="color:#00ffff;">›</div>
-    </div>
   </div>
   </div>
 </div>
@@ -1848,25 +1843,6 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
 </div>
 
 
-<div id="screen-inventory" class="screen" style="display: none;">
-  <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📦 Inventory — /ROOF or MENARDS</div></div>
-  <div style="background:#0000cc;border-bottom:2px solid #00ff88;padding:8px 10px;position:sticky;top:50px;z-index:40;">
-    <input id="inv-cmd" type="text" placeholder="/ROOF, /INV, MENARDS, GROUND BEEF..." style="width:100%;background:#000033;border:2px solid #00ffff;color:#00ff88;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;outline:none;box-sizing:border-box;" onkeydown="invHandleKeydown(event);" onkeypress="invHandleKeypress(event);">
-  </div>
-  <div style="background:#0000cc;border-bottom:2px solid #6666ff;padding:8px 10px;display:flex;gap:6px;position:sticky;top:100px;z-index:39;">
-    <button onclick="invShowImportUI()" style="flex:1;background:#00ff88;color:#000080;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;cursor:pointer;">📥 IMPORT</button>
-    <button onclick="document.getElementById('inv-cmd').value=''; invShowComparison();" style="flex:1;background:#00ffff;color:#000080;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;cursor:pointer;">ALL</button>
-    <button onclick="invShowPickerMode()" style="flex:1;background:#ffff00;color:#000080;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;cursor:pointer;">📋 SELECT</button>
-    <button onclick="invClear()" style="flex:1;background:#ff6666;color:#ffffff;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px;cursor:pointer;">CLEAR</button>
-  </div>
-  <div id="inv-picker" style="display:none;background:#0000aa;border-bottom:2px solid #00ffff;padding:8px 10px;position:sticky;top:150px;z-index:38;">
-    <div style="color:#00ffff;font-weight:700;font-size:12px;margin-bottom:6px;">TAP STORE OR ITEM:</div>
-    <div id="inv-picker-buttons" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-  </div>
-  <div id="inv-output" style="padding:10px;color:#ccccff;font-family:Courier New,monospace;font-size:13px;"></div>
-</div>
-
-
 <div id="screen-portfolio" class="screen" style="display: none;">
   <div class="topbar"><button class="back-btn" onclick="goMain()">◀ Menu</button><div class="title">📈 Portfolio</div></div>
   <div id="port-menu" class="mod-menu">
@@ -2402,13 +2378,6 @@ function defaultData() {
 }
 function save(d) { localStorage.setItem('mfs', JSON.stringify(d)); }
 function nextId(a) { return a.length ? Math.max(...a.map(x=>x.id||0))+1 : 1; }
-
-//  INVENTORY SYSTEM (parallel to mx_log, 10-column format)
-var INV=[];
-function invLoad() { try{ INV=JSON.parse(localStorage.getItem('mx_inv')||'[]'); }catch(e){ INV=[]; } }
-function invSave() { try{ localStorage.setItem('mx_inv',JSON.stringify(INV)); return true; }catch(e){ if(typeof toast==='function') toast('⚠ Storage full',false); return false; } }
-function invClear() { if(confirm('Clear ALL inventory data? Backup first!')) { INV=[]; invSave(); if(typeof toast==='function') toast('Inventory cleared',true); } }
-
 function fmt(n,dec=2) {
   if(isNaN(n)) return '$0.00';
   const s = Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
@@ -2425,86 +2394,6 @@ function toast(msg,ok=true) {
   const el=document.getElementById('toast');
   el.textContent=(ok?'✓ ':'✗ ')+msg; el.className='show';
   clearTimeout(_tt); _tt=setTimeout(()=>el.className='',2200);
-}
-
-//  INVENTORY CSV PARSER (10 columns: ID, DATE, PAYEE, PCODE, DESC, AMT, QTY, UNIT, STORE, SKU)
-function invParseCSV(text) {
-  var lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-  var rows = [];
-  function csvSplit(line) {
-    var res=[], cur='', inQ=false;
-    for(var i=0; i<line.length; i++) {
-      var ch=line[i];
-      if(inQ) { if(ch==='"') { if(line[i+1]==='"') { cur+='"'; i++; } else inQ=false; } else cur+=ch; }
-      else { if(ch==='"') inQ=true; else if(ch===',') { res.push(cur); cur=''; } else cur+=ch; }
-    }
-    res.push(cur);
-    return res;
-  }
-  var headerIdx=-1, colMap={};
-  for(var i=0; i<Math.min(lines.length,5); i++) {
-    var cells = csvSplit(lines[i]);
-    if(cells.length>=7 && cells.some(c => c.toUpperCase().includes('DATE'))) {
-      headerIdx = i;
-      var expected=['DATE','PAYEE','PCODE','DESC','AMT','QTY','UNIT','STORE','SKU'];
-      for(var j=0; j<cells.length; j++) {
-        var h = cells[j].trim().toUpperCase();
-        for(var k=0; k<expected.length; k++) {
-          if(h.includes(expected[k])) { colMap[expected[k]]=j; break; }
-        }
-      }
-      break;
-    }
-  }
-  var startRow = headerIdx>=0 ? headerIdx+1 : 0;
-  for(var i=startRow; i<lines.length; i++) {
-    var cells = csvSplit(lines[i]);
-    if(!cells[0] || !cells[0].trim()) continue;
-    var row = {
-      id: cells[colMap['DATE']||1]||'',
-      date: cells[colMap['DATE']||1]||'',
-      payee: (cells[colMap['PAYEE']||2]||'').trim().toUpperCase(),
-      pcode: (cells[colMap['PCODE']||3]||'').trim().toUpperCase(),
-      desc: (cells[colMap['DESC']||4]||'').trim().toUpperCase(),
-      amt: parseFloat(cells[colMap['AMT']||5]||'0')||0,
-      qty: parseFloat(cells[colMap['QTY']||6]||'0')||0,
-      unit: (cells[colMap['UNIT']||7]||'').trim().toUpperCase()||'EACH',
-      store: (cells[colMap['STORE']||8]||'').trim().toUpperCase(),
-      sku: (cells[colMap['SKU']||9]||'').trim()
-    };
-    if(row.date && row.payee && row.amt) rows.push(row);
-  }
-  return rows;
-}
-
-function invImportCSV() {
-  var ta = document.getElementById('inv-paste-textarea');
-  if(!ta || !ta.value) { toast('Paste CSV data first',false); return; }
-  try {
-    var rows = invParseCSV(ta.value);
-    if(!rows.length) { toast('No valid rows found',false); return; }
-    var seen={};
-    INV.forEach(function(e) { seen[e.date+'|'+e.payee+'|'+e.amt+'|'+e.store] = true; });
-    var added=0;
-    rows.forEach(function(r) {
-      var key = r.date+'|'+r.payee+'|'+r.amt+'|'+r.store;
-      if(!seen[key]) {
-        r.id = Date.now() + Math.floor(Math.random()*10000);
-        r.ts = new Date().toISOString();
-        INV.push(r);
-        added++;
-        seen[key]=true;
-      }
-    });
-    if(invSave()) {
-      toast('✓ '+added+' new rows added · '+INV.length+' total',true);
-      ta.value='';
-      document.getElementById('inv-import-overlay').style.display='none';
-      if(typeof invShowComparison==='function') invShowComparison();
-    }
-  } catch(e) {
-    toast('Parse error: '+e.message,false);
-  }
 }
 
 //  NAVIGATION
@@ -15398,7 +15287,7 @@ function _feRunAll(arg){
 // are the FILTER (pcode or description). So these are all identical:
 //   /roof/desc   /desc/roof   /desc roof   /roof/desc/2025   /2025/desc/roof
 // No report named → it's just a pull.  /?  or  /help → the cheat sheet.
-var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS',ALL:'ALL',INV:'INV'};
+var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS',ALL:'ALL'};
 function _feSlashCommand(rest){
   rest = String(rest||'').trim();
   if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — contains-pull
@@ -15447,7 +15336,6 @@ function _feSlashHelp(){
   L.push('   /roof/desc   =   /desc/roof   =   /desc roof');
   L.push('   /roof/desc/2025  put a year anywhere');
   L.push('   live now:  DESC AUD DATE 12MO PCT IRS TRADE COUNT DESCIRS');
-  L.push('   /inv          inventory per-unit comparison');
   L.push('   /all   /all roof   master summary, ALL years across');
   L.push('');
   L.push('INSIDE A REPORT');
@@ -15480,7 +15368,7 @@ function _feRunPipedReport(report, filterArg){
   filterArg = String(filterArg||'').trim();
   var map = { DESC:_feRunDesc, DESCRIPTION:_feRunDesc, AUD:_feRunAudit, AUDIT:_feRunAudit,
     DATE:_feRunDate, PCT:_feRunPct, PERCENT:_feRunPct, IRS:_feRunIrs, TRADE:_feRunTrade,
-    COUNT:_feRunCount, '12MO':_feRun12mo, '12MON':_feRun12mo, DESCIRS:_feRunDescIrs, ALL:_feRunAll, INV:function() { invLoad(); invShowComparison(); showScreen('inventory'); } };
+    COUNT:_feRunCount, '12MO':_feRun12mo, '12MON':_feRun12mo, DESCIRS:_feRunDescIrs, ALL:_feRunAll };
   if(map[report]){ map[report](filterArg); return; }
   toast('Unknown report "/' + report + '"', false); _feFocusPrompt();
 }
@@ -17601,280 +17489,6 @@ function _feFocusPrompt(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// INVENTORY COMPARISON & LOOKUP
-// ════════════════════════════════════════════════════════════════════
-
-function invShowComparison() {
-  invLoad();
-  if(!INV.length) {
-    document.getElementById('inv-output').innerHTML='<div style=\"color:#ff6666;padding:20px;text-align:center;font-family:Courier New,monospace;\">NO INVENTORY DATA YET · PASTE CSV TO START</div>';
-    return;
-  }
-  var items={};
-  INV.forEach(function(e) {
-    if(e.desc==='TAX') return;
-    var key = (e.payee||'').toUpperCase();
-    if(!items[key]) items[key]=[];
-    items[key].push(e);
-  });
-  var itemNames = Object.keys(items).sort();
-  var html='<div style=\"font-family:Courier New,monospace;\">';
-  itemNames.forEach(function(item) {
-    var entries = items[item];
-    entries.sort(function(a,b) { return (a.amt/a.qty) - (b.amt/b.qty); });
-    var cheapest = entries[0].amt / entries[0].qty;
-    var total_qty = 0, total_spent = 0;
-    html+='<div style=\"background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;\">';
-    html+='<div style=\"color:#ffff00;font-weight:700;font-size:14px;margin-bottom:6px;\">'+item+'</div>';
-    html+='<table style=\"width:100%;border-collapse:collapse;font-size:12px;\">';
-    html+='<tr style=\"background:#001a1a;border-bottom:1px solid #00ffff;\">';
-    html+='<th style=\"color:#00ffff;padding:4px;text-align:left;border-right:1px solid #00ffff;\">STORE</th>';
-    html+='<th style=\"color:#00ffff;padding:4px;text-align:right;border-right:1px solid #00ffff;\">QTY</th>';
-    html+='<th style=\"color:#00ffff;padding:4px;text-align:right;border-right:1px solid #00ffff;\">UNIT</th>';
-    html+='<th style=\"color:#00ffff;padding:4px;text-align:right;border-right:1px solid #00ffff;\">$/UNIT</th>';
-    html+='<th style=\"color:#00ffff;padding:4px;text-align:right;\">DIFF</th>';
-    html+='</tr>';
-    entries.forEach(function(e) {
-      var unit_price = e.amt / e.qty;
-      var pct_diff = ((unit_price - cheapest) / cheapest * 100);
-      var diff_str = pct_diff === 0 ? 'CHEAPEST' : '+'+pct_diff.toFixed(1)+'%';
-      var diff_color = pct_diff === 0 ? '#00ff88' : '#ffaa00';
-      total_qty += e.qty;
-      total_spent += e.amt;
-      html+='<tr style=\"border-bottom:1px solid #223366;\">';
-      html+='<td style=\"color:#ccccff;padding:4px;text-align:left;border-right:1px solid #223366;\">'+e.store+'</td>';
-      html+='<td style=\"color:#ffff88;padding:4px;text-align:right;border-right:1px solid #223366;\">'+e.qty+'</td>';
-      html+='<td style=\"color:#00ffff;padding:4px;text-align:right;border-right:1px solid #223366;\">'+(e.unit||'EA')+'</td>';
-      html+='<td style=\"color:#ff9999;padding:4px;text-align:right;border-right:1px solid #223366;\">$'+unit_price.toFixed(2)+'</td>';
-      html+='<td style=\"color:'+diff_color+';padding:4px;text-align:right;font-weight:700;\">'+diff_str+'</td>';
-      html+='</tr>';
-    });
-    html+='</table>';
-    html+='<div style=\"color:#00ff88;font-weight:700;font-size:12px;margin-top:6px;\">TOTAL: '+total_qty+' units · $'+total_spent.toFixed(2)+'</div>';
-    html+='</div>';
-  });
-  html+='</div>';
-  document.getElementById('inv-output').innerHTML=html;
-}
-
-function invHandleKeydown(e) {
-  if(e.key === '/') {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-}
-
-function invHandleKeypress(e) {
-  e.stopPropagation();
-  if(e.key === 'Enter') {
-    e.preventDefault();
-    var cmd = document.getElementById('inv-cmd').value.trim();
-    if(cmd) invExecuteCommand(cmd);
-    document.getElementById('inv-cmd').value = '';
-  }
-}
-
-function invExecuteCommand(cmd) {
-  invLoad();
-  var q = cmd.toUpperCase();
-  if(q.startsWith('/')) {
-    q = q.substring(1);
-  }
-  var items = {}, stores = {};
-  INV.forEach(function(e) {
-    if(e.desc === 'TAX') return;
-    if(e.payee.includes(q)) items[e.payee] = true;
-    if(e.store.includes(q)) stores[e.store] = true;
-  });
-  
-  if(Object.keys(items).length > 0) {
-    invShowByItem(Object.keys(items)[0]);
-  } else if(Object.keys(stores).length > 0) {
-    invShowByStore(Object.keys(stores)[0]);
-  } else {
-    document.getElementById('inv-output').innerHTML = '<div style="color:#ff6666;padding:20px;text-align:center;">NO MATCH: ' + q + '</div>';
-  }
-}
-
-function invShowPickerMode() {
-  invLoad();
-  var picker = document.getElementById('inv-picker');
-  var buttons = document.getElementById('inv-picker-buttons');
-  
-  if(picker.style.display === 'none') {
-    picker.style.display = 'block';
-    var stores = {}, items = {};
-    INV.forEach(function(e) {
-      if(e.desc !== 'TAX') {
-        items[e.payee] = true;
-        stores[e.store] = true;
-      }
-    });
-    var html = '';
-    var storeList = Object.keys(stores).sort();
-    storeList.forEach(function(store) {
-      html += '<button onclick="invShowByStore(\''+store+'\');" style="background:#0088ff;color:#ffffff;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:6px 8px;cursor:pointer;margin:2px;">'+store+'</button>';
-    });
-    html += '<div style="width:100%;height:1px;background:#6666ff;margin:4px 0;"></div>';
-    var itemList = Object.keys(items).sort();
-    itemList.forEach(function(item) {
-      html += '<button onclick="invShowByItem(\''+item+'\');" style="background:#00aa88;color:#ffffff;border:none;border-radius:4px;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:6px 8px;cursor:pointer;margin:2px;">'+item+'</button>';
-    });
-    buttons.innerHTML = html;
-  } else {
-    picker.style.display = 'none';
-  }
-}
-
-function invShowByStore(store) {
-  invLoad();
-  var filtered = INV.filter(e => e.store === store && e.desc !== 'TAX');
-  if(!filtered.length) {
-    document.getElementById('inv-output').innerHTML = '<div style="color:#ff6666;padding:20px;">NO ITEMS FROM '+store+'</div>';
-    return;
-  }
-  var items = {};
-  filtered.forEach(e => {
-    if(!items[e.payee]) items[e.payee] = [];
-    items[e.payee].push(e);
-  });
-  var html = '<div style="font-family:Courier New,monospace;"><div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:10px;">'+store+'</div>';
-  var itemNames = Object.keys(items).sort();
-  itemNames.forEach(function(item) {
-    var entries = items[item];
-    var cheapest = Math.min(...entries.map(e => e.amt/e.qty));
-    html += '<div style="background:#001a1a;border:1px solid #0088ff;border-radius:4px;padding:8px;margin-bottom:6px;">';
-    html += '<div style="color:#00ff88;font-weight:700;">'+item+'</div>';
-    entries.forEach(function(e) {
-      var price = e.amt / e.qty;
-      html += '<div style="color:#ccccff;font-size:12px;">'+e.qty+' '+e.unit+' @ $'+price.toFixed(2)+'/'+e.unit+'</div>';
-    });
-    html += '</div>';
-  });
-  html += '</div>';
-  document.getElementById('inv-output').innerHTML = html;
-}
-
-function invShowByItem(item) {
-  invLoad();
-  var filtered = INV.filter(e => e.payee === item && e.desc !== 'TAX');
-  if(!filtered.length) {
-    document.getElementById('inv-output').innerHTML = '<div style="color:#ff6666;padding:20px;">NO STORES FOR '+item+'</div>';
-    return;
-  }
-  filtered.sort(function(a,b) { return (a.amt/a.qty) - (b.amt/b.qty); });
-  var cheapest = filtered[0].amt / filtered[0].qty;
-  var html = '<div style="font-family:Courier New,monospace;"><div style="color:#ffff00;font-weight:700;font-size:14px;margin-bottom:10px;">'+item+'</div>';
-  filtered.forEach(function(e) {
-    var price = e.amt / e.qty;
-    var pct = ((price - cheapest) / cheapest * 100);
-    var pct_str = pct === 0 ? 'CHEAPEST' : '+'+pct.toFixed(1)+'%';
-    var color = pct === 0 ? '#00ff88' : '#ffaa00';
-    html += '<div style="background:#001a1a;border:1px solid #00aa88;border-radius:4px;padding:8px;margin-bottom:6px;">';
-    html += '<div style="color:#0088ff;font-weight:700;">'+e.store+'</div>';
-    html += '<div style="color:#ccccff;font-size:12px;">'+e.qty+' '+e.unit+' @ $'+price.toFixed(2)+'/'+e.unit+' <span style="color:'+color+';">'+pct_str+'</span></div>';
-    html += '</div>';
-  });
-  html += '</div>';
-  document.getElementById('inv-output').innerHTML = html;
-}
-
-function invSearch(query) {
-  invLoad();
-  if(!query || !query.trim()) { invShowComparison(); return; }
-  var q = query.trim().toUpperCase();
-  var items = {};
-  INV.forEach(function(e) {
-    if(e.desc === 'TAX') return;
-    if(e.payee.includes(q) || e.store.includes(q)) {
-      var key = e.payee.toUpperCase();
-      if(!items[key]) items[key] = [];
-      items[key].push(e);
-    }
-  });
-  if(!Object.keys(items).length) {
-    document.getElementById('inv-output').innerHTML = '<div style="color:#ff6666;padding:20px;text-align:center;">NO MATCH FOR: ' + q + '</div>';
-    return;
-  }
-  var html = '<div style="font-family:Courier New,monospace;">';
-  var itemNames = Object.keys(items).sort();
-  itemNames.forEach(function(item) {
-    var entries = items[item];
-    entries.sort(function(a,b) { return (a.amt/a.qty) - (b.amt/b.qty); });
-    var cheapest = entries[0].amt / entries[0].qty;
-    html += '<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">';
-    html += '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:6px;">' + item + '</div>';
-    entries.forEach(function(e) {
-      var unit_price = e.amt / e.qty;
-      var pct = ((unit_price - cheapest) / cheapest * 100);
-      var pct_str = pct === 0 ? 'CHEAPEST' : '+' + pct.toFixed(1) + '%';
-      var color = pct === 0 ? '#00ff88' : '#ffaa00';
-      html += '<div style="color:#ccccff;font-size:12px;padding:4px;border-bottom:1px solid #223366;">';
-      html += e.store + ' · ' + e.qty + ' ' + (e.unit||'EA') + ' · $' + unit_price.toFixed(2) + ' <span style="color:' + color + ';">' + pct_str + '</span></div>';
-    });
-    html += '</div>';
-  });
-  html += '</div>';
-  document.getElementById('inv-output').innerHTML = html;
-}
-
-function invShowAllItems() {
-  invShowComparison();
-  document.getElementById('inv-search').value = '';
-}
-
-function invShowStores() {
-  invLoad();
-  if(!INV.length) {
-    document.getElementById('inv-output').innerHTML = '<div style="color:#ff6666;padding:20px;">NO DATA</div>';
-    return;
-  }
-  var stores = {};
-  INV.forEach(function(e) {
-    if(e.desc === 'TAX') {
-      if(!stores[e.store]) stores[e.store] = { items:[], taxes:[] };
-      stores[e.store].taxes.push(e);
-    } else {
-      if(!stores[e.store]) stores[e.store] = { items:[], taxes:[] };
-      stores[e.store].items.push(e);
-    }
-  });
-  var html = '<div style="font-family:Courier New,monospace;">';
-  var storeNames = Object.keys(stores).sort();
-  storeNames.forEach(function(store) {
-    var data = stores[store];
-    var tax_rate = data.taxes.length > 0 ? data.taxes[0].desc : 'N/A';
-    var total_spent = data.items.reduce(function(sum,e) { return sum + e.amt; }, 0);
-    html += '<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">';
-    html += '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:4px;">' + store + '</div>';
-    html += '<div style="color:#00ff88;font-size:11px;margin-bottom:6px;">Tax: ' + tax_rate + ' · Total: $' + total_spent.toFixed(2) + '</div>';
-    data.items.forEach(function(e) {
-      var unit_price = e.amt / e.qty;
-      html += '<div style="color:#ccccff;font-size:12px;padding:2px;border-bottom:1px solid #223366;">';
-      html += e.payee + ' · ' + e.qty + ' ' + (e.unit||'EA') + ' · $' + unit_price.toFixed(2) + '</div>';
-    });
-    html += '</div>';
-  });
-  html += '</div>';
-  document.getElementById('inv-output').innerHTML = html;
-}
-
-function invShowImportUI() {
-  var html = '<div id="inv-import-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;">'
-    + '<div style="background:#0000cc;border:2px solid #00ffff;border-radius:8px;padding:14px;width:100%;max-width:440px;font-family:Courier New,monospace;">'
-    + '<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:10px;">INVE IMPORT</div>'
-    + '<textarea id="inv-paste-textarea" style="width:100%;height:200px;background:#000033;border:2px solid #6666ff;color:#00ff88;font-family:Courier New,monospace;font-size:13px;padding:8px;border-radius:4px;resize:none;"></textarea>'
-    + '<button onclick="invImportCSV()" style="width:100%;background:#00ff88;color:#000080;font-family:Courier New,monospace;font-weight:700;font-size:14px;padding:13px;border:none;border-radius:6px;cursor:pointer;margin-top:8px;">IMPORT</button>'
-    + '<button onclick="document.getElementById(\'inv-import-overlay\').remove()" style="width:100%;background:#0000aa;color:#ccccff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border:1px solid #6666ff;border-radius:4px;cursor:pointer;margin-top:8px;">CANCEL</button>'
-    + '</div></div>';
-  var el = document.createElement('div');
-  el.innerHTML = html;
-  document.body.appendChild(el.firstChild);
-  document.getElementById('inv-paste-textarea').focus();
-}
-
-// ════════════════════════════════════════════════════════════════════
-// END FAST ENTRY MODULE═════════════════════
 // END FAST ENTRY MODULE
 // ════════════════════════════════════════════════════════════════════
 </script>
