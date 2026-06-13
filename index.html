@@ -13615,6 +13615,7 @@ var _fePickerFilter = '';
 var _fePickerDelMode = false;      // PCODE/DESC picker: tap-to-delete from master list
 var _fePendingNewPayee = '';
 var _feKeyMap = [];                // combo picker key shortcuts
+var _fePayeeQuickMatches = [];     // payee-match (X1/X2/X3) picker rows, for X#/# keyboard pick
 var _feComboPickerRows = [];       // flat list of combo rows in picker order
 var _feMergeChecks = [];           // indices of rows ticked for merge
 var _feMergePending = null;        // {keeper, losers[]} awaiting soft confirm
@@ -14195,6 +14196,7 @@ function _feRenderPrompt(){
     else if(_feMode === 'pick-pcode' || _feMode === 'pick-desc' || _feMode === 'pick-payee'){ inp.placeholder='TYPE'; inp.maxLength=30; }
     else if(_feMode === 'ask-new'){ inp.placeholder='Y/N'; inp.maxLength=1; }
     else if(_feMode === 'pick-combo'){ inp.placeholder='#'; inp.maxLength=2; }
+    else if(_feMode === 'pick-payeequick'){ inp.placeholder='X#'; inp.maxLength=2; }
   }
 }
 
@@ -14386,6 +14388,27 @@ function _feHandlePromptKey(e){
         return;
       }
     }
+  }
+  // PAYEE-QUICK picker (X1/X2/X3...): FoxBase DO CASE — type X# or bare # to pick.
+  // Leading "X" is ignored so "x1" and "1" both land on row 1. Rows 10+ use A,B,C.
+  if(_feMode === 'pick-payeequick' && e.key && e.key.length === 1){
+    var pqc = e.key.toUpperCase();
+    if(pqc === 'X'){ e.preventDefault(); return; }   // swallow the X, wait for the number
+    var pqi = -1;
+    if(pqc >= '1' && pqc <= '9') pqi = pqc.charCodeAt(0) - 49;          // '1'->0 ... '9'->8
+    else if(pqc >= 'A' && pqc <= 'Z') pqi = 9 + (pqc.charCodeAt(0) - 65); // 'A'->9 (row 10)
+    if(pqi >= 0 && pqi < _fePayeeQuickMatches.length){
+      e.preventDefault();
+      _feClearIdleTimer();
+      var pqPick = _fePayeeQuickMatches[pqi];
+      var pqInp2 = document.getElementById('fe-prompt');
+      if(pqInp2) pqInp2.value = '';
+      _fePickPayeeQuick(pqPick);
+      return;
+    }
+    // any other single key while the picker is up: ignore so the box stays clean
+    e.preventDefault();
+    return;
   }
   // Number key selection for pick-payee, pick-pcode, pick-desc
   if((_feMode === 'pick-payee' || _feMode === 'pick-pcode' || _feMode === 'pick-desc') && /^[0-9]$/.test(e.key)){
@@ -17103,7 +17126,7 @@ function _feLookupAndApply(query){
   // Multiple payees: show simple picker with payee names + counts
   var ov = document.getElementById('fe-overlay');
   if(!ov) return;
-  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:500px;width:100%;max-height:78vh;margin-top:60px;display:flex;flex-direction:column;">'
+  var html = '<div style="background:#000033;border:2px solid #ffff00;border-radius:6px;padding:10px;max-width:500px;width:100%;max-height:82vh;display:flex;flex-direction:column;">'
     + '<div style="color:#ffff00;font-weight:700;font-size:13px;margin-bottom:8px;">PAYEE — tap to pick</div>'
     + '<div style="overflow-y:auto;flex:1;">';
   matches.slice(0, 20).forEach(function(p, idx){
@@ -17124,7 +17147,15 @@ function _feLookupAndApply(query){
   html += '</div></div>';
   ov.innerHTML = html;
   ov.style.display = 'flex';
-  ov.style.alignItems = 'flex-start';
+  ov.style.alignItems = 'center';
+  // Wire keyboard selection: prompt becomes a DO CASE picker for X1/X2/X3...
+  _fePayeeQuickMatches = matches.slice(0, 20);
+  _feMode = 'pick-payeequick';
+  _feMiniLabel = 'PICK X#';
+  var pqInp = document.getElementById('fe-prompt');
+  if(pqInp) pqInp.value = '';
+  _feRenderPrompt();
+  _feFocusPrompt();
 }
 
 function _feShowComboPicker(payees, q){
