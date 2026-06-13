@@ -13870,6 +13870,7 @@ function _feRenderYearTabs(){
   if(_feYearFilter !== 'ALL' && tabs.indexOf(_feYearFilter) < 0) _feYearFilter = 'ALL';
   var sortLbl = (_feSortMode === 'date') ? 'DATE' : 'REC#';
   var html = '<button onclick="_feToggleSort()" style="font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:5px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;background:#003a00;color:#00ff88;border:2px solid #00ff88;">\u21c5 SORT: ' + sortLbl + '</button>';
+  html += '<button onclick="_feSlashFindStart()" title="Find anything containing your text — date, payee, pcode or desc" style="font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:5px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;background:#2a0044;color:#e6ccff;border:2px solid #cc99ff;">\ud83d\udd0e /$ FIND</button>';
   tabs.forEach(function(t){
     var active = (_feYearFilter === t);
     var label = (t === 'ALL') ? ('ALL \u00b7 ' + total) : (t + ' \u00b7 ' + years[t]);
@@ -14197,6 +14198,7 @@ function _feRenderPrompt(){
     else if(_feMode === 'ask-new'){ inp.placeholder='Y/N'; inp.maxLength=1; }
     else if(_feMode === 'pick-combo'){ inp.placeholder='#'; inp.maxLength=2; }
     else if(_feMode === 'pick-payeequick'){ inp.placeholder='X#'; inp.maxLength=2; }
+    else if(_feMode === 'slash-find'){ inp.placeholder='FIND text\u2026 then ENTER'; inp.maxLength=50; }
   }
 }
 
@@ -14264,6 +14266,7 @@ function _feArmIdleTimer(ms){
     if(!v) return;
     // Slash commands require Enter key - don't auto-fire
     if(v.charAt(0) === '/') return;
+    if(_feMode === 'slash-find') return;   // /$ FIND waits for ENTER too
     inp.value = '';
     _feDispatchInput(v);
   }, ms || _feIdleMs);
@@ -15410,6 +15413,17 @@ function _feRunPipedReport(report, filterArg){
 // "$" contains-pull — /$ace grabs any row with "ace" in ANY field (payee, desc,
 // pcode, date); /$ace 2026 scopes the year. This is FoxBase's "$" substring operator,
 // the grab-anything-fast pull — it does NOT care about pcode/desc structure.
+// 🔎 /$ FIND button → put the prompt on a clean 50-char line. User types the
+// term only; we supply the "/$" and run the contains-lookup on ENTER.
+function _feSlashFindStart(){
+  _feMode = 'slash-find';
+  _feMiniLabel = 'FIND';
+  var inp = document.getElementById('fe-prompt');
+  if(inp){ inp.value = ''; }
+  _feRenderPrompt();
+  _feFocusPrompt();
+  toast('Type what to find \u2192 ENTER', true);
+}
 function _feSlashContains(rest){
   rest = String(rest||'').trim();
   var sp = rest.split(/\s+/).filter(Boolean);
@@ -15599,6 +15613,14 @@ function _feDispatchInput(val){
       _feDispatchCommand(v); return;
     }
     _feLookupAndApply(v);
+    return;
+  }
+  // 🔎 /$ FIND line — user typed the term; we supply the /$ and run the lookup.
+  if(_feMode === 'slash-find'){
+    var ft = (v||'').trim();
+    _feMode = 'entry-payee';
+    if(!ft){ _feStartEntryPayee(); _feRender(); _feFocusPrompt(); return; }
+    _feSlashContains(ft);
     return;
   }
   // MASKED LINE: filling the DAY field
