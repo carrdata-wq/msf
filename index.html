@@ -9030,7 +9030,7 @@ function runInve(){
   items.forEach(function(x){
     var ev=_feEsc(x.item).replace(/"/g,'&quot;');
     h+='<tr data-item="'+ev+'" onclick="_invPickItem(this.getAttribute(\'data-item\'))" style="border-bottom:'+bd+';cursor:pointer;">'
-      +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">'+_invHi(x.item,filt)+'</td>'
+      +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:normal;word-break:break-word;line-height:1.35;">'+_invHi(x.item,filt)+'</td>'
       +'<td style="color:#aaccff;padding:3px;border:'+bd+';text-align:right;">'+x.buys+'</td>'
       +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+x.units+'</td>'
       +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(x.spent)+'</td>'
@@ -10195,7 +10195,7 @@ function rptSearchInve(){
   var html = '<div style="color:#ffffff;font-size:14px;padding:10px;font-family:Courier New,monospace;">';
   html += '<div style="margin-bottom:10px;color:#00ffcc;font-weight:700;font-size:16px;">INVENTORY: ' + search + ' (' + matches.length + ' buys)</div>';
   html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-  html += '<tr style="border-bottom:2px solid #00aa99;color:#00ffcc;font-weight:700;font-size:14px;"><td style="padding:8px;">DATE</td><td style="padding:8px;text-align:center;">QTY</td><td style="padding:8px;text-align:right;">UNIT $</td><td style="padding:8px;text-align:right;">SUBTOTAL</td><td style="padding:8px;">DESC</td></tr>';
+  html += '<tr style="border-bottom:2px solid #00aa99;color:#00ffcc;font-weight:700;font-size:14px;"><td style="padding:8px;">DATE</td><td style="padding:8px;text-align:center;">QTY</td><td style="padding:8px;text-align:right;">UNIT $</td><td style="padding:8px;text-align:right;">SUBTOTAL</td><td style="padding:8px;">ITEM / STORE</td></tr>';
   
   for(var i=0; i<matches.length; i++){
     var e = matches[i];
@@ -10204,7 +10204,7 @@ function rptSearchInve(){
     var unitCost = Math.abs(e.amt);  // unit cost is what was entered
     var subtotal = qty * unitCost;   // qty × unit cost = subtotal
     var subtotalStr = subtotal.toFixed(2);
-    html += '<tr style="border-bottom:1px solid #0a2a2a;font-size:13px;"><td style="padding:6px;color:#00ccaa;">' + dateStr + '</td><td style="padding:6px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:6px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:6px;text-align:right;color:#ffaa88;">$' + subtotalStr + '</td><td style="padding:6px;color:#ccccff;">' + (e.desc||'') + '</td></tr>';
+    html += '<tr style="border-bottom:1px solid #0a2a2a;font-size:13px;"><td style="padding:6px;color:#00ccaa;white-space:nowrap;">' + dateStr + '</td><td style="padding:6px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:6px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:6px;text-align:right;color:#ffaa88;">$' + subtotalStr + '</td><td style="padding:6px;color:#ffffff;font-weight:700;word-break:break-word;line-height:1.35;">' + (e.payee||'') + '</td></tr>';
   }
   
   // Totals row
@@ -15047,18 +15047,18 @@ function _feInvCntText(inv, label){
   L.push('        '+(label||'PULL'));
   L.push('        '+today);
   L.push('');
-  L.push(' '+_fePadR('ITEM',20)+_fePadL('BUYS',5)+_fePadL('UNITS',7)+_fePadL('SPENT',11)+_fePadL('UNIT$',9));
   var tB=0,tU=0,tS=0;
   items.forEach(function(x){
     tB+=x.buys; tU+=x.units; tS+=x.spent;
-    L.push(' '+_fePadR(x.item,20)+_fePadL(x.buys,5)+_fePadL(x.units,7)+_fePadL(x.spent.toFixed(2),11)+_fePadL((x.units?x.spent/x.units:0).toFixed(2),9));
+    L.push(' '+x.item);   // full payee long line (item + store), never truncated
+    L.push('   '+_fePadR('BUYS '+x.buys,9)+_fePadR('UNITS '+x.units,10)+_fePadR('SPENT '+x.spent.toFixed(2),16)+'UNIT$ '+(x.units?x.spent/x.units:0).toFixed(2));
   });
   if(!items.length) L.push('   (no inventory rows)');
-  L.push(' '+_fePadR('',20)+_fePadL('----',5)+_fePadL('-----',7)+_fePadL('--------',11)+_fePadL('-----',9));
-  L.push(' '+_fePadR('TOTAL',20)+_fePadL(tB,5)+_fePadL(tU,7)+_fePadL(tS.toFixed(2),11)+_fePadL((tU?tS/tU:0).toFixed(2),9));
+  L.push(' ----------------------------------------');
+  L.push(' TOTAL   '+_fePadR('BUYS '+tB,9)+_fePadR('UNITS '+tU,10)+_fePadR('SPENT '+tS.toFixed(2),16)+'UNIT$ '+(tU?tS/tU:0).toFixed(2));
   L.push('');
-  L.push(' CNT = units counted on each buy. Old rows with');
-  L.push(' no count are read as 1 unit.');
+  L.push(' Each line is the full payee — item + store.');
+  L.push(' CNT = units counted per buy; old rows = 1 unit.');
   return L.join('\n');
 }
 // UNIT PRICE % DIFF — oldest vs newest unit price per item, and the move.
@@ -15077,16 +15077,17 @@ function _feInvPctText(inv, label){
   L.push('        '+(label||'PULL'));
   L.push('        '+today);
   L.push('');
-  L.push(' '+_fePadR('ITEM',20)+_fePadL('BUYS',5)+_fePadL('FIRST$',9)+_fePadL('LAST$',9)+_fePadL('%DIFF',8));
+  L.push('');
   items.forEach(function(x){
     var pd=(x.diff>=0?'+':'')+x.diff.toFixed(1);
-    L.push(' '+_fePadR(x.item,20)+_fePadL(x.buys,5)+_fePadL(x.first.toFixed(2),9)+_fePadL(x.last.toFixed(2),9)+_fePadL(pd,8));
+    L.push(' '+x.item);   // full payee long line (item + store), never truncated
+    L.push('   '+_fePadR('BUYS '+x.buys,9)+_fePadR('FIRST$ '+x.first.toFixed(2),14)+_fePadR('LAST$ '+x.last.toFixed(2),14)+'%DIFF '+pd);
   });
   if(!items.length) L.push('   (no inventory rows)');
   L.push('');
-  L.push(' FIRST$/LAST$ = oldest vs newest unit price seen');
-  L.push(' in this pull.  %DIFF = how far it moved.');
-  L.push(' + means the unit price went UP.');
+  L.push(' Each line is the full payee — item + store.');
+  L.push(' FIRST$/LAST$ = oldest vs newest unit price.');
+  L.push(' %DIFF = how far it moved.  + means it went UP.');
   return L.join('\n');
 }
 // Restore a sane filter so the SEE/PRINT picker shows (pcode pull) or stays hidden
