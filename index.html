@@ -10179,15 +10179,16 @@ function rptSearchInve(){
     return (b.date||'').localeCompare(a.date||'');
   });
   
-  // Calculate totals: total units (qty), total cost (qty × unit cost for each row), average cost per unit
+  // amt is the LINE TOTAL of the buy (as entered); unit price = total / qty.
+  // This matches every other inventory report and makes a 3-sheet $375 buy read
+  // $125/sheet instead of inflating it.
   var totalUnits = 0;
   var totalCost = 0;
   for(var i=0; i<matches.length; i++){
     var e = matches[i];
     var qty = e.qty || 1;
-    var unitCost = Math.abs(e.amt);
     totalUnits += qty;
-    totalCost += (qty * unitCost);
+    totalCost += Math.abs(e.amt);
   }
   var avgCostPerUnit = totalUnits > 0 ? (totalCost / totalUnits) : 0;
   
@@ -10201,8 +10202,8 @@ function rptSearchInve(){
     var e = matches[i];
     var dateStr = (e.date || '').substring(0,10);
     var qty = e.qty || 1;
-    var unitCost = Math.abs(e.amt);  // unit cost is what was entered
-    var subtotal = qty * unitCost;   // qty × unit cost = subtotal
+    var subtotal = Math.abs(e.amt);          // the buy's line total (as entered)
+    var unitCost = qty ? (subtotal / qty) : subtotal;   // real per-unit price
     var subtotalStr = subtotal.toFixed(2);
     html += '<tr style="border-bottom:1px solid #0a2a2a;font-size:13px;"><td style="padding:6px;color:#00ccaa;white-space:nowrap;">' + dateStr + '</td><td style="padding:6px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:6px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:6px;text-align:right;color:#ffaa88;">$' + subtotalStr + '</td><td style="padding:6px;color:#ffffff;font-weight:700;word-break:break-word;line-height:1.35;">' + (e.payee||'') + '</td></tr>';
   }
@@ -14930,8 +14931,8 @@ function _feReportMenuKey(e){
   if(!_feRptCtx) return;
   var k = (e.key||'').toUpperCase();
   if(e.key==='Escape'){ e.preventDefault(); if(_feRptCtx.invBack){ _feInvBackToPull(); } else { _feReportClose(); } return; }
-  if(k==='K' || k==='G'){
-    var _kind = (k==='K') ? 'cnt' : 'pct';
+  if(k==='K' || k==='G' || k==='Q'){
+    var _kind = (k==='K') ? 'cnt' : (k==='Q' ? 'cmp' : 'pct');
     if(_feRptCtx.invBack){ e.preventDefault(); _feInvToggle(_kind); return; }
     if(_feShowPicker() && _feHasAnyInve()){ e.preventDefault(); _feInvFromMenu(_kind); return; }
   }
@@ -14983,7 +14984,8 @@ function _feReportPickerHTML(){
     invRow = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px;">'
       + '<button onclick="_feInvFromMenu(\'cnt\')" style="background:#003a44;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#00ffff;color:#001a33;padding:0 5px;border-radius:2px;margin-right:5px;">K</span>\ud83d\udce6 INV CNT &amp; UNIT$</button>'
       + '<button onclick="_feInvFromMenu(\'pct\')" style="background:#3a2a00;border:1px solid #ffaa33;color:#ffcc66;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ffaa33;color:#1a1100;padding:0 5px;border-radius:2px;margin-right:5px;">G</span>\ud83d\udcc8 INV PRICE %DIFF</button>'
-      + '</div>';
+      + '</div>'
+      + '<button onclick="_feInvFromMenu(\'cmp\')" style="width:100%;background:#3a0030;border:1px solid #ff66cc;color:#ff99dd;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#ff66cc;color:#2a0022;padding:0 5px;border-radius:2px;margin-right:5px;">Q</span>\ud83d\udcca INV QTY &amp; PRICE COMPARE \u2014 catch a rep overcharge</button>';
   }
   var acctRow = '<button onclick="_feToAccounting()" style="width:100%;background:#003a00;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ff88;color:#003a00;padding:0 5px;border-radius:2px;margin-right:5px;">A</span>$ ACCOUNTING TABLE \u2192 perfected payee view</button>';
   return '<div style="border-bottom:2px solid #ffffff;margin:0 0 4px;padding-bottom:8px;">'
@@ -15033,7 +15035,7 @@ function _feInvAgg(inv){
     var amt=Math.abs(e.amt||0);
     if(!map[it]) map[it]={item:it,buys:0,units:0,spent:0,rows:[]};
     map[it].buys++; map[it].units+=cnt; map[it].spent+=amt;
-    map[it].rows.push({date:e.date||'',unit:cnt?amt/cnt:0});
+    map[it].rows.push({date:e.date||'', qty:cnt, total:amt, unit:cnt?amt/cnt:0});
   });
   return Object.keys(map).map(function(k){ return map[k]; });
 }
@@ -15090,6 +15092,58 @@ function _feInvPctText(inv, label){
   L.push(' %DIFF = how far it moved.  + means it went UP.');
   return L.join('\n');
 }
+// QTY & PRICE COMPARE — the buy-by-buy breakdown. Shows every purchase of an item
+// with its QTY, line TOTAL and the real UNIT$ (TOTAL/QTY), then LOW / HIGH / SPREAD.
+// This is what catches one rep charging $175/sheet while another charges $125 for
+// the very same item from the same supplier.
+function _feInvShortDate(d){
+  var s=String(d||'');
+  var m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return ('0'+m[2]).slice(-2)+'/'+('0'+m[3]).slice(-2)+'/'+m[1].slice(2);
+  var u=s.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+  if(u) return ('0'+u[1]).slice(-2)+'/'+('0'+u[2]).slice(-2)+'/'+(''+u[3]).slice(-2);
+  return s.slice(0,8);
+}
+function _feInvCmpText(inv, label){
+  var items=_feInvAgg(inv);
+  items.forEach(function(x){
+    var us=x.rows.map(function(r){ return r.unit; });
+    x.low=Math.min.apply(null,us); x.high=Math.max.apply(null,us);
+    x.spread=x.high-x.low; x.spreadPct=x.low?((x.high-x.low)/x.low*100):0;
+  });
+  items.sort(function(a,b){ return b.spread-a.spread; });   // biggest spread on top
+  var today=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  var L=[];
+  L.push('        INVENTORY — QTY & PRICE COMPARE');
+  L.push('        '+(label||'PULL'));
+  L.push('        '+today);
+  L.push('');
+  if(!items.length) L.push('   (no inventory rows)');
+  items.forEach(function(x){
+    L.push(' '+x.item);   // full payee long line (item + store)
+    L.push('   '+_fePadR('DATE',9)+_fePadL('QTY',5)+_fePadL('TOTAL',11)+_fePadL('UNIT$',10));
+    x.rows.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+    x.rows.forEach(function(r){
+      var tag='';
+      if(x.spread>0.005){
+        if(Math.abs(r.unit-x.high)<0.005) tag='  <= HIGH';
+        else if(Math.abs(r.unit-x.low)<0.005) tag='  (low)';
+      }
+      L.push('   '+_fePadR(_feInvShortDate(r.date),9)+_fePadL(r.qty,5)+_fePadL(r.total.toFixed(2),11)+_fePadL(r.unit.toFixed(2),10)+tag);
+    });
+    if(x.spread>0.005){
+      L.push('   '+_fePadR('LOW '+x.low.toFixed(2),14)+_fePadR('HIGH '+x.high.toFixed(2),14)+'SPREAD '+x.spread.toFixed(2)+' (+'+x.spreadPct.toFixed(1)+'%)');
+      L.push('   * SAME ITEM, DIFFERENT UNIT$ \u2014 check the rep/receipt');
+    } else {
+      L.push('   all buys at one unit price: '+x.low.toFixed(2));
+    }
+    L.push('');
+  });
+  L.push(' UNIT$ = that buy\u2019s TOTAL \u00f7 QTY. When the same');
+  L.push(' item shows two UNIT$ from one supplier, a rep');
+  L.push(' changed the price \u2014 SPREAD is the per-unit gap.');
+  return L.join('\n');
+}
 // Restore a sane filter so the SEE/PRINT picker shows (pcode pull) or stays hidden
 // (desc / contains pull) exactly as it was before we drilled into inventory.
 function _feInvRestoreFilter(rep){
@@ -15101,8 +15155,8 @@ function _feInvRestoreFilter(rep){
 // Build and show one of the inventory reports for the rows in the current pull.
 // Shared core — render an inventory CNT/%DIFF report from a given row set.
 function _feInvRenderReport(kind, inv, label, source, yr){
-  var text = kind==='pct' ? _feInvPctText(inv,label) : _feInvCntText(inv,label);
-  var code = kind==='pct' ? 'INV %DIFF' : 'INV CNT';
+  var text = kind==='pct' ? _feInvPctText(inv,label) : (kind==='cmp' ? _feInvCmpText(inv,label) : _feInvCntText(inv,label));
+  var code = kind==='pct' ? 'INV %DIFF' : (kind==='cmp' ? 'INV COMPARE' : 'INV CNT');
   _feRptCtx = { rep:{ code:code, label:label+' \u00b7 '+code, pcode:'', desc:'', payee:'', yr:yr||'' },
                 rows:[], total:0, text:text, invBack:true, invKind:kind, invSource:source };
   _feLastFilter = { pcode:'', desc:'', term:'INV', yr:yr||'' };
@@ -15202,8 +15256,8 @@ function _feInvOptionsHTML(){
     return '<div style="border:2px solid #00ffff;background:#001a33;border-radius:5px;padding:8px;margin:0 0 8px;display:flex;flex-direction:column;gap:6px;">'
       + '<div style="display:flex;gap:6px;align-items:stretch;">'
       + '<button onclick="_feInvBackToPull()" style="background:#330033;border:1px solid #ff66ff;color:#ff99ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 9px;border-radius:4px;cursor:pointer;white-space:nowrap;">\u2190 BACK</button>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;">'
-      + _tog('cnt','K','CNT &amp; UNIT$') + _tog('pct','G','PRICE %DIFF')
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;flex:1;">'
+      + _tog('cnt','K','CNT &amp; UNIT$') + _tog('pct','G','PRICE %DIFF') + _tog('cmp','Q','QTY COMPARE')
       + '</div></div>'
       + acctBtn
       + '</div>';
@@ -15634,7 +15688,8 @@ function _feSlashHelp(){
   L.push('   1-9              run that report on the pull');
   L.push('   A  ACCOUNTING    the perfected payee table');
   L.push('   K  INV CNT/UNIT$  G  INV PRICE %DIFF');
-  L.push('   K/G show when any INVE items are logged');
+  L.push('   Q  INV QTY COMPARE  (catch a rep overcharge)');
+  L.push('   K/G/Q show when any INVE items are logged');
   L.push('   V view   E email   C copy   ESC back');
   L.push('   /?               this list');
   var rep = { code:'/?', label:'SLASH COMMANDS', pcode:'', desc:'', payee:'', yr:'' };
