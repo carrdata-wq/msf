@@ -12858,7 +12858,9 @@ function universalMergeBackupCSV(txt){
     return out;
   }
   var allLines=txt.split(/\r?\n/);
-  var dataLineRe=/^"[^"]*","(\d{4})-(\d{2})-(\d{2})","[^"]*","[^"]*","[^"]*",-?\d+(?:\.\d+)?\s*"?$/;
+  // Accept the 6-col ledger AND the extended 7/8/9-col inventory shape
+  // (…,AMT,QTY,UNIT,STORE). AMT may be quoted or bare; extra columns may follow.
+  var dataLineRe=/^"[^"]*","(\d{4})-(\d{2})-(\d{2})","[^"]*","[^"]*","[^"]*",\s*"?-?\d+(?:\.\d+)?"?\s*(?:,.*)?$/;
   var startIdx=-1, endIdx=-1;
   for(var li=0;li<allLines.length;li++){
     var ln=allLines[li].trim();
@@ -12874,12 +12876,22 @@ function universalMergeBackupCSV(txt){
   if(lines.length<1){toast('CSV is empty',false);return;}
   var firstParts=splitRow(lines[0]);
   var hasHeader=firstParts.some(function(p){return /^(id|date|payee|pcode|desc|amt|amount|type)$/i.test(p.trim());});
-  if(!hasHeader) lines.unshift('"ID","DATE","PAYEE","PCODE","DESC","AMT"');
+  if(!hasHeader){
+    // No header row — name the columns by how many the data actually has, so a
+    // 7/8/9-col inventory paste keeps QTY/UNIT/STORE instead of dropping them.
+    var nc=firstParts.length;
+    var bh=['"ID"','"DATE"','"PAYEE"','"PCODE"','"DESC"','"AMT"'];
+    if(nc>=7) bh.push('"QTY"');
+    if(nc>=8) bh.push('"UNIT"');
+    if(nc>=9) bh.push('"STORE"');
+    lines.unshift(bh.join(','));
+  }
   if(lines.length<2){toast('CSV has no data rows',false);return;}
   var hdr=splitRow(lines[0]).map(function(h){return h.trim().toLowerCase();});
   var idx={ id:hdr.indexOf('id'), date:hdr.indexOf('date'), payee:hdr.indexOf('payee'),
             pcode:hdr.indexOf('pcode'), desc:hdr.indexOf('desc'),
-            amt:hdr.indexOf('amt')>=0?hdr.indexOf('amt'):hdr.indexOf('amount'), type:hdr.indexOf('type') };
+            amt:hdr.indexOf('amt')>=0?hdr.indexOf('amt'):hdr.indexOf('amount'), type:hdr.indexOf('type'),
+            qty:hdr.indexOf('qty'), unit:hdr.indexOf('unit'), store:hdr.indexOf('store') };
   if(idx.payee<0||idx.amt<0){toast('CSV missing PAYEE or AMT column',false);return;}
   var arr=[];
   for(var i=1;i<lines.length;i++){
@@ -12898,6 +12910,11 @@ function universalMergeBackupCSV(txt){
       desc: idx.desc>=0?(c[idx.desc]||'').trim():'',
       amt: amt
     });
+    // Carry the inventory extras when present (QTY may be fractional, e.g. 1.45 LB).
+    var _r = arr[arr.length-1];
+    if(idx.qty>=0){ var _qn=parseFloat(c[idx.qty]); if(!isNaN(_qn) && _qn>0) _r.qty=_qn; }
+    if(idx.unit>=0 && (c[idx.unit]||'').trim()) _r.unit=(c[idx.unit]||'').trim().toUpperCase();
+    if(idx.store>=0 && (c[idx.store]||'').trim()) _r.store=(c[idx.store]||'').trim().toUpperCase();
   }
   if(!arr.length){toast('No usable rows',false);return;}
   // content key — same entry on either device collapses to one
@@ -14931,8 +14948,8 @@ function _feReportMenuKey(e){
   if(!_feRptCtx) return;
   var k = (e.key||'').toUpperCase();
   if(e.key==='Escape'){ e.preventDefault(); if(_feRptCtx.invBack){ _feInvBackToPull(); } else { _feReportClose(); } return; }
-  if(k==='K' || k==='G' || k==='Q'){
-    var _kind = (k==='K') ? 'cnt' : (k==='Q' ? 'cmp' : 'pct');
+  if(k==='K' || k==='G' || k==='Q' || k==='F'){
+    var _kind = (k==='K') ? 'cnt' : (k==='Q' ? 'cmp' : (k==='F' ? 'aud' : 'pct'));
     if(_feRptCtx.invBack){ e.preventDefault(); _feInvToggle(_kind); return; }
     if(_feShowPicker() && _feHasAnyInve()){ e.preventDefault(); _feInvFromMenu(_kind); return; }
   }
@@ -14985,7 +15002,10 @@ function _feReportPickerHTML(){
       + '<button onclick="_feInvFromMenu(\'cnt\')" style="background:#003a44;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#00ffff;color:#001a33;padding:0 5px;border-radius:2px;margin-right:5px;">K</span>\ud83d\udce6 INV CNT &amp; UNIT$</button>'
       + '<button onclick="_feInvFromMenu(\'pct\')" style="background:#3a2a00;border:1px solid #ffaa33;color:#ffcc66;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ffaa33;color:#1a1100;padding:0 5px;border-radius:2px;margin-right:5px;">G</span>\ud83d\udcc8 INV PRICE %DIFF</button>'
       + '</div>'
-      + '<button onclick="_feInvFromMenu(\'cmp\')" style="width:100%;background:#3a0030;border:1px solid #ff66cc;color:#ff99dd;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#ff66cc;color:#2a0022;padding:0 5px;border-radius:2px;margin-right:5px;">Q</span>\ud83d\udcca INV QTY &amp; PRICE COMPARE \u2014 catch a rep overcharge</button>';
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px;">'
+      + '<button onclick="_feInvFromMenu(\'cmp\')" style="background:#3a0030;border:1px solid #ff66cc;color:#ff99dd;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ff66cc;color:#2a0022;padding:0 5px;border-radius:2px;margin-right:5px;">Q</span>\ud83d\udcca QTY COMPARE</button>'
+      + '<button onclick="_feInvFromMenu(\'aud\')" style="background:#3a1500;border:1px solid #ff8844;color:#ffaa66;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ff8844;color:#2a1000;padding:0 5px;border-radius:2px;margin-right:5px;">F</span>\ud83d\udd0d FORENSIC AUDIT</button>'
+      + '</div>';
   }
   var acctRow = '<button onclick="_feToAccounting()" style="width:100%;background:#003a00;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ff88;color:#003a00;padding:0 5px;border-radius:2px;margin-right:5px;">A</span>$ ACCOUNTING TABLE \u2192 perfected payee view</button>';
   return '<div style="border-bottom:2px solid #ffffff;margin:0 0 4px;padding-bottom:8px;">'
@@ -15144,6 +15164,113 @@ function _feInvCmpText(inv, label){
   L.push(' changed the price \u2014 SPREAD is the per-unit gap.');
   return L.join('\n');
 }
+// ── FORENSIC AUDIT ──────────────────────────────────────────────────────────
+// Normalizes item names so near-duplicates merge (2'X10' = 2X10, ABC SUPPLY =
+// ABC SUPPLY CO), then flags price mismatches and shows a QTY ladder so a buy
+// logged at qty 1 that was really several units jumps right out.
+function _feInvFingerprint(name){
+  var s=String(name||'').toUpperCase();
+  s=s.replace(/(\d+)\s*['\u2019"]?\s*X\s*['\u2019"]?\s*(\d+)/g,'$1X$2');     // 2'X10' -> 2X10
+  s=s.replace(/\b(CO|COMPANY|INC|LLC|CORP|LTD)\b\.?/g,' ');                  // drop company suffixes
+  s=s.replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();                    // punctuation + spaces
+  return s;
+}
+function _feInvLadder(total){
+  var parts=[];
+  for(var k=2;k<=5;k++){
+    var u=total/k;
+    var star=(Math.round(u*100)%100===0)?'*':'';   // whole-dollar = likeliest
+    parts.push(k+'u='+u.toFixed(2)+star);
+  }
+  return parts.join('  ');
+}
+function _feInvForensicText(inv, label){
+  // group by fingerprint
+  var groups={};
+  inv.forEach(function(e){
+    var fp=_feInvFingerprint(e.payee);
+    var cnt=(e.qty&&e.qty>0)?e.qty:1, amt=Math.abs(e.amt||0);
+    if(!groups[fp]) groups[fp]={fp:fp, variants:{}, buys:[]};
+    groups[fp].variants[(e.payee||'').toUpperCase()]=true;
+    groups[fp].buys.push({date:e.date||'', qty:cnt, total:amt, unit:cnt?amt/cnt:0, hadQty:!!(e.qty&&e.qty>0)});
+  });
+  var list=Object.keys(groups).map(function(k){
+    var g=groups[k];
+    var us=g.buys.map(function(b){return b.unit;});
+    g.low=Math.min.apply(null,us); g.high=Math.max.apply(null,us);
+    g.spread=g.high-g.low; g.spreadPct=g.low?((g.high-g.low)/g.low*100):0;
+    g.vlist=Object.keys(g.variants);
+    g.mismatch=(g.spread>0.005); g.drift=(g.vlist.length>1);
+    g.flagged=g.mismatch||g.drift;
+    return g;
+  });
+  var flagged=list.filter(function(g){return g.flagged;});
+  var clean=list.length-flagged.length;
+  flagged.sort(function(a,b){ return b.spread-a.spread; });
+
+  // count likely-missing-qty buys (qty 1, above the group's low unit price)
+  var missQty=0;
+  flagged.forEach(function(g){ g.buys.forEach(function(b){ if(g.mismatch && b.qty===1 && b.unit>g.low+0.005) missQty++; }); });
+
+  var today=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  var bar='============================================';
+  var L=[];
+  L.push('        INVENTORY — FORENSIC PRICE AUDIT');
+  L.push('        '+(label||'PULL'));
+  L.push('        '+today);
+  L.push('');
+  L.push(' SUMMARY');
+  L.push('   '+flagged.filter(function(g){return g.drift;}).length+' item(s) logged more than one way');
+  L.push('   '+flagged.filter(function(g){return g.mismatch;}).length+' item(s) with a price mismatch');
+  L.push('   '+missQty+' buy(s) may be missing a QTY');
+  L.push('   '+clean+' item(s) look consistent');
+  L.push('');
+  if(!flagged.length){ L.push(' No price differences found. All clean.'); return L.join('\n'); }
+
+  flagged.forEach(function(g){
+    L.push(bar);
+    L.push(' '+(g.vlist[0]||g.fp));
+    if(g.drift){
+      L.push(' (!) LOGGED '+g.vlist.length+' WAYS:');
+      g.vlist.forEach(function(v){ L.push('     - '+v); });
+    }
+    L.push('   '+_fePadR('DATE',9)+_fePadL('QTY',5)+_fePadL('TOTAL',11)+_fePadL('UNIT$',10));
+    g.buys.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+    g.buys.forEach(function(b){
+      var tag='';
+      if(g.mismatch){
+        if(Math.abs(b.unit-g.high)<0.005) tag='  <= HIGH';
+        else if(Math.abs(b.unit-g.low)<0.005) tag='  (low)';
+      }
+      L.push('   '+_fePadR(_feInvShortDate(b.date),9)+_fePadL(b.qty,5)+_fePadL(b.total.toFixed(2),11)+_fePadL(b.unit.toFixed(2),10)+tag);
+    });
+    if(g.mismatch){
+      L.push('   LOW '+g.low.toFixed(2)+'   HIGH '+g.high.toFixed(2)+'   SPREAD '+g.spread.toFixed(2)+' (+'+g.spreadPct.toFixed(1)+'%)');
+      L.push(' (!) PRICE MISMATCH \u2014 same item, different UNIT$.');
+      // qty ladder for the suspicious (qty 1, above low) buys
+      var shown={};
+      g.buys.forEach(function(b){
+        if(b.qty===1 && b.unit>g.low+0.005 && !shown[b.total.toFixed(2)]){
+          shown[b.total.toFixed(2)]=true;
+          L.push('     QTY CHECK '+b.total.toFixed(2)+' at qty 1:');
+          L.push('       '+_feInvLadder(b.total));
+        }
+      });
+      L.push('     * = whole-dollar unit price (most likely count).');
+      L.push('     If the receipt shows that many, set QTY with Q.');
+    } else if(g.drift){
+      L.push('   Same unit price '+g.low.toFixed(2)+', just two spellings.');
+    }
+    L.push('');
+  });
+  L.push(' HOW TO READ THIS');
+  L.push('   <= HIGH / (low) = dearest & cheapest buys.');
+  L.push('   PRICE MISMATCH = one item, two unit prices.');
+  L.push('   Often that is a missing QTY, not an overcharge:');
+  L.push('   read the QTY CHECK ladder, find the count that');
+  L.push('   matches your receipt, fix it with Q on that row.');
+  return L.join('\n');
+}
 // Restore a sane filter so the SEE/PRINT picker shows (pcode pull) or stays hidden
 // (desc / contains pull) exactly as it was before we drilled into inventory.
 function _feInvRestoreFilter(rep){
@@ -15155,8 +15282,11 @@ function _feInvRestoreFilter(rep){
 // Build and show one of the inventory reports for the rows in the current pull.
 // Shared core — render an inventory CNT/%DIFF report from a given row set.
 function _feInvRenderReport(kind, inv, label, source, yr){
-  var text = kind==='pct' ? _feInvPctText(inv,label) : (kind==='cmp' ? _feInvCmpText(inv,label) : _feInvCntText(inv,label));
-  var code = kind==='pct' ? 'INV %DIFF' : (kind==='cmp' ? 'INV COMPARE' : 'INV CNT');
+  var text = kind==='pct' ? _feInvPctText(inv,label)
+           : kind==='cmp' ? _feInvCmpText(inv,label)
+           : kind==='aud' ? _feInvForensicText(inv,label)
+           : _feInvCntText(inv,label);
+  var code = kind==='pct' ? 'INV %DIFF' : (kind==='cmp' ? 'INV COMPARE' : (kind==='aud' ? 'INV AUDIT' : 'INV CNT'));
   _feRptCtx = { rep:{ code:code, label:label+' \u00b7 '+code, pcode:'', desc:'', payee:'', yr:yr||'' },
                 rows:[], total:0, text:text, invBack:true, invKind:kind, invSource:source };
   _feLastFilter = { pcode:'', desc:'', term:'INV', yr:yr||'' };
@@ -15254,11 +15384,11 @@ function _feInvOptionsHTML(){
       return '<button onclick="_feInvToggle(\''+kind+'\')" style="background:'+(on?'#00ffff':'#002a33')+';border:1px solid #00ffff;color:'+(on?'#001a33':'#00ffff')+';font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:'+(on?'#001a33':'#00ffff')+';color:'+(on?'#00ffff':'#001a33')+';padding:0 5px;border-radius:2px;margin-right:5px;">'+key+'</span>'+lbl+'</button>';
     }
     return '<div style="border:2px solid #00ffff;background:#001a33;border-radius:5px;padding:8px;margin:0 0 8px;display:flex;flex-direction:column;gap:6px;">'
-      + '<div style="display:flex;gap:6px;align-items:stretch;">'
       + '<button onclick="_feInvBackToPull()" style="background:#330033;border:1px solid #ff66ff;color:#ff99ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 9px;border-radius:4px;cursor:pointer;white-space:nowrap;">\u2190 BACK</button>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;flex:1;">'
-      + _tog('cnt','K','CNT &amp; UNIT$') + _tog('pct','G','PRICE %DIFF') + _tog('cmp','Q','QTY COMPARE')
-      + '</div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+      + _tog('cnt','K','CNT &amp; UNIT$') + _tog('pct','G','PRICE %DIFF')
+      + _tog('cmp','Q','QTY COMPARE') + _tog('aud','F','FORENSIC AUDIT')
+      + '</div>'
       + acctBtn
       + '</div>';
   }
@@ -15688,8 +15818,9 @@ function _feSlashHelp(){
   L.push('   1-9              run that report on the pull');
   L.push('   A  ACCOUNTING    the perfected payee table');
   L.push('   K  INV CNT/UNIT$  G  INV PRICE %DIFF');
-  L.push('   Q  INV QTY COMPARE  (catch a rep overcharge)');
-  L.push('   K/G/Q show when any INVE items are logged');
+  L.push('   Q  INV QTY COMPARE   F  FORENSIC AUDIT');
+  L.push('   (audit merges look-alike names, flags price gaps)');
+  L.push('   K/G/Q/F show when any INVE items are logged');
   L.push('   V view   E email   C copy   ESC back');
   L.push('   /?               this list');
   var rep = { code:'/?', label:'SLASH COMMANDS', pcode:'', desc:'', payee:'', yr:'' };
