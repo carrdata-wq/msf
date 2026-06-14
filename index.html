@@ -14929,7 +14929,15 @@ function _feRenderReportMenu(){
 function _feReportMenuKey(e){
   if(!_feRptCtx) return;
   var k = (e.key||'').toUpperCase();
-  if(e.key==='Escape'){ e.preventDefault(); _feReportClose(); return; }
+  if(e.key==='Escape'){ e.preventDefault(); if(_feRptCtx.invBack){ _feInvBackToPull(); } else { _feReportClose(); } return; }
+  if(k==='K' || k==='G'){
+    var _kind = (k==='K') ? 'cnt' : 'pct';
+    if(_feRptCtx.invBack){ e.preventDefault(); _feInvToggle(_kind); return; }
+    if(_feShowPicker() && _feHasAnyInve()){ e.preventDefault(); _feInvFromMenu(_kind); return; }
+  }
+  if(k==='A'){
+    if(_feRptCtx.invBack || (_feRptCtx.rows && _feRptCtx.rows.length)){ e.preventDefault(); _feToAccounting(); return; }
+  }
   if(k==='V'){ e.preventDefault(); _feReportOutput('view'); return; }
   if(k==='E'){ e.preventDefault(); _feReportOutput('share'); return; }
   if(k==='C'){ e.preventDefault(); _feReportOutput('copy'); return; }
@@ -14938,20 +14946,30 @@ function _feReportMenuKey(e){
 }
 // Show the auto SEE/PRINT menu for pcode pulls and all-data — but NOT for a
 // description or "$" contains pull, since the report builders scope by pcode+year.
-function _feShowPicker(){ return !!(_feLastFilter && !_feLastFilter.desc && !_feLastFilter.term); }
+function _feShowPicker(){
+  if(_feRptCtx && _feRptCtx.invBack) return false;       // inventory sub-report has its own bar
+  return !!_feLastFilter;                                  // pcode / term / desc / ALL all qualify
+}
 function _fePickerRun(n){
   var f = _feLastFilter || {};
   var scope = (f.pcode||'') + (f.yr ? (' '+f.yr) : '');
   var map = { '1':_feRunDesc, '2':_feRunDate, '3':_feRun12mo, '4':_feRunPct, '5':_feRunAudit, '6':_feRunDescIrs, '7':_feRunTrade, '8':_feRunIrs, '9':_feRunCount };
-  if(map[n]){ map[n](scope); return; }
-  toast('Report ' + n + ' — coming soon', false);
+  var fn = map[n];
+  if(!fn){ toast('Report ' + n + ' — coming soon', false); return; }
+  // /$ contains or desc pull → run the report over the rows the pull put on screen.
+  if((f.term || f.desc) && _fePullIsTerm && _feLastPullRows){
+    _feScopeActive = true;
+    try { fn(scope); } finally { _feScopeActive = false; }
+    return;
+  }
+  fn(scope);
 }
 // The FoxBase SEE/PRINT menu, rendered right under the data. Built reports are live;
 // the rest are listed (your menu numbers) and light up as we wire them.
 function _feReportPickerHTML(){
   if(!_feShowPicker()) return '';
   var f = _feLastFilter || {};
-  var scope = (f.pcode ? ('PCODE ' + f.pcode) : 'ALL') + (f.yr ? (' / ' + f.yr) : ' / ALL YRS');
+  var scope = (f.pcode ? ('PCODE ' + f.pcode) : (f.term ? ('FIND "'+f.term+'"') : (f.desc ? ('DESC '+f.desc) : 'ALL'))) + (f.yr ? (' / ' + f.yr) : ' / ALL YRS');
   var items = [['1','DESCRIPTION',1],['2','DATE',1],['3','12-MONTH',1],['4','PERCENT',1],['5','AUDIT',1],['6','DESC-IRS',1],['7','TRADE',1],['8','IRS SUM',1],['9','COUNT',1]];
   var btns = items.map(function(it){
     var k=it[0], nm=it[1], on=it[2];
@@ -14960,9 +14978,18 @@ function _feReportPickerHTML(){
     }
     return '<button disabled style="background:#0a0a18;border:1px solid #333355;color:#6677aa;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;text-align:left;cursor:default;"><span style="background:#333355;color:#99aacc;padding:0 5px;border-radius:2px;margin-right:5px;">'+k+'</span>'+nm+'</button>';
   }).join('');
+  var invRow='';
+  if(_feHasAnyInve()){
+    invRow = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px;">'
+      + '<button onclick="_feInvFromMenu(\'cnt\')" style="background:#003a44;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#00ffff;color:#001a33;padding:0 5px;border-radius:2px;margin-right:5px;">K</span>\ud83d\udce6 INV CNT &amp; UNIT$</button>'
+      + '<button onclick="_feInvFromMenu(\'pct\')" style="background:#3a2a00;border:1px solid #ffaa33;color:#ffcc66;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ffaa33;color:#1a1100;padding:0 5px;border-radius:2px;margin-right:5px;">G</span>\ud83d\udcc8 INV PRICE %DIFF</button>'
+      + '</div>';
+  }
+  var acctRow = '<button onclick="_feToAccounting()" style="width:100%;background:#003a00;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ff88;color:#003a00;padding:0 5px;border-radius:2px;margin-right:5px;">A</span>$ ACCOUNTING TABLE \u2192 perfected payee view</button>';
   return '<div style="border-bottom:2px solid #ffffff;margin:0 0 4px;padding-bottom:8px;">'
     + '<div style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px;">SEE / PRINT MENU &#8226; ' + _feEsc(scope) + '  <span style="color:#dfeaff;font-weight:400;">PRESS A NUMBER</span></div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">' + btns + '</div></div>';
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">' + btns + '</div>'
+    + invRow + acctRow + '</div>';
 }
 function _feCopyText(text){
   function fallback(){
@@ -14979,6 +15006,213 @@ function _feCopyText(text){
     navigator.clipboard.writeText(text).then(function(){ toast('\u2713 COPIED — paste with Ctrl+V into email or a doc', true); }, fallback);
   } else { fallback(); }
 }
+// ===== INVENTORY OPTIONS ON A PULL =====
+// When a pull (/$ contains, a pcode pull, a desc pull) carries INVE rows, surface
+// inventory-only reports right on top of the normal accounting report: CNT (units)
+// and the UNIT-PRICE PERCENT DIFFERENCE. No INVE rows in the pull → nothing extra
+// shows, you just get the ordinary report. One /$ → best of both worlds.
+var _feInvBack = null;   // saved pull ctx so an inventory sub-report can go BACK
+// When a /$ contains pull (or a desc pull) is on screen, these hold the exact rows
+// it pulled, so the numbered SEE/PRINT reports can run over THAT set instead of a
+// pcode scope. One easy menu, all worlds.
+var _feLastPullRows = null;   // array | null — the current term/desc pull's rows
+var _feLastPullLabel = '';    // e.g. RAY ROOF  (shown in the report scope line)
+var _fePullIsTerm = false;    // true when the current pull has no single pcode
+var _feScopeActive = false;   // true only while a numbered report runs over that pull
+
+function _feInvRowsIn(rows){
+  if(!rows || !rows.length) return [];
+  return rows.filter(function(e){ return e && String(e.pcode||'').toUpperCase().trim()==='INVE'; });
+}
+// Group INVE rows by item (the item name lives in PAYEE); keep dated unit prices.
+function _feInvAgg(inv){
+  var map={};
+  inv.forEach(function(e){
+    var it=(e.payee||'UNKNOWN').toUpperCase();
+    var cnt=(e.qty&&e.qty>0)?e.qty:1;          // old rows with no count = 1 unit
+    var amt=Math.abs(e.amt||0);
+    if(!map[it]) map[it]={item:it,buys:0,units:0,spent:0,rows:[]};
+    map[it].buys++; map[it].units+=cnt; map[it].spent+=amt;
+    map[it].rows.push({date:e.date||'',unit:cnt?amt/cnt:0});
+  });
+  return Object.keys(map).map(function(k){ return map[k]; });
+}
+// CNT & UNIT$ — units counted and what each unit cost.
+function _feInvCntText(inv, label){
+  var items=_feInvAgg(inv);
+  items.sort(function(a,b){ return b.spent-a.spent; });
+  var today=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  var L=[];
+  L.push('        INVENTORY — CNT & UNIT COST');
+  L.push('        '+(label||'PULL'));
+  L.push('        '+today);
+  L.push('');
+  L.push(' '+_fePadR('ITEM',20)+_fePadL('BUYS',5)+_fePadL('UNITS',7)+_fePadL('SPENT',11)+_fePadL('UNIT$',9));
+  var tB=0,tU=0,tS=0;
+  items.forEach(function(x){
+    tB+=x.buys; tU+=x.units; tS+=x.spent;
+    L.push(' '+_fePadR(x.item,20)+_fePadL(x.buys,5)+_fePadL(x.units,7)+_fePadL(x.spent.toFixed(2),11)+_fePadL((x.units?x.spent/x.units:0).toFixed(2),9));
+  });
+  if(!items.length) L.push('   (no inventory rows)');
+  L.push(' '+_fePadR('',20)+_fePadL('----',5)+_fePadL('-----',7)+_fePadL('--------',11)+_fePadL('-----',9));
+  L.push(' '+_fePadR('TOTAL',20)+_fePadL(tB,5)+_fePadL(tU,7)+_fePadL(tS.toFixed(2),11)+_fePadL((tU?tS/tU:0).toFixed(2),9));
+  L.push('');
+  L.push(' CNT = units counted on each buy. Old rows with');
+  L.push(' no count are read as 1 unit.');
+  return L.join('\n');
+}
+// UNIT PRICE % DIFF — oldest vs newest unit price per item, and the move.
+function _feInvPctText(inv, label){
+  var items=_feInvAgg(inv);
+  items.forEach(function(x){
+    x.rows.sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+    x.first=x.rows.length?x.rows[0].unit:0;
+    x.last =x.rows.length?x.rows[x.rows.length-1].unit:0;
+    x.diff =x.first?((x.last-x.first)/x.first*100):0;
+  });
+  items.sort(function(a,b){ return Math.abs(b.diff)-Math.abs(a.diff); });
+  var today=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+  var L=[];
+  L.push('        INVENTORY — UNIT PRICE % DIFF');
+  L.push('        '+(label||'PULL'));
+  L.push('        '+today);
+  L.push('');
+  L.push(' '+_fePadR('ITEM',20)+_fePadL('BUYS',5)+_fePadL('FIRST$',9)+_fePadL('LAST$',9)+_fePadL('%DIFF',8));
+  items.forEach(function(x){
+    var pd=(x.diff>=0?'+':'')+x.diff.toFixed(1);
+    L.push(' '+_fePadR(x.item,20)+_fePadL(x.buys,5)+_fePadL(x.first.toFixed(2),9)+_fePadL(x.last.toFixed(2),9)+_fePadL(pd,8));
+  });
+  if(!items.length) L.push('   (no inventory rows)');
+  L.push('');
+  L.push(' FIRST$/LAST$ = oldest vs newest unit price seen');
+  L.push(' in this pull.  %DIFF = how far it moved.');
+  L.push(' + means the unit price went UP.');
+  return L.join('\n');
+}
+// Restore a sane filter so the SEE/PRINT picker shows (pcode pull) or stays hidden
+// (desc / contains pull) exactly as it was before we drilled into inventory.
+function _feInvRestoreFilter(rep){
+  if(!rep){ _feLastFilter=null; return; }
+  if(rep.pcode){ _feLastFilter={pcode:rep.pcode,desc:'',term:'',yr:rep.yr||''}; }
+  else if(rep.desc){ _feLastFilter={pcode:'',desc:rep.desc,term:'',yr:rep.yr||''}; }
+  else { _feLastFilter={pcode:'',desc:'',term:(rep.label||'X'),yr:rep.yr||''}; }
+}
+// Build and show one of the inventory reports for the rows in the current pull.
+// Shared core — render an inventory CNT/%DIFF report from a given row set.
+function _feInvRenderReport(kind, inv, label, source, yr){
+  var text = kind==='pct' ? _feInvPctText(inv,label) : _feInvCntText(inv,label);
+  var code = kind==='pct' ? 'INV %DIFF' : 'INV CNT';
+  _feRptCtx = { rep:{ code:code, label:label+' \u00b7 '+code, pcode:'', desc:'', payee:'', yr:yr||'' },
+                rows:[], total:0, text:text, invBack:true, invKind:kind, invSource:source };
+  _feLastFilter = { pcode:'', desc:'', term:'INV', yr:yr||'' };
+  _feReportOutput('view');
+}
+// Inventory for the CURRENT /$ or desc pull — uses the stable pull row set so it
+// works on the pull view AND after you've chained into a numbered report.
+function _feInvPullReport(kind){
+  var rows = _feLastPullRows || (_feRptCtx && _feRptCtx.rows) || [];
+  var inv = _feInvRowsIn(rows);
+  if(!inv.length){ toast('No inventory (INVE) rows in this pull', false); return; }
+  if(_feRptCtx && !_feRptCtx.invBack) _feInvBack = _feRptCtx;   // remember where to go BACK
+  var label = (_feLastPullLabel ? ('FIND "'+_feLastPullLabel+'"') : 'PULL');
+  _feInvRenderReport(kind, inv, label, 'pull', (_feLastFilter && _feLastFilter.yr) || '');
+}
+// ── Inventory straight from the SEE/PRINT MENU — EVERY logged INVE item
+// (year-scoped to the menu's year if one is active). This is how inventory rides
+// inside the same numbered template as the accounting reports.
+function _feHasAnyInve(){
+  if(typeof loadLog==='function') loadLog();
+  for(var i=0;i<LOG.length;i++){ var e=LOG[i]; if(e && String(e.pcode||'').toUpperCase().trim()==='INVE') return true; }
+  return false;
+}
+function _feInvScopeInvRows(){
+  if(typeof loadLog==='function') loadLog();
+  var yr = (_feLastFilter && _feLastFilter.yr) || '';
+  var out=[];
+  for(var i=0;i<LOG.length;i++){
+    var e=LOG[i]; if(!e) continue;
+    if(String(e.pcode||'').toUpperCase().trim()!=='INVE') continue;
+    if(yr && _feYearOf(e.date)!==yr) continue;
+    out.push(e);
+  }
+  return out;
+}
+function _feInvMenuReport(kind){
+  var yr = (_feLastFilter && _feLastFilter.yr) || '';
+  var inv = _feInvScopeInvRows();
+  if(!inv.length){ toast('No inventory (INVE) items logged'+(yr?(' for '+yr):'')+'.', false); return; }
+  if(_feRptCtx && !_feRptCtx.invBack) _feInvBack = _feRptCtx;   // remember the pull we left
+  _feInvRenderReport(kind, inv, 'ALL INVENTORY'+(yr?(' / '+yr):' / ALL YRS'), 'menu', yr);
+}
+// The SEE/PRINT menu inventory buttons: prefer THIS pull's inventory, else all.
+function _feInvFromMenu(kind){
+  if(_fePullIsTerm && _feLastPullRows && _feInvRowsIn(_feLastPullRows).length){ _feInvPullReport(kind); return; }
+  _feInvMenuReport(kind);
+}
+// Toggle inside an inventory report keeps using whichever source we came from.
+function _feInvToggle(kind){
+  var src = (_feRptCtx && _feRptCtx.invSource) || 'pull';
+  if(src==='menu') _feInvMenuReport(kind); else _feInvPullReport(kind);
+}
+function _feInvBackToPull(){
+  if(!_feInvBack){ _feReportClose(); return; }
+  _feRptCtx = _feInvBack; _feInvBack = null;
+  _feInvRestoreFilter(_feRptCtx.rep);
+  _feReportOutput('view');
+}
+// Best-of-all-worlds bridge: hand this pull's ACCOUNTING side to the perfected
+// payee table on the Reports screen (rptPayeeSearch → rptPayeeSelect). We close
+// the /$ overlay, jump to Reports, and pre-type the pull's handle so a single
+// payee match (e.g. RAY ROOFING) auto-opens the year-grouped table you built.
+function _feToAccounting(){
+  if(!_feRptCtx) return;
+  var src = _feRptCtx.invBack ? _feInvBack : _feRptCtx;
+  var rep = (src && src.rep) || {};
+  var term = (_feLastFilter && _feLastFilter.term) || rep.payee || rep.desc || rep.pcode || '';
+  // tidy a CONTAINS "..." label down to the bare term if that's all we have
+  if(!term && rep.label){ var m=String(rep.label).match(/"([^"]+)"/); if(m) term=m[1]; }
+  var ov=document.getElementById('fe-overlay');
+  document.removeEventListener('keydown', _feReportMenuKey, true);
+  _feRptCtx=null; _feInvBack=null;
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  if(typeof showScreen==='function') showScreen('reports');
+  if(typeof loadLog==='function') loadLog();
+  if(typeof rptPayeeSearch==='function') rptPayeeSearch();
+  if(term){
+    setTimeout(function(){
+      var inp=document.getElementById('payee-search-input');
+      if(inp){ inp.value=term; if(typeof rptPayeeFilter==='function') rptPayeeFilter(term); }
+    }, 130);
+  }
+}
+// The bridge panel that rides on top of the report. On a pull → an ACCOUNTING
+// doorway (always) plus the INVENTORY doorway (only when the pull caught INVE
+// rows). On an inventory sub-report → BACK + toggle CNT / %DIFF + the accounting
+// doorway. No raw rows (a processed summary) → nothing, the report shows plain.
+function _feInvOptionsHTML(){
+  if(!_feRptCtx) return '';
+  var acctBtn = '<button onclick="_feToAccounting()" style="background:#003a00;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;white-space:nowrap;"><span style="background:#00ff88;color:#003a00;padding:0 5px;border-radius:2px;margin-right:5px;">$</span>ACCOUNTING TABLE</button>';
+  if(_feRptCtx.invBack){
+    var cur=_feRptCtx.invKind;
+    function _tog(kind,key,lbl){
+      var on=(cur===kind);
+      return '<button onclick="_feInvToggle(\''+kind+'\')" style="background:'+(on?'#00ffff':'#002a33')+';border:1px solid #00ffff;color:'+(on?'#001a33':'#00ffff')+';font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:'+(on?'#001a33':'#00ffff')+';color:'+(on?'#00ffff':'#001a33')+';padding:0 5px;border-radius:2px;margin-right:5px;">'+key+'</span>'+lbl+'</button>';
+    }
+    return '<div style="border:2px solid #00ffff;background:#001a33;border-radius:5px;padding:8px;margin:0 0 8px;display:flex;flex-direction:column;gap:6px;">'
+      + '<div style="display:flex;gap:6px;align-items:stretch;">'
+      + '<button onclick="_feInvBackToPull()" style="background:#330033;border:1px solid #ff66ff;color:#ff99ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 9px;border-radius:4px;cursor:pointer;white-space:nowrap;">\u2190 BACK</button>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;">'
+      + _tog('cnt','K','CNT &amp; UNIT$') + _tog('pct','G','PRICE %DIFF')
+      + '</div></div>'
+      + acctBtn
+      + '</div>';
+  }
+  // Only the inventory sub-report needs its own bar; on a pull the SEE/PRINT menu
+  // (with the numbered reports, the K/G inventory buttons and the A accounting
+  // doorway) is the single hub, so nothing extra rides here.
+  return '';
+}
+
 function _feReportOutput(action){
   if(!_feRptCtx) return;
   var text = _feRptCtx.text, rep = _feRptCtx.rep;
@@ -15002,6 +15236,7 @@ function _feReportOutput(action){
     var ov = document.getElementById('fe-overlay'); if(!ov) return;
     var html = '<div style="background:#3d7fd6;border:2px solid #ffffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
       + _feReportPickerHTML()
+      + _feInvOptionsHTML()
       + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:12px;white-space:pre;overflow:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
@@ -15152,6 +15387,12 @@ function _feMonthIdx(d){ var s=String(d||''); var m=s.match(/^\d{4}[-\/](\d{1,2}
 function _feDateKey(d){ var s=String(d||''); var iso=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/); if(iso) return iso[1]+_feP2(iso[2])+_feP2(iso[3]); var us=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/); if(us){ var y=us[3].length===2?'20'+us[3]:us[3]; return y+_feP2(us[1])+_feP2(us[2]); } return '99999999'; }
 // Resolve "ROOF 2025" → {pcode, yr, rows} filtered from LOG.
 function _feScopeRows(arg){
+  // Running a numbered report straight off a /$ or desc pull → scope to those rows.
+  if(_feScopeActive && _fePullIsTerm && _feLastPullRows){
+    var oyr = (_feLastFilter && _feLastFilter.yr) || '';
+    var orows = _feLastPullRows.filter(function(e){ return e && !e.deleted && (!oyr || _feYearOf(e.date)===oyr); });
+    return { pcode:(_feLastPullLabel||''), yr:oyr, rows:orows };
+  }
   arg = String(arg||'').trim();
   var yr='', m = arg.match(/[\s\.\/]+(\d{2,4})\s*$/);
   if(m){ yr = (m[1].length===2 ? '20'+m[1] : m[1]); arg = arg.slice(0, m.index); }
@@ -15163,7 +15404,13 @@ function _feScopeRows(arg){
   return { pcode:pcode, yr:yr, rows:rows };
 }
 function _feFinishReport(code,label,pcode,yr,text){
-  _feLastFilter = { pcode:pcode, desc:'', term:'', yr:yr };
+  if(_feScopeActive && _fePullIsTerm){
+    // came from a /$ or desc pull — keep the pull context so the SEE/PRINT menu
+    // re-renders scoped to the pull and you can chain more reports on it.
+    _feLastFilter = { pcode:'', desc:'', term:(_feLastPullLabel||'PULL'), yr:yr||'' };
+  } else {
+    _feLastFilter = { pcode:pcode, desc:'', term:'', yr:yr };
+  }
   _feRptCtx = { rep:{ code:code, label:label, pcode:pcode, desc:'', payee:'', yr:yr }, rows:[], total:0, text:text };
   _feReportOutput('view');
 }
@@ -15356,6 +15603,8 @@ function _feRunPull(token, yr){
   else { var dm = _feSlashMatchDesc(token); if(dm){ rep = { code:'/'+token, label:dm, pcode:'', desc:dm, payee:'', yr:yr }; _feLastFilter = { pcode:'', desc:dm, term:'', yr:yr }; } }
   if(!rep){ toast('No pcode or desc "'+token+'"', false); _feFocusPrompt(); return; }
   var r = _feReportRows(rep);
+  if(rep.pcode){ _fePullIsTerm=false; _feLastPullRows=null; _feLastPullLabel=''; }
+  else { _fePullIsTerm=true; _feLastPullRows=r.rows.slice(); _feLastPullLabel=(rep.desc||token); }
   _feRptCtx = { rep:rep, rows:r.rows, total:r.total, text:_feReportBlockText(rep, r.rows, r.total) };
   _feReportOutput('view');
 }
@@ -15378,6 +15627,13 @@ function _feSlashHelp(){
   L.push('');
   L.push('INSIDE A REPORT');
   L.push('   press a NUMBER   run that report on the data');
+  L.push('   V view   E email   C copy   ESC back');
+  L.push('');
+  L.push('INSIDE A REPORT  (one menu, all worlds)');
+  L.push('   1-9              run that report on the pull');
+  L.push('   A  ACCOUNTING    the perfected payee table');
+  L.push('   K  INV CNT/UNIT$  G  INV PRICE %DIFF');
+  L.push('   K/G show when any INVE items are logged');
   L.push('   V view   E email   C copy   ESC back');
   L.push('   /?               this list');
   var rep = { code:'/?', label:'SLASH COMMANDS', pcode:'', desc:'', payee:'', yr:'' };
@@ -15443,6 +15699,7 @@ function _feSlashContains(rest){
   }
   var rep = { code:'/$'+term, label:'CONTAINS "'+term+'"', pcode:'', desc:'', payee:'', yr:yr };
   _feLastFilter = { pcode:'', desc:'', term:term, yr:yr };
+  _feLastPullRows = rows.slice(); _feLastPullLabel = term; _fePullIsTerm = true;
   _feRptCtx = { rep:rep, rows:rows, total:total, text:_feReportBlockText(rep, rows, total) };
   _feReportOutput('view');
 }
