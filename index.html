@@ -8898,7 +8898,7 @@ function runAuditDesc(){
   document.getElementById('aud-output').innerHTML=h;
 }
 
-function _rptIsInve(e){ return String(e.pcode||'').toUpperCase().trim()==='INVE'; }
+function _rptIsInve(e){ return String(e.pcode||'').toUpperCase().trim()==='INVE' && String(e.desc||'').toUpperCase().trim()!=='TAX'; }
 function _invPickItem(name){
   var f=document.getElementById('inv-filter'); if(f) f.value='';   // drilling in: clear the text filter
   var s=document.getElementById('inv-item');
@@ -8976,13 +8976,14 @@ function runInve(){
       +'</tr>';
     dRows.forEach(function(e){
       var cnt=(e.qty&&e.qty>0)?e.qty:1;
-      var amt=Math.abs(e.amt||0);
-      dUnits+=cnt; dSpent+=amt;
+      var price=Math.abs(e.amt||0);      // AMT is the per-unit price
+      var line=price*cnt;                // line total = price x qty
+      dUnits+=cnt; dSpent+=line;
       dh+='<tr style="border-bottom:'+bd+';">'
         +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;">'+_feEsc(_feFmtDate(e.date||''))+'</td>'
         +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+cnt+'</td>'
-        +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(amt)+'</td>'
-        +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;">'+money(cnt?amt/cnt:0)+'</td>'
+        +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(line)+'</td>'
+        +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;">'+money(price)+'</td>'
         +'</tr>';
     });
     dh+='<tr style="background:#001a1a;border-top:2px solid #00ffff;font-weight:700;">'
@@ -9001,9 +9002,10 @@ function runInve(){
   rows.forEach(function(e){
     var it=(e.payee||'UNKNOWN').toUpperCase();
     if(!map[it]) map[it]={buys:0,units:0,spent:0};
+    var cnt=(e.qty&&e.qty>0)?e.qty:1;
     map[it].buys++;
-    map[it].units += (e.qty&&e.qty>0)?e.qty:1;   // no count on old rows = 1 unit
-    map[it].spent += Math.abs(e.amt||0);
+    map[it].units += cnt;                       // no count on old rows = 1 unit
+    map[it].spent += Math.abs(e.amt||0)*cnt;    // AMT is per-unit; total = price x qty
   });
   var items=Object.keys(map).map(function(k){ var m=map[k]; return {item:k,buys:m.buys,units:m.units,spent:m.spent,unit:m.units?m.spent/m.units:0}; });
   items.sort(function(a,b){
@@ -10179,16 +10181,15 @@ function rptSearchInve(){
     return (b.date||'').localeCompare(a.date||'');
   });
   
-  // amt is the LINE TOTAL of the buy (as entered); unit price = total / qty.
-  // This matches every other inventory report and makes a 3-sheet $375 buy read
-  // $125/sheet instead of inflating it.
+  // AMT is the PER-UNIT price; the buy's line total = qty x amt. Total cost sums
+  // those line totals; avg cost per unit = total cost / total units.
   var totalUnits = 0;
   var totalCost = 0;
   for(var i=0; i<matches.length; i++){
     var e = matches[i];
     var qty = e.qty || 1;
     totalUnits += qty;
-    totalCost += Math.abs(e.amt);
+    totalCost += (qty * Math.abs(e.amt));
   }
   var avgCostPerUnit = totalUnits > 0 ? (totalCost / totalUnits) : 0;
   
@@ -10202,8 +10203,8 @@ function rptSearchInve(){
     var e = matches[i];
     var dateStr = (e.date || '').substring(0,10);
     var qty = e.qty || 1;
-    var subtotal = Math.abs(e.amt);          // the buy's line total (as entered)
-    var unitCost = qty ? (subtotal / qty) : subtotal;   // real per-unit price
+    var unitCost = Math.abs(e.amt);   // AMT is the per-unit price
+    var subtotal = qty * unitCost;    // line total = qty x unit price
     var subtotalStr = subtotal.toFixed(2);
     html += '<tr style="border-bottom:1px solid #0a2a2a;font-size:13px;"><td style="padding:6px;color:#00ccaa;white-space:nowrap;">' + dateStr + '</td><td style="padding:6px;text-align:center;color:#ffff88;">' + qty + '</td><td style="padding:6px;text-align:right;color:#88ff88;">$' + unitCost.toFixed(2) + '</td><td style="padding:6px;text-align:right;color:#ffaa88;">$' + subtotalStr + '</td><td style="padding:6px;color:#ffffff;font-weight:700;word-break:break-word;line-height:1.35;">' + (e.payee||'') + '</td></tr>';
   }
@@ -12891,7 +12892,7 @@ function universalMergeBackupCSV(txt){
   var idx={ id:hdr.indexOf('id'), date:hdr.indexOf('date'), payee:hdr.indexOf('payee'),
             pcode:hdr.indexOf('pcode'), desc:hdr.indexOf('desc'),
             amt:hdr.indexOf('amt')>=0?hdr.indexOf('amt'):hdr.indexOf('amount'), type:hdr.indexOf('type'),
-            qty:hdr.indexOf('qty'), unit:hdr.indexOf('unit'), store:hdr.indexOf('store') };
+            qty:hdr.indexOf('qty'), unit:hdr.indexOf('unit'), store:hdr.indexOf('store'), sku:hdr.indexOf('sku') };
   if(idx.payee<0||idx.amt<0){toast('CSV missing PAYEE or AMT column',false);return;}
   var arr=[];
   for(var i=1;i<lines.length;i++){
@@ -12915,6 +12916,7 @@ function universalMergeBackupCSV(txt){
     if(idx.qty>=0){ var _qn=parseFloat(c[idx.qty]); if(!isNaN(_qn) && _qn>0) _r.qty=_qn; }
     if(idx.unit>=0 && (c[idx.unit]||'').trim()) _r.unit=(c[idx.unit]||'').trim().toUpperCase();
     if(idx.store>=0 && (c[idx.store]||'').trim()) _r.store=(c[idx.store]||'').trim().toUpperCase();
+    if(idx.sku>=0 && (c[idx.sku]||'').trim()) _r.sku=(c[idx.sku]||'').trim();
   }
   if(!arr.length){toast('No usable rows',false);return;}
   // content key — same entry on either device collapses to one
@@ -15044,18 +15046,36 @@ var _feScopeActive = false;   // true only while a numbered report runs over tha
 
 function _feInvRowsIn(rows){
   if(!rows || !rows.length) return [];
-  return rows.filter(function(e){ return e && String(e.pcode||'').toUpperCase().trim()==='INVE'; });
+  return rows.filter(function(e){
+    return e && String(e.pcode||'').toUpperCase().trim()==='INVE'
+             && String(e.desc||'').toUpperCase().trim()!=='TAX';   // tax isn't an item
+  });
 }
 // Group INVE rows by item (the item name lives in PAYEE); keep dated unit prices.
+function _feNumComma(n){
+  n=Number(n)||0;
+  var neg=n<0; n=Math.abs(n);
+  var s=(Math.round(n*100)/100).toString();
+  // strip trailing .00-style noise for whole counts, keep up to 2 decimals otherwise
+  if(s.indexOf('.')>=0){ s=n.toFixed(2).replace(/\.?0+$/,''); }
+  var p=s.split('.'); p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return (neg?'-':'')+p.join('.');
+}
+function _feMoneyTxt(n){
+  n=Number(n)||0; var neg=n<0;
+  var s=Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return (neg?'-$':'$')+s;
+}
 function _feInvAgg(inv){
   var map={};
   inv.forEach(function(e){
     var it=(e.payee||'UNKNOWN').toUpperCase();
     var cnt=(e.qty&&e.qty>0)?e.qty:1;          // old rows with no count = 1 unit
-    var amt=Math.abs(e.amt||0);
+    var price=Math.abs(e.amt||0);              // AMT is the PER-UNIT price (per sheet/gal/ea)
+    var line=price*cnt;                        // line total = unit price x qty
     if(!map[it]) map[it]={item:it,buys:0,units:0,spent:0,rows:[]};
-    map[it].buys++; map[it].units+=cnt; map[it].spent+=amt;
-    map[it].rows.push({date:e.date||'', qty:cnt, total:amt, unit:cnt?amt/cnt:0});
+    map[it].buys++; map[it].units+=cnt; map[it].spent+=line;
+    map[it].rows.push({date:e.date||'', qty:cnt, total:line, unit:price});
   });
   return Object.keys(map).map(function(k){ return map[k]; });
 }
@@ -15153,15 +15173,24 @@ function _feInvCmpText(inv, label){
     });
     if(x.spread>0.005){
       L.push('   '+_fePadR('LOW '+x.low.toFixed(2),14)+_fePadR('HIGH '+x.high.toFixed(2),14)+'SPREAD '+x.spread.toFixed(2)+' (+'+x.spreadPct.toFixed(1)+'%)');
-      L.push('   * SAME ITEM, DIFFERENT UNIT$ \u2014 check the rep/receipt');
+      // CASH DIFFERENCE — what the price gap actually cost in dollars
+      var atLow=x.units*x.low;                 // if every unit hit the low price
+      var over=x.spent-atLow;                   // extra dollars paid above that
+      var unitsHi=0;
+      x.rows.forEach(function(r){ if(r.unit>x.low+0.005) unitsHi+=r.qty; });
+      L.push('   CASH DIFFERENCE');
+      L.push('     +'+x.spread.toFixed(2)+' per unit   ('+x.low.toFixed(2)+' vs '+x.high.toFixed(2)+')');
+      L.push('     '+_feNumComma(x.units)+' unit(s) bought, '+_feNumComma(unitsHi)+' above the low');
+      L.push('     all at low = '+_feMoneyTxt(atLow)+'   you paid = '+_feMoneyTxt(x.spent));
+      L.push('     >> '+_feMoneyTxt(over)+' OVERPAID vs the '+x.low.toFixed(2)+' price');
     } else {
       L.push('   all buys at one unit price: '+x.low.toFixed(2));
     }
     L.push('');
   });
-  L.push(' UNIT$ = that buy\u2019s TOTAL \u00f7 QTY. When the same');
-  L.push(' item shows two UNIT$ from one supplier, a rep');
-  L.push(' changed the price \u2014 SPREAD is the per-unit gap.');
+  L.push(' UNIT$ = price for one unit. SPREAD = high minus low');
+  L.push(' per unit. CASH DIFFERENCE = the real dollars that');
+  L.push(' gap cost you vs buying everything at the low price.');
   return L.join('\n');
 }
 // ── FORENSIC AUDIT ──────────────────────────────────────────────────────────
@@ -15189,10 +15218,10 @@ function _feInvForensicText(inv, label){
   var groups={};
   inv.forEach(function(e){
     var fp=_feInvFingerprint(e.payee);
-    var cnt=(e.qty&&e.qty>0)?e.qty:1, amt=Math.abs(e.amt||0);
+    var cnt=(e.qty&&e.qty>0)?e.qty:1, price=Math.abs(e.amt||0);
     if(!groups[fp]) groups[fp]={fp:fp, variants:{}, buys:[]};
     groups[fp].variants[(e.payee||'').toUpperCase()]=true;
-    groups[fp].buys.push({date:e.date||'', qty:cnt, total:amt, unit:cnt?amt/cnt:0, hadQty:!!(e.qty&&e.qty>0)});
+    groups[fp].buys.push({date:e.date||'', qty:cnt, total:price*cnt, unit:price, hadQty:!!(e.qty&&e.qty>0)});
   });
   var list=Object.keys(groups).map(function(k){
     var g=groups[k];
@@ -15209,8 +15238,16 @@ function _feInvForensicText(inv, label){
   flagged.sort(function(a,b){ return b.spread-a.spread; });
 
   // count likely-missing-qty buys (qty 1, above the group's low unit price)
+  // A buy "may be missing a QTY" only when its unit price is a near-whole multiple
+  // (x2 or more) of the group's lowest unit price — that pattern means the line was
+  // probably several units logged as one. A plain price gap (175 vs 125) is NOT this.
+  function _feSuspectQty(b, g){
+    if(b.qty!==1 || g.low<=0) return 0;
+    var ratio=b.unit/g.low, k=Math.round(ratio);
+    return (k>=2 && Math.abs(ratio-k)<0.02) ? k : 0;
+  }
   var missQty=0;
-  flagged.forEach(function(g){ g.buys.forEach(function(b){ if(g.mismatch && b.qty===1 && b.unit>g.low+0.005) missQty++; }); });
+  flagged.forEach(function(g){ g.buys.forEach(function(b){ if(g.mismatch && _feSuspectQty(b,g)) missQty++; }); });
 
   var today=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
   var bar='============================================';
@@ -15246,18 +15283,27 @@ function _feInvForensicText(inv, label){
     });
     if(g.mismatch){
       L.push('   LOW '+g.low.toFixed(2)+'   HIGH '+g.high.toFixed(2)+'   SPREAD '+g.spread.toFixed(2)+' (+'+g.spreadPct.toFixed(1)+'%)');
+      var gUnits=0, gSpent=0;
+      g.buys.forEach(function(b){ gUnits+=b.qty; gSpent+=b.total; });
+      var gOver=gSpent-(gUnits*g.low);
+      L.push('   CASH DIFFERENCE: +'+g.spread.toFixed(2)+'/unit \u2014 '+_feMoneyTxt(gOver)+' overpaid vs low');
       L.push(' (!) PRICE MISMATCH \u2014 same item, different UNIT$.');
-      // qty ladder for the suspicious (qty 1, above low) buys
-      var shown={};
+      var shown={}, anyLadder=false;
       g.buys.forEach(function(b){
-        if(b.qty===1 && b.unit>g.low+0.005 && !shown[b.total.toFixed(2)]){
-          shown[b.total.toFixed(2)]=true;
-          L.push('     QTY CHECK '+b.total.toFixed(2)+' at qty 1:');
+        var k=_feSuspectQty(b,g);
+        if(k && !shown[b.total.toFixed(2)]){
+          shown[b.total.toFixed(2)]=true; anyLadder=true;
+          L.push('     QTY CHECK '+b.unit.toFixed(2)+' at qty 1 (~'+k+'x the low):');
           L.push('       '+_feInvLadder(b.total));
         }
       });
-      L.push('     * = whole-dollar unit price (most likely count).');
-      L.push('     If the receipt shows that many, set QTY with Q.');
+      if(anyLadder){
+        L.push('     * = whole-dollar unit price (most likely count).');
+        L.push('     If the receipt shows that many, set QTY with Q.');
+      } else {
+        L.push('     Quantities look entered \u2014 this reads as a REAL');
+        L.push('     price change ('+g.low.toFixed(2)+' vs '+g.high.toFixed(2)+'/unit). Check the rep.');
+      }
     } else if(g.drift){
       L.push('   Same unit price '+g.low.toFixed(2)+', just two spellings.');
     }
@@ -15317,6 +15363,7 @@ function _feInvScopeInvRows(){
   for(var i=0;i<LOG.length;i++){
     var e=LOG[i]; if(!e) continue;
     if(String(e.pcode||'').toUpperCase().trim()!=='INVE') continue;
+    if(String(e.desc||'').toUpperCase().trim()==='TAX') continue;   // skip sales-tax rows
     if(yr && _feYearOf(e.date)!==yr) continue;
     out.push(e);
   }
