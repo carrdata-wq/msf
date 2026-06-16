@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-2</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-3</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -12783,6 +12783,7 @@ function universalLoadBackupCSV(txt){
     pcode: hdr.indexOf('pcode'),
     desc:  hdr.indexOf('desc'),
     amt:   hdr.indexOf('amt')>=0 ? hdr.indexOf('amt') : hdr.indexOf('amount'),
+    qty:   hdr.indexOf('qty'),
     type:  hdr.indexOf('type')
   };
   if(idx.payee<0||idx.amt<0){toast('CSV missing PAYEE or AMT column',false);return;}
@@ -12796,14 +12797,16 @@ function universalLoadBackupCSV(txt){
       if(t==='EXPENSE' && amt>0) amt=-amt;
       if(t==='INCOME' && amt<0) amt=Math.abs(amt);
     }
-    arr.push({
+    var _row={
       id: idx.id>=0 ? (parseInt(c[idx.id],10)||(i)) : i,
       date: idx.date>=0?(c[idx.date]||''):'',
       payee:(c[idx.payee]||'').trim(),
       pcode:idx.pcode>=0?(c[idx.pcode]||'').trim():'',
       desc: idx.desc >=0?(c[idx.desc] ||'').trim():'',
       amt:  amt
-    });
+    };
+    if(idx.qty>=0){ var _q=parseFloat(c[idx.qty]); if(!isNaN(_q) && _q!==0) _row.qty=_q; }   // barrels / unit count
+    arr.push(_row);
   }
   if(!arr.length){toast('No usable rows',false);return;}
   // Chunked backup piece? merge by ID (accumulate pieces) instead of replacing.
@@ -12925,13 +12928,26 @@ function universalMergeBackupCSV(txt){
     return (e.date||'')+'|'+(e.payee||'').toUpperCase().trim()+'|'+(e.pcode||'').toUpperCase().trim()
          + '|'+(e.desc||'').toUpperCase().trim()+'|'+(Number(e.amt)||0).toFixed(2);
   }
-  var seen={};
-  LOG.forEach(function(e){ seen[ckey(e)]=true; });
-  var toAdd=[], dup=0;
-  arr.forEach(function(r){ var k=ckey(r); if(seen[k]){dup++;return;} seen[k]=true; toAdd.push(r); });
+  var seen={}, byKey={};
+  LOG.forEach(function(e){ var k=ckey(e); seen[k]=true; byKey[k]=e; });
+  var toAdd=[], dup=0, healed=0;
+  arr.forEach(function(r){
+    var k=ckey(r);
+    if(seen[k]){
+      dup++;
+      // HEAL: a matching row that lost its barrels/qty (e.g. restored from an old
+      // backup that didn't save QTY) gets the count filled back in from this file.
+      var ex=byKey[k];
+      if(ex && (typeof ex.qty==='undefined' || !(ex.qty>0)) && (typeof r.qty!=='undefined' && r.qty>0)){ ex.qty=r.qty; healed++; }
+      return;
+    }
+    seen[k]=true; byKey[k]=r; toAdd.push(r);
+  });
+  if(healed){ saveLog(); }
   if(!toAdd.length){
-    toast('Nothing new — all '+arr.length+' rows already in your ledger',true);
+    toast(healed ? ('Filled barrels/qty back into '+healed+' row'+(healed===1?'':'s')+' ✓') : ('Nothing new — all '+arr.length+' rows already in your ledger'),true);
     document.querySelectorAll('.modal-overlay').forEach(function(o){o.remove();});
+    _feInvalidateIndex && _feInvalidateIndex();
     return;
   }
   if(!confirm('MERGE ACCOUNTING — add '+toAdd.length+' new entr'+(toAdd.length===1?'y':'ies')+' to your current '+LOG.length+'?\n('+dup+' duplicate'+(dup===1?'':'s')+' skipped.) Nothing is erased.\nTap Cancel to abort.')) return;
@@ -16375,11 +16391,12 @@ function _feBackupAll(silent){
     }
     
     // 1. ACCOUNTING CSV
-    var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT'];
+    var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT,QTY'];
     L.forEach(function(e) {
       if (!e.deleted) {
         acctLines.push([csvField(e.date), csvField(e.day), csvField(e.month), csvField(e.year), 
-                        csvField(e.payee), csvField(e.pcode), csvField(e.desc), csvField(e.amt)].join(','));
+                        csvField(e.payee), csvField(e.pcode), csvField(e.desc), csvField(e.amt),
+                        csvField((typeof e.qty!=='undefined' && e.qty!=='') ? e.qty : '')].join(','));
       }
     });
     files.push({
