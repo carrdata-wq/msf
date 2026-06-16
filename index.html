@@ -1091,6 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-2</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -1505,7 +1506,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <select id="pcode-preview" style="width:100%;background:#0000cc;border:2px solid #fff;color:#fff;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:7px;border-radius:4px;outline:none;margin-top:4px;">
       <option>ROOF</option><option>BART</option><option>NORD</option><option>TOMM</option><option>TOUT</option>
       <option>10629</option><option>10735</option><option>2760</option><option>3120</option><option>5481</option>
-      <option>OIL</option><option>TRADE</option>
+      <option>OIL</option><option>OILP</option><option>OILX</option><option>OILT</option><option>OILE</option><option>TRADE</option>
     </select>
   </div>
 
@@ -1574,7 +1575,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <select id="p-pcode" style="width:100%;box-sizing:border-box;background:#0000aa;border:2px solid #ffffff;color:#ffffff;font-family:Courier New,monospace;font-size:15px;font-weight:700;padding:9px;border-radius:4px;outline:none;margin-top:4px;">
       <option>ROOF</option><option>BART</option><option>NORD</option><option>TOMM</option><option>TOUT</option>
       <option>10629</option><option>10735</option><option>2760</option><option>3120</option><option>5481</option>
-      <option>OIL</option><option>TRADE</option>
+      <option>OIL</option><option>OILP</option><option>OILX</option><option>OILT</option><option>OILE</option><option>TRADE</option>
     </select>
     <div style="font-size:14px;color:#ccccff;margin-top:6px;">DESC</div>
     <div style="position:relative;">
@@ -15009,11 +15010,19 @@ function _feReportPickerHTML(){
       + '<button onclick="_feInvFromMenu(\'aud\')" style="background:#3a1500;border:1px solid #ff8844;color:#ffaa66;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:7px 5px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ff8844;color:#2a1000;padding:0 5px;border-radius:2px;margin-right:5px;">F</span>\ud83d\udd0d FORENSIC AUDIT</button>'
       + '</div>';
   }
+  var oilRow='';
+  (function(){
+    var hasOil=false;
+    for(var i=0;i<LOG.length;i++){ var e=LOG[i]; if(e && !e.deleted){ var p=String(e.pcode||'').toUpperCase().trim(); if(p==='OILX'||p==='OILP'){ hasOil=true; break; } } }
+    if(hasOil){
+      oilRow = '<button onclick="_oilReport(\'\')" style="width:100%;background:#00251a;border:1px solid #00ffaa;color:#66ffcc;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ffaa;color:#00251a;padding:0 5px;border-radius:2px;margin-right:5px;">O</span>\ud83d\udece\ufe0f OIL RECONCILE \u2014 STATE vs CROWN</button>';
+    }
+  })();
   var acctRow = '<button onclick="_feToAccounting()" style="width:100%;background:#003a00;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ff88;color:#003a00;padding:0 5px;border-radius:2px;margin-right:5px;">A</span>$ ACCOUNTING TABLE \u2192 perfected payee view</button>';
   return '<div style="border-bottom:2px solid #ffffff;margin:0 0 4px;padding-bottom:8px;">'
     + '<div style="color:#ffffff;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px;">SEE / PRINT MENU &#8226; ' + _feEsc(scope) + '  <span style="color:#dfeaff;font-weight:400;">PRESS A NUMBER</span></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">' + btns + '</div>'
-    + invRow + acctRow + '</div>';
+    + invRow + oilRow + acctRow + '</div>';
 }
 function _feCopyText(text){
   function fallback(){
@@ -15154,7 +15163,7 @@ function _feInvCmpText(inv, label){
   items.sort(function(a,b){ return b.spread-a.spread; });   // biggest spread on top
   var today=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
   var L=[];
-  L.push('        INVENTORY — QTY & PRICE COMPARE');
+  L.push('        INVENTORY — QTY & PRICE COMPARE   [CASH v2]');
   L.push('        '+(label||'PULL'));
   L.push('        '+today);
   L.push('');
@@ -15809,6 +15818,8 @@ function _feSlashCommand(rest){
   rest = String(rest||'').trim();
   if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — contains-pull
   if(rest === '?' || rest.toUpperCase() === 'HELP'){ _feSlashHelp(); return; }
+  if(/^OIL\b/i.test(rest)){ _oilReport(rest.replace(/^OIL\b/i,'').replace(/\//g,' ').trim()); return; }
+  if(/^BUP\b/i.test(rest)){ _feBupCommand(rest.replace(/^BUP\b/i,'').replace(/\//g,' ').trim()); return; }
   var toks = rest.replace(/\//g,' ').split(/\s+/).filter(Boolean);
   if(!toks.length){ _feSlashHelp(); return; }
   var report='', year='', filterToks=[];
@@ -15840,6 +15851,103 @@ function _feRunPull(token, yr){
   _feRptCtx = { rep:rep, rows:r.rows, total:r.total, text:_feReportBlockText(rep, r.rows, r.total) };
   _feReportOutput('view');
 }
+// ── OIL RECONCILE ───────────────────────────────────────────────────────────
+// Three legs, one report: OILX = Kansas STATE barrels (the truth they filed),
+// OILP = what Crown put on YOUR statement, OILT = Kansas tax record (added later).
+// State is the spine; we hang the statement (and tax) beside it month by month.
+function _oilKey(s){ return String(s||'').toUpperCase().replace(/\([^)]*\)/g,' ').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function _oilMatch(a,b){ if(!a||!b) return false; if(a===b) return true; return a.indexOf(b+' ')===0 || b.indexOf(a+' ')===0; }
+function _oilMonth(d){ var m=String(d||'').match(/(\d{4})-(\d{2})/); return m?(m[1]+'-'+m[2]):''; }
+function _oilNum(e){ var q=parseFloat(e.qty); if(!isNaN(q)&&q!==0) return Math.abs(q); var a=parseFloat(e.amt); return isNaN(a)?0:Math.abs(a); }
+function _oilFlt(n){ return (Math.round(n*100)/100).toFixed(2); }
+
+function _oilReport(filterArg){
+  var want = String(filterArg||'').toUpperCase().split(/[, ]+/).filter(Boolean);
+  function keep(name){ if(!want.length) return true; var u=String(name||'').toUpperCase(); for(var i=0;i<want.length;i++){ if(u.indexOf(want[i])>=0) return true; } return false; }
+
+  var stateRows=[], stmtRows=[];
+  LOG.forEach(function(e){
+    if(e.deleted) return;
+    var pc=String(e.pcode||'').toUpperCase().trim();
+    if(pc==='OILX' && keep(e.payee)) stateRows.push(e);
+    else if(pc==='OILP' && keep(e.payee)) stmtRows.push(e);
+  });
+
+  var L=[];
+  L.push('        OIL — STATE vs STATEMENT RECONCILE   [OIL v1]');
+  L.push('        '+(want.length?('LEASE: '+want.join(', ')):'ALL OIL LEASES'));
+  L.push('');
+
+  if(!stateRows.length && !stmtRows.length){
+    L.push('   No oil rows yet.');
+    L.push('');
+    L.push('   Import STATE barrels as pcode OILX (use the Kansas');
+    L.push('   converter), and your Crown statements as OILP.');
+    L.push('   Then type  /oil  again.');
+    _feFinishReport('/oil', 'OIL RECONCILE', '', '', L.join('\n'));
+    return;
+  }
+
+  // group state + statement by lease family, then by month
+  var leases={};
+  function leaseOf(name){
+    var k=_oilKey(name);
+    for(var ex in leases){ if(_oilMatch(ex,k)) return ex; }
+    leases[k]={key:k, disp:name, st:{}, pm:{}};
+    return k;
+  }
+  stateRows.forEach(function(e){ var k=leaseOf(e.payee); var mo=_oilMonth(e.date); if(mo) leases[k].st[mo]=(leases[k].st[mo]||0)+_oilNum(e); });
+  stmtRows.forEach(function(e){ var k=leaseOf(e.payee); var mo=_oilMonth(e.date); if(mo) leases[k].pm[mo]=(leases[k].pm[mo]||0)+_oilNum(e); });
+
+  var names=Object.keys(leases).sort();
+  var gState=0, gStmt=0, gMiss=0, gMatch=0, gMismatch=0, gNoStmt=0;
+
+  names.forEach(function(k){
+    var Lz=leases[k];
+    var months={}; Object.keys(Lz.st).forEach(function(m){months[m]=1;}); Object.keys(Lz.pm).forEach(function(m){months[m]=1;});
+    var mlist=Object.keys(months).sort();
+    if(!mlist.length) return;
+    L.push(' '+Lz.disp);
+    L.push('   '+_fePadR('MONTH',9)+_fePadL('STATE',10)+_fePadL('CROWN',10)+_fePadL('DIFF',9)+'  FLAG');
+    var prev=null;
+    mlist.forEach(function(mo){
+      var hasS=(mo in Lz.st), hasP=(mo in Lz.pm);
+      var s=hasS?Lz.st[mo]:null, p=hasP?Lz.pm[mo]:null;
+      var sTxt=hasS?_oilFlt(s):'—', pTxt=hasP?_oilFlt(p):'—', dTxt='', flag='';
+      if(hasS&&hasP){
+        var d=p-s; dTxt=(d>0?'+':'')+_oilFlt(d);
+        if(Math.abs(d)<0.005){ flag='MATCH'; gMatch++; }
+        else { flag='*** MISMATCH'; gMismatch++; }
+      } else if(hasS&&!hasP){ flag='no stmt'; gNoStmt++; }
+      else if(!hasS&&hasP){ flag='!! NOT IN STATE'; gMiss++; }
+      // "looks estimated" — exact repeat of previous month's STATE figure
+      if(hasS && prev!==null && Math.abs(s-prev)<0.005){ flag=(flag?flag+' ':'')+'~repeat'; }
+      if(hasS) prev=s;
+      if(hasS) gState+=s; if(hasP) gStmt+=p;
+      L.push('   '+_fePadR(mo,9)+_fePadL(sTxt,10)+_fePadL(pTxt,10)+_fePadL(dTxt,9)+'  '+flag);
+    });
+    L.push('');
+  });
+
+  L.push('   ── SUMMARY ──');
+  L.push('   total STATE barrels:     '+_feNumComma(gState));
+  if(gStmt>0){
+    L.push('   total CROWN barrels:     '+_feNumComma(gStmt));
+    L.push('   state minus crown:       '+_feNumComma(gState-gStmt)+' bbls');
+    L.push('   months MATCH: '+gMatch+'   MISMATCH: '+gMismatch);
+  }
+  if(gNoStmt) L.push('   months in state, NO Crown statement loaded: '+gNoStmt);
+  if(gMiss)   L.push('   months Crown billed but NOT in state record: '+gMiss);
+  L.push('');
+  L.push(' STATE = barrels Crown filed with Kansas (OILX).');
+  L.push(' CROWN = barrels on your statement (OILP).  DIFF = crown - state.');
+  L.push(' "no stmt" = state shows oil, no statement loaded for that month yet.');
+  L.push(' "~repeat" = same as prior month (REVIEW — may be an estimate).');
+  L.push(' A flag points your eye; proof is the legs disagreeing.');
+
+  _feFinishReport('/oil'+(want.length?(' '+want.join(' ')):''), 'OIL RECONCILE', '', '', L.join('\n'));
+}
+
 // /? — the cheat sheet. So nobody has to remember the codes cold.
 function _feSlashHelp(){
   var L = [];
@@ -16250,7 +16358,7 @@ function _feDispatchCommand(raw){
 }
 
 // ───── BACKUP ALL COMMAND ─────
-function _feBackupAll(){
+function _feBackupAll(silent){
   try {
     var enc = new TextEncoder();
     var files = [];
@@ -16355,11 +16463,25 @@ function _feBackupAll(){
     // ── Build the ZIP (validated bytes) ──
     var zip = _makeZip(files);
     var blob = new Blob([zip], {type: 'application/zip'});
-    var dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    var fname = 'MFS-BACKUP-' + dateStr + '.zip';
+    var _now = new Date();
+    var dateStr = _now.toISOString().slice(0, 10).replace(/-/g, '');
+    var timeStr = ('0'+_now.getHours()).slice(-2) + ('0'+_now.getMinutes()).slice(-2);
+    var fname = 'MFS-BACKUP-' + dateStr + (silent ? ('-'+timeStr) : '') + '.zip';
     var url = URL.createObjectURL(blob);
     // stash so the popup buttons can reach the file
     _bupLast = { blob: blob, url: url, fname: fname };
+
+    // SILENT auto-backup: drop a uniquely-named zip straight to Downloads, no popup, no clicks
+    if(silent){
+      try {
+        var aa = document.createElement('a');
+        aa.href = url; aa.download = fname;
+        document.body.appendChild(aa); aa.click(); document.body.removeChild(aa);
+        try { toast('💾 Auto-backup saved · ' + fname, true); } catch(_t){}
+      } catch(eDl){ try{ toast('Auto-backup could not save — '+(eDl.message||eDl), false); }catch(_t){} }
+      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(_r){} }, 8000);
+      return;
+    }
 
     var summary = (acctLines.length - 1) + ' accounting · ' + (mileLines.length - 1) + ' mileage · '
                 + payees.length + ' payees · ' + balRows.length + ' balance rows · ' + (clientLines.length - 1) + ' clients';
@@ -16418,6 +16540,52 @@ function _bupCloseModal(){
   if(_bupLast && _bupLast.url){ var u = _bupLast.url; setTimeout(function(){ try{URL.revokeObjectURL(u);}catch(e){} }, 8000); }
   _feFocusPrompt();
 }
+
+// ───── AUTO-BACKUP — silent timestamped zip to Downloads every N minutes ─────
+// Solves the "device reset wiped my data" problem: a fresh, uniquely-named backup
+// drops to your Downloads on a timer, so you never lose more than one interval.
+var _feAutoBupTimer = null;
+function _feAutoBupMins(){
+  var v = localStorage.getItem('mx_autobup');
+  if(v === null) return 60;            // default: ON, every 60 min
+  var n = parseInt(v,10);
+  return (isNaN(n) || n < 0) ? 0 : n;  // 0 = off
+}
+function _feApplyAutoBackup(){
+  if(_feAutoBupTimer){ clearInterval(_feAutoBupTimer); _feAutoBupTimer = null; }
+  var mins = _feAutoBupMins();
+  if(mins > 0){
+    _feAutoBupTimer = setInterval(function(){
+      try { if(typeof LOG !== 'undefined' && LOG && LOG.length) _feBackupAll(true); } catch(e){}
+    }, mins * 60 * 1000);
+  }
+}
+function _feBupCommand(arg){
+  arg = String(arg||'').trim().toLowerCase();
+  if(arg === '' || arg === 'now'){ _feBackupAll(true); return; }
+  if(arg === 'off' || arg === 'stop' || arg === 'no'){
+    localStorage.setItem('mx_autobup','0'); _feApplyAutoBackup();
+    try{ toast('Auto-backup OFF', true); }catch(e){} _feFocusPrompt(); return;
+  }
+  if(arg === 'auto' || arg === 'on' || arg === 'yes'){
+    localStorage.setItem('mx_autobup','60'); _feApplyAutoBackup();
+    try{ toast('Auto-backup ON · every 60 min', true); }catch(e){} _feFocusPrompt(); return;
+  }
+  var n = parseInt(arg,10);
+  if(!isNaN(n) && n > 0){
+    localStorage.setItem('mx_autobup', String(n)); _feApplyAutoBackup();
+    try{ toast('Auto-backup ON · every '+n+' min', true); }catch(e){} _feFocusPrompt(); return;
+  }
+  var cur = _feAutoBupMins();
+  try{ toast(cur>0 ? ('Auto-backup ON · every '+cur+' min') : 'Auto-backup OFF', true); }catch(e){}
+  _feFocusPrompt();
+}
+// start the timer a few seconds after load
+(function(){
+  function go(){ try{ _feApplyAutoBackup(); }catch(e){} }
+  if(document.readyState !== 'loading'){ setTimeout(go, 3000); }
+  else { document.addEventListener('DOMContentLoaded', function(){ setTimeout(go, 3000); }); }
+})();
 
 // ───── KEYS DIAGNOSTIC — shows what is actually stored on THIS device ─────
 function _feDumpKeys(){
