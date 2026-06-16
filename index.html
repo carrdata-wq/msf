@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-5</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-6</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -15042,7 +15042,7 @@ function _feReportPickerHTML(){
     var hasOil=false;
     for(var i=0;i<LOG.length;i++){ var e=LOG[i]; if(e && !e.deleted){ var p=String(e.pcode||'').toUpperCase().trim(); if(p==='OILX'||p==='OILP'){ hasOil=true; break; } } }
     if(hasOil){
-      oilRow = '<button onclick="_oilReport(\'\')" style="width:100%;background:#00251a;border:1px solid #00ffaa;color:#66ffcc;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ffaa;color:#00251a;padding:0 5px;border-radius:2px;margin-right:5px;">O</span>\ud83d\udece\ufe0f OIL RECONCILE \u2014 STATE vs CROWN</button>';
+      oilRow = '<button onclick="_oilMenu()" style="width:100%;background:#00251a;border:1px solid #00ffaa;color:#66ffcc;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ffaa;color:#00251a;padding:0 5px;border-radius:2px;margin-right:5px;">O</span>\ud83d\udece\ufe0f OPEN OILREPO SYSTEM</button>';
     }
   })();
   var acctRow = '<button onclick="_feToAccounting()" style="width:100%;background:#003a00;border:1px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 5px;border-radius:4px;cursor:pointer;text-align:left;margin-top:5px;"><span style="background:#00ff88;color:#003a00;padding:0 5px;border-radius:2px;margin-right:5px;">A</span>$ ACCOUNTING TABLE \u2192 perfected payee view</button>';
@@ -15502,9 +15502,15 @@ function _feReportOutput(action){
   // audit can be emailed or copied right from where you finished reading.
   if(action==='view'){
     var ov = document.getElementById('fe-overlay'); if(!ov) return;
+    var _isOil = ((rep.code||'').indexOf('/oil')===0);   // oil reports stand alone — no accounting/inventory menu
+    var _oilBar = _isOil
+      ? '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #ffffff;margin:0 0 8px;padding-bottom:8px;">'
+        + '<span style="color:#9fd0ff;font-size:11px;font-weight:700;letter-spacing:1px;">\ud83d\udece\ufe0f OILREPO</span>'
+        + '<button onclick="_oilMenu()" style="background:#06294e;border:1px solid #66b3ff;color:#9fd0ff;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;">\u2039 OIL MENU</button>'
+        + '</div>'
+      : '';
     var html = '<div style="background:#3d7fd6;border:2px solid #ffffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
-      + _feReportPickerHTML()
-      + _feInvOptionsHTML()
+      + (_isOil ? _oilBar : (_feReportPickerHTML() + _feInvOptionsHTML()))
       + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:12px;white-space:pre;overflow:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
