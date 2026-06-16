@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-3</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-5</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -12784,6 +12784,9 @@ function universalLoadBackupCSV(txt){
     desc:  hdr.indexOf('desc'),
     amt:   hdr.indexOf('amt')>=0 ? hdr.indexOf('amt') : hdr.indexOf('amount'),
     qty:   hdr.indexOf('qty'),
+    unit:  hdr.indexOf('unit'),
+    store: hdr.indexOf('store'),
+    sku:   hdr.indexOf('sku'),
     type:  hdr.indexOf('type')
   };
   if(idx.payee<0||idx.amt<0){toast('CSV missing PAYEE or AMT column',false);return;}
@@ -12806,6 +12809,9 @@ function universalLoadBackupCSV(txt){
       amt:  amt
     };
     if(idx.qty>=0){ var _q=parseFloat(c[idx.qty]); if(!isNaN(_q) && _q!==0) _row.qty=_q; }   // barrels / unit count
+    if(idx.unit>=0  && c[idx.unit])  _row.unit =(c[idx.unit] ||'').trim();                    // BBL
+    if(idx.store>=0 && c[idx.store]) _row.store=(c[idx.store]||'').trim();                     // NET value note
+    if(idx.sku>=0   && c[idx.sku])   _row.sku  =(c[idx.sku]  ||'').trim();                     // decimal (OILP) / API (OILX)
     arr.push(_row);
   }
   if(!arr.length){toast('No usable rows',false);return;}
@@ -12935,10 +12941,15 @@ function universalMergeBackupCSV(txt){
     var k=ckey(r);
     if(seen[k]){
       dup++;
-      // HEAL: a matching row that lost its barrels/qty (e.g. restored from an old
-      // backup that didn't save QTY) gets the count filled back in from this file.
+      // HEAL: a matching row that lost its barrels/decimal/API (e.g. restored from an
+      // old backup that didn't save those columns) gets them filled back in from this file.
       var ex=byKey[k];
-      if(ex && (typeof ex.qty==='undefined' || !(ex.qty>0)) && (typeof r.qty!=='undefined' && r.qty>0)){ ex.qty=r.qty; healed++; }
+      if(ex){
+        if((typeof ex.qty==='undefined' || !(ex.qty>0)) && (typeof r.qty!=='undefined' && r.qty>0)){ ex.qty=r.qty; healed++; }
+        if((typeof ex.sku==='undefined' || ex.sku==='') && r.sku){ ex.sku=r.sku; healed++; }
+        if((typeof ex.unit==='undefined' || ex.unit==='') && r.unit){ ex.unit=r.unit; }
+        if((typeof ex.store==='undefined'|| ex.store==='')&& r.store){ ex.store=r.store; }
+      }
       return;
     }
     seen[k]=true; byKey[k]=r; toAdd.push(r);
@@ -15499,6 +15510,7 @@ function _feReportOutput(action){
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
       + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ff88;color:#003300;padding:1px 6px;border-radius:2px;margin-right:5px;">E</span>EMAIL / SHARE</button>'
       + '<button onclick="_feReportOutput(\'copy\')" style="flex:1;background:#222200;border:2px solid #ffdd55;color:#ffdd55;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#ffdd55;color:#222200;padding:1px 6px;border-radius:2px;margin-right:5px;">C</span>COPY</button>'
+      + (((rep.code||'').indexOf('/oil')===0) ? '<button onclick="_oilMenu()" style="flex:1;background:#06294e;border:2px solid #66b3ff;color:#9fd0ff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">\u2039 MENU</button>' : '')
       + '<button onclick="_feReportClose()" style="flex:1;background:#330000;border:2px solid #ff6666;color:#ff6666;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;">ESC</button>'
       + '</div></div>';
     ov.innerHTML = html;
@@ -15832,9 +15844,14 @@ function _feRunAll(arg){
 var _feReportWords = {DESC:'DESC',DESCRIPTION:'DESC',AUD:'AUD',AUDIT:'AUD',DATE:'DATE',PCT:'PCT',PERCENT:'PCT',IRS:'IRS',TRADE:'TRADE',COUNT:'COUNT','12MO':'12MO','12MON':'12MO','DESCIRS':'DESCIRS',ALL:'ALL'};
 function _feSlashCommand(rest){
   rest = String(rest||'').trim();
-  if(rest.charAt(0) === '$'){ _feSlashContains(rest.slice(1)); return; }   // /$ace — contains-pull
+  if(rest.charAt(0) === '$'){
+    var _ct = rest.slice(1).trim().toUpperCase();
+    if(_ct==='OIL' || /^OIL[PXTE]\b/.test(_ct)){ _oilMenu(); return; }     // /$OILP /$OILX ... -> OILREPO menu
+    _feSlashContains(rest.slice(1)); return;                                // /$ace — normal contains-pull
+  }
   if(rest === '?' || rest.toUpperCase() === 'HELP'){ _feSlashHelp(); return; }
-  if(/^OIL\b/i.test(rest)){ _oilReport(rest.replace(/^OIL\b/i,'').replace(/\//g,' ').trim()); return; }
+  if(/^OIL[PXTE]\b/i.test(rest)){ _oilMenu(); return; }                     // /oilp /oilx ... -> OILREPO menu
+  if(/^OIL\b/i.test(rest)){ var _of=rest.replace(/^OIL\b/i,'').replace(/\//g,' ').trim(); if(_of){ _oilReport(_of); } else { _oilMenu(); } return; }
   if(/^BUP\b/i.test(rest)){ _feBupCommand(rest.replace(/^BUP\b/i,'').replace(/\//g,' ').trim()); return; }
   var toks = rest.replace(/\//g,' ').split(/\s+/).filter(Boolean);
   if(!toks.length){ _feSlashHelp(); return; }
@@ -15877,91 +15894,167 @@ function _oilMonth(d){ var m=String(d||'').match(/(\d{4})-(\d{2})/); return m?(m
 function _oilNum(e){ var q=parseFloat(e.qty); if(!isNaN(q)&&q!==0) return Math.abs(q); var a=parseFloat(e.amt); return isNaN(a)?0:Math.abs(a); }
 function _oilFlt(n){ return (Math.round(n*100)/100).toFixed(2); }
 
-function _oilReport(filterArg){
+function _oilMoney(n){ var neg=n<0; n=Math.abs(n); var s=n.toFixed(2); var p=s.split('.'); p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,','); return (neg?'-$':'$')+p.join('.'); }
+
+function _oilBuild(filterArg, opts){
+  opts = opts||{};
   var want = String(filterArg||'').toUpperCase().split(/[, ]+/).filter(Boolean);
   function keep(name){ if(!want.length) return true; var u=String(name||'').toUpperCase(); for(var i=0;i<want.length;i++){ if(u.indexOf(want[i])>=0) return true; } return false; }
+  var yr = opts.year ? String(opts.year) : '';
+  function keepMonth(mo){ if(!yr) return true; return mo.indexOf(yr+'-')===0; }
+  function num(v){ var n=parseFloat(v); return isNaN(n)?0:n; }
 
-  var stateRows=[], stmtRows=[];
-  LOG.forEach(function(e){
-    if(e.deleted) return;
-    var pc=String(e.pcode||'').toUpperCase().trim();
-    if(pc==='OILX' && keep(e.payee)) stateRows.push(e);
-    else if(pc==='OILP' && keep(e.payee)) stmtRows.push(e);
-  });
-
-  var L=[];
-  L.push('        OIL — STATE vs STATEMENT RECONCILE   [OIL v1]');
-  L.push('        '+(want.length?('LEASE: '+want.join(', ')):'ALL OIL LEASES'));
-  L.push('');
-
-  if(!stateRows.length && !stmtRows.length){
-    L.push('   No oil rows yet.');
-    L.push('');
-    L.push('   Import STATE barrels as pcode OILX (use the Kansas');
-    L.push('   converter), and your Crown statements as OILP.');
-    L.push('   Then type  /oil  again.');
-    _feFinishReport('/oil', 'OIL RECONCILE', '', '', L.join('\n'));
-    return;
-  }
-
-  // group state + statement by lease family, then by month
   var leases={};
   function leaseOf(name){
     var k=_oilKey(name);
     for(var ex in leases){ if(_oilMatch(ex,k)) return ex; }
-    leases[k]={key:k, disp:name, st:{}, pm:{}};
+    leases[k]={key:k, disp:name, st:{}, pm:{}, price:{}, dec:null, api:null};
     return k;
   }
-  stateRows.forEach(function(e){ var k=leaseOf(e.payee); var mo=_oilMonth(e.date); if(mo) leases[k].st[mo]=(leases[k].st[mo]||0)+_oilNum(e); });
-  stmtRows.forEach(function(e){ var k=leaseOf(e.payee); var mo=_oilMonth(e.date); if(mo) leases[k].pm[mo]=(leases[k].pm[mo]||0)+_oilNum(e); });
+  LOG.forEach(function(e){
+    if(e.deleted) return;
+    var pc=String(e.pcode||'').toUpperCase().trim();
+    if(pc!=='OILX' && pc!=='OILP') return;
+    if(!keep(e.payee)) return;
+    var mo=_oilMonth(e.date); if(!mo || !keepMonth(mo)) return;
+    var k=leaseOf(e.payee);
+    if(pc==='OILX'){ leases[k].st[mo]=(leases[k].st[mo]||0)+num(e.qty); if(!leases[k].api && e.sku) leases[k].api=String(e.sku).trim(); }
+    else { leases[k].pm[mo]=(leases[k].pm[mo]||0)+num(e.qty); var pr=num(e.amt); if(pr>0) leases[k].price[mo]=pr; var dc=num(e.sku); if(dc>0 && !leases[k].dec) leases[k].dec=dc; }
+  });
 
-  var names=Object.keys(leases).sort();
-  var gState=0, gStmt=0, gMiss=0, gMatch=0, gMismatch=0, gNoStmt=0;
+  var names=Object.keys(leases).sort(function(a,b){ return leases[a].disp<leases[b].disp?-1:1; });
+  var T={paid:0,should:0,owed:0,match:0,off:0,noStmt:0,notState:0, perWell:{}, years:{}};
+  names.forEach(function(k){
+    var Lz=leases[k]; var months={}; Object.keys(Lz.st).forEach(function(m){months[m]=1;}); Object.keys(Lz.pm).forEach(function(m){months[m]=1;});
+    var pw={paid:0,should:0,owed:0,match:0,off:0,noStmt:0,notState:0};
+    Object.keys(months).forEach(function(mo){
+      T.years[mo.slice(0,4)]=1;
+      var hasS=(mo in Lz.st), hasP=(mo in Lz.pm);
+      var s=hasS?Lz.st[mo]:0, p=hasP?Lz.pm[mo]:0, price=Lz.price[mo]||0, dec=Lz.dec||0;
+      if(hasS&&hasP){ if(price>0&&dec>0){ var paid=p*price*dec, should=s*price*dec; pw.paid+=paid; pw.should+=should; pw.owed+=(should-paid); } if(Math.abs(p-s)<0.005) pw.match++; else pw.off++; }
+      else if(hasS&&!hasP){ pw.noStmt++; }
+      else if(!hasS&&hasP){ if(price>0&&dec>0){ pw.paid+=p*price*dec; } pw.notState++; }
+    });
+    T.paid+=pw.paid; T.should+=pw.should; T.owed+=pw.owed; T.match+=pw.match; T.off+=pw.off; T.noStmt+=pw.noStmt; T.notState+=pw.notState;
+    T.perWell[k]=pw;
+  });
+  return {names:names, leases:leases, totals:T, want:want, opts:opts};
+}
 
+function _oilReport(filterArg, opts){
+  opts=opts||{};
+  var b=_oilBuild(filterArg, opts);
+  var names=b.names, leases=b.leases, T=b.totals, want=b.want;
+  var flagsOnly=!!opts.flagsOnly, money=_oilMoney;
+  var L=[];
+  var ttl = flagsOnly ? 'OILREPO FLAGS — PROBLEMS ONLY' : 'OILREPO  ·  STATE vs CROWN  ·  DID / SHOULD / OWED';
+  L.push('     '+ttl+'   [OIL v2]');
+  L.push('     '+(want.length?('LEASE: '+want.join(', ')):'ALL OIL LEASES')+(opts.year?('   YEAR: '+opts.year):''));
+  L.push('');
+  if(!names.length){
+    L.push('   No oil rows for this view. Import Crown (OILP) and state (OILX),');
+    L.push('   then open the oil menu again.');
+    _feFinishReport('/oil', 'OILREPO', '', '', L.join('\n'));
+    return;
+  }
   names.forEach(function(k){
     var Lz=leases[k];
     var months={}; Object.keys(Lz.st).forEach(function(m){months[m]=1;}); Object.keys(Lz.pm).forEach(function(m){months[m]=1;});
     var mlist=Object.keys(months).sort();
     if(!mlist.length) return;
-    L.push(' '+Lz.disp);
-    L.push('   '+_fePadR('MONTH',9)+_fePadL('STATE',10)+_fePadL('CROWN',10)+_fePadL('DIFF',9)+'  FLAG');
-    var prev=null;
+    var rows=[];
     mlist.forEach(function(mo){
       var hasS=(mo in Lz.st), hasP=(mo in Lz.pm);
-      var s=hasS?Lz.st[mo]:null, p=hasP?Lz.pm[mo]:null;
-      var sTxt=hasS?_oilFlt(s):'—', pTxt=hasP?_oilFlt(p):'—', dTxt='', flag='';
+      var s=hasS?Lz.st[mo]:0, p=hasP?Lz.pm[mo]:0, price=Lz.price[mo]||0, dec=Lz.dec||0;
+      var sTxt=hasS?_oilFlt(s):'—', pTxt=hasP?_oilFlt(p):'—';
+      var dTxt='', paidTxt='', shouldTxt='', owedTxt='', flag='', isProblem=false;
       if(hasS&&hasP){
         var d=p-s; dTxt=(d>0?'+':'')+_oilFlt(d);
-        if(Math.abs(d)<0.005){ flag='MATCH'; gMatch++; }
-        else { flag='*** MISMATCH'; gMismatch++; }
-      } else if(hasS&&!hasP){ flag='no stmt'; gNoStmt++; }
-      else if(!hasS&&hasP){ flag='!! NOT IN STATE'; gMiss++; }
-      // "looks estimated" — exact repeat of previous month's STATE figure
-      if(hasS && prev!==null && Math.abs(s-prev)<0.005){ flag=(flag?flag+' ':'')+'~repeat'; }
-      if(hasS) prev=s;
-      if(hasS) gState+=s; if(hasP) gStmt+=p;
-      L.push('   '+_fePadR(mo,9)+_fePadL(sTxt,10)+_fePadL(pTxt,10)+_fePadL(dTxt,9)+'  '+flag);
+        if(price>0&&dec>0){ var paid=p*price*dec, should=s*price*dec, owed=should-paid; paidTxt=money(paid); shouldTxt=money(should); owedTxt=money(owed); }
+        if(Math.abs(d)<0.005){ flag='MATCH'; } else { flag='*** OFF'; isProblem=true; }
+      } else if(hasS&&!hasP){ flag='no stmt — load Crown'; }
+      else if(!hasS&&hasP){ if(price>0&&dec>0){ paidTxt=money(p*price*dec); } flag='!! NOT IN STATE'; isProblem=true; }
+      if(flagsOnly && !isProblem) return;
+      rows.push('   '+_fePadR(mo,8)+_fePadL(sTxt,8)+_fePadL(pTxt,8)+_fePadL(dTxt,8)+_fePadL(paidTxt,11)+_fePadL(shouldTxt,11)+_fePadL(owedTxt,11)+'  '+flag);
     });
+    if(!rows.length) return;
+    L.push(' '+Lz.disp+(Lz.api?('   API '+Lz.api):'')+(Lz.dec?('   dec '+Lz.dec.toFixed(10)):''));
+    L.push('   '+_fePadR('MONTH',8)+_fePadL('STATE',8)+_fePadL('CROWN',8)+_fePadL('DIFF',8)+_fePadL('PAID',11)+_fePadL('SHOULD',11)+_fePadL('OWED',11)+'  FLAG');
+    rows.forEach(function(r){ L.push(r); });
     L.push('');
   });
-
-  L.push('   ── SUMMARY ──');
-  L.push('   total STATE barrels:     '+_feNumComma(gState));
-  if(gStmt>0){
-    L.push('   total CROWN barrels:     '+_feNumComma(gStmt));
-    L.push('   state minus crown:       '+_feNumComma(gState-gStmt)+' bbls');
-    L.push('   months MATCH: '+gMatch+'   MISMATCH: '+gMismatch);
-  }
-  if(gNoStmt) L.push('   months in state, NO Crown statement loaded: '+gNoStmt);
-  if(gMiss)   L.push('   months Crown billed but NOT in state record: '+gMiss);
+  L.push('   == SUMMARY ==');
+  L.push('   Crown PAID you:        '+money(T.paid));
+  L.push('   SHOULD have paid:      '+money(T.should));
+  L.push('   ----------------------');
+  L.push('   OWED YOU:              '+money(T.owed));
+  L.push('   months MATCH: '+T.match+'    OFF: '+T.off+(T.noStmt?('    no-stmt: '+T.noStmt):'')+(T.notState?('    not-in-state: '+T.notState):''));
   L.push('');
-  L.push(' STATE = barrels Crown filed with Kansas (OILX).');
-  L.push(' CROWN = barrels on your statement (OILP).  DIFF = crown - state.');
-  L.push(' "no stmt" = state shows oil, no statement loaded for that month yet.');
-  L.push(' "~repeat" = same as prior month (REVIEW — may be an estimate).');
-  L.push(' A flag points your eye; proof is the legs disagreeing.');
+  L.push(' STATE=Kansas tax-collector barrels (truth).  PAID=crown bbls x price x decimal.');
+  L.push(' SHOULD=STATE bbls x crown price x decimal.   OWED=should-paid. Type /oil for menu.');
+  _feFinishReport('/oil'+(want.length?(' '+want.join(' ')):'')+(opts.year?(' '+opts.year):'')+(flagsOnly?' flags':''), 'OILREPO', '', '', L.join('\n'));
+}
 
-  _feFinishReport('/oil'+(want.length?(' '+want.join(' ')):''), 'OIL RECONCILE', '', '', L.join('\n'));
+function _oilMaster(){
+  var b=_oilBuild('',{}); var T=b.totals; var money=_oilMoney;
+  var L=[];
+  L.push('     OILREPO MASTER — ALL WELLS   [OIL v2]');
+  L.push('');
+  L.push('   '+_fePadR('WELL',24)+_fePadL('PAID',12)+_fePadL('SHOULD',12)+_fePadL('OWED',12)+'  FLAGS');
+  b.names.forEach(function(k){
+    var Lz=b.leases[k]; var pw=T.perWell[k];
+    var fl=((pw.off?('OFF '+pw.off+' '):'')+(pw.notState?('NIS '+pw.notState+' '):'')+(pw.noStmt?('ns '+pw.noStmt):'')).trim();
+    L.push('   '+_fePadR(Lz.disp,24)+_fePadL(money(pw.paid),12)+_fePadL(money(pw.should),12)+_fePadL(money(pw.owed),12)+'  '+fl);
+  });
+  L.push('   '+_fePadR('',24)+_fePadL('--------',12)+_fePadL('--------',12)+_fePadL('--------',12));
+  L.push('   '+_fePadR('TOTAL',24)+_fePadL(money(T.paid),12)+_fePadL(money(T.should),12)+_fePadL(money(T.owed),12));
+  L.push('');
+  L.push(' OFF=barrels disagree   NIS=Crown billed, not in state   ns=state w/ no statement yet');
+  L.push(' Open /oil and tap a well to drill into its months.');
+  _feFinishReport('/oil master', 'OILREPO MASTER', '', '', L.join('\n'));
+}
+
+function _oilFlags(){ _oilReport('', {flagsOnly:true}); }
+
+function _oilMenu(){
+  var ov=document.getElementById('fe-overlay'); if(!ov) return;
+  var b=_oilBuild('',{}); var T=b.totals; var money=_oilMoney;
+  var wells=b.names.map(function(k){return b.leases[k];});
+  var yrList=Object.keys(T.years).sort();
+  function esc(s){ return _feEsc(String(s||'')); }
+  function safe(s){ return String(s||'').replace(/['\\]/g,''); }
+
+  var wellBtns = wells.map(function(L){
+    var pw=T.perWell[L.key]||{owed:0,off:0,notState:0};
+    var bad = pw.off>0 || pw.notState>0;
+    var tag = pw.off>0 ? (' · '+money(pw.owed)) : (pw.notState>0?' · NIS':'');
+    var col = pw.off>0 ? '#ff7777' : (pw.notState>0?'#ffcc66':'#9fe1cb');
+    return '<button onclick="_oilReport(\''+safe(L.disp)+'\')" style="text-align:left;background:#001a33;border:1px solid #2a6cff;color:'+col+';font-family:Courier New,monospace;font-size:12px;padding:7px 9px;border-radius:4px;cursor:pointer;">'+esc(L.disp)+tag+'</button>';
+  }).join('');
+
+  var yrBtns = yrList.map(function(y){
+    return '<button onclick="_oilReport(\'\',{year:\''+y+'\'})" style="background:#002a1a;border:1px solid #00ffaa;color:#66ffcc;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:7px 12px;border-radius:4px;cursor:pointer;">'+y+'</button>';
+  }).join('');
+
+  var html='<div style="background:#06294e;border:2px solid #ffffff;border-radius:6px;padding:14px;max-width:680px;width:100%;max-height:calc(100vh - 84px);overflow:auto;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
+    + '<div style="color:#fff;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:2px;">\ud83d\udece\ufe0f OILREPO — OIL RECONCILE SYSTEM</div>'
+    + '<div style="color:#9fc8ff;font-size:11px;margin-bottom:12px;">STATE (Kansas tax collector) vs CROWN \u2014 pick a drill-down</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">'
+    +   '<div style="background:#001a33;border:1px solid #2a6cff;border-radius:5px;padding:8px;"><div style="color:#9fc8ff;font-size:10px;">CROWN PAID</div><div style="color:#fff;font-size:15px;font-weight:700;">'+money(T.paid)+'</div></div>'
+    +   '<div style="background:#001a33;border:1px solid #2a6cff;border-radius:5px;padding:8px;"><div style="color:#9fc8ff;font-size:10px;">SHOULD\u2019VE PAID</div><div style="color:#fff;font-size:15px;font-weight:700;">'+money(T.should)+'</div></div>'
+    +   '<div style="background:#1a0000;border:1px solid #ff5555;border-radius:5px;padding:8px;"><div style="color:#ffb3b3;font-size:10px;">OWED YOU</div><div style="color:#ff6666;font-size:15px;font-weight:700;">'+money(T.owed)+'</div></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">'
+    +   '<button onclick="_oilMaster()" style="background:#002a55;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:10px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#00ffff;color:#002a55;padding:0 5px;border-radius:2px;margin-right:5px;">M</span>MASTER \u2014 all wells, totals</button>'
+    +   '<button onclick="_oilFlags()" style="background:#330000;border:1px solid #ff6666;color:#ff8888;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:10px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ff6666;color:#330000;padding:0 5px;border-radius:2px;margin-right:5px;">F</span>FLAGS \u2014 only the problems</button>'
+    +   '<button onclick="_oilReport(\'\')" style="background:#003322;border:1px solid #00ff99;color:#66ffcc;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:10px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#00ff99;color:#003322;padding:0 5px;border-radius:2px;margin-right:5px;">D</span>FULL DETAIL \u2014 every month</button>'
+    +   '<button onclick="_feReportClose()" style="background:#222;border:1px solid #888;color:#ccc;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:10px;border-radius:4px;cursor:pointer;text-align:left;">\u2715 CLOSE</button>'
+    + '</div>'
+    + (yrList.length? ('<div style="color:#9fc8ff;font-size:10px;margin:12px 0 4px;">BY YEAR</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+yrBtns+'</div>') : '')
+    + (wells.length? ('<div style="color:#9fc8ff;font-size:10px;margin:12px 0 4px;">BY WELL ('+wells.length+')  \u2014  red = gap, yellow = not in state</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'+wellBtns+'</div>') : '<div style="color:#ffd27f;font-size:11px;margin-top:10px;">No oil data loaded yet. Import your Crown (OILP) and state (OILX) files, then open /oil.</div>')
+    + '</div>';
+  ov.innerHTML=html; ov.style.display='flex'; ov.style.alignItems='flex-start';
+  document.removeEventListener('keydown', _feReportMenuKey, true);
 }
 
 // /? — the cheat sheet. So nobody has to remember the codes cold.
@@ -16391,12 +16484,13 @@ function _feBackupAll(silent){
     }
     
     // 1. ACCOUNTING CSV
-    var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT,QTY'];
+    var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT,QTY,UNIT,STORE,SKU'];
     L.forEach(function(e) {
       if (!e.deleted) {
+        function _bf(v){ return csvField((typeof v!=='undefined' && v!==null && v!=='') ? v : ''); }
         acctLines.push([csvField(e.date), csvField(e.day), csvField(e.month), csvField(e.year), 
                         csvField(e.payee), csvField(e.pcode), csvField(e.desc), csvField(e.amt),
-                        csvField((typeof e.qty!=='undefined' && e.qty!=='') ? e.qty : '')].join(','));
+                        _bf(e.qty), _bf(e.unit), _bf(e.store), _bf(e.sku)].join(','));
       }
     });
     files.push({
