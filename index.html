@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-14</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-1</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -14987,7 +14987,7 @@ function _feReportMenuKey(e){
   if(k==='K' || k==='G' || k==='Q' || k==='F'){
     var _kind = (k==='K') ? 'cnt' : (k==='Q' ? 'cmp' : (k==='F' ? 'aud' : 'pct'));
     if(_feRptCtx.invBack){ e.preventDefault(); _feInvToggle(_kind); return; }
-    if(_feShowPicker() && _feHasAnyInve()){ e.preventDefault(); _feInvFromMenu(_kind); return; }
+    // Inventory no longer rides on accounting pulls — K/G/Q/F do nothing here now.
   }
   if(k==='A'){
     if(_feRptCtx.invBack || (_feRptCtx.rows && _feRptCtx.rows.length)){ e.preventDefault(); _feToAccounting(); return; }
@@ -15516,7 +15516,7 @@ function _feReportOutput(action){
         + '</div>'
       : '';
     var html = '<div style="background:#3d7fd6;border:2px solid #ffffff;border-radius:6px;padding:12px;max-width:'+(_isOil?'900px':'680px')+';width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
-      + (_isOil ? _oilBar : (_feReportPickerHTML() + _feInvOptionsHTML()))
+      + (_isOil ? _oilBar : _feReportPickerHTML())
       + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:'+(_isOil?'10':'12')+'px;line-height:1.35;white-space:pre;overflow:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
@@ -15859,11 +15859,13 @@ function _feSlashCommand(rest){
   if(rest.charAt(0) === '$'){
     var _ct = rest.slice(1).trim().toUpperCase();
     if(_ct==='OIL' || /^OIL[PXTE]\b/.test(_ct)){ _oilMenu(); return; }     // /$OILP /$OILX ... -> OILREPO menu
+    if(_ct==='INV' || _ct==='INVE' || _ct==='INVENTORY'){ _invOpen(); return; }  // /$INV -> inventory drill-down
     _feSlashContains(rest.slice(1)); return;                                // /$ace — normal contains-pull
   }
   if(rest === '?' || rest.toUpperCase() === 'HELP'){ _feSlashHelp(); return; }
   if(/^OIL[PXTE]\b/i.test(rest)){ _oilMenu(); return; }                     // /oilp /oilx ... -> OILREPO menu
   if(/^OIL\b/i.test(rest)){ var _of=rest.replace(/^OIL\b/i,'').replace(/\//g,' ').trim(); if(_of){ _oilReport(_of); } else { _oilMenu(); } return; }
+  if(/^INVE?\b/i.test(rest) || /^INVENTORY\b/i.test(rest)){ _invOpen(); return; }  // /inv /inve /inventory -> inventory drill-down
   if(/^BUP\b/i.test(rest)){ _feBupCommand(rest.replace(/^BUP\b/i,'').replace(/\//g,' ').trim()); return; }
   var toks = rest.replace(/\//g,' ').split(/\s+/).filter(Boolean);
   if(!toks.length){ _feSlashHelp(); return; }
@@ -15881,6 +15883,19 @@ function _feSlashCommand(rest){
   }
   _feRunPull(filterToks.join(' '), year);
 }
+// ── INVENTORY stands alone (like /oil) ───────────────────────────────────────
+// INVE pcode / INVENTORY desc never render inside the accounting report. Any
+// inventory pull, the /inv command, or /$INV tears down the accounting overlay
+// and jumps straight to the dedicated inventory drill-down on the Reports screen.
+function _invOpen(){
+  var ov=document.getElementById('fe-overlay');
+  document.removeEventListener('keydown', _feReportMenuKey, true);
+  _feRptCtx=null; _feInvBack=null;
+  if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+  if(typeof showScreen==='function') showScreen('reports');
+  if(typeof loadLog==='function') loadLog();
+  if(typeof rptInve==='function') rptInve();
+}
 // Plain pull: resolve <token> as a pcode or description, optional year, show the data + menu.
 function _feRunPull(token, yr){
   token = String(token||'').toUpperCase().trim();
@@ -15890,6 +15905,10 @@ function _feRunPull(token, yr){
   if(_feSlashIsPcode(token)){ rep = { code:'/'+token, label:'PCODE '+token, pcode:token, desc:'', payee:'', yr:yr }; _feLastFilter = { pcode:token, desc:'', term:'', yr:yr }; }
   else { var dm = _feSlashMatchDesc(token); if(dm){ rep = { code:'/'+token, label:dm, pcode:'', desc:dm, payee:'', yr:yr }; _feLastFilter = { pcode:'', desc:dm, term:'', yr:yr }; } }
   if(!rep){ toast('No pcode or desc "'+token+'"', false); _feFocusPrompt(); return; }
+  // INVENTORY is its own report system — it has nothing to do with the accounting
+  // report. If this pull resolves to the INVE pcode or the INVENTORY desc, leave the
+  // accounting path entirely and open the inventory drill-down instead.
+  if(String(rep.pcode||'').toUpperCase()==='INVE' || String(rep.desc||'').toUpperCase()==='INVENTORY'){ _invOpen(); return; }
   var r = _feReportRows(rep);
   if(rep.pcode){ _fePullIsTerm=false; _feLastPullRows=null; _feLastPullLabel=''; }
   else { _fePullIsTerm=true; _feLastPullRows=r.rows.slice(); _feLastPullLabel=(rep.desc||token); }
