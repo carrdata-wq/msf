@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-10</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-11</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -8912,9 +8912,26 @@ function runAuditDesc(){
 
 function _rptIsInve(e){ return String(e.pcode||'').toUpperCase().trim()==='INVE' && String(e.desc||'').toUpperCase().trim()!=='TAX'; }
 function _invPickItem(name){
-  var f=document.getElementById('inv-filter'); if(f) f.value='';   // drilling in: clear the text filter
-  var s=document.getElementById('inv-item');
-  if(s){ s.value=String(name||'').toUpperCase(); runInve(); }
+  // Tap a row → drive the rich drill-down (price point / store / tax) via the filter,
+  // same report as /inve <term>.
+  var s=document.getElementById('inv-item'); if(s) s.value='';
+  var f=document.getElementById('inv-filter'); if(f) f.value=String(name||'').toUpperCase();
+  runInve();
+  var sc=document.getElementById('screen-reports'); if(sc) sc.scrollTop=0;
+}
+// Typing in the filter overrides any dropdown pick.
+function _invFilterInput(){
+  var s=document.getElementById('inv-item'); if(s) s.value='';
+  runInve();
+}
+// Picking from the — ALL ITEMS — dropdown moves that exact item into the filter (and
+// resets the dropdown), so it renders the same rich drill-down instead of being
+// ignored when a text filter is present.
+function _invItemPick(){
+  var s=document.getElementById('inv-item'), f=document.getElementById('inv-filter');
+  if(s && s.value){ if(f) f.value=s.value; s.value=''; }
+  else if(f) f.value='';
+  runInve();
   var sc=document.getElementById('screen-reports'); if(sc) sc.scrollTop=0;
 }
 // Highlight the embedded matched fragment inside an item name (FoxBase $ feel).
@@ -8999,8 +9016,8 @@ function rptInve(){
   var html='<div style="font-family:Courier New,monospace;">'+_invBackBtnHtml()
     +'<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">📦 INVENTORY ITEMS — UNITS &amp; UNIT PRICE</div>'
-    +'<input id="inv-filter" type="text" oninput="runInve()" placeholder="FILTER — type e.g. GROUND  (&#39;text&#39;$payee)" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#000000;border:1px solid #ffaa00;color:#ffaa00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;text-transform:uppercase;">'
-    +'<select id="inv-item" onchange="runInve()" style="width:100%;box-sizing:border-box;background:#001a1a;border:1px solid #00ffaa;color:#00ffaa;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;">'+itemOpts+'</select>'
+    +'<input id="inv-filter" type="text" oninput="_invFilterInput()" placeholder="FILTER — type e.g. GROUND  (&#39;text&#39;$payee)" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#000000;border:1px solid #ffaa00;color:#ffaa00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;text-transform:uppercase;">'
+    +'<select id="inv-item" onchange="_invItemPick()" style="width:100%;box-sizing:border-box;background:#001a1a;border:1px solid #00ffaa;color:#00ffaa;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;">'+itemOpts+'</select>'
     +'<div style="display:flex;gap:6px;">'
     +'<select id="inv-yr" onchange="runInve()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#ffff00;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'+yrOpts+'</select>'
     +'<select id="inv-sort" onchange="runInve()" style="flex:1;background:#000044;border:1px solid #6666ff;color:#00ffff;font-family:Courier New,monospace;font-size:14px;padding:6px;border-radius:3px;">'
