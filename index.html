@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-7</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-9</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -2430,7 +2430,15 @@ window.addEventListener('online',updateOnlineStatus);
 window.addEventListener('offline',updateOnlineStatus);
 window.addEventListener('load',updateOnlineStatus);
 
-function goMain() { window._cleanExportAcc=false; window._cleanExportPhone=false; showScreen('main'); }
+function goMain() {
+  window._cleanExportAcc=false; window._cleanExportPhone=false;
+  // Tear down any open report overlay (oil / inventory / accounting) so we never
+  // carry a report into the next screen — this is what left Fast Entry stuck in /oil.
+  document.removeEventListener('keydown', _feReportMenuKey, true);
+  _feRptCtx = null; if(typeof _feInvBack !== 'undefined') _feInvBack = null;
+  var _ov = document.getElementById('fe-overlay'); if(_ov){ _ov.style.display='none'; _ov.innerHTML=''; }
+  showScreen('main');
+}
 function openModule(mod) {
   showScreen(mod);
   refreshDL();
@@ -8929,6 +8937,23 @@ function _invToAcct(){
 function _invBackBtnHtml(){
   return '<div style="margin-bottom:8px;"><button onclick="_invToAcct()" style="background:#001a33;border:2px solid #66b3ff;color:#9fd0ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 14px;border-radius:4px;cursor:pointer;">\u2039 ACCOUNTING REPORTS</button></div>';
 }
+// Inventory item/store/tax parsing. Item name + store live in the PAYEE, e.g.
+// "COPPER SHEET 2'X10' (ABC SUPPLY)" — store is the trailing parenthetical. Sales
+// tax is its own INVE row, desc=TAX, e.g. "SALES TAX 9.69% (MCDONALD'S)".
+function _invStoreOf(p){ var m=String(p||'').match(/\(([^)]*)\)\s*$/); return m?m[1].toUpperCase().trim():''; }
+function _invItemOf(p){ return String(p||'').replace(/\s*\([^)]*\)\s*$/,'').trim(); }
+function _invTaxPctOf(p){ var m=String(p||'').match(/(\d+(?:\.\d+)?)\s*%/); return m?m[1]:''; }
+// Map each (store|date) trip to its sales-tax % so every item can show its tax.
+function _invTaxMap(){
+  var map={};
+  for(var i=0;i<LOG.length;i++){ var e=LOG[i];
+    if(String(e.pcode||'').toUpperCase().trim()!=='INVE') continue;
+    if(String(e.desc||'').toUpperCase().trim()!=='TAX') continue;
+    var st=_invStoreOf(e.payee), pct=_invTaxPctOf(e.payee);
+    if(st && pct) map[st+'|'+(e.date||'')]=pct;
+  }
+  return map;
+}
 function rptInve(){
   loadLog();
   var _am=document.getElementById('rpt-acct-menu'); if(_am) _am.style.display='none';   // inventory stands alone — hide the IRS/accounting report buttons
@@ -8978,6 +9003,7 @@ function runInve(){
     var fNames={}, fBuys=fRows.length, fUnits=0, fSpent=0;
     fRows.forEach(function(e){ var c=(e.qty&&e.qty>0)?e.qty:1; fUnits+=c; fSpent+=Math.abs(e.amt||0)*c; fNames[(e.payee||'').toUpperCase()]=1; });
     var fItems=Object.keys(fNames), fAvg=fUnits?fSpent/fUnits:0;
+    var _taxMap=_invTaxMap();
     // BY PRICE POINT — group matching buys by the unit price you entered, low→high.
     // This is your FoxBase summary: "5 @ .89, 3 @ 1.23" — units at each price.
     var pp={};
@@ -9011,30 +9037,41 @@ function runInve(){
       +'</div>'
       +(fItems.length>1?('<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-bottom:6px;">rolls up '+fItems.length+' item names: '+_feEsc(fItems.join(', '))+'</div>'):'')
       +ppHtml
-      +'<div style="color:#00ffaa;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin:2px 0 4px;letter-spacing:1px;">BY DATE</div>'
+      +'<div style="color:#00ffaa;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin:2px 0 4px;letter-spacing:1px;">BY DATE \u2014 ITEM \u00b7 STORE \u00b7 TAX%</div>'
       +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
       +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
       +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">DATE</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">ITEM</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">STORE</th>'
       +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">QTY</th>'
       +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNIT$</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">TAX%</th>'
       +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">TOTAL</th>'
       +'</tr>';
     fRows.forEach(function(e){
       var c=(e.qty&&e.qty>0)?e.qty:1, u=Math.abs(e.amt||0), line=u*c;
+      var _it=_invItemOf(e.payee), _st=_invStoreOf(e.payee);
+      var _pct=(_st?_taxMap[_st+'|'+(e.date||'')]:'')||'';
+      var _pctNum=_pct?parseFloat(_pct):-1;
+      var _pctColor=(_pctNum>=10)?'#ff6666':(_pctNum>=7?'#ffcc55':'#88ff88');
       fh+='<tr style="border-bottom:'+bd+';">'
         +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;">'+_feEsc(_feFmtDate(e.date||''))+'</td>'
+        +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;word-break:break-word;line-height:1.3;">'+_feEsc(_it)+'</td>'
+        +'<td style="color:#aaccff;padding:3px;border:'+bd+';text-align:left;word-break:break-word;">'+_feEsc(_st||'\u2014')+'</td>'
         +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+c+'</td>'
         +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;">'+money(u)+'</td>'
+        +'<td style="color:'+_pctColor+';padding:3px;border:'+bd+';text-align:right;font-weight:700;">'+(_pct?(_pct+'%'):'\u2014')+'</td>'
         +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(line)+'</td>'
         +'</tr>';
     });
     fh+='<tr style="background:#001a1a;border-top:2px solid #00ffff;font-weight:700;">'
-      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;">'+fBuys+' BUYS</td>'
+      +'<td colspan="3" style="color:#00ff88;padding:4px 3px;border:1px solid #333388;">'+fBuys+' BUYS</td>'
       +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+fUnits+'</td>'
       +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(fAvg)+'</td>'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;"></td>'
       +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(fSpent)+'</td>'
       +'</tr></table>'
-      +'<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-top:8px;line-height:1.5;">Oldest first \u2014 watch UNIT$ move over time (your inflation lens). UNIT$ = the per-unit price you entered; TOTAL = UNIT$ \u00d7 QTY.</div>'
+      +'<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-top:8px;line-height:1.5;">Oldest first \u2014 watch UNIT$ over time. TAX% is pulled from your SALES TAX line for that store + date (red \u2265 10%). UNIT$ = price per unit; TOTAL = UNIT$ \u00d7 QTY.</div>'
       +'</div>';
     out.innerHTML=fh;
     return;
@@ -13818,6 +13855,11 @@ function _feSignFromDesc(desc){
 
 // ───── ENTRY POINT ─────
 function openFastEntry(){
+  // Start clean — clear any leftover report overlay so Fast Entry never opens stuck
+  // inside a report (e.g. after exiting /oil via the MENU button).
+  document.removeEventListener('keydown', _feReportMenuKey, true);
+  _feRptCtx = null; if(typeof _feInvBack !== 'undefined') _feInvBack = null;
+  var _ov0 = document.getElementById('fe-overlay'); if(_ov0){ _ov0.style.display='none'; _ov0.innerHTML=''; }
   _feLoadComboCnt();
   _feLoadHistory();
   _feLoadDefaults();
