@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-3</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-6</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -8970,7 +8970,74 @@ function runInve(){
   // overrides the dropdown and shows every matching item, aggregated.
   if(filt){
     rows=rows.filter(function(e){ return (e.payee||'').toUpperCase().indexOf(filt)>=0; });
-    if(!rows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO ITEMS CONTAIN "'+_feEsc(filt)+'"</div>'; return; }
+    if(!rows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO INVENTORY ITEM CONTAINS "'+_feEsc(filt)+'"</div>'; return; }
+    // /inve <term> → ONE clean drill-down: every matching INVE buy by date, with the
+    // rolled-up totals on top. AMT entered is the PER-UNIT price, so for each buy:
+    //   TOTAL = UNIT$ x QTY,  units = qty,  AVG UNIT$ = total spent / total units.
+    var fRows=rows.slice().sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+    var fNames={}, fBuys=fRows.length, fUnits=0, fSpent=0;
+    fRows.forEach(function(e){ var c=(e.qty&&e.qty>0)?e.qty:1; fUnits+=c; fSpent+=Math.abs(e.amt||0)*c; fNames[(e.payee||'').toUpperCase()]=1; });
+    var fItems=Object.keys(fNames), fAvg=fUnits?fSpent/fUnits:0;
+    // BY PRICE POINT — group matching buys by the unit price you entered, low→high.
+    // This is your FoxBase summary: "5 @ .89, 3 @ 1.23" — units at each price.
+    var pp={};
+    fRows.forEach(function(e){ var c=(e.qty&&e.qty>0)?e.qty:1; var u=Math.abs(e.amt||0); var key=u.toFixed(2); if(!pp[key]) pp[key]={price:u,buys:0,units:0,spent:0}; pp[key].buys++; pp[key].units+=c; pp[key].spent+=u*c; });
+    var ppKeys=Object.keys(pp).sort(function(a,b){ return parseFloat(a)-parseFloat(b); });
+    var ppHtml='<div style="color:#00ffaa;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin:2px 0 4px;letter-spacing:1px;">BY PRICE POINT &nbsp;('+ppKeys.length+' price'+(ppKeys.length===1?'':'s')+')</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;margin-bottom:10px;">'
+      +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNIT$</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">BUYS</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNITS</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">SPENT</th>'
+      +'</tr>';
+    ppKeys.forEach(function(k){ var p=pp[k];
+      ppHtml+='<tr style="border-bottom:'+bd+';">'
+        +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;font-weight:700;">'+money(p.price)+'</td>'
+        +'<td style="color:#aaccff;padding:3px;border:'+bd+';text-align:right;">'+p.buys+'</td>'
+        +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+p.units+'</td>'
+        +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(p.spent)+'</td>'
+        +'</tr>';
+    });
+    ppHtml+='</table>';
+    var fh='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
+      +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">📦 INVENTORY &nbsp;&nbsp; '+today2+'</div>'
+      +'<div style="color:#00ffaa;font-weight:700;font-size:15px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">\u201c'+_feEsc(filt)+'\u201d &nbsp;\u00b7&nbsp; '+(yr||'ALL YRS')+'</div>'
+      +'<div style="background:#00251a;border:2px solid #00ffaa;border-radius:5px;padding:8px;margin-bottom:8px;display:flex;gap:14px;flex-wrap:wrap;color:#ffffff;font-weight:700;font-size:14px;font-family:Courier New,monospace;">'
+        +'<span>BUYS <span style="color:#aaccff;">'+fBuys+'</span></span>'
+        +'<span>UNITS <span style="color:#ffff88;">'+fUnits+'</span></span>'
+        +'<span>SPENT <span style="color:#ff9999;">'+money(fSpent)+'</span></span>'
+        +'<span>AVG UNIT$ <span style="color:#00ffff;">'+money(fAvg)+'</span></span>'
+      +'</div>'
+      +(fItems.length>1?('<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-bottom:6px;">rolls up '+fItems.length+' item names: '+_feEsc(fItems.join(', '))+'</div>'):'')
+      +ppHtml
+      +'<div style="color:#00ffaa;font-weight:700;font-size:12px;font-family:Courier New,monospace;margin:2px 0 4px;letter-spacing:1px;">BY DATE</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
+      +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">DATE</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">QTY</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">UNIT$</th>'
+      +'<th style="color:#ffff00;padding:4px 3px;text-align:right;border:'+bd+';">TOTAL</th>'
+      +'</tr>';
+    fRows.forEach(function(e){
+      var c=(e.qty&&e.qty>0)?e.qty:1, u=Math.abs(e.amt||0), line=u*c;
+      fh+='<tr style="border-bottom:'+bd+';">'
+        +'<td style="color:#ffffff;padding:3px;border:'+bd+';text-align:left;white-space:nowrap;">'+_feEsc(_feFmtDate(e.date||''))+'</td>'
+        +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+c+'</td>'
+        +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;">'+money(u)+'</td>'
+        +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(line)+'</td>'
+        +'</tr>';
+    });
+    fh+='<tr style="background:#001a1a;border-top:2px solid #00ffff;font-weight:700;">'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;">'+fBuys+' BUYS</td>'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+fUnits+'</td>'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(fAvg)+'</td>'
+      +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(fSpent)+'</td>'
+      +'</tr></table>'
+      +'<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-top:8px;line-height:1.5;">Oldest first \u2014 watch UNIT$ move over time (your inflation lens). UNIT$ = the per-unit price you entered; TOTAL = UNIT$ \u00d7 QTY.</div>'
+      +'</div>';
+    out.innerHTML=fh;
+    return;
   }
   // ── ONE ITEM picked (and no text filter) → study it by DATE and CNT ──
   if(item && !filt){
@@ -8979,7 +9046,7 @@ function runInve(){
     if(!dRows.length){ out.innerHTML='<div style="color:#ff6666;padding:10px;font-family:Courier New,monospace;">NO PURCHASES FOR THIS ITEM IN '+(yr||'ALL YRS')+'</div>'; return; }
     var dBuys=dRows.length, dUnits=0, dSpent=0;
     var dh='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
-      +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
+      +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">📦 INVENTORY &nbsp;&nbsp; '+today2+'</div>'
       +'<div style="color:#00ffaa;font-weight:700;font-size:15px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'+_feEsc(item)+'</div>'
       +'<div style="color:#88aaff;font-size:12px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">'+(yr||'ALL YRS')+'</div>'
       +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
@@ -9045,7 +9112,7 @@ function runInve(){
     +'<span>AVG UNIT$ <span style="color:#00ffff;">'+money(totUnits?totSpent/totUnits:0)+'</span></span>'
     +'</div></div>') : '';
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
-    +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
+    +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">📦 INVENTORY &nbsp;&nbsp; '+today2+'</div>'
     +'<div style="color:#00ffff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">Inventory Items &nbsp;&nbsp; '+(yr||'ALL YRS')+(filt?' &nbsp;·&nbsp; <span style="color:#ffaa00;">\u201c'+_feEsc(filt)+'\u201d</span>':'')+' &nbsp;·&nbsp; '+items.length+' items</div>'
     +constHtml
     +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
@@ -15891,7 +15958,10 @@ function _feSlashCommand(rest){
   if(rest === '?' || rest.toUpperCase() === 'HELP'){ _feSlashHelp(); return; }
   if(/^OIL[PXTE]\b/i.test(rest)){ _oilMenu(); return; }                     // /oilp /oilx ... -> OILREPO menu
   if(/^OIL\b/i.test(rest)){ var _of=rest.replace(/^OIL\b/i,'').replace(/\//g,' ').trim(); if(_of){ _oilReport(_of); } else { _oilMenu(); } return; }
-  if(/^INVE?\b/i.test(rest) || /^INVENTORY\b/i.test(rest)){ _invOpen(); return; }  // /inv /inve /inventory -> inventory drill-down
+  if(/^INVE?\b/i.test(rest) || /^INVENTORY\b/i.test(rest)){
+    var _it = rest.replace(/^INVENTORY\b/i,'').replace(/^INVE?\b/i,'').replace(/\//g,' ').trim();   // /inve coffee -> filter term "coffee"
+    _invOpen(_it); return;
+  }
   if(/^BUP\b/i.test(rest)){ _feBupCommand(rest.replace(/^BUP\b/i,'').replace(/\//g,' ').trim()); return; }
   var toks = rest.replace(/\//g,' ').split(/\s+/).filter(Boolean);
   if(!toks.length){ _feSlashHelp(); return; }
@@ -15913,7 +15983,7 @@ function _feSlashCommand(rest){
 // INVE pcode / INVENTORY desc never render inside the accounting report. Any
 // inventory pull, the /inv command, or /$INV tears down the accounting overlay
 // and jumps straight to the dedicated inventory drill-down on the Reports screen.
-function _invOpen(){
+function _invOpen(term){
   var ov=document.getElementById('fe-overlay');
   document.removeEventListener('keydown', _feReportMenuKey, true);
   _feRptCtx=null; _feInvBack=null;
@@ -15921,6 +15991,13 @@ function _invOpen(){
   if(typeof showScreen==='function') showScreen('reports');
   if(typeof loadLog==='function') loadLog();
   if(typeof rptInve==='function') rptInve();
+  // /inve coffee → pre-fill the inventory filter so you land straight on the
+  // matching INVE items (inventory only — this never touches accounting rows).
+  if(term){
+    var f=document.getElementById('inv-filter');
+    if(f){ f.value=String(term).toUpperCase(); if(typeof runInve==='function') runInve(); }
+    var sc=document.getElementById('screen-reports'); if(sc) sc.scrollTop=0;
+  }
 }
 // Plain pull: resolve <token> as a pcode or description, optional year, show the data + menu.
 function _feRunPull(token, yr){
