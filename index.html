@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-6</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-7</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -9463,7 +9463,17 @@ function rptYearCompare(){
 function handleReportKeypress(e) {
   var screen = document.getElementById('screen-reports');
   if (!screen || screen.style.display === 'none') return;
+  // Never hijack keys while typing in a field. The inventory FILTER is an input, so
+  // letters like C / D / I were firing accounting reports mid-word and bouncing you
+  // out of inventory. Let typing be typing.
+  var ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+  // While the inventory drill-down is open (accounting menu hidden), accounting
+  // shortcuts are off — you stay on the /inve report system.
+  var _am = document.getElementById('rpt-acct-menu');
+  var _invActive = _am && _am.style.display === 'none';
   var key = e.key ? e.key.toLowerCase() : '';
+  if (_invActive && key !== 'v' && key !== 'g') return;
   var shortcuts = {
     'p': function() { rptShow('pcode'); },
     'd': function() { rptShow('desc'); },
