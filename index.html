@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-9</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-10</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -8937,22 +8937,55 @@ function _invToAcct(){
 function _invBackBtnHtml(){
   return '<div style="margin-bottom:8px;"><button onclick="_invToAcct()" style="background:#001a33;border:2px solid #66b3ff;color:#9fd0ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 14px;border-radius:4px;cursor:pointer;">\u2039 ACCOUNTING REPORTS</button></div>';
 }
-// Inventory item/store/tax parsing. Item name + store live in the PAYEE, e.g.
-// "COPPER SHEET 2'X10' (ABC SUPPLY)" — store is the trailing parenthetical. Sales
-// tax is its own INVE row, desc=TAX, e.g. "SALES TAX 9.69% (MCDONALD'S)".
-function _invStoreOf(p){ var m=String(p||'').match(/\(([^)]*)\)\s*$/); return m?m[1].toUpperCase().trim():''; }
+// Inventory item / store / tax parsing. Item + store live in the PAYEE — store may be
+// a trailing "(ABC SUPPLY)" OR just trail the name ("...COFFEE MCDONALDS"). Sales tax
+// is its own INVE row, desc=TAX, e.g. "SALES TAX 9.69% (MCDONALD'S)". Stores are matched
+// loosely (punctuation/space-blind) so "MCDONALDS" == "MCDONALD'S".
+function _invNorm(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function _invParenStore(p){ var m=String(p||'').match(/\(([^)]*)\)\s*$/); return m?m[1].trim():''; }
 function _invItemOf(p){ return String(p||'').replace(/\s*\([^)]*\)\s*$/,'').trim(); }
 function _invTaxPctOf(p){ var m=String(p||'').match(/(\d+(?:\.\d+)?)\s*%/); return m?m[1]:''; }
-// Map each (store|date) trip to its sales-tax % so every item can show its tax.
+function _invTaxStoreDisp(p){ return String(p||'').replace(/SALES\s*TAX/ig,'').replace(/[\d.]+\s*%/g,'').replace(/[()]/g,' ').trim(); }
+// Known store names across all INVE rows (parenthetical stores + the store on each
+// SALES TAX line) so we can spot a store even when the item just trails it, no parens.
+function _invKnownStores(){
+  var seen={}, out=[];
+  for(var i=0;i<LOG.length;i++){ var e=LOG[i];
+    if(String(e.pcode||'').toUpperCase().trim()!=='INVE') continue;
+    var cand=(String(e.desc||'').toUpperCase().trim()==='TAX') ? _invTaxStoreDisp(e.payee) : _invParenStore(e.payee);
+    var nrm=_invNorm(cand);
+    if(nrm && nrm.length>=3 && !seen[nrm]){ seen[nrm]=1; out.push({norm:nrm,disp:cand}); }
+  }
+  out.sort(function(a,b){ return b.norm.length-a.norm.length; });   // longest match wins
+  return out;
+}
+function _invDetectStore(payee, stores){
+  var par=_invParenStore(payee); if(par) return par;
+  var pn=_invNorm(payee);
+  for(var i=0;i<stores.length;i++){ if(stores[i].norm && pn.indexOf(stores[i].norm)>=0) return stores[i].disp; }
+  return '';
+}
+// Exact (storeNorm|date) tax %, plus each store's most-recent % as a best-effort fallback.
 function _invTaxMap(){
   var map={};
   for(var i=0;i<LOG.length;i++){ var e=LOG[i];
     if(String(e.pcode||'').toUpperCase().trim()!=='INVE') continue;
     if(String(e.desc||'').toUpperCase().trim()!=='TAX') continue;
-    var st=_invStoreOf(e.payee), pct=_invTaxPctOf(e.payee);
+    var st=_invNorm(_invTaxStoreDisp(e.payee)), pct=_invTaxPctOf(e.payee);
     if(st && pct) map[st+'|'+(e.date||'')]=pct;
   }
   return map;
+}
+function _invTaxStoreLatest(){
+  var latest={}, dt={};
+  for(var i=0;i<LOG.length;i++){ var e=LOG[i];
+    if(String(e.pcode||'').toUpperCase().trim()!=='INVE') continue;
+    if(String(e.desc||'').toUpperCase().trim()!=='TAX') continue;
+    var st=_invNorm(_invTaxStoreDisp(e.payee)), pct=_invTaxPctOf(e.payee), d=(e.date||'');
+    if(!st||!pct) continue;
+    if(!dt[st] || d>dt[st]){ dt[st]=d; latest[st]=pct; }
+  }
+  return latest;
 }
 function rptInve(){
   loadLog();
@@ -9004,6 +9037,8 @@ function runInve(){
     fRows.forEach(function(e){ var c=(e.qty&&e.qty>0)?e.qty:1; fUnits+=c; fSpent+=Math.abs(e.amt||0)*c; fNames[(e.payee||'').toUpperCase()]=1; });
     var fItems=Object.keys(fNames), fAvg=fUnits?fSpent/fUnits:0;
     var _taxMap=_invTaxMap();
+    var _stores=_invKnownStores();
+    var _taxLatest=_invTaxStoreLatest();
     // BY PRICE POINT — group matching buys by the unit price you entered, low→high.
     // This is your FoxBase summary: "5 @ .89, 3 @ 1.23" — units at each price.
     var pp={};
@@ -9050,8 +9085,10 @@ function runInve(){
       +'</tr>';
     fRows.forEach(function(e){
       var c=(e.qty&&e.qty>0)?e.qty:1, u=Math.abs(e.amt||0), line=u*c;
-      var _it=_invItemOf(e.payee), _st=_invStoreOf(e.payee);
-      var _pct=(_st?_taxMap[_st+'|'+(e.date||'')]:'')||'';
+      var _it=_invItemOf(e.payee), _st=_invDetectStore(e.payee,_stores), _stN=_invNorm(_st);
+      var _pctExact=(_stN?_taxMap[_stN+'|'+(e.date||'')]:'')||'';
+      var _pct=_pctExact||(_stN?(_taxLatest[_stN]||''):'');
+      var _approx=(!_pctExact && _pct);
       var _pctNum=_pct?parseFloat(_pct):-1;
       var _pctColor=(_pctNum>=10)?'#ff6666':(_pctNum>=7?'#ffcc55':'#88ff88');
       fh+='<tr style="border-bottom:'+bd+';">'
@@ -9060,7 +9097,7 @@ function runInve(){
         +'<td style="color:#aaccff;padding:3px;border:'+bd+';text-align:left;word-break:break-word;">'+_feEsc(_st||'\u2014')+'</td>'
         +'<td style="color:#ffff88;padding:3px;border:'+bd+';text-align:right;">'+c+'</td>'
         +'<td style="color:#00ffff;padding:3px;border:'+bd+';text-align:right;">'+money(u)+'</td>'
-        +'<td style="color:'+_pctColor+';padding:3px;border:'+bd+';text-align:right;font-weight:700;">'+(_pct?(_pct+'%'):'\u2014')+'</td>'
+        +'<td style="color:'+_pctColor+';padding:3px;border:'+bd+';text-align:right;font-weight:700;">'+(_pct?((_approx?'~':'')+_pct+'%'):'\u2014')+'</td>'
         +'<td style="color:#ff9999;padding:3px;border:'+bd+';text-align:right;">'+money(line)+'</td>'
         +'</tr>';
     });
@@ -9071,7 +9108,7 @@ function runInve(){
       +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;"></td>'
       +'<td style="color:#00ff88;padding:4px 3px;border:1px solid #333388;text-align:right;">'+money(fSpent)+'</td>'
       +'</tr></table>'
-      +'<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-top:8px;line-height:1.5;">Oldest first \u2014 watch UNIT$ over time. TAX% is pulled from your SALES TAX line for that store + date (red \u2265 10%). UNIT$ = price per unit; TOTAL = UNIT$ \u00d7 QTY.</div>'
+      +'<div style="color:#88aaff;font-size:11px;font-family:Courier New,monospace;margin-top:8px;line-height:1.5;">Oldest first \u2014 watch UNIT$ over time. TAX% comes from your SALES TAX line for that store+date (red \u2265 10%); a \u201c~\u201d means no tax line that exact date, so it shows the store\u2019s most recent rate. UNIT$ = price per unit; TOTAL = UNIT$ \u00d7 QTY.</div>'
       +'</div>';
     out.innerHTML=fh;
     return;
