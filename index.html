@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-1</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD INV-3</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -1672,6 +1672,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
     <button onclick="rptSendOptions('share')" style="background:#003333;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-size:12px;font-weight:700;padding:6px 8px;border-radius:4px;cursor:pointer;">📱 SHARE</button>
   </div>
   <div style="padding:10px;">
+    <div id="rpt-acct-menu">
     <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button onclick="rptShow('pcode')" style="flex:1;padding:12px 6px;background:#0000cc;color:#ffff00;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #ffff00;border-radius:4px;cursor:pointer;">BY PCODE <span style="font-size:10px;opacity:0.8;">[P]</span></button>
       <button onclick="rptShow('desc')" style="flex:1;padding:12px 6px;background:#0000cc;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">BY DESC <span style="font-size:10px;opacity:0.8;">[D]</span></button>
@@ -1693,7 +1694,8 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
       <button onclick="rptIrsDesc()" style="flex:1;padding:12px 6px;background:#003300;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ff88;border-radius:4px;cursor:pointer;">🏛 IRS DESC <span style="font-size:10px;opacity:0.8;">[I]</span></button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button onclick="rptSearchInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS <span style="font-size:10px;opacity:0.8;">[V]</span></button>
+      <button onclick="rptInve()" style="flex:1;padding:12px 6px;background:#00333a;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:14px;border:2px solid #00ffff;border-radius:4px;cursor:pointer;">📦 INVE ITEMS <span style="font-size:10px;opacity:0.8;">[V]</span></button>
+    </div>
     </div>
     <div id="rpt-content" style="margin-bottom:20px;"></div>
   </div>
@@ -2407,6 +2409,7 @@ function showScreen(id) {
   if(!el){console.warn('screen not found: '+id);return;}
   el.style.display=(id==='main')?'flex':'block';
   el.classList.add('active');
+  if(id==='reports'){ var _am=document.getElementById('rpt-acct-menu'); if(_am) _am.style.display=''; }
   el.scrollTop=0;
   window.scrollTo(0,0);
 }
@@ -8916,15 +8919,26 @@ function _invHi(name, filt){
     +'<span style="background:#ffaa00;color:#000000;font-weight:700;">'+_feEsc(name.slice(idx,idx+filt.length))+'</span>'
     +_feEsc(name.slice(idx+filt.length));
 }
+// Inventory is its own report system. This link re-shows the accounting/IRS
+// report menu and clears the inventory drill-down so you can switch back.
+function _invToAcct(){
+  var am=document.getElementById('rpt-acct-menu'); if(am) am.style.display='';
+  var rc=document.getElementById('rpt-content'); if(rc) rc.innerHTML='';
+  var sc=document.getElementById('screen-reports'); if(sc) sc.scrollTop=0;
+}
+function _invBackBtnHtml(){
+  return '<div style="margin-bottom:8px;"><button onclick="_invToAcct()" style="background:#001a33;border:2px solid #66b3ff;color:#9fd0ff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:8px 14px;border-radius:4px;cursor:pointer;">\u2039 ACCOUNTING REPORTS</button></div>';
+}
 function rptInve(){
   loadLog();
+  var _am=document.getElementById('rpt-acct-menu'); if(_am) _am.style.display='none';   // inventory stands alone — hide the IRS/accounting report buttons
   var inve=LOG.filter(function(e){ return _rptIsInve(e) && !e.x; });
-  if(!inve.length){ document.getElementById('rpt-content').innerHTML='<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO INVENTORY (INVE) ENTRIES YET</div>'; return; }
+  if(!inve.length){ document.getElementById('rpt-content').innerHTML=_invBackBtnHtml()+'<div style="color:#ff6666;font-family:Courier New,monospace;padding:20px;text-align:center;">NO INVENTORY (INVE) ENTRIES YET</div>'; return; }
   var yrs=[...new Set(inve.map(function(e){return(e.date||'').slice(0,4);}))].filter(Boolean).sort().reverse();
   var yrOpts='<option value="">ALL YRS</option>'+yrs.map(function(y){return'<option value="'+y+'">'+y+'</option>';}).join('');
   var itemsList=[...new Set(inve.map(function(e){return(e.payee||'').toUpperCase();}))].filter(Boolean).sort();
   var itemOpts='<option value="">— ALL ITEMS —</option>'+itemsList.map(function(it){var ev=_feEsc(it).replace(/"/g,'&quot;');return'<option value="'+ev+'">'+_feEsc(it)+'</option>';}).join('');
-  var html='<div style="font-family:Courier New,monospace;">'
+  var html='<div style="font-family:Courier New,monospace;">'+_invBackBtnHtml()
     +'<div style="background:#0000aa;border:2px solid #00ffff;border-radius:6px;padding:10px;margin-bottom:10px;">'
     +'<div style="color:#00ffff;font-weight:700;font-size:13px;margin-bottom:8px;">📦 INVENTORY ITEMS — UNITS &amp; UNIT PRICE</div>'
     +'<input id="inv-filter" type="text" oninput="runInve()" placeholder="FILTER — type e.g. GROUND  (&#39;text&#39;$payee)" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#000000;border:1px solid #ffaa00;color:#ffaa00;font-family:Courier New,monospace;font-size:14px;font-weight:700;padding:6px;border-radius:3px;margin-bottom:6px;text-transform:uppercase;">'
@@ -9019,9 +9033,21 @@ function runInve(){
   var totBuys=items.reduce(function(s,x){return s+x.buys;},0);
   var totUnits=items.reduce(function(s,x){return s+x.units;},0);
   var totSpent=items.reduce(function(s,x){return s+x.spent;},0);
+  // When a filter is active, roll EVERY matching item (all spelling variants) into
+  // one headline "constant" — the whole point of the drill-down: watch a recurring
+  // buy like SNR COFFEE as a single number even though it's logged all over.
+  var constHtml = filt ? ('<div style="background:#00251a;border:2px solid #00ffaa;border-radius:5px;padding:8px;margin-bottom:8px;font-family:Courier New,monospace;">'
+    +'<div style="color:#00ffaa;font-weight:700;font-size:12px;letter-spacing:1px;margin-bottom:4px;">\ud83d\udccc CONSTANT \u2014 \u201c'+_feEsc(filt)+'\u201d &nbsp;('+items.length+' item'+(items.length===1?'':'s')+' rolled up)</div>'
+    +'<div style="display:flex;gap:14px;flex-wrap:wrap;color:#ffffff;font-weight:700;font-size:14px;">'
+    +'<span>BUYS <span style="color:#aaccff;">'+totBuys+'</span></span>'
+    +'<span>UNITS <span style="color:#ffff88;">'+totUnits+'</span></span>'
+    +'<span>SPENT <span style="color:#ff9999;">'+money(totSpent)+'</span></span>'
+    +'<span>AVG UNIT$ <span style="color:#00ffff;">'+money(totUnits?totSpent/totUnits:0)+'</span></span>'
+    +'</div></div>') : '';
   var h='<div style="background:#000022;border:1px solid #333388;border-radius:4px;padding:8px;overflow-x:auto;">'
     +'<div style="color:#ffff00;font-weight:700;font-size:13px;font-family:Courier New,monospace;margin-bottom:4px;">ACCOUNTING &nbsp;&nbsp; '+today2+'</div>'
     +'<div style="color:#00ffff;font-weight:700;font-size:14px;font-family:Courier New,monospace;margin-bottom:6px;text-align:center;">Inventory Items &nbsp;&nbsp; '+(yr||'ALL YRS')+(filt?' &nbsp;·&nbsp; <span style="color:#ffaa00;">\u201c'+_feEsc(filt)+'\u201d</span>':'')+' &nbsp;·&nbsp; '+items.length+' items</div>'
+    +constHtml
     +'<table style="width:100%;border-collapse:collapse;font-family:Courier New,monospace;font-size:13px;">'
     +'<tr style="background:#0000cc;border-bottom:1px solid #ffff00;">'
     +'<th style="color:#ffff00;padding:4px 3px;text-align:left;border:'+bd+';">ITEM</th>'
@@ -9384,8 +9410,8 @@ function handleReportKeypress(e) {
     's': function() { rptMasterDesc(); },
     'u': function() { rptAuditDesc(); },
     'i': function() { rptIrsDesc(); },
-    'v': function() { rptSearchInve(); },
-    'g': function() { rptSearchInve(); },
+    'v': function() { rptInve(); },
+    'g': function() { rptInve(); },
   };
   if (shortcuts[key]) { e.preventDefault(); shortcuts[key](); }
 }
