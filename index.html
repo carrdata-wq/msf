@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-8</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-9</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -16073,6 +16073,31 @@ function _oilIngestCSV(txt){
   toast('OIL LOADED \u2713  '+add+' added, '+upd+' updated'+(skip?(', '+skip+' non-oil skipped'):''), true);
   _oilMenu();
 }
+function _oilSeedGilliland(){
+  if(typeof confirm==='function' && !confirm('Load the verified GILLILAND 2010 set?\n\n• 12 months of GILLILAND state barrels (OILX)\n• your June 2010 Crown statement, all 15 wells (OILP)\n\nThis fills the barrels + decimals in directly. Existing rows are updated, nothing is erased.')) return;
+  var crown=[
+    ['GILLILAND A',68.13,478.01,'0.0506578953','NET 1649.65'],
+    ['DOUGHTY EAST #5',68.12,162.18,'0.0506578953','NET 559.69'],
+    ['KRAMER',68.13,163.24,'0.0379386314','NET 421.91'],
+    ['LINN',68.13,142.99,'0.0153577275','NET 149.60'],
+    ['LOVE',68.13,643.51,'0.0221639363','NET 971.65'],
+    ['MARSHALL LEASE',68.13,154.82,'0.0506578953','NET 534.30'],
+    ['MILLS LEASE',68.12,258.25,'0.0506578953','NET 891.24'],
+    ['MILLS 2X',68.13,50.68,'0.0506743427','NET 174.96'],
+    ['PETERSON #1-A',68.13,138.03,'0.0528295929','NET 496.77'],
+    ['PETERSON #4-A',68.12,17.62,'0.0528295929','NET 63.41'],
+    ['ICE-PARMALEE LEASE',68.13,149.59,'0.0506578953','NET 516.25'],
+    ['ROBISON FRANK WEST',68.13,132.45,'0.0506578953','NET 457.09'],
+    ['ROBISON FRANK WEST #47',68.13,29.42,'0.0506743427','NET 101.56'],
+    ['ROBISON SOUTH',68.13,844.36,'0.0506578953','NET 2913.95'],
+    ['BESTHORN',68.27,152.80,'0.0034745400','NET 36.25']
+  ];
+  var rows=['ID,DATE,PAYEE,PCODE,DESC,AMT,QTY,UNIT,STORE,SKU'];
+  crown.forEach(function(r){ rows.push(',2010-06-01,'+r[0]+',OILP,CROWN STMT,'+r[1]+','+r[2]+',BBL,'+r[4]+','+r[3]); });
+  var gst=[459.26,310.41,306.49,307.63,316.09,478.01,310.26,450.03,312.50,321.33,325.63,301.59];
+  gst.forEach(function(b,i){ var mm=('0'+(i+1)).slice(-2); rows.push(',2010-'+mm+'-01,GILLILAND,OILX,STATE BBLS,0,'+b+',BBL,WELLS 3,15-015-19213'); });
+  _oilIngestCSV(rows.join('\n'));
+}
 function _oilMenu(){
   var ov=document.getElementById('fe-overlay'); if(!ov) return;
   var b=_oilBuild('',{}); var T=b.totals; var money=_oilMoney;
@@ -16101,7 +16126,8 @@ function _oilMenu(){
     +   '<div style="background:#001a33;border:1px solid #2a6cff;border-radius:5px;padding:8px;"><div style="color:#9fc8ff;font-size:10px;">SHOULD\u2019VE PAID</div><div style="color:#fff;font-size:15px;font-weight:700;">'+money(T.should)+'</div></div>'
     +   '<div style="background:#1a0000;border:1px solid #ff5555;border-radius:5px;padding:8px;"><div style="color:#ffb3b3;font-size:10px;">OWED YOU</div><div style="color:#ff6666;font-size:15px;font-weight:700;">'+money(T.owed)+'</div></div>'
     + '</div>'
-    + '<button onclick="_oilLoadFile()" style="width:100%;background:#00351f;border:1px solid #00ff99;color:#aaffdd;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border-radius:4px;cursor:pointer;text-align:left;margin-bottom:8px;"><span style="background:#00ff99;color:#00351f;padding:1px 7px;border-radius:2px;margin-right:6px;">+</span>LOAD OIL CSV (Crown OILP or State OILX)</button>'
+    + '<button onclick="_oilLoadFile()" style="width:100%;background:#00351f;border:1px solid #00ff99;color:#aaffdd;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border-radius:4px;cursor:pointer;text-align:left;margin-bottom:6px;"><span style="background:#00ff99;color:#00351f;padding:1px 7px;border-radius:2px;margin-right:6px;">+</span>LOAD OIL CSV (Crown OILP or State OILX)</button>'
+    + '<button onclick="_oilSeedGilliland()" style="width:100%;background:#3a2a00;border:1px solid #ffcc33;color:#ffe08a;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:11px;border-radius:4px;cursor:pointer;text-align:left;margin-bottom:8px;"><span style="background:#ffcc33;color:#3a2a00;padding:1px 7px;border-radius:2px;margin-right:6px;">\u26a1</span>LOAD GILLILAND 2010 (verified set \u2014 1 click)</button>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">'
     +   '<button onclick="_oilMaster()" style="background:#002a55;border:1px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:10px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#00ffff;color:#002a55;padding:0 5px;border-radius:2px;margin-right:5px;">M</span>MASTER \u2014 all wells, totals</button>'
     +   '<button onclick="_oilFlags()" style="background:#330000;border:1px solid #ff6666;color:#ff8888;font-family:Courier New,monospace;font-weight:700;font-size:12px;padding:10px;border-radius:4px;cursor:pointer;text-align:left;"><span style="background:#ff6666;color:#330000;padding:0 5px;border-radius:2px;margin-right:5px;">F</span>FLAGS \u2014 only the problems</button>'
