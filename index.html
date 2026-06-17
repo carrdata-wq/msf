@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-10</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-12</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -12787,6 +12787,9 @@ function universalLoadBackupCSV(txt){
     unit:  hdr.indexOf('unit'),
     store: hdr.indexOf('store'),
     sku:   hdr.indexOf('sku'),
+    tax:   hdr.indexOf('tax'),
+    nvol:  hdr.indexOf('nvol'),
+    gval:  hdr.indexOf('gval'),
     type:  hdr.indexOf('type')
   };
   if(idx.payee<0||idx.amt<0){toast('CSV missing PAYEE or AMT column',false);return;}
@@ -12812,6 +12815,9 @@ function universalLoadBackupCSV(txt){
     if(idx.unit>=0  && c[idx.unit])  _row.unit =(c[idx.unit] ||'').trim();                    // BBL
     if(idx.store>=0 && c[idx.store]) _row.store=(c[idx.store]||'').trim();                     // NET value note
     if(idx.sku>=0   && c[idx.sku])   _row.sku  =(c[idx.sku]  ||'').trim();                     // decimal (OILP) / API (OILX)
+    if(idx.tax>=0){ var _tx=parseFloat(c[idx.tax]); if(!isNaN(_tx)) _row.tax=_tx; }              // state tax (net)
+    if(idx.nvol>=0){ var _nv=parseFloat(c[idx.nvol]); if(!isNaN(_nv)) _row.nvol=_nv; }            // net vol (Crown stated)
+    if(idx.gval>=0){ var _gv=parseFloat(c[idx.gval]); if(!isNaN(_gv)) _row.gval=_gv; }            // gross value (Crown stated)
     arr.push(_row);
   }
   if(!arr.length){toast('No usable rows',false);return;}
@@ -15901,6 +15907,7 @@ function _oilNum(e){ var q=parseFloat(e.qty); if(!isNaN(q)&&q!==0) return Math.a
 function _oilFlt(n){ return (Math.round(n*100)/100).toFixed(2); }
 
 function _oilMoney(n){ var neg=n<0; n=Math.abs(n); var s=n.toFixed(2); var p=s.split('.'); p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,','); return (neg?'-$':'$')+p.join('.'); }
+function _oilParseNet(s){ var m=String(s||'').match(/NET\s*\$?([\d,]+\.?\d*)/i); return m?parseFloat(m[1].replace(/,/g,'')):0; }
 
 function _oilBuild(filterArg, opts){
   opts = opts||{};
@@ -15914,7 +15921,7 @@ function _oilBuild(filterArg, opts){
   function leaseOf(name){
     var k=_oilKey(name);
     for(var ex in leases){ if(_oilMatch(ex,k)) return ex; }
-    leases[k]={key:k, disp:name, st:{}, pm:{}, price:{}, dec:null, api:null};
+    leases[k]={key:k, disp:name, st:{}, pm:{}, price:{}, tax:{}, netval:{}, nvol:{}, gval:{}, dec:null, api:null};
     return k;
   }
   LOG.forEach(function(e){
@@ -15925,7 +15932,7 @@ function _oilBuild(filterArg, opts){
     var mo=_oilMonth(e.date); if(!mo || !keepMonth(mo)) return;
     var k=leaseOf(e.payee);
     if(pc==='OILX'){ leases[k].st[mo]=(leases[k].st[mo]||0)+num(e.qty); if(!leases[k].api && e.sku) leases[k].api=String(e.sku).trim(); }
-    else { leases[k].pm[mo]=(leases[k].pm[mo]||0)+num(e.qty); var pr=num(e.amt); if(pr>0) leases[k].price[mo]=pr; var dc=num(e.sku); if(dc>0 && !leases[k].dec) leases[k].dec=dc; }
+    else { leases[k].pm[mo]=(leases[k].pm[mo]||0)+num(e.qty); var pr=num(e.amt); if(pr>0) leases[k].price[mo]=pr; var dc=num(e.sku); if(dc>0 && !leases[k].dec) leases[k].dec=dc; var tx=num(e.tax); if(tx>0) leases[k].tax[mo]=(leases[k].tax[mo]||0)+tx; var nv=_oilParseNet(e.store); if(nv>0) leases[k].netval[mo]=(leases[k].netval[mo]||0)+nv; var xv=num(e.nvol); if(xv>0) leases[k].nvol[mo]=(leases[k].nvol[mo]||0)+xv; var gv=num(e.gval); if(gv>0) leases[k].gval[mo]=(leases[k].gval[mo]||0)+gv; }
   });
 
   var names=Object.keys(leases).sort(function(a,b){ return leases[a].disp<leases[b].disp?-1:1; });
@@ -15937,9 +15944,9 @@ function _oilBuild(filterArg, opts){
       T.years[mo.slice(0,4)]=1;
       var hasS=(mo in Lz.st), hasP=(mo in Lz.pm);
       var s=hasS?Lz.st[mo]:0, p=hasP?Lz.pm[mo]:0, price=Lz.price[mo]||0, dec=Lz.dec||0;
-      if(hasS&&hasP){ if(price>0&&dec>0){ var paid=p*price*dec, should=s*price*dec; pw.paid+=paid; pw.should+=should; pw.owed+=(should-paid); } if(Math.abs(p-s)<0.005) pw.match++; else pw.off++; }
+      if(hasS&&hasP){ if(price>0&&dec>0){ var nval=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), tx=Lz.tax[mo]||0; var paid=nval-tx, owed=(s-p)*price*dec, should=paid+owed; pw.paid+=paid; pw.should+=should; pw.owed+=owed; } if(Math.abs(p-s)<0.005) pw.match++; else pw.off++; }
       else if(hasS&&!hasP){ pw.noStmt++; }
-      else if(!hasS&&hasP){ if(price>0&&dec>0){ pw.paid+=p*price*dec; } pw.notState++; }
+      else if(!hasS&&hasP){ if(price>0&&dec>0){ var nval2=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), tx2=Lz.tax[mo]||0; pw.paid+=(nval2-tx2); } pw.notState++; }
     });
     T.paid+=pw.paid; T.should+=pw.should; T.owed+=pw.owed; T.match+=pw.match; T.off+=pw.off; T.noStmt+=pw.noStmt; T.notState+=pw.notState;
     T.perWell[k]=pw;
@@ -15974,15 +15981,24 @@ function _oilReport(filterArg, opts){
       var s=hasS?Lz.st[mo]:0, p=hasP?Lz.pm[mo]:0, price=Lz.price[mo]||0, dec=Lz.dec||0;
       var sTxt=hasS?_oilFlt(s):'—', pTxt=hasP?_oilFlt(p):'—';
       var dTxt='', paidTxt='', shouldTxt='', owedTxt='', flag='', isProblem=false;
+      var nvalM=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), txM=Lz.tax[mo]||0, paidNet=nvalM-txM;
       if(hasS&&hasP){
         var d=p-s; dTxt=(d>0?'+':'')+_oilFlt(d);
-        if(price>0&&dec>0){ var paid=p*price*dec, should=s*price*dec, owed=should-paid; paidTxt=money(paid); shouldTxt=money(should); owedTxt=money(owed); }
+        if(price>0&&dec>0){ var owed=(s-p)*price*dec, should=paidNet+owed; paidTxt=money(paidNet); shouldTxt=money(should); owedTxt=money(owed); }
         if(Math.abs(d)<0.005){ flag='MATCH'; } else { flag='*** OFF'; isProblem=true; }
       } else if(hasS&&!hasP){ flag='no stmt — load Crown'; }
-      else if(!hasS&&hasP){ if(price>0&&dec>0){ paidTxt=money(p*price*dec); } flag='!! NOT IN STATE'; isProblem=true; }
+      else if(!hasS&&hasP){ if(price>0&&dec>0){ paidTxt=money(paidNet); } flag='!! NOT IN STATE'; isProblem=true; }
       if(flagsOnly && !isProblem) return;
       var prcTxt = price>0 ? ('$'+price.toFixed(2)) : '—';
       rows.push('   '+_fePadR(mo,8)+_fePadL(sTxt,8)+_fePadL(pTxt,8)+_fePadL(prcTxt,9)+_fePadL(dTxt,8)+_fePadL(paidTxt,10)+_fePadL(shouldTxt,10)+_fePadL(owedTxt,10)+'  '+flag);
+      if(hasP && dec>0){
+        var nvol = (Lz.nvol[mo]>0) ? Lz.nvol[mo] : (p*dec);
+        var gval = (Lz.gval[mo]>0) ? Lz.gval[mo] : (p*price);
+        var nval = (Lz.netval[mo]>0) ? Lz.netval[mo] : (p*price*dec);
+        var tx   = Lz.tax[mo]||0;
+        var netpaid = nval - tx;
+        rows.push('            gross '+_oilFlt(p)+' bbl x $'+price.toFixed(2)+' = '+money(gval)+'   net '+_oilFlt(nvol)+' bbl   net-val '+money(nval)+'   tax '+money(tx)+'  ->  PAID '+money(netpaid));
+      }
     });
     if(!rows.length) return;
     L.push(' '+Lz.disp+(Lz.api?('   API '+Lz.api):'')+(Lz.dec?('   dec '+Lz.dec.toFixed(10)):''));
@@ -15997,8 +16013,8 @@ function _oilReport(filterArg, opts){
   L.push('   OWED YOU:              '+money(T.owed));
   L.push('   months MATCH: '+T.match+'    OFF: '+T.off+(T.noStmt?('    no-stmt: '+T.noStmt):'')+(T.notState?('    not-in-state: '+T.notState):''));
   L.push('');
-  L.push(' STATE=Kansas tax-collector barrels (truth).  PAID=crown bbls x price x decimal.');
-  L.push(' SHOULD=STATE bbls x crown price x decimal.   OWED=should-paid. Type /oil for menu.');
+  L.push(' STATE=Kansas tax-collector barrels (truth).  PAID=net value minus state tax (your check).');
+  L.push(' OWED=(state-crown) bbls x price x decimal.  SHOULD=PAID+OWED. Type /oil for menu.');
   _feFinishReport('/oil'+(want.length?(' '+want.join(' ')):'')+(opts.year?(' '+opts.year):'')+(flagsOnly?' flags':''), 'OILREPO', '', '', L.join('\n'));
 }
 
@@ -16038,7 +16054,7 @@ function _oilIngestCSV(txt){
   if(lines.length<2){ toast('That file looks empty',false); return; }
   function split(l){ var out=[],cur='',q=false; for(var i=0;i<l.length;i++){ var c=l[i]; if(c==='"'){q=!q;} else if(c===','&&!q){out.push(cur);cur='';} else cur+=c; } out.push(cur); return out; }
   var hdr=split(lines[0]).map(function(h){return h.trim().toLowerCase();});
-  var ix={date:hdr.indexOf('date'),payee:hdr.indexOf('payee'),pcode:hdr.indexOf('pcode'),desc:hdr.indexOf('desc'),amt:(hdr.indexOf('amt')>=0?hdr.indexOf('amt'):hdr.indexOf('amount')),qty:hdr.indexOf('qty'),unit:hdr.indexOf('unit'),store:hdr.indexOf('store'),sku:hdr.indexOf('sku')};
+  var ix={date:hdr.indexOf('date'),payee:hdr.indexOf('payee'),pcode:hdr.indexOf('pcode'),desc:hdr.indexOf('desc'),amt:(hdr.indexOf('amt')>=0?hdr.indexOf('amt'):hdr.indexOf('amount')),qty:hdr.indexOf('qty'),unit:hdr.indexOf('unit'),store:hdr.indexOf('store'),sku:hdr.indexOf('sku'),tax:hdr.indexOf('tax'),nvol:hdr.indexOf('nvol'),gval:hdr.indexOf('gval')};
   if(ix.payee<0||ix.pcode<0){ toast('Oil file needs PAYEE and PCODE columns',false); return; }
   function isOil(pc){ pc=String(pc||'').toUpperCase().trim(); return pc==='OILX'||pc==='OILP'||pc==='OILT'||pc==='OILE'; }
   function keyOf(d,p,pc,ds){ return String(d||'')+'|'+String(p||'').toUpperCase().trim()+'|'+String(pc||'').toUpperCase().trim()+'|'+String(ds||'').toUpperCase().trim(); }
@@ -16057,13 +16073,16 @@ function _oilIngestCSV(txt){
     var unit=ix.unit>=0?(c[ix.unit]||'').trim():'';
     var store=ix.store>=0?(c[ix.store]||'').trim():'';
     var sku=ix.sku>=0?(c[ix.sku]||'').trim():'';
+    var tax=ix.tax>=0?parseFloat(c[ix.tax]):NaN;
+    var nvol=ix.nvol>=0?parseFloat(c[ix.nvol]):NaN;
+    var gval=ix.gval>=0?parseFloat(c[ix.gval]):NaN;
     var k=keyOf(date,payee,pcode,desc), ex=existing[k];
     if(ex){
-      ex.amt=amt; if(!isNaN(qty)) ex.qty=qty; if(unit) ex.unit=unit; if(store) ex.store=store; if(sku) ex.sku=sku; if(ex.deleted) ex.deleted=false;
+      ex.amt=amt; if(!isNaN(qty)) ex.qty=qty; if(unit) ex.unit=unit; if(store) ex.store=store; if(sku) ex.sku=sku; if(!isNaN(tax)) ex.tax=tax; if(!isNaN(nvol)) ex.nvol=nvol; if(!isNaN(gval)) ex.gval=gval; if(ex.deleted) ex.deleted=false;
       upd++;
     } else {
       var row={ id:(++maxId), date:date, payee:payee, pcode:pcode, desc:desc, amt:amt };
-      if(!isNaN(qty)) row.qty=qty; if(unit) row.unit=unit; if(store) row.store=store; if(sku) row.sku=sku;
+      if(!isNaN(qty)) row.qty=qty; if(unit) row.unit=unit; if(store) row.store=store; if(sku) row.sku=sku; if(!isNaN(tax)) row.tax=tax; if(!isNaN(nvol)) row.nvol=nvol; if(!isNaN(gval)) row.gval=gval;
       var dm=date.match(/(\d{4})-(\d{2})-(\d{2})/); if(dm){ row.year=dm[1]; row.month=dm[2]; row.day=dm[3]; }
       LOG.push(row); existing[k]=row; add++;
     }
@@ -16075,26 +16094,26 @@ function _oilIngestCSV(txt){
 }
 function _oilSeedGilliland(){
   var crown=[
-    ['GILLILAND A',68.13,478.01,'0.0506578953','NET 1649.65'],
-    ['DOUGHTY EAST #5',68.12,162.18,'0.0506578953','NET 559.69'],
-    ['KRAMER',68.13,163.24,'0.0379386314','NET 421.91'],
-    ['LINN',68.13,142.99,'0.0153577275','NET 149.60'],
-    ['LOVE',68.13,643.51,'0.0221639363','NET 971.65'],
-    ['MARSHALL LEASE',68.13,154.82,'0.0506578953','NET 534.30'],
-    ['MILLS LEASE',68.12,258.25,'0.0506578953','NET 891.24'],
-    ['MILLS 2X',68.13,50.68,'0.0506743427','NET 174.96'],
-    ['PETERSON #1-A',68.13,138.03,'0.0528295929','NET 496.77'],
-    ['PETERSON #4-A',68.12,17.62,'0.0528295929','NET 63.41'],
-    ['ICE-PARMALEE LEASE',68.13,149.59,'0.0506578953','NET 516.25'],
-    ['ROBISON FRANK WEST',68.13,132.45,'0.0506578953','NET 457.09'],
-    ['ROBISON FRANK WEST #47',68.13,29.42,'0.0506743427','NET 101.56'],
-    ['ROBISON SOUTH',68.13,844.36,'0.0506578953','NET 2913.95'],
-    ['BESTHORN',68.27,152.80,'0.0034745400','NET 36.25']
+    ['GILLILAND A',68.13,478.01,'0.0506578953','NET 1649.65',3.03,24.22,32564.44],
+    ['DOUGHTY EAST #5',68.12,162.18,'0.0506578953','NET 559.69',1.03,8.22,11048.51],
+    ['KRAMER',68.13,163.24,'0.0379386314','NET 421.91',0.77,6.19,11120.73],
+    ['LINN',68.13,142.99,'0.0153577275','NET 149.60',0.27,2.20,9741.20],
+    ['LOVE',68.13,643.51,'0.0221639363','NET 971.65',1.78,14.26,43839.12],
+    ['MARSHALL LEASE',68.13,154.82,'0.0506578953','NET 534.30',0.98,7.84,10547.12],
+    ['MILLS LEASE',68.12,258.25,'0.0506578953','NET 891.24',0,'',''],
+    ['MILLS 2X',68.13,50.68,'0.0506743427','NET 174.96',0,'',''],
+    ['PETERSON #1-A',68.13,138.03,'0.0528295929','NET 496.77',0,'',''],
+    ['PETERSON #4-A',68.12,17.62,'0.0528295929','NET 63.41',0,'',''],
+    ['ICE-PARMALEE LEASE',68.13,149.59,'0.0506578953','NET 516.25',0,'',''],
+    ['ROBISON FRANK WEST',68.13,132.45,'0.0506578953','NET 457.09',0,'',''],
+    ['ROBISON FRANK WEST #47',68.13,29.42,'0.0506743427','NET 101.56',0,'',''],
+    ['ROBISON SOUTH',68.13,844.36,'0.0506578953','NET 2913.95',0,'',''],
+    ['BESTHORN',68.27,152.80,'0.0034745400','NET 36.25',0.05,0.53,10432.42]
   ];
-  var rows=['ID,DATE,PAYEE,PCODE,DESC,AMT,QTY,UNIT,STORE,SKU'];
-  crown.forEach(function(r){ rows.push(',2010-06-01,'+r[0]+',OILP,CROWN STMT,'+r[1]+','+r[2]+',BBL,'+r[4]+','+r[3]); });
+  var rows=['ID,DATE,PAYEE,PCODE,DESC,AMT,QTY,UNIT,STORE,SKU,TAX,NVOL,GVAL'];
+  crown.forEach(function(r){ rows.push(',2010-06-01,'+r[0]+',OILP,CROWN STMT,'+r[1]+','+r[2]+',BBL,'+r[4]+','+r[3]+','+r[5]+','+r[6]+','+r[7]); });
   var gst=[459.26,310.41,306.49,307.63,316.09,478.01,310.26,450.03,312.50,321.33,325.63,301.59];
-  gst.forEach(function(b,i){ var mm=('0'+(i+1)).slice(-2); rows.push(',2010-'+mm+'-01,GILLILAND,OILX,STATE BBLS,0,'+b+',BBL,WELLS 3,15-015-19213'); });
+  gst.forEach(function(b,i){ var mm=('0'+(i+1)).slice(-2); rows.push(',2010-'+mm+'-01,GILLILAND,OILX,STATE BBLS,0,'+b+',BBL,WELLS 3,15-015-19213,,,'); });
   _oilIngestCSV(rows.join('\n'));
   _oilReport('gilliland');
 }
@@ -16568,13 +16587,13 @@ function _feBackupAll(silent){
     }
     
     // 1. ACCOUNTING CSV
-    var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT,QTY,UNIT,STORE,SKU'];
+    var acctLines = ['DATE,DAY,MONTH,YEAR,PAYEE,PCODE,DESC,AMOUNT,QTY,UNIT,STORE,SKU,TAX,NVOL,GVAL'];
     L.forEach(function(e) {
       if (!e.deleted) {
         function _bf(v){ return csvField((typeof v!=='undefined' && v!==null && v!=='') ? v : ''); }
         acctLines.push([csvField(e.date), csvField(e.day), csvField(e.month), csvField(e.year), 
                         csvField(e.payee), csvField(e.pcode), csvField(e.desc), csvField(e.amt),
-                        _bf(e.qty), _bf(e.unit), _bf(e.store), _bf(e.sku)].join(','));
+                        _bf(e.qty), _bf(e.unit), _bf(e.store), _bf(e.sku), _bf(e.tax), _bf(e.nvol), _bf(e.gval)].join(','));
       }
     });
     files.push({
