@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-13</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-14</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -15515,9 +15515,9 @@ function _feReportOutput(action){
         + '<button onclick="_oilMenu()" style="background:#06294e;border:1px solid #66b3ff;color:#9fd0ff;font-family:Courier New,monospace;font-weight:700;font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;">\u2039 OIL MENU</button>'
         + '</div>'
       : '';
-    var html = '<div style="background:#3d7fd6;border:2px solid #ffffff;border-radius:6px;padding:12px;max-width:680px;width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
+    var html = '<div style="background:#3d7fd6;border:2px solid #ffffff;border-radius:6px;padding:12px;max-width:'+(_isOil?'900px':'680px')+';width:100%;max-height:calc(100vh - 84px);display:flex;flex-direction:column;align-self:flex-start;margin-top:66px;font-family:Courier New,monospace;">'
       + (_isOil ? _oilBar : (_feReportPickerHTML() + _feInvOptionsHTML()))
-      + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:12px;white-space:pre;overflow:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
+      + '<pre style="color:#ffffff;font-weight:700;text-transform:uppercase;font-size:'+(_isOil?'10':'12')+'px;line-height:1.35;white-space:pre;overflow:auto;margin:8px 0 10px 0;flex:1;">' + _feEsc(_feRptCtx.text) + '</pre>'
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="_feReportOutput(\'view\')" style="flex:1;background:#000080;border:2px solid #00ffff;color:#00ffff;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ffff;color:#000033;padding:1px 6px;border-radius:2px;margin-right:5px;">V</span>VIEW</button>'
       + '<button onclick="_feReportOutput(\'share\')" style="flex:2;background:#003300;border:2px solid #00ff88;color:#00ff88;font-family:Courier New,monospace;font-weight:700;font-size:13px;padding:10px;border-radius:4px;cursor:pointer;"><span style="background:#00ff88;color:#003300;padding:1px 6px;border-radius:2px;margin-right:5px;">E</span>EMAIL / SHARE</button>'
@@ -15936,19 +15936,19 @@ function _oilBuild(filterArg, opts){
   });
 
   var names=Object.keys(leases).sort(function(a,b){ return leases[a].disp<leases[b].disp?-1:1; });
-  var T={paid:0,should:0,owed:0,match:0,off:0,noStmt:0,notState:0, perWell:{}, years:{}};
+  var T={paid:0,should:0,owed:0,tax:0,match:0,off:0,noStmt:0,notState:0, perWell:{}, years:{}};
   names.forEach(function(k){
     var Lz=leases[k]; var months={}; Object.keys(Lz.st).forEach(function(m){months[m]=1;}); Object.keys(Lz.pm).forEach(function(m){months[m]=1;});
-    var pw={paid:0,should:0,owed:0,match:0,off:0,noStmt:0,notState:0};
+    var pw={paid:0,should:0,owed:0,tax:0,match:0,off:0,noStmt:0,notState:0};
     Object.keys(months).forEach(function(mo){
       T.years[mo.slice(0,4)]=1;
       var hasS=(mo in Lz.st), hasP=(mo in Lz.pm);
       var s=hasS?Lz.st[mo]:0, p=hasP?Lz.pm[mo]:0, price=Lz.price[mo]||0, dec=Lz.dec||0;
-      if(hasS&&hasP){ if(price>0&&dec>0){ var nval=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), tx=Lz.tax[mo]||0; var paid=nval-tx, owed=(s-p)*price*dec, should=paid+owed; pw.paid+=paid; pw.should+=should; pw.owed+=owed; } if(Math.abs(p-s)<0.005) pw.match++; else pw.off++; }
+      if(hasS&&hasP){ if(price>0&&dec>0){ var nval=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), tx=Lz.tax[mo]||0; var paid=nval-tx, owed=(s-p)*price*dec, should=paid+owed; pw.paid+=paid; pw.should+=should; pw.owed+=owed; pw.tax+=tx; } if(Math.abs(p-s)<0.005) pw.match++; else pw.off++; }
       else if(hasS&&!hasP){ pw.noStmt++; }
-      else if(!hasS&&hasP){ if(price>0&&dec>0){ var nval2=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), tx2=Lz.tax[mo]||0; pw.paid+=(nval2-tx2); } pw.notState++; }
+      else if(!hasS&&hasP){ if(price>0&&dec>0){ var nval2=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), tx2=Lz.tax[mo]||0; pw.paid+=(nval2-tx2); pw.tax+=tx2; } pw.notState++; }
     });
-    T.paid+=pw.paid; T.should+=pw.should; T.owed+=pw.owed; T.match+=pw.match; T.off+=pw.off; T.noStmt+=pw.noStmt; T.notState+=pw.notState;
+    T.paid+=pw.paid; T.should+=pw.should; T.owed+=pw.owed; T.tax+=pw.tax; T.match+=pw.match; T.off+=pw.off; T.noStmt+=pw.noStmt; T.notState+=pw.notState;
     T.perWell[k]=pw;
   });
   return {names:names, leases:leases, totals:T, want:want, opts:opts};
@@ -15959,14 +15959,38 @@ function _oilReport(filterArg, opts){
   var b=_oilBuild(filterArg, opts);
   var names=b.names, leases=b.leases, T=b.totals, want=b.want;
   var flagsOnly=!!opts.flagsOnly, money=_oilMoney;
+  function fbbl(v){ return _oilFlt(v); }
+  // ---- column spec (FoxBase drilldown) -------------------------------------
+  var COL=[
+    {h1:'DATE', h2:'PROD',  w:7, a:'l'},
+    {h1:'STATE',h2:'BBLS',  w:8, a:'r'},
+    {h1:'CROWN',h2:'BBLS',  w:8, a:'r'},
+    {h1:'+/-',  h2:'BBLS',  w:8, a:'r'},
+    {h1:'BBL',  h2:'PRICE', w:8, a:'r'},
+    {h1:'GROSS',h2:'VALUE', w:12,a:'r'},
+    {h1:'NET',  h2:'BBLS',  w:7, a:'r'},
+    {h1:'STATE',h2:'TAX',   w:7, a:'r'},
+    {h1:'CROWN',h2:'PAID',  w:11,a:'r'},
+    {h1:'SHOULD',h2:'PAY',  w:11,a:'r'},
+    {h1:'OWED', h2:'YOU',   w:10,a:'r'},
+    {h1:'',     h2:' FLAG', w:10, a:'l'}
+  ];
+  var W=0; COL.forEach(function(c){ W+=c.w; }); W+=1;
+  function cell(v,c){ v=String(v==null?'':v); return c.a==='r'?_fePadL(v,c.w):_fePadR(v,c.w); }
+  function line(vals){ var s=' '; for(var i=0;i<COL.length;i++) s+=cell(vals[i],COL[i]); return s; }
+  function hdr(key){ return line(COL.map(function(c){ return c[key]; })); }
+  var BAR=''; for(var i=0;i<W;i++) BAR+='=';
+  var DSH=''; for(i=0;i<W;i++) DSH+='-';
+  // ---- title block ---------------------------------------------------------
   var L=[];
-  var ttl = flagsOnly ? 'OILREPO FLAGS — PROBLEMS ONLY' : 'OILREPO · DID / SHOULD / OWED';
-  L.push('     '+ttl+'   [OIL v2]');
-  L.push('     '+(want.length?('LEASE: '+want.join(', ')):'ALL OIL LEASES')+(opts.year?('   YEAR: '+opts.year):''));
-  L.push('');
+  L.push(BAR);
+  L.push('   FORENSIC ACCOUNTING  —  CROWN ENERGY OIL FUND');
+  L.push('   STATE-vs-CROWN  BARREL & REVENUE RECONCILIATION'+(opts.year?('     YEAR '+opts.year):'')+(flagsOnly?'   (PROBLEMS ONLY)':''));
+  L.push(BAR);
   if(!names.length){
-    L.push('   No oil rows for this view. Import Crown (OILP) and state (OILX),');
-    L.push('   then open the oil menu again.');
+    L.push('');
+    L.push('   No oil rows for this view. Load Crown (OILP) and');
+    L.push('   state (OILX) data, then open the oil menu again.');
     _feFinishReport('/oil', 'OILREPO', '', '', L.join('\n'));
     return;
   }
@@ -15975,56 +15999,51 @@ function _oilReport(filterArg, opts){
     var months={}; Object.keys(Lz.st).forEach(function(m){months[m]=1;}); Object.keys(Lz.pm).forEach(function(m){months[m]=1;});
     var mlist=Object.keys(months).sort();
     if(!mlist.length) return;
-    var rows=[];
+    var rows=[], sub={paid:0,should:0,owed:0,tax:0};
     mlist.forEach(function(mo){
       var hasS=(mo in Lz.st), hasP=(mo in Lz.pm);
       var s=hasS?Lz.st[mo]:0, p=hasP?Lz.pm[mo]:0, price=Lz.price[mo]||0, dec=Lz.dec||0;
-      var sTxt=hasS?_oilFlt(s):'—', pTxt=hasP?_oilFlt(p):'—';
       var nvalM=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), txM=Lz.tax[mo]||0, paidNet=nvalM-txM;
       var nvol=(Lz.nvol[mo]>0)?Lz.nvol[mo]:(p*dec), gval=(Lz.gval[mo]>0)?Lz.gval[mo]:(p*price);
-      var isProblem=false;
+      var dprod=mo.replace('-','');
+      var prc = price>0?('$'+price.toFixed(2)):'—';
       if(hasS&&hasP){
-        var d=p-s, dStr=(d>0?'+':'')+_oilFlt(d);
-        var match=Math.abs(d)<0.005;
-        if(!match) isProblem=true;
-        if(flagsOnly && !isProblem) return;
+        var d=p-s, match=Math.abs(d)<0.005;
+        if(flagsOnly && match) return;
         var owed=(price>0&&dec>0)?(s-p)*price*dec:0, should=paidNet+owed;
-        rows.push(' '+mo+'   '+sTxt+' vs '+pTxt+'   d '+dStr+'   '+(match?'MATCH':'*** OFF'));
-        if(price>0&&dec>0){
-          rows.push('   $'+price.toFixed(2)+'/bbl   gross '+money(gval)+'   net '+_oilFlt(nvol)+' bbl');
-          rows.push('   net-val '+money(nvalM)+'   tax '+money(txM)+'   PAID '+money(paidNet));
-          rows.push('   SHOULD '+money(should)+'   OWED '+money(owed));
-        }
+        rows.push(line([dprod, fbbl(s), fbbl(p), (d>0?'+':'')+fbbl(d), prc, money(gval), fbbl(nvol), money(txM), money(paidNet), money(should), money(owed), (match?' MATCH':' *** OFF')]));
+        sub.paid+=paidNet; sub.should+=should; sub.owed+=owed; sub.tax+=txM;
       } else if(hasS&&!hasP){
         if(flagsOnly) return;
-        rows.push(' '+mo+'   STATE '+sTxt+'   (no Crown stmt — load it)');
+        rows.push(line([dprod, fbbl(s), '—', '', '', '', '', '', '', '', '', ' NO STMT']));
       } else if(!hasS&&hasP){
-        isProblem=true;
-        rows.push(' '+mo+'   CROWN '+pTxt+'   !! NOT IN STATE');
-        if(price>0&&dec>0){
-          rows.push('   $'+price.toFixed(2)+'/bbl   net-val '+money(nvalM)+'   PAID '+money(paidNet));
-        }
+        rows.push(line([dprod, '—', fbbl(p), '', prc, money(gval), fbbl(nvol), money(txM), money(paidNet), '', '', ' NOT-STATE']));
+        sub.paid+=paidNet; sub.tax+=txM;
       }
-      rows.push('');
     });
     if(!rows.length) return;
-    L.push(' '+Lz.disp+(Lz.api?('  API '+Lz.api):''));
-    if(Lz.dec) L.push('   decimal '+Lz.dec.toFixed(10));
     L.push('');
+    L.push(' LEASE: '+_fePadR(Lz.disp,22)+(Lz.api?('API: '+Lz.api):''));
+    if(Lz.dec) L.push(' OWNER DECIMAL INTEREST: '+Lz.dec.toFixed(10));
+    L.push(DSH);
+    L.push(hdr('h1'));
+    L.push(hdr('h2'));
+    L.push(DSH);
     rows.forEach(function(r){ L.push(r); });
-    L.push('');
+    L.push(DSH);
+    L.push(line(['TOTALS','','','','','','',money(sub.tax),money(sub.paid),money(sub.should),money(sub.owed),'']));
   });
-  L.push('   == SUMMARY ==');
-  L.push('   Crown PAID you:        '+money(T.paid));
-  L.push('   SHOULD have paid:      '+money(T.should));
-  L.push('   ----------------------');
-  L.push('   OWED YOU:              '+money(T.owed));
-  L.push('   months MATCH: '+T.match+'    OFF: '+T.off+(T.noStmt?('    no-stmt: '+T.noStmt):'')+(T.notState?('    not-in-state: '+T.notState):''));
   L.push('');
-  L.push(' STATE = Kansas tax barrels (the truth)');
-  L.push(' PAID  = net value minus state tax (your check)');
-  L.push(' OWED  = (state-crown) bbls x price x decimal');
-  L.push(' SHOULD= PAID + OWED.    Type /oil for menu.');
+  L.push(BAR);
+  L.push(line(['GRAND','','','','','','',money(T.tax||0),money(T.paid),money(T.should),money(T.owed),' TOTAL']));
+  L.push(BAR);
+  L.push(' MONTHS  match '+T.match+'   off '+T.off+(T.noStmt?('   no-stmt '+T.noStmt):'')+(T.notState?('   not-in-state '+T.notState):''));
+  L.push('');
+  L.push(' STATE BBLS = Kansas tax record (the sworn truth)');
+  L.push(' CROWN PAID = net value minus state tax (your check)');
+  L.push(' SHOULD PAY = what the STATE barrels should have paid');
+  L.push(' OWED YOU   = SHOULD minus PAID  (the shortfall)');
+  L.push(BAR);
   _feFinishReport('/oil'+(want.length?(' '+want.join(' ')):'')+(opts.year?(' '+opts.year):'')+(flagsOnly?' flags':''), 'OILREPO', '', '', L.join('\n'));
 }
 
