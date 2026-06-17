@@ -1091,7 +1091,7 @@ html,body{height:100%;overflow:hidden;margin:0;padding:0;}
   <div style="background:#0000cc;border-bottom:2px solid #ff88ff;padding:8px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;">
     <button onclick="goMain()" style="background:#ffff00;border:none;color:#000080;font-family:Courier New,monospace;font-size:13px;font-weight:700;padding:8px 14px;border-radius:4px;cursor:pointer;">◀ MENU</button>
     <span style="font-weight:700;font-size:14px;color:#ff88ff;flex:1;">⚙️ System Utilities</span>
-    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-12</span>
+    <span style="font-size:11px;font-weight:700;color:#00251a;background:#00ffaa;padding:3px 10px;border-radius:3px;font-family:Courier New,monospace;letter-spacing:1px;">BUILD OIL-13</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;padding:10px;">
   <div class="main-box" style="margin-top:10px;">
@@ -15960,7 +15960,7 @@ function _oilReport(filterArg, opts){
   var names=b.names, leases=b.leases, T=b.totals, want=b.want;
   var flagsOnly=!!opts.flagsOnly, money=_oilMoney;
   var L=[];
-  var ttl = flagsOnly ? 'OILREPO FLAGS — PROBLEMS ONLY' : 'OILREPO  ·  STATE vs CROWN  ·  DID / SHOULD / OWED';
+  var ttl = flagsOnly ? 'OILREPO FLAGS — PROBLEMS ONLY' : 'OILREPO · DID / SHOULD / OWED';
   L.push('     '+ttl+'   [OIL v2]');
   L.push('     '+(want.length?('LEASE: '+want.join(', ')):'ALL OIL LEASES')+(opts.year?('   YEAR: '+opts.year):''));
   L.push('');
@@ -15980,29 +15980,37 @@ function _oilReport(filterArg, opts){
       var hasS=(mo in Lz.st), hasP=(mo in Lz.pm);
       var s=hasS?Lz.st[mo]:0, p=hasP?Lz.pm[mo]:0, price=Lz.price[mo]||0, dec=Lz.dec||0;
       var sTxt=hasS?_oilFlt(s):'—', pTxt=hasP?_oilFlt(p):'—';
-      var dTxt='', paidTxt='', shouldTxt='', owedTxt='', flag='', isProblem=false;
       var nvalM=(Lz.netval[mo]>0?Lz.netval[mo]:p*price*dec), txM=Lz.tax[mo]||0, paidNet=nvalM-txM;
+      var nvol=(Lz.nvol[mo]>0)?Lz.nvol[mo]:(p*dec), gval=(Lz.gval[mo]>0)?Lz.gval[mo]:(p*price);
+      var isProblem=false;
       if(hasS&&hasP){
-        var d=p-s; dTxt=(d>0?'+':'')+_oilFlt(d);
-        if(price>0&&dec>0){ var owed=(s-p)*price*dec, should=paidNet+owed; paidTxt=money(paidNet); shouldTxt=money(should); owedTxt=money(owed); }
-        if(Math.abs(d)<0.005){ flag='MATCH'; } else { flag='*** OFF'; isProblem=true; }
-      } else if(hasS&&!hasP){ flag='no stmt — load Crown'; }
-      else if(!hasS&&hasP){ if(price>0&&dec>0){ paidTxt=money(paidNet); } flag='!! NOT IN STATE'; isProblem=true; }
-      if(flagsOnly && !isProblem) return;
-      var prcTxt = price>0 ? ('$'+price.toFixed(2)) : '—';
-      rows.push('   '+_fePadR(mo,8)+_fePadL(sTxt,8)+_fePadL(pTxt,8)+_fePadL(prcTxt,9)+_fePadL(dTxt,8)+_fePadL(paidTxt,10)+_fePadL(shouldTxt,10)+_fePadL(owedTxt,10)+'  '+flag);
-      if(hasP && dec>0){
-        var nvol = (Lz.nvol[mo]>0) ? Lz.nvol[mo] : (p*dec);
-        var gval = (Lz.gval[mo]>0) ? Lz.gval[mo] : (p*price);
-        var nval = (Lz.netval[mo]>0) ? Lz.netval[mo] : (p*price*dec);
-        var tx   = Lz.tax[mo]||0;
-        var netpaid = nval - tx;
-        rows.push('            gross '+_oilFlt(p)+' bbl x $'+price.toFixed(2)+' = '+money(gval)+'   net '+_oilFlt(nvol)+' bbl   net-val '+money(nval)+'   tax '+money(tx)+'  ->  PAID '+money(netpaid));
+        var d=p-s, dStr=(d>0?'+':'')+_oilFlt(d);
+        var match=Math.abs(d)<0.005;
+        if(!match) isProblem=true;
+        if(flagsOnly && !isProblem) return;
+        var owed=(price>0&&dec>0)?(s-p)*price*dec:0, should=paidNet+owed;
+        rows.push(' '+mo+'   '+sTxt+' vs '+pTxt+'   d '+dStr+'   '+(match?'MATCH':'*** OFF'));
+        if(price>0&&dec>0){
+          rows.push('   $'+price.toFixed(2)+'/bbl   gross '+money(gval)+'   net '+_oilFlt(nvol)+' bbl');
+          rows.push('   net-val '+money(nvalM)+'   tax '+money(txM)+'   PAID '+money(paidNet));
+          rows.push('   SHOULD '+money(should)+'   OWED '+money(owed));
+        }
+      } else if(hasS&&!hasP){
+        if(flagsOnly) return;
+        rows.push(' '+mo+'   STATE '+sTxt+'   (no Crown stmt — load it)');
+      } else if(!hasS&&hasP){
+        isProblem=true;
+        rows.push(' '+mo+'   CROWN '+pTxt+'   !! NOT IN STATE');
+        if(price>0&&dec>0){
+          rows.push('   $'+price.toFixed(2)+'/bbl   net-val '+money(nvalM)+'   PAID '+money(paidNet));
+        }
       }
+      rows.push('');
     });
     if(!rows.length) return;
-    L.push(' '+Lz.disp+(Lz.api?('   API '+Lz.api):'')+(Lz.dec?('   dec '+Lz.dec.toFixed(10)):''));
-    L.push('   '+_fePadR('MONTH',8)+_fePadL('STATE',8)+_fePadL('CROWN',8)+_fePadL('$/BBL',9)+_fePadL('DIFF',8)+_fePadL('PAID',10)+_fePadL('SHOULD',10)+_fePadL('OWED',10)+'  FLAG');
+    L.push(' '+Lz.disp+(Lz.api?('  API '+Lz.api):''));
+    if(Lz.dec) L.push('   decimal '+Lz.dec.toFixed(10));
+    L.push('');
     rows.forEach(function(r){ L.push(r); });
     L.push('');
   });
@@ -16013,8 +16021,10 @@ function _oilReport(filterArg, opts){
   L.push('   OWED YOU:              '+money(T.owed));
   L.push('   months MATCH: '+T.match+'    OFF: '+T.off+(T.noStmt?('    no-stmt: '+T.noStmt):'')+(T.notState?('    not-in-state: '+T.notState):''));
   L.push('');
-  L.push(' STATE=Kansas tax-collector barrels (truth).  PAID=net value minus state tax (your check).');
-  L.push(' OWED=(state-crown) bbls x price x decimal.  SHOULD=PAID+OWED. Type /oil for menu.');
+  L.push(' STATE = Kansas tax barrels (the truth)');
+  L.push(' PAID  = net value minus state tax (your check)');
+  L.push(' OWED  = (state-crown) bbls x price x decimal');
+  L.push(' SHOULD= PAID + OWED.    Type /oil for menu.');
   _feFinishReport('/oil'+(want.length?(' '+want.join(' ')):'')+(opts.year?(' '+opts.year):'')+(flagsOnly?' flags':''), 'OILREPO', '', '', L.join('\n'));
 }
 
